@@ -1,6 +1,6 @@
 # Word Rattle
 
-A two-phone word dice game. Shake the board, swipe through touching letters, and race each other live.
+A word dice game. Shake the board, swipe through touching letters, and share the seed so someone else can play the exact same board. Then swap results links to compare.
 
 Play: https://jackstoneley.github.io/word-rattle/
 
