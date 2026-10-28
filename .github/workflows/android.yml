@@ -3,7 +3,7 @@ name: Android app
 on:
   push:
     branches: [main]
-    paths: ["index.html", "android-app/**", ".github/workflows/android.yml"]
+    paths: ["index.html", "shell.js", "games/**", "android-app/**", "tools/**", ".github/workflows/android.yml"]
   workflow_dispatch:
 
 permissions:
@@ -16,9 +16,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: android-app
     steps:
       - uses: actions/checkout@v4
 
@@ -31,21 +28,35 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Check the site was built before committing
+        run: |
+          python3 tools/build.py
+          if ! git diff --quiet; then
+            echo "::error::Run 'python3 tools/build.py' and commit the result. These files were out of date:"
+            git diff --stat
+            exit 1
+          fi
+
       - name: Install
+        working-directory: android-app
         run: npm install --no-audit --no-fund
 
       - name: Prepare web files
+        working-directory: android-app
         run: node scripts/prepare-www.js
 
       - name: Create Android project
+        working-directory: android-app
         run: npx cap add android
 
-      - name: Add Word Rattle native features
+      - name: Add native features
+        working-directory: android-app
         run: node scripts/patch-android.js
         env:
           VERSION_CODE: ${{ github.run_number }}
 
       - name: Sync
+        working-directory: android-app
         run: npx cap sync android
 
       - name: Build APK
@@ -53,13 +64,13 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Publish to the "latest" release
-        working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp android-app/android/app/build/outputs/apk/debug/app-debug.apk word-rattle.apk
+          cp android-app/android/app/build/outputs/apk/debug/app-debug.apk stoneley-games.apk
+          cp stoneley-games.apk word-rattle.apk
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest word-rattle.apk \
-            --title "Word Rattle for Android (build ${{ github.run_number }})" \
-            --notes "On your phone, download word-rattle.apk and open it to install or update." \
+          gh release create latest stoneley-games.apk word-rattle.apk \
+            --title "Stoneley Games for Android (build ${{ github.run_number }})" \
+            --notes "Install: on your phone, download stoneley-games.apk and open it. After that, use Check for updates in the app. (word-rattle.apk is the same file, kept for old links.)" \
             --latest

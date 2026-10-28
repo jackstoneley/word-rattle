@@ -1,7 +1,16 @@
-# Word Rattle
+# Stoneley Games
 
-A word dice game. Shake the board, swipe through touching letters, and share the seed so someone else can play the exact same board. Then swap results links to compare.
+Our family games in one place: a home page to pick a game, playable on the web and as an Android app.
 
-Play: https://jackstoneley.github.io/word-rattle/
+| Game | What it is |
+| --- | --- |
+| **Word Rattle** | Word dice. Daily board, seeds, sync links for a head-to-head record, live play for up to 8 (online, or nearby with no internet in the app). |
+| **Cross Sums** | Kakuro: 200 puzzles, notes, checks, best times, product variants. |
+| **Gem Bastion** | Tower defence: forge and merge gems, six maps, permanent upgrades. |
 
-Words are checked against the ENABLE word list (public domain).
+- **Website:** https://jackstoneley.github.io/word-rattle/
+- **Android app:** https://github.com/jackstoneley/word-rattle/releases/latest/download/stoneley-games.apk (after the first install, use *Check for updates* in the app)
+
+Built and maintained with Claude Code. See [CLAUDE.md](CLAUDE.md) for how the project works.
+
+Word lists: ENABLE (public domain).

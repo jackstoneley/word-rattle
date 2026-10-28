@@ -1,12 +1,14 @@
 {
-  "name": "word-rattle-app",
+  "name": "stoneley-games-app",
   "private": true,
   "version": "1.0.0",
-  "description": "Android app build of Word Rattle",
+  "description": "Android app build of Stoneley Games",
   "dependencies": {
     "@capacitor/android": "~6.2.0",
     "@capacitor/core": "~6.2.0",
     "@fontsource/archivo-black": "^5.0.0",
+    "@fontsource/atkinson-hyperlegible": "^5.0.0",
+    "@fontsource/bricolage-grotesque": "^5.0.0",
     "@fontsource/figtree": "^5.0.0",
     "peerjs": "1.5.4"
   },

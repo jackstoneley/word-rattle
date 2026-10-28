@@ -9,11 +9,14 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.view.WindowManager;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -39,14 +42,23 @@ import com.google.android.gms.nearby.connection.PayloadCallback;
 import com.google.android.gms.nearby.connection.PayloadTransferUpdate;
 import com.google.android.gms.nearby.connection.Strategy;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Native features for Word Rattle: offline live games over Bluetooth and Wi-Fi
- * (Google Nearby Connections, star layout with the host in the middle), sharing,
- * clipboard, keeping the screen on, the back button and opening game links.
+ * Native features for Stoneley Games (the plugin keeps its original name, "WordRattle"):
+ * offline live games over Bluetooth and Wi-Fi (Google Nearby Connections, star layout with
+ * the host in the middle), sharing, clipboard, keeping the screen on, the back button,
+ * opening game links, and installing app updates downloaded from the latest GitHub release.
  */
 @CapacitorPlugin(
     name = "WordRattle",
@@ -126,6 +138,97 @@ public class WordRattlePlugin extends Plugin {
     public void minimise(PluginCall call) {
         getActivity().runOnUiThread(() -> getActivity().moveTaskToBack(true));
         call.resolve();
+    }
+
+    /* ---------- app version and updates ---------- */
+
+    @PluginMethod
+    public void getVersion(PluginCall call) {
+        try {
+            PackageInfo pi = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+            long code = Build.VERSION.SDK_INT >= 28 ? pi.getLongVersionCode() : pi.versionCode;
+            JSObject o = new JSObject();
+            o.put("code", code);
+            o.put("name", pi.versionName);
+            call.resolve(o);
+        } catch (Exception e) {
+            call.reject(String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** Downloads the APK at `url` (following redirects) and opens Android's installer for it. */
+    @PluginMethod
+    public void installUpdate(PluginCall call) {
+        final String url = call.getString("url");
+        if (url == null) { call.reject("Missing url"); return; }
+        if (Build.VERSION.SDK_INT >= 26 && !getContext().getPackageManager().canRequestPackageInstalls()) {
+            Intent i = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(i);
+            JSObject o = new JSObject();
+            o.put("needsPermission", true);
+            call.resolve(o);
+            return;
+        }
+        new Thread(() -> {
+            HttpURLConnection c = null;
+            try {
+                File dir = new File(getContext().getCacheDir(), "updates");
+                if (!dir.exists() && !dir.mkdirs()) throw new IOException("Couldn't make a download folder");
+                File f = new File(dir, "stoneley-games.apk");
+                if (f.exists() && !f.delete()) throw new IOException("Couldn't clear the old download");
+                URL u = new URL(url);
+                int hops = 0;
+                while (true) {
+                    c = (HttpURLConnection) u.openConnection();
+                    c.setInstanceFollowRedirects(false);
+                    c.setConnectTimeout(20000);
+                    c.setReadTimeout(30000);
+                    int status = c.getResponseCode();
+                    if (status >= 300 && status < 400 && hops < 8) {
+                        String loc = c.getHeaderField("Location");
+                        c.disconnect();
+                        if (loc == null) throw new IOException("Download redirect had no address");
+                        u = new URL(u, loc);
+                        hops++;
+                        continue;
+                    }
+                    if (status != 200) throw new IOException("Download failed (" + status + ")");
+                    break;
+                }
+                int total = c.getContentLength();
+                try (InputStream in = new BufferedInputStream(c.getInputStream()); OutputStream out = new FileOutputStream(f)) {
+                    byte[] buf = new byte[65536];
+                    long done = 0;
+                    int n, last = -1;
+                    while ((n = in.read(buf)) > 0) {
+                        out.write(buf, 0, n);
+                        done += n;
+                        if (total > 0) {
+                            int pct = (int) (done * 100 / total);
+                            if (pct != last) {
+                                last = pct;
+                                JSObject p = new JSObject();
+                                p.put("pct", pct);
+                                notifyListeners("updateProgress", p);
+                            }
+                        }
+                    }
+                }
+                Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".updates", f);
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(uri, "application/vnd.android.package-archive");
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+                JSObject o = new JSObject();
+                o.put("started", true);
+                call.resolve(o);
+            } catch (Exception e) {
+                call.reject(String.valueOf(e.getMessage()));
+            } finally {
+                if (c != null) c.disconnect();
+            }
+        }).start();
     }
 
     /* ---------- permissions for nearby play ---------- */

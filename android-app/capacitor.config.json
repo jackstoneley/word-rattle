@@ -1,8 +1,8 @@
 {
   "appId": "com.jackstoneley.wordrattle",
-  "appName": "Word Rattle",
+  "appName": "Stoneley Games",
   "webDir": "www",
   "android": {
-    "backgroundColor": "#E8EDF4"
+    "backgroundColor": "#ECEEF1"
   }
 }

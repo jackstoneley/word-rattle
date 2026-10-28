@@ -1,0 +1,808 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cross Sums Kakuro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: one-screen app. Home and lists scroll; the game screen is a fixed column: header, board, toolbar, keypad. */
+:root{
+  --paper:#e9efee; --surface:#ffffff; --cell:#ffffff; --ink:#13272d; --muted:#5d7176; --line:#b9c8c8;
+  --block:#1c3a43; --block-ink:#eaf4f2; --block-dim:#2a4e58;
+  --sel:#ffd46b; --run:#d3ebe6; --accent:#0f7a70; --accent-ink:#ffffff; --accent-soft:#d6eeea;
+  --bad:#c23a2b; --bad-ink:#ffffff; --hl:#ffd46b; --hl-ink:#3a2a00; --bad-soft:#fbe1dc; --rev:#2c64c9; --good:#1f8a4c;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", Roboto, system-ui, sans-serif;
+  --shadow:0 1px 2px rgba(19,39,45,.08), 0 6px 20px rgba(19,39,45,.08);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0d1416; --surface:#162125; --cell:#2b3b40; --ink:#e4eeec; --muted:#93a8ab; --line:#2c3d42;
+  --block:#060d0f; --block-ink:#b9d6d1; --block-dim:#1f3036;
+  --sel:#8a6a1c; --run:#2f5550; --accent:#47c2b1; --accent-ink:#06211d; --accent-soft:#173634;
+  --bad:#ff7b6b; --bad-ink:#2a0905; --hl:#f2c14e; --hl-ink:#2b1f00; --bad-soft:#3a1f1b; --rev:#86a9ff; --good:#5fd08c;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0d1416; --surface:#162125; --cell:#2b3b40; --ink:#e4eeec; --muted:#93a8ab; --line:#2c3d42;
+  --block:#060d0f; --block-ink:#b9d6d1; --block-dim:#1f3036;
+  --sel:#8a6a1c; --run:#2f5550; --accent:#47c2b1; --accent-ink:#06211d; --accent-soft:#173634;
+  --bad:#ff7b6b; --bad-ink:#2a0905; --hl:#f2c14e; --hl-ink:#2b1f00; --bad-soft:#3a1f1b; --rev:#86a9ff; --good:#5fd08c;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35); color-scheme:dark}
+
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.view{height:100%;display:flex;flex-direction:column}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+
+/* Home */
+.brand{display:flex;align-items:center;gap:14px;padding-top:8px}
+.logo{display:grid;grid-template-columns:repeat(3,22px);grid-template-rows:repeat(3,22px);gap:2px;background:var(--block);padding:2px;border-radius:5px;flex:none}
+.logo i{background:var(--cell);display:grid;place-items:center;font-style:normal;font-weight:700;font-size:13px;color:var(--ink)}
+.logo i.b{background:var(--block);position:relative}
+.logo i.b::after{content:"";position:absolute;inset:0;background:linear-gradient(to top right,transparent calc(50% - .5px),var(--block-dim) 50%,transparent calc(50% + .5px))}
+.brand h1{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.card{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px;text-align:left;width:100%}
+.card.feature{flex-direction:row;align-items:center;gap:14px}
+.card.feature .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.card.feature h3{font-size:20px}
+.card.feature .meta{color:var(--muted);font-size:14px}
+.go{flex:none;background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:999px;padding:10px 16px;font-size:15px}
+.today-badge{flex:none;width:52px;height:52px;border-radius:10px;background:var(--block);color:var(--block-ink);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);line-height:1}
+.today-badge b{font-size:22px}.today-badge small{font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+.colls{display:flex;flex-direction:column;gap:10px}
+.coll{display:grid;grid-template-columns:auto 1fr auto;gap:4px 14px;align-items:center;background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;text-align:left;width:100%}
+.coll .sz{grid-row:span 2;width:44px;height:44px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:15px}
+.coll.prod .sz{background:var(--block);color:var(--block-ink)}
+.coll h3{font-size:18px}
+.coll .right{grid-row:span 2;text-align:right;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.coll .right b{color:var(--ink);font-size:15px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.navrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.navrow button{background:var(--surface);box-shadow:var(--shadow);border-radius:12px;padding:14px 6px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:14px}
+.navrow svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sync{font-size:12px;color:var(--muted);text-align:center}
+.sg-home{font-size:14px;font-weight:700;color:var(--muted);text-decoration:none;margin-bottom:-8px}
+
+/* Top bar */
+.topbar{display:flex;align-items:center;gap:8px;padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));padding-block:8px;min-height:52px}
+.topbar h2{flex:1;font-size:18px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none}
+.icon svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon:active{background:var(--accent-soft)}
+.timer{font-family:var(--body);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;min-width:56px;text-align:right}
+
+/* Level list */
+.lvgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.lv{aspect-ratio:1;max-width:100%;border-radius:10px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+.lv b{font-family:var(--display);font-size:19px}
+.lv small{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.lv.done{background:var(--block);color:var(--block-ink)}
+.lv.done small{color:var(--block-ink);opacity:.8}
+.lv.prog::after{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.lv .star{position:absolute;top:4px;right:6px;font-size:10px;color:var(--hl)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* Game */
+#game{overflow:hidden}
+.boardwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));position:relative}
+.board{display:grid;background:var(--block);border:2px solid var(--block);border-radius:6px;gap:1px;user-select:none;-webkit-user-select:none;touch-action:manipulation;position:relative}
+.c{width:var(--cs);height:var(--cs);position:relative;display:grid;place-items:center;background:var(--cell)}
+.c.k{background:var(--block)}
+.c.k.has::before{content:"";position:absolute;inset:0;background:linear-gradient(to top right,transparent calc(50% - .6px),var(--block-dim) 50%,transparent calc(50% + .6px))}
+.c.k .a,.c.k .d{position:absolute;color:var(--block-ink);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.c.k .a{top:8%;right:8%}
+.c.k .d{bottom:8%;left:8%}
+.c.k .hl{color:var(--hl)}
+.c.k .wrong{color:var(--bad);text-decoration:line-through}
+.c.w{cursor:pointer}
+.c.w.run{background:var(--run)}
+.c.w.sel{background:var(--sel)}
+.c .v{font-weight:700;font-size:calc(var(--cs) * .6);line-height:1}
+.c.dup .v{color:var(--bad)}
+.c.rev .v{color:var(--rev)}
+.c.bad::after{content:"";position:absolute;inset:0;background:linear-gradient(to top right,transparent calc(50% - 1px),var(--bad) 50%,transparent calc(50% + 1px));opacity:.85;pointer-events:none}
+.c.bad .v{color:var(--bad)}
+.c .nt{position:absolute;inset:4%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);font-size:calc(var(--cs) * .25);line-height:1;color:var(--muted);font-weight:700}
+.c .nt span{display:grid;place-items:center}
+.c.flash{animation:flash .6s ease}
+@keyframes flash{0%{background:var(--good)}100%{}}
+.helper{min-height:22px;text-align:center;font-size:13px;color:var(--muted);padding-inline:16px;font-variant-numeric:tabular-nums}
+.helper b{color:var(--ink)}
+.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));padding-block:6px;max-width:560px;width:100%;margin:0 auto;box-sizing:border-box}
+.tool{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:700;color:var(--muted);padding:6px 0;border-radius:10px}
+.tool svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tool.on{background:var(--accent);color:var(--accent-ink)}
+.tool.on svg{stroke:var(--accent-ink)}
+.tool:active{background:var(--accent-soft)}
+.pad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));padding-block:4px 12px;max-width:560px;width:100%;margin:0 auto;box-sizing:border-box}
+.pad button{height:54px;border-radius:10px;background:var(--surface);box-shadow:var(--shadow);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.pad button:active{background:var(--sel)}
+.pad.notes button{color:var(--accent);font-size:19px}
+.pad button.out{opacity:.35}
+.paused{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--paper);z-index:5}
+.paused h3{font-size:24px}
+
+/* Sheets and dialogs */
+.scrim{position:fixed;inset:0;background:rgba(5,15,18,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;max-height:85%;overflow-y:auto;box-sizing:border-box}
+.sheet h3{font-size:20px;margin-bottom:6px}
+.sheet .row{display:flex;align-items:center;gap:12px;padding:13px 4px;border-radius:10px;text-align:left;width:100%;font-size:16px}
+.sheet .row:active{background:var(--accent-soft)}
+.sheet .row small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.sheet .row .grow{flex:1;min-width:0}
+.sheet .danger{color:var(--bad)}
+.sheet .note{font-size:13px;color:var(--muted);padding:4px}
+.btns{display:flex;gap:10px;margin-top:8px}
+.btn{flex:1;padding:14px;border-radius:12px;font-weight:700;background:var(--accent-soft);color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.warn{background:var(--bad);color:var(--bad-ink)}
+.win{text-align:center;align-items:center;gap:8px}
+.win .big{font-family:var(--display);font-size:56px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.pb{display:inline-block;background:var(--hl);color:var(--hl-ink);font-weight:700;border-radius:999px;padding:5px 12px;font-size:14px}
+.win .sub{color:var(--muted);font-size:15px}
+.switch{width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.switch.on{background:var(--accent)}
+.switch.on::after{transform:translateX(18px)}
+.toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:700;z-index:30;max-width:calc(100% - 32px);text-align:center;box-shadow:var(--shadow)}
+
+/* Stats */
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--surface);border-radius:12px;box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:4px}
+.tile b{font-family:var(--display);font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.tile span{font-size:13px;color:var(--muted)}
+.tablewrap{overflow-x:auto;background:var(--surface);border-radius:12px;box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line)}
+tr+tr td{border-top:1px solid var(--line)}
+td .spark{vertical-align:middle}
+.recent{display:flex;flex-direction:column;background:var(--surface);border-radius:12px;box-shadow:var(--shadow)}
+.recent .r{display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:14px}
+.recent .r+.r{border-top:1px solid var(--line)}
+.recent .r .grow{flex:1;min-width:0}
+.recent .r small{color:var(--muted)}
+.chip{font-size:11px;font-weight:700;border-radius:999px;padding:3px 8px;background:var(--hl);color:var(--hl-ink)}
+.chip.assist{background:var(--accent-soft);color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:14px;text-align:center}
+.prose{font-size:15px;line-height:1.55;color:var(--ink)}
+.prose p{margin:0 0 10px}
+.prose h3{font-size:17px;margin:14px 0 6px}
+.ex{display:flex;gap:16px;align-items:center;margin:8px 0}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="home" class="view">
+  <div class="scroll"><div class="wrap">
+    <a class="sg-home" href="../../index.html">← All games</a>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i>8</i><i>9</i><i class="b"></i><i>1</i><i>3</i></div>
+      <div><h1>Cross Sums</h1><p>Kakuro · 200 puzzles, saved as you play</p></div>
+    </div>
+    <div id="continueSlot"></div>
+    <div id="todaySlot"></div>
+    <div class="eyebrow">Collections</div>
+    <div class="colls" id="colls"></div>
+    <div class="navrow">
+      <button id="navStats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Stats</button>
+      <button id="navSettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
+      <button id="navHelp"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>How to play</button>
+    </div>
+    <div class="sync" id="syncNote">Saved on this device</div>
+  </div></div>
+</div>
+
+<div id="levels" class="view" hidden>
+  <div class="topbar"><button class="icon" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2 id="lvTitle">Medium</h2></div>
+  <div class="scroll"><div class="wrap" style="padding-top:4px">
+    <div class="legend"><span><i style="background:var(--surface);box-shadow:var(--shadow)"></i>Not started</span><span><i style="background:var(--accent);border-radius:50%"></i>In progress</span><span><i style="background:var(--block)"></i>Solved, with best time</span></div>
+    <div class="lvgrid" id="lvGrid"></div>
+  </div></div>
+</div>
+
+<div id="game" class="view" hidden>
+  <div class="topbar">
+    <button class="icon" id="gBack" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <h2 id="gTitle"></h2>
+    <span class="timer" id="gTimer">0:00</span>
+    <button class="icon" id="gPause" aria-label="Pause"><svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg></button>
+  </div>
+  <div class="boardwrap" id="boardwrap">
+    <div class="board" id="board"></div>
+    <div class="paused" id="pausedPane" hidden><h3>Paused</h3><button class="go" id="gResume">Resume</button></div>
+  </div>
+  <div class="helper" id="helper"></div>
+  <div class="tools">
+    <button class="tool" id="tNotes"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Notes</button>
+    <button class="tool" id="tErase"><svg viewBox="0 0 24 24"><path d="M20 20H7L3 16a1.4 1.4 0 0 1 0-2L13 4a1.4 1.4 0 0 1 2 0l5 5a1.4 1.4 0 0 1 0 2l-9 9M8 10l6 6"/></svg>Erase</button>
+    <button class="tool" id="tUndo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Undo</button>
+    <button class="tool" id="tCheck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Check</button>
+    <button class="tool" id="tMore"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>More</button>
+  </div>
+  <div class="pad" id="pad"></div>
+</div>
+
+<div id="stats" class="view" hidden>
+  <div class="topbar"><button class="icon" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Your stats</h2></div>
+  <div class="scroll"><div class="wrap" id="statsBody" style="padding-top:4px"></div></div>
+</div>
+
+<div id="settings" class="view" hidden>
+  <div class="topbar"><button class="icon" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Settings</h2></div>
+  <div class="scroll"><div class="wrap" id="settingsBody" style="padding-top:4px"></div></div>
+</div>
+
+<div id="help" class="view" hidden>
+  <div class="topbar"><button class="icon" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>How to play</h2></div>
+  <div class="scroll"><div class="wrap prose">
+    <div>
+      <h3>Cross Sums</h3>
+      <p>Fill every white square with a digit from 1 to 9. Each dark square holds a clue. The number above the diagonal is the total of the white squares running right of it. The number below the diagonal is the total of the squares running down from it.</p>
+      <p>A digit can't repeat within a single run. Every puzzle here has exactly one solution, so you never need to guess.</p>
+      <h3>Products</h3>
+      <p>Same grid, same rules, but each clue is what the digits <b>multiply</b> to. A clue of 24 over two squares can only be 3 and 8, or 4 and 6. Look for clues with a 5 or 7 as a factor; those digits are forced.</p>
+      <h3>Controls</h3>
+      <p><b>Tap a square</b>, then tap a digit. Tap the same digit again to clear it.</p>
+      <p><b>Notes</b> switches the keypad to pencil marks, so you can jot candidates in a square.</p>
+      <p><b>Check</b> marks the selected square if it's wrong. <b>More</b> lets you check the whole grid, reveal a square or reset.</p>
+      <p>Using Check or Reveal still counts the solve, but it isn't marked as a clean solve in your stats. Your fastest time per puzzle is kept either way.</p>
+      <h3>Handy totals</h3>
+      <p>Two squares: 3 is always 1+2, 4 is 1+3, 16 is 7+9, 17 is 8+9. Three squares: 6 is 1+2+3, 7 is 1+2+4, 23 is 6+8+9, 24 is 7+8+9. Four squares: 10 is 1+2+3+4, 30 is 6+7+8+9.</p>
+      <p>Turn on <b>Show combinations</b> in Settings to see every possible digit set for the square you've selected.</p>
+      <h3>Daily puzzle</h3>
+      <p>A new one every day, getting harder through the week: easy early in the week and an expert grid on Sunday.</p>
+    </div>
+  </div></div>
+</div>
+
+<div id="overlay"></div>
+
+<script>
+const PUZZLES = {"e":["#########123##1289#43#18#2896##127##","#######97####839####432####854####17","#######789###5167##97#28##3189###217","########12####8967#13#38#2687####92#","#########28##1532##87#78##2713##89##","########19####3867#86#19#1234####19#","########23####5421#53#98#9184####21#","#########19##4568##31#39##2158##89##","########12####4139#19#12#2839####17#","########35####6927#14#39#9835####24#","#########89##8915##47#82##6579##17##","########19###4281##69#78##7859###24#","#########21##3164##12#97##9281##83##","########64###3798##89#79##3158###29#","########98####1962#82#89#1325####97#","##########98###253##897##924###81###","########46####9831#27#12#1872####97#","#########29###4673#61#21#9618###32##","#########98##1624##47#18##2839##39##","#########931##6584#17#92#2415##593##","########79####4821#16#93#2596####21#","#########25##7193##98#92##2163##98##","#########97##3942##13#96##1732##29##","#########96##4573##89#91##7986##18##","########72####5879#79#18#2348####19#","########79####2781#29#79#1426####19#","#########97##9182##83#91##9268##81##","########19####8726#74#79#8794####81#","#########18##2137##97#42##8197##98##","#########19##8527##12#15##4261##97##","#########12##8123##93#98##9581##43##","#########92##2183##98#41##4962##27##","#########253##9185#21#92#9657##821##","#########18###2349#18#18#2419###79##","########98###8579##13#29##2718###34#","#########147##1269#48#15#1382##279##","########91####8497#32#19#1623####12#","########17####9683#18#51#9786####17#","#########72###4987#38#18#1795###12##","########32###1798##29#98##5164###32#"],"m":["##########12##98##98##26###3958####136####2789###98##39##31##13#","#########12##578#293#165###98#89##98214##12#39###982#893#861##82","############19#####12853#219##31#86###65#94##987#52371#####19###","##############37#68##912#49#18####18239####98#18#746##29#95#####","##########29#####4187####16#235###89#12###389#95####2638#####98#","############93####97863##189#21##21###92##21#321##35174####43###","#############49#####9213###98#21##91783##27#37###6894#####17####","#############81#####193##21873###359#693###69587##821#####51####","#########729#####5149#19###65897##18#13##12789###89#7521#####748","#############631#86#1852#9134#####21793#####3149#8512#13#794####","#########831#####9183#51####1968##91268##9827####71#8129#####918","##########19##97##359#61####791####817####932####68#395##25##87#","###########713#####927###832#93##21###26##83#142###952#####814##","###########74####69287###35#59####21#65####89#71###91287####31##","#############982#31#9821#93126####29#12####31798#6289#19#532####","###########974#####8914##912#36##89###89##89#912##6793#####871##","#########89######1859######12378#357#194#17984######9216######69","##############62#69##984#18#12####29813####12#51#392##97#58#####","##########975#####7128###13##958#76###73#341##89###7239#####156#","#########85######97#89###68794####12#79####95872###13#56######89","##########21##59##829#73###5123###57#84###4371###59#971##37##98#","###########821#####94683##21##21##57#91##73##15##68713#####432##","#############19####8127###125#16#69###57#15#954###2174####39####","#########12#97###98172####98#129#91###18#839#89####85972###69#81","##########192#####287####37#397##892#896##819#39####142#####576#","###########198#####21935##19##68#13###12#59##12##82167#####289##","#########891#####9124####67#18####23#54####72#93####3182#####321","##########12##84##891#97###8296###14#83###9172###14#912##38##71#","###########812####1623###72##19##96###29##71##12###9128####897##","##############84###48#61###35972##95#89##84793###21#85###92#####","##########28#####21934###98#12###198#983###91#96###54971#####81#","##########81######9281###21#9572#978#791#7392#89###1893######12#","#########84######973##13###92#26##92138##12#98###28##159######78","#############79####51832##985#89##54#94##86#821##51234####31####","##########27######13##29###27#18##15326##14#81###79##58######34#","#########951#####5134####83#19####21#81####91#98####2931#####123","#########923##81#8913#93####597###89172###978####81#9672#92##291","############819####8921###59##51#537#168#84##37###8972####289###","###########39#89###12897#524#97##23###19##19#928#57398###84#31##","##########98######518#32####6985###431###3789####16#298######46#","###########751#####96348##13##12##35#98##18##32##95617#####948##","##########12######31##91###94872###789###82697###71##65######41#","#########142##98#3879#71####612####927####231####94#3841#21##913","###########192#####68719##19##25#92###58#13##83##87963#####719##","##########29##98##13##19###89#27##21893##15#13###89##79##23##64#","#########49##19##23#958###492######215######319###786#85##15##51","###########93#19###69287#187#97##23###98##98#921#57986###94#48##","#########71###31#9312#25###9137###74#91###9812###34#8639#58###17","##########942#####4639###98#185##57###68##619#97###3197#####371#","#############469#97##125#72#92####19863####12#98#912##29#896####"],"h":["#############12##21####86#192###62#89#####86#249#####98325#####521#61#####95#83###467#94####21##12##","############12###82###74#21986###1642#93####23#132###71#92###136#21####94#5931###52178#72###13###21#","###############95#####52#138####948##98#####729354#86#136#97#914678#####28##265####329#79#####14####","#################96##329#1975##178936#######8213#####71#29#####9213#######624173##5134#219##72######","############217######513976####894#912####42##9124#98#####89#1728##31####162#932####312645######176#","###############91######21753####932##18##871#18293#21#829#31#62193#147##49##197####26938######18####","##############12#89####139827##798#16####38###92####219#219####31###47####82#359##137496####98#38###","#############91########8312#79#####89315###987#837###81#69###132#127###91782#####72#9712########89##","############81########98#38####21#32698##1398##29####31#18####25##9578##86795#16####21#69########16#","#############17#12#####79#93####18#98####13#91483##2683#2914##52137#21####21#17####97#12#####14#97##","###############32#91####291#42###18#917##6479##25##79#####13##59##1238##879#93###72#392####97#27####","###########81#19#####97#28197###93##218###2193#39####28917####16#8251###982##82###79124#98#####69#81","###############425#######719###19#19#819#27953#721###79#92###918#96328#124#12#89###594#######382####","#####################8973######48927#214#53##59438####948####96832##18#517#61927######2849##########","###########91###97###83#1932####9127######89#8296###421#189###7391#35######9864####3821#89###12###71","###########91########4253#94#####96132######75#129#97#968#12#698#49######98762#####13#2193########81","############12########39##29####28#81793###397#816####128####421#126###89213#13####78##79########27#","##############3981#####91875####13##971###2153#961#89#169#89#281#1829###731##12####59187#####7349###","#############12#69####827#12###35##827###14#17#89##29#892#89##21#61#18###512##56###29#927####68#81##","###########26##91####691784#####721######68#56#####53#392#42#####81#31######975#####187423####97##81","##############9813###54#7921###629##47####12#16947#16#937#18#73812#12####13##371###7291#68###9483###","################481###21##894###15#736#####271#218#29#892#57#182#819#####954#78###953##13###812#####","###########18########89#19##93##16389#69##27##1978###98#38###9682##19##13#17826##28##89#51########39","###############91#91####183#12###98##13###8195#659#19#328#28#213#1374###21##59###97#921####13#31####","#############31########26##29####12##12##19835#31##21#912#38##31#81249##89##89####28##35########41##","###########253#######6891##21##13#91#94######214#####29867#####875######89#61#28##76##8937#######213","############175######18967#193#23##92471##95##89####219#937####68##89##61472##19#829#19536######894#","##############29#159####481367##28176#98##12#12######64#39######89#21##97#38974##695178####589#65###","###########239##97###6479#78######38192#####19#21#####279#####83#58#####71432######21#3189###89##978","#############97########32#29####981234###13#89#13##983###629##61#29#12###964517####23#87########42##","###########93########1579##18####915623##132#94#12#276###124#39#89#249##192873####27##2461########87","###########135####69#3698###25####91#913#####413######178######143#####819#21####65###9218#97####849","############98########13###12####98##287##12987#31#35#132#19#12#39127##231##91####69###31########89#","############61##91####94##869##87329#71##24#1823#####23#92#####9718#91##21#21973##942##13####61##58#","###############21#13#91#879#98#8972#893###36##21####21###89####48##38###921#8219#97#931#75#13#21####","##############891####291683####1735#79#####89##21###92###13###87##87#####69#9518####287469####395###","###############71#89####197268###19#91###72958#91##91#215#21##91#42178###89#79###612873####89#29####","#############42#######9817#####98##91#12#319##8927###81#26###5742##798#19#92##21#####9217#######92##","#################95##12###517##361#42#15###712##29####957####61##382###95#36#158##315###39##76######","##############14#68#####96357####14#17####125##948#19#####69#289##812####19#25####13826#####28#57###"],"x":["################51#69######72135####98647######35##98###12#179#918#863#182#89###12##92######98573####29761######17#42####","##############971########8962#####123#794####24####741##953#41352###87293#857##921####89####361#731#####8592########871##","################13#24#####128346###192#72#####98##6149####13#9517###1253#69####3689##29#####75#251###846793#####96#27####","###############12##968####918#792###85#152####193##2143#19######19#98######58#2364##583####826#91###689#798####892##13###","###############125########689##89###327###28#9715##123##21##91847###83269##98##916##1269#93###129###12##145########379###","###############58###81####293##92#19##21973##281###214####96784#######91683####918###892##63519##31#15##623####97###79###","###################159##69###9364##12##98#38##34#18#126###139#98#####87#932###493#12#42##13#28##36##3891###68##217#######","##################12###65#82931###248317#521###92###375####198#41###89#728####528###12###316#875913###19726#57###28######","####################13#######1948#91#98237###821597#819##89#####43#29#####92##879#318652###21739#94#1372#######26########","###############59#########98###21#43182##179#183###93####429857#######251376####98###987#192##12693#21###97#########31###","############98#193#####192487#######98#913#########2813####1298#21#29#9183####1836#########178#89#######589234#####176#82","###############91###14###173###98#924###5679#59#18#91####51293#21###39#21438####61#93#67#5789###129#79###176###63###38###","#################91#########5321####89##954##1392#951###97#381##98#21##689#21###897#1374##938##57####6137#########19#####","############913###39###421#7813#####7893#29#####93#912######452#######817######913#98#####79#9812#####3164#418###49###739","############81#12#89###19678#12#####93#193######952#12#####43#189###678#35#####35#158######192#71#####27#13297###31#86#15","##################13#########25###78###19738#937#128#21##2987#49#####13#1389##17#982#349#69823###68###37#########25######","#########################96###91##92138##321#817#18##59###89#92167#17689#92###25##19#412#981##16839##92###23#############","###############91########189#98###142#896234#36###81#92##918##21#####21##893##12#94###12#912738#179###12#496########17###","##############7892#######2751##87######91#12###18##2941###5912#12###19#3642###1372##63###68#12######49##3412#######8927##","############51#########32##########86#89##81#751243#294#9675#823#####241#4793#793#971862#51##81#98##########79#########12","################26#########3894#####189#23###1937###19##21#928#289#371#198#16##24###1927###31#721#####7958#########21####","############71#19######145276#81###31#18423###631#79######65##26#####97##89######31#759###97285#31###83#241753######12#79","############98######27#13###18#49##28##6928###152###47####239716#####168947####47###281###1465##92##13#21###79#26######34","#################19#64####9128#79#47#12###96#7123####57###9817#28###98#2971###12####9831#86###95#45#98#3528####53#91#####","################174####21#9368####79#12######4786###89####7812#64###32#7912####16###8521######26#46####1764#17####395####","##############47####23##1286###65##89#12#25#####198#98####23#184#####198#98####89#913#####18#12#24##82###8159##94####97##","#############29#91######12#89#######13#89#63#85629#7984#73##1387#####9836##31#4879#19248#87#19#18#######89#49######12#18#","############93#92##59##18973##97####82##98######1937#####79368#19###98#26937#####9857######91##31####97##18974##81##62#98","###############981#######9867#712#761#927536#48###98#####53#98#97###19#13#21#####97###85#215489#243#192#3897#######276###","################28#########192835####98#1968##371#98#####89#1298#####1896#21#####13#298##5893#91####146583#########91####"],"p":["########91#913#12#182##924#####129##297#18#986#89","##########983####192##982#13#21#192##928####362##","########21#917#92#189##913#####281##198#91#976#83","########91##71#23#193#8927#####9217#981#98#19##31","##########19#####6182#928#19#59#938#2197#####18##","#########92#91##49#12###198###971###17#89##82#32#","########192####9318###21#19###79#19###1982####837","########91#298#29#139##897#####298##218#92#726#18","########129#12#913#98###187###249###81#193#97#217","##########198####982##123#19#91#192##819####987##","#########98#21##13#19###1837#1923###93#91##81#13#","###########962#72#196#1924#####8249#197#91#219###","#########982####197###27#819#123#21###927####193#","########138####9812###69#93###42#19###1328####971","###########982###9137##81#91#72#12##1983###219###","#########976####182###93#921#129#98###198####213#","########82##28#29#139#9138#####8729#129#13#91##81","########892####9182###28#89###39#31###1983####312","########29#958#12#192#7192#####1829#183#17#278#98","########619####9217###87#19###92#19###9183####271"],"q":["#############289#####93716###179#891##814##28#29##813##129#197###71326#####713###","#############938#####9127#####12#91##28361#92#89#84971##19#98#####2186#####197###","################13#912#9128#168#78###43#91728#78154#81###21#132#8192#917#92######","##########81#######96####91#194##839###91728###18923###192##123#23####14#######91","#############821####12789###9481##59#79#91#92#26#29#81#13##2378###27346####986###","##########98####17#82####91#1789#129###12874###19528###286#1928#19####91#93####12","###########13###21##91##192#189#82###25891#98#92#16827###28#912#197##27##87###18#","#############192######58193##824##18##91824#####87192##28##521##13824######193###","############91##21###281#98####92387###92#13###12#19###48123####89#891###12##29##","############9271#####8397########921#29#91287#91378#92#821########9612#####2971##","###########9821####13967####9148######57918#####21398######5192####97218####8973#","############192######215######96#813####86329#58932####631#91######938######279##","#############198###91#927###29##12###17#18327#82137#92###92##16###872#38###791###","###############798####97823###189#19##92#896###192#18##92#187###18295####879#####","#############18####21#912###192#918##35187#19#48#13796##712#123###391#31####38###","##########952##631#1298#849####91587####139#####128####98237####179#9683#213##129","##########12#######26###92###819#21####96718###13486####82#982###98###91#######12","###########98##186##12#1928###187#91####39#######92####19#139###9317#19##783##21#","##########591###89#172###91###39#143####8197###1239####628#29###13###391#29###128","##########49#######91#129###82#812###2697#19###31#1832###389#19###218#71#######87"]};
+const COLLS = [
+  {k:'e', name:'Easy', size:6, op:'sum', desc:'Quick 6×6 grids'},
+  {k:'m', name:'Medium', size:8, op:'sum', desc:'8×8, the daily-paper size'},
+  {k:'h', name:'Hard', size:10, op:'sum', desc:'10×10, longer runs'},
+  {k:'x', name:'Expert', size:11, op:'sum', desc:'11×11, settle in'},
+  {k:'p', name:'Products', size:7, op:'prod', desc:'Clues multiply, 7×7'},
+  {k:'q', name:'Products+', size:9, op:'prod', desc:'Clues multiply, 9×9'}
+];
+const CM = Object.fromEntries(COLLS.map(c=>[c.k,c]));
+
+/* ---------- storage ---------- */
+const LS = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const DEF_SETTINGS = {timer:true, dups:true, sums:true, combos:false, autoNotes:true, u:0};
+let S = {
+  stats: LS.get('kk.stats', {levels:{}, days:{}, log:[]}),
+  saves: LS.get('kk.saves', {}),
+  settings: Object.assign({}, DEF_SETTINGS, LS.get('kk.settings', {}))
+};
+let cloud = null, cloudChain = Promise.resolve(), cloudTimer = null;
+function persist(soon){
+  LS.set('kk.stats', S.stats); LS.set('kk.saves', S.saves); LS.set('kk.settings', S.settings);
+  if(!cloud) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(pushCloud, soon ? 50 : 2000);
+}
+function pushCloud(){
+  if(!cloud) return;
+  const payload = {json: JSON.stringify(S), u: Date.now()};
+  cloudChain = cloudChain.then(()=>cloud.set(payload)).catch(()=>{});
+}
+function mergeState(remote){
+  if(!remote) return;
+  const L = S.stats.levels, R = (remote.stats||{}).levels||{};
+  for(const id in R){
+    const a = L[id], b = R[id];
+    if(!a){ L[id]=b; continue; }
+    const times = [...(a.times||[]), ...(b.times||[])];
+    const seen = new Set(); const uniq = times.filter(t=>{const k=t.d+':'+t.t; if(seen.has(k)) return false; seen.add(k); return true}).sort((x,y)=>x.d-y.d).slice(-10);
+    const best = [a,b].filter(x=>x.best!=null).sort((x,y)=>x.best-y.best)[0];
+    L[id] = {solves:Math.max(a.solves||0,b.solves||0), best:best?best.best:null, bestD:best?best.bestD:null, bestClean:[a.bestClean,b.bestClean].filter(x=>x!=null).sort((x,y)=>x-y)[0] ?? null, times:uniq};
+  }
+  const D = S.stats.days, RD = (remote.stats||{}).days||{};
+  for(const d in RD) D[d] = Math.max(D[d]||0, RD[d]);
+  const lg = [...(S.stats.log||[]), ...((remote.stats||{}).log||[])]; const ls = new Set();
+  S.stats.log = lg.filter(e=>{const k=e.id+':'+e.d; if(ls.has(k)) return false; ls.add(k); return true}).sort((a,b)=>a.d-b.d).slice(-150);
+  const RS = remote.saves||{};
+  for(const id in RS){ if(!S.saves[id] || (RS[id].u||0) > (S.saves[id].u||0)) S.saves[id] = RS[id]; }
+  for(const id in S.saves){ const lv = L[id]; const last = lv && lv.times && lv.times.length ? lv.times[lv.times.length-1].d : 0; if(last > (S.saves[id].u||0)) delete S.saves[id]; }
+  if(remote.settings && (remote.settings.u||0) > (S.settings.u||0)) S.settings = Object.assign({}, DEF_SETTINGS, remote.settings);
+}
+async function connectCloud(tries){
+  try{
+    const c = window.claude;
+    if(!c || !c.use){ if((tries||0) < 5) setTimeout(()=>connectCloud((tries||0)+1), 800); return; }
+    const [db, user] = await Promise.all([c.use('db'), c.use('user')]);
+    if(!db || !user) return;
+    const uid = await user.id();
+    if(!uid) return;
+    const ref = db.collection('data/users/' + uid).doc('kakuro');
+    const snap = await ref.get();
+    if(snap.exists){ const d = snap.data(); try{ mergeState(JSON.parse(d.json)); }catch(e){} }
+    cloud = ref;
+    persist(true);
+    document.getElementById('syncNote').textContent = 'Synced to your Claude account, so progress follows you between devices';
+    refreshVisible();
+  }catch(e){}
+}
+
+/* ---------- puzzle model ---------- */
+function parsePuzzle(id){
+  const k = id[0], n = +id.slice(1), col = CM[k];
+  const s = PUZZLES[k][n-1], N = col.size;
+  const white = [], sol = [];
+  for(let i=0;i<N*N;i++){ white.push(s[i] !== '#'); sol.push(s[i]==='#'?0:+s[i]); }
+  const clueA = {}, clueD = {}, runA = new Array(N*N).fill(-1), runD = new Array(N*N).fill(-1), runs = [];
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const i = r*N+c; if(white[i]) continue;
+    if(c+1<N && white[i+1]){ const cells=[]; for(let x=c+1;x<N && white[r*N+x];x++) cells.push(r*N+x); const v = clueVal(cells.map(j=>sol[j]), col.op); const ri = runs.length; runs.push({clue:i, dir:'a', cells, v}); clueA[i]=ri; cells.forEach(j=>runA[j]=ri); }
+    if(r+1<N && white[i+N]){ const cells=[]; for(let y=r+1;y<N && white[y*N+c];y++) cells.push(y*N+c); const v = clueVal(cells.map(j=>sol[j]), col.op); const ri = runs.length; runs.push({clue:i, dir:'d', cells, v}); clueD[i]=ri; cells.forEach(j=>runD[j]=ri); }
+  }
+  return {id, k, n, N, op:col.op, col, white, sol, runs, clueA, clueD, runA, runD};
+}
+function clueVal(ds, op){ return op==='sum' ? ds.reduce((a,b)=>a+b,0) : ds.reduce((a,b)=>a*b,1); }
+const COMBO = {sum:{}, prod:{}};
+for(let m=2;m<1024;m+=2){ const ds=[]; for(let d=1;d<=9;d++) if(m>>d&1) ds.push(d); const L=ds.length; for(const op of ['sum','prod']){ const key=L+':'+clueVal(ds,op); (COMBO[op][key] ||= []).push(ds); } }
+
+/* ---------- game state ---------- */
+let G = null, tick = null, wakeLock = null;
+function startGame(id){
+  const P = parsePuzzle(id), N = P.N;
+  const sv = S.saves[id];
+  G = Object.assign(P, {
+    val: new Array(N*N).fill(0), notes: new Array(N*N).fill(0), bad: new Set(), rev: new Set(),
+    sel: P.white.indexOf(true), notesMode:false, t:0, paused:false, done:false, checks:0, reveals:0, undo:[], warned:false
+  });
+  if(sv){
+    for(let i=0;i<N*N;i++){ G.val[i] = +(sv.v[i]||0) || 0; }
+    if(sv.n) sv.n.split(',').forEach((x,i)=>{ G.notes[i] = x ? parseInt(x,36) : 0; });
+    G.t = sv.t||0; G.checks = sv.c||0; G.reveals = sv.r||0;
+    (sv.rv||[]).forEach(i=>G.rev.add(i));
+    (sv.bd||[]).forEach(i=>G.bad.add(i));
+  }
+  document.getElementById('gTitle').textContent = (P.col.name) + ' · #' + P.n + (todayId()===id ? ' · Daily' : '');
+  show('game');
+  buildBoard(); renderBoard(); renderPad(); updateTimer();
+  setPaused(false);
+  requestWake();
+}
+function saveGame(soon){
+  if(!G || G.done) return;
+  const any = G.val.some((v,i)=>v && !G.rev.has(i)) || G.notes.some(x=>x) || G.t > 3000;
+  if(!any && !S.saves[G.id]) return;
+  S.saves[G.id] = {v:G.val.map(v=>v||0).join(''), n:G.notes.map(x=>x?x.toString(36):'').join(','), t:Math.round(G.t), c:G.checks, r:G.reveals, rv:[...G.rev], bd:[...G.bad], u:Date.now()};
+  persist(soon);
+}
+function setPaused(p){
+  if(!G) return;
+  G.paused = p;
+  document.getElementById('pausedPane').hidden = !p;
+  clearInterval(tick);
+  if(!p && !G.done){
+    let last = performance.now();
+    tick = setInterval(()=>{ const now = performance.now(); G.t += now-last; last = now; updateTimer(); if(Math.floor(G.t/1000)%10===0) saveGame(); }, 250);
+  } else saveGame(true);
+}
+function fmt(ms){ const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor(s/60)%60, x = s%60; return (h? h+':'+String(m).padStart(2,'0') : m) + ':' + String(x).padStart(2,'0'); }
+function updateTimer(){ const el = document.getElementById('gTimer'); el.textContent = S.settings.timer ? fmt(G.t) : ''; }
+async function requestWake(){ try{ if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
+function releaseWake(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; }
+
+/* ---------- board ---------- */
+let cellEls = [];
+function sizeBoard(){
+  if(!G) return;
+  const wrap = document.getElementById('boardwrap');
+  const w = Math.min(wrap.clientWidth - 20, 620), h = wrap.clientHeight - 12;
+  const cs = Math.max(20, Math.floor((Math.min(w,h) - 4 - (G.N-1)) / G.N));
+  const b = document.getElementById('board');
+  b.style.setProperty('--cs', cs+'px');
+  b.style.gridTemplateColumns = `repeat(${G.N}, ${cs}px)`;
+  G.cs = cs;
+  renderBoard();
+}
+function buildBoard(){
+  const b = document.getElementById('board'); b.innerHTML = ''; cellEls = [];
+  for(let i=0;i<G.N*G.N;i++){
+    const d = document.createElement('div');
+    d.className = 'c ' + (G.white[i] ? 'w' : 'k');
+    d.dataset.i = i;
+    b.appendChild(d); cellEls.push(d);
+  }
+  requestAnimationFrame(sizeBoard);
+}
+function runStatus(ri){
+  const run = G.runs[ri]; const ds = run.cells.map(j=>G.val[j]);
+  if(ds.some(x=>!x)) return 'open';
+  if(new Set(ds).size !== ds.length) return 'bad';
+  return clueVal(ds, G.op) === run.v ? 'ok' : 'bad';
+}
+function renderBoard(){
+  if(!G) return;
+  const N = G.N, sel = G.sel, cs = G.cs || 30;
+  const selA = sel>=0 ? G.runA[sel] : -1, selD = sel>=0 ? G.runD[sel] : -1;
+  const runSet = new Set([...(selA>=0?G.runs[selA].cells:[]), ...(selD>=0?G.runs[selD].cells:[])]);
+  const dup = new Set();
+  if(S.settings.dups) for(const run of G.runs){ const seen = {}; for(const j of run.cells){ const v=G.val[j]; if(!v) continue; if(seen[v]!=null){ dup.add(j); dup.add(seen[v]); } else seen[v]=j; } }
+  for(let i=0;i<N*N;i++){
+    const el = cellEls[i]; if(!el) continue;
+    if(!G.white[i]){
+      const a = G.clueA[i], d = G.clueD[i];
+      const has = a!=null || d!=null;
+      el.classList.toggle('has', has);
+      if(!has){ el.innerHTML=''; continue; }
+      const len = Math.max(a!=null?String(G.runs[a].v).length:1, d!=null?String(G.runs[d].v).length:1);
+      const fs = Math.round(cs * (len<=2 ? .36 : len===3 ? .27 : len===4 ? .21 : .18));
+      const cls = (ri)=>{ let c=''; if(ri===selA||ri===selD) c+=' hl'; if(S.settings.sums && runStatus(ri)==='bad') c+=' wrong'; return c; };
+      el.innerHTML = (a!=null?`<span class="a${cls(a)}" style="font-size:${fs}px">${G.runs[a].v}</span>`:'') + (d!=null?`<span class="d${cls(d)}" style="font-size:${fs}px">${G.runs[d].v}</span>`:'');
+      continue;
+    }
+    el.className = 'c w' + (i===sel?' sel':'') + (runSet.has(i)&&i!==sel?' run':'') + (dup.has(i)?' dup':'') + (G.bad.has(i)?' bad':'') + (G.rev.has(i)?' rev':'');
+    const v = G.val[i];
+    if(v) el.innerHTML = `<span class="v">${v}</span>`;
+    else if(G.notes[i]){ let h='<div class="nt">'; for(let d=1;d<=9;d++) h += `<span>${G.notes[i]>>d&1 ? d : ''}</span>`; el.innerHTML = h+'</div>'; }
+    else el.innerHTML = '';
+  }
+  renderHelper();
+}
+function renderHelper(){
+  const el = document.getElementById('helper');
+  if(!G || !S.settings.combos || G.sel<0){ el.innerHTML=''; return; }
+  const parts = [];
+  for(const [ri,lab] of [[G.runA[G.sel],'Across'],[G.runD[G.sel],'Down']]){
+    if(ri<0) continue;
+    const run = G.runs[ri];
+    const placed = run.cells.map(j=>G.val[j]).filter(Boolean);
+    const list = (COMBO[G.op][run.cells.length+':'+run.v]||[]).filter(ds=>placed.every(p=>ds.includes(p)));
+    const shown = list.slice(0,6).map(ds=>ds.join('')).join(' · ') + (list.length>6 ? ` +${list.length-6}` : '');
+    parts.push(`${lab} <b>${run.v}</b> in ${run.cells.length}: ${shown || 'no fit'}`);
+  }
+  el.innerHTML = parts.join('&nbsp;&nbsp;&nbsp;');
+}
+function renderPad(){
+  const pad = document.getElementById('pad');
+  pad.className = 'pad' + (G && G.notesMode ? ' notes' : '');
+  if(!pad.children.length){ for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.textContent=d; b.dataset.d=d; b.setAttribute('aria-label','Digit '+d); pad.appendChild(b); } }
+  document.getElementById('tNotes').classList.toggle('on', !!(G && G.notesMode));
+}
+
+/* ---------- input ---------- */
+function input(d){
+  if(!G || G.done || G.paused) return;
+  const i = G.sel; if(i<0 || !G.white[i] || G.rev.has(i)) return;
+  if(G.notesMode){
+    if(G.val[i]) return;
+    G.undo.push({i, v:G.val[i], n:G.notes[i]});
+    G.notes[i] ^= (1<<d);
+  } else {
+    const prevNotes = [];
+    G.undo.push({i, v:G.val[i], n:G.notes[i], extra:prevNotes});
+    G.val[i] = G.val[i]===d ? 0 : d;
+    G.bad.delete(i);
+    if(G.val[i] && S.settings.autoNotes){
+      for(const ri of [G.runA[i], G.runD[i]]) if(ri>=0) for(const j of G.runs[ri].cells){ if(j!==i && (G.notes[j]>>d&1)){ prevNotes.push([j,G.notes[j]]); G.notes[j] &= ~(1<<d); } }
+    }
+  }
+  renderBoard(); saveGame(); checkComplete();
+}
+function erase(){
+  if(!G || G.done || G.paused) return;
+  const i = G.sel; if(i<0 || G.rev.has(i)) return;
+  if(!G.val[i] && !G.notes[i]) return;
+  G.undo.push({i, v:G.val[i], n:G.notes[i]});
+  if(G.val[i]) G.val[i]=0; else G.notes[i]=0;
+  G.bad.delete(i); renderBoard(); saveGame();
+}
+function undo(){
+  if(!G || G.done || G.paused) return;
+  const u = G.undo.pop(); if(!u){ toast('Nothing to undo'); return; }
+  if(G.rev.has(u.i)) return;
+  G.val[u.i]=u.v; G.notes[u.i]=u.n; (u.extra||[]).forEach(([j,n])=>G.notes[j]=n);
+  G.sel = u.i; G.bad.delete(u.i); renderBoard(); saveGame();
+}
+function move(dr,dc){
+  if(!G) return;
+  let r = Math.floor(G.sel/G.N), c = G.sel%G.N;
+  for(let k=0;k<G.N;k++){ r=(r+dr+G.N)%G.N; c=(c+dc+G.N)%G.N; if(G.white[r*G.N+c]){ G.sel=r*G.N+c; renderBoard(); return; } }
+}
+function checkCell(){
+  if(!G || G.done) return;
+  const i = G.sel; if(i<0 || !G.white[i]) return;
+  if(!G.val[i]){ toast('Enter a number in this square first'); return; }
+  G.checks++;
+  if(G.val[i] !== G.sol[i]){ G.bad.add(i); toast('That number is wrong'); }
+  else { cellEls[i].classList.remove('flash'); void cellEls[i].offsetWidth; cellEls[i].classList.add('flash'); toast('That one is right'); }
+  renderBoard(); saveGame();
+}
+function checkGrid(){
+  if(!G || G.done) return;
+  G.checks++; let wrong = 0, filled = 0;
+  G.white.forEach((w,i)=>{ if(w && G.val[i]){ filled++; if(G.val[i]!==G.sol[i]){ G.bad.add(i); wrong++; } } });
+  toast(!filled ? 'The grid is empty so far' : wrong ? `${wrong} wrong ${wrong===1?'square':'squares'} marked` : 'Everything you have entered is correct');
+  renderBoard(); saveGame();
+}
+function revealCell(){
+  if(!G || G.done) return;
+  const i = G.sel; if(i<0 || !G.white[i]) return;
+  G.reveals++; G.val[i] = G.sol[i]; G.notes[i]=0; G.rev.add(i); G.bad.delete(i);
+  renderBoard(); saveGame(); checkComplete();
+}
+function revealAll(){
+  if(!G || G.done) return;
+  G.reveals++;
+  G.white.forEach((w,i)=>{ if(w && G.val[i]!==G.sol[i]){ G.val[i]=G.sol[i]; G.rev.add(i); } });
+  G.bad.clear(); renderBoard(); finish(true);
+}
+function resetGame(){
+  const id = G.id; delete S.saves[id]; persist(true); startGame(id);
+}
+function checkComplete(){
+  const all = G.white.every((w,i)=>!w || G.val[i]);
+  if(!all){ G.warned=false; return; }
+  if(G.white.every((w,i)=>!w || G.val[i]===G.sol[i])) finish(false);
+  else if(!G.warned){ G.warned = true; toast('Grid full, but some numbers are wrong'); }
+}
+
+/* ---------- finishing ---------- */
+function localDay(t){ const d = new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function finish(gaveUp){
+  G.done = true; clearInterval(tick); releaseWake();
+  const id = G.id, t = Math.round(G.t), clean = !G.checks && !G.reveals, now = Date.now();
+  delete S.saves[id];
+  let pb = false, prevBest = null;
+  if(!gaveUp){
+    const L = S.stats.levels[id] ||= {solves:0, best:null, bestD:null, bestClean:null, times:[]};
+    prevBest = L.best;
+    if(L.best==null || t < L.best){ pb = L.best!=null; L.best = t; L.bestD = now; }
+    if(clean && (L.bestClean==null || t < L.bestClean)) L.bestClean = t;
+    L.solves++; L.times.push({t, d:now, clean}); L.times = L.times.slice(-10);
+    const day = localDay(now); S.stats.days[day] = (S.stats.days[day]||0)+1;
+    S.stats.log.push({id, t, d:now, clean, pb, first: prevBest==null}); S.stats.log = S.stats.log.slice(-150);
+  }
+  persist(true);
+  renderBoard();
+  setTimeout(()=>showWin(gaveUp, t, clean, pb, prevBest), gaveUp ? 300 : 500);
+}
+function nextId(id){ const k=id[0], n=+id.slice(1); const tot = PUZZLES[k].length;
+  for(let j=1;j<=tot;j++){ const m = ((n-1+j)%tot)+1; const cid = k+m; if(!S.stats.levels[cid]) return cid; } return k+((n%tot)+1); }
+function showWin(gaveUp, t, clean, pb, prevBest){
+  const L = S.stats.levels[G.id];
+  let badge = '';
+  if(gaveUp) badge = '<div class="sub">Solution revealed. This one isn\'t counted as solved.</div>';
+  else if(pb) badge = `<span class="pb">New personal best</span><div class="sub">Previous best ${fmt(prevBest)}</div>`;
+  else if(prevBest==null) badge = `<span class="pb">First solve</span>`;
+  else badge = `<div class="sub">Your best is ${fmt(L.best)} · solved ${L.solves} times</div>`;
+  const cleanNote = gaveUp ? '' : clean ? '<div class="sub">Clean solve, no checks or reveals</div>' : `<div class="sub">Assisted: ${G.checks} ${G.checks===1?'check':'checks'}, ${G.reveals} ${G.reveals===1?'reveal':'reveals'}</div>`;
+  openSheet(`<div class="win sheet-inner" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div class="eyebrow">${G.col.name} · #${G.n}</div>
+    ${gaveUp ? '<h3>Revealed</h3>' : `<div class="big">${fmt(t)}</div>`}
+    ${badge}${cleanNote}
+    <div class="btns" style="width:100%"><button class="btn" data-act="list">All puzzles</button><button class="btn primary" data-act="next">Next puzzle</button></div>
+  </div>`, (act)=>{ closeSheet(); if(act==='next') startGame(nextId(G.id)); else if(act==='list'){ openLevels(G.k); } });
+}
+
+/* ---------- daily ---------- */
+function todayKey(){ return localDay(Date.now()); }
+function todayId(){
+  const d = new Date(); const dow = d.getDay(); // 0 Sun
+  const k = dow===0 ? 'x' : dow<=2 ? 'e' : dow<=4 ? 'm' : 'h';
+  const key = todayKey(); let h = 2166136261; for(const ch of key){ h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  return k + ((h>>>0) % PUZZLES[k].length + 1);
+}
+
+/* ---------- views ---------- */
+let current = 'home', backStack = [];
+function show(v){
+  document.querySelectorAll('.view').forEach(el=>el.hidden = el.id!==v);
+  if(v!==current){ if(current!=='game' && backStack[backStack.length-1]!==current) backStack.push(current); current = v; }
+  if(v!=='game' && G && !G.done){ clearInterval(tick); saveGame(true); releaseWake(); }
+}
+function goBack(){
+  let v = backStack.pop() || 'home'; while(v===current && backStack.length) v = backStack.pop(); if(v===current) v='home';
+  current = v; document.querySelectorAll('.view').forEach(el=>el.hidden = el.id!==v);
+  if(v!=='game' && G && !G.done){ clearInterval(tick); saveGame(true); }
+  refreshVisible();
+}
+function goHome(){ backStack=[]; current='home'; document.querySelectorAll('.view').forEach(el=>el.hidden = el.id!=='home'); renderHome(); }
+function refreshVisible(){
+  if(current==='home') renderHome();
+  else if(current==='levels') renderLevels();
+  else if(current==='stats') renderStats();
+  else if(current==='settings') renderSettings();
+}
+function collStats(k){
+  const tot = PUZZLES[k].length; let solved = 0, best = null;
+  for(let n=1;n<=tot;n++){ const L = S.stats.levels[k+n]; if(L && L.solves){ solved++; if(best==null || L.best<best.t) best = {t:L.best, n}; } }
+  return {tot, solved, best};
+}
+function renderHome(){
+  // continue
+  const ids = Object.keys(S.saves).filter(id=>PUZZLES[id[0]] && PUZZLES[id[0]][+id.slice(1)-1]).sort((a,b)=>S.saves[b].u-S.saves[a].u);
+  const cs = document.getElementById('continueSlot');
+  if(ids.length){
+    const id = ids[0], sv = S.saves[id], P = parsePuzzle(id);
+    const whites = P.white.filter(Boolean).length, filled = [...sv.v].filter((ch,i)=>P.white[i] && ch!=='0').length;
+    cs.innerHTML = `<button class="card feature" data-play="${id}"><div class="txt"><span class="eyebrow">Continue</span><h3>${P.col.name} · #${P.n}</h3><span class="meta num">${Math.round(filled/whites*100)}% filled · ${fmt(sv.t)}</span></div><span class="go">Resume</span></button>`;
+  } else cs.innerHTML = '';
+  // today
+  const tid = todayId(), tp = parsePuzzle(tid), L = S.stats.levels[tid];
+  const doneToday = L && L.times.some(x=>localDay(x.d)===todayKey());
+  const d = new Date();
+  document.getElementById('todaySlot').innerHTML = `<button class="card feature" data-play="${tid}"><div class="today-badge"><b>${d.getDate()}</b><small>${d.toLocaleDateString(undefined,{month:'short'})}</small></div><div class="txt"><span class="eyebrow">Today's puzzle</span><h3>${tp.col.name} · #${tp.n}</h3><span class="meta">${doneToday ? 'Solved today in '+fmt(L.times.filter(x=>localDay(x.d)===todayKey()).slice(-1)[0].t) : d.toLocaleDateString(undefined,{weekday:'long'})+"'s grid, "+tp.N+'×'+tp.N}</span></div><span class="go">${doneToday?'Replay':S.saves[tid]?'Resume':'Play'}</span></button>`;
+  // collections
+  document.getElementById('colls').innerHTML = COLLS.map(c=>{
+    const st = collStats(c.k);
+    return `<button class="coll ${c.op==='prod'?'prod':''}" data-coll="${c.k}"><span class="sz">${c.op==='prod'?'×':''}${c.size}</span><h3>${c.name}</h3><span class="right"><b class="num">${st.solved}/${st.tot}</b>${st.best?'Best '+fmt(st.best.t):c.desc}</span><div class="bar"><i style="width:${st.solved/st.tot*100}%"></i></div></button>`;
+  }).join('');
+}
+let lvColl = 'm';
+function openLevels(k){ lvColl = k; show('levels'); renderLevels(); }
+function renderLevels(){
+  const c = CM[lvColl]; document.getElementById('lvTitle').textContent = `${c.name} · ${c.size}×${c.size}${c.op==='prod'?' products':''}`;
+  const tot = PUZZLES[lvColl].length; let h = '';
+  for(let n=1;n<=tot;n++){
+    const id = lvColl+n, L = S.stats.levels[id], sv = S.saves[id];
+    const cls = L && L.solves ? 'done' : sv ? 'prog' : '';
+    h += `<button class="lv ${cls}" data-play="${id}" aria-label="Puzzle ${n}${L?' solved, best '+fmt(L.best):''}"><b>${n}</b>${L&&L.solves?`<small>${fmt(L.best)}</small>`:sv?`<small>${fmt(sv.t)}</small>`:''}${L&&L.bestClean!=null&&L.bestClean===L.best?'<span class="star" aria-hidden="true">★</span>':''}</button>`;
+  }
+  document.getElementById('lvGrid').innerHTML = h;
+}
+function streaks(){
+  const days = Object.keys(S.stats.days).filter(d=>S.stats.days[d]>0).sort();
+  if(!days.length) return {cur:0, best:0};
+  const toN = (s)=>{ const [y,m,d]=s.split('-').map(Number); return Math.round(Date.UTC(y,m-1,d)/864e5); };
+  const ns = days.map(toN); let best=1, run=1;
+  for(let i=1;i<ns.length;i++){ run = ns[i]===ns[i-1]+1 ? run+1 : 1; best = Math.max(best,run); }
+  const today = toN(todayKey()); const last = ns[ns.length-1];
+  let cur = 0; if(last===today || last===today-1){ cur=1; for(let i=ns.length-1;i>0 && ns[i]===ns[i-1]+1;i--) cur++; }
+  return {cur, best};
+}
+function spark(times){
+  if(times.length<2) return '';
+  const w=70,h=22, max=Math.max(...times), min=Math.min(...times), span=max-min||1;
+  const pts = times.map((t,i)=>[ (i/(times.length-1))*(w-4)+2, h-3-((t-min)/span)*(h-6) ]);
+  const last = pts[pts.length-1];
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="var(--accent)"/></svg>`;
+}
+function renderStats(){
+  const levels = S.stats.levels; let solved=0, solves=0, clean=0;
+  for(const id in levels){ const L=levels[id]; if(L.solves){ solved++; solves+=L.solves; clean += L.times.filter(x=>x.clean).length; } }
+  const totalTimes = Object.values(levels).reduce((a,L)=>a+L.times.length,0);
+  const st = streaks();
+  let rows = '';
+  for(const c of COLLS){
+    const cs = collStats(c.k);
+    const ts = (S.stats.log||[]).filter(e=>e.id[0]===c.k).map(e=>e.t);
+    const avg = ts.length ? ts.reduce((a,b)=>a+b,0)/ts.length : null;
+    rows += `<tr><td><b>${c.name}</b></td><td>${cs.solved}/${cs.tot}</td><td>${avg!=null?fmt(avg):'–'}</td><td>${cs.best?fmt(cs.best.t)+' <small style="color:var(--muted)">#'+cs.best.n+'</small>':'–'}</td><td>${spark(ts.slice(-12))}</td></tr>`;
+  }
+  const log = (S.stats.log||[]).slice(-15).reverse();
+  const recent = log.length ? log.map(e=>{ const c=CM[e.id[0]]; const dt=new Date(e.d); return `<div class="r"><div class="grow"><b>${c.name} #${e.id.slice(1)}</b><br><small>${dt.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})}, ${dt.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}</small></div>${e.pb?'<span class="chip">New best</span>':''}${!e.clean?'<span class="chip assist">Assisted</span>':''}<b class="num">${fmt(e.t)}</b></div>`; }).join('') : '<div class="empty">Solve a puzzle and it will show up here with its time.</div>';
+  // fastest grids overall (personal records, quickest first within each collection is above); show top 5 by improvement
+  document.getElementById('statsBody').innerHTML = `
+    <div class="tiles">
+      <div class="tile"><b>${solved}</b><span>Puzzles solved of 200</span></div>
+      <div class="tile"><b>${st.cur}</b><span>Day streak · longest ${st.best}</span></div>
+      <div class="tile"><b>${solves}</b><span>Total solves, replays included</span></div>
+      <div class="tile"><b>${totalTimes?Math.round(clean/totalTimes*100)+'%':'–'}</b><span>Clean solves, no checks</span></div>
+    </div>
+    <div class="eyebrow">By collection</div>
+    <div class="tablewrap"><table><thead><tr><th>Grid</th><th>Solved</th><th>Average</th><th>Fastest</th><th>Recent</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="eyebrow">Recent solves</div>
+    <div class="recent">${recent}</div>`;
+}
+function renderSettings(){
+  const s = S.settings;
+  const opts = [
+    ['timer','Show timer','The clock still runs for your stats when hidden'],
+    ['dups','Highlight repeated digits','Shows a digit in red when it repeats within a run'],
+    ['sums','Flag wrong totals','Strikes through a clue when its run is full but adds up wrong'],
+    ['combos','Show combinations','Lists the digit sets that fit the selected square\'s clues'],
+    ['autoNotes','Tidy notes automatically','Placing a digit removes it from notes in the same runs']
+  ];
+  document.getElementById('settingsBody').innerHTML = `<div class="card" style="padding:6px 12px;gap:0">${opts.map(([k,t,d])=>`<button class="row sheet-row" data-set="${k}" style="display:flex;align-items:center;gap:12px;padding:14px 2px;text-align:left;width:100%"><span class="grow" style="flex:1;min-width:0"><b>${t}</b><br><small style="color:var(--muted);font-size:13px">${d}</small></span><span class="switch ${s[k]?'on':''}" role="switch" aria-checked="${!!s[k]}"></span></button>`).join('')}</div>
+  <div class="card" style="gap:6px"><b>Your data</b><span style="font-size:14px;color:var(--muted)">Progress and stats are saved on this phone. Use Back up on the Stoneley Games home screen to keep a copy.</span><button class="btn warn" id="resetStats" style="margin-top:6px">Reset all stats and progress</button></div>`;
+}
+
+/* ---------- sheets ---------- */
+let sheetCb = null;
+function openSheet(html, cb){
+  sheetCb = cb;
+  document.getElementById('overlay').innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog">${html}</div></div>`;
+}
+function closeSheet(){ document.getElementById('overlay').innerHTML=''; sheetCb=null; }
+document.getElementById('overlay').addEventListener('click', e=>{
+  if(e.target.id==='scrim'){ if(G && G.done) return; closeSheet(); return; }
+  const b = e.target.closest('[data-act]'); if(b && sheetCb) sheetCb(b.dataset.act);
+});
+function moreSheet(){
+  openSheet(`<h3>Puzzle tools</h3>
+    <button class="row" data-act="checkCell"><span class="grow">Check this square<small>Marks it if wrong</small></span></button>
+    <button class="row" data-act="checkGrid"><span class="grow">Check the whole grid<small>Marks every wrong square you've entered</small></span></button>
+    <button class="row" data-act="revealCell"><span class="grow">Reveal this square<small>Fills in the right digit</small></span></button>
+    <button class="row" data-act="revealAll"><span class="grow">Reveal the solution<small>Ends the puzzle without counting a solve</small></span></button>
+    <button class="row danger" data-act="reset"><span class="grow">Start over<small>Clears the grid and the clock</small></span></button>
+    <p class="note">Checks and reveals mark a solve as assisted.</p>`, (act)=>{
+      if(act==='reset' || act==='revealAll'){ confirmSheet(act); return; }
+      closeSheet();
+      ({checkCell, checkGrid, revealCell})[act]();
+    });
+}
+function confirmSheet(act){
+  const txt = act==='reset' ? ['Start this puzzle over?','Your entries, notes and time on this grid will be cleared.','Start over'] : ['Reveal the whole solution?','The puzzle ends and won\'t count as solved.','Reveal'];
+  openSheet(`<h3>${txt[0]}</h3><p class="note" style="font-size:15px">${txt[1]}</p><div class="btns"><button class="btn" data-act="no">Cancel</button><button class="btn warn" data-act="yes">${txt[2]}</button></div>`, (a)=>{
+    closeSheet(); if(a==='yes'){ act==='reset' ? resetGame() : revealAll(); }
+  });
+}
+let toastT = null;
+function toast(msg){
+  let el = document.querySelector('.toast'); if(!el){ el = document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); document.body.appendChild(el); }
+  el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>{ el.hidden = true; }, 1800);
+}
+
+/* ---------- wiring ---------- */
+document.addEventListener('click', e=>{
+  const p = e.target.closest('[data-play]'); if(p){ startGame(p.dataset.play); return; }
+  const c = e.target.closest('[data-coll]'); if(c){ openLevels(c.dataset.coll); return; }
+  if(e.target.closest('[data-back]')){ goBack(); return; }
+  const st = e.target.closest('[data-set]'); if(st){ const k=st.dataset.set; S.settings[k]=!S.settings[k]; S.settings.u=Date.now(); persist(true); renderSettings(); return; }
+  if(e.target.id==='resetStats'){ openSheet(`<h3>Reset everything?</h3><p class="note" style="font-size:15px">All solve times, best times, streaks and games in progress will be deleted. This can't be undone.</p><div class="btns"><button class="btn" data-act="no">Cancel</button><button class="btn warn" data-act="yes">Reset</button></div>`, a=>{ closeSheet(); if(a==='yes'){ S.stats={levels:{},days:{},log:[]}; S.saves={}; persist(true); renderSettings(); toast('Stats reset'); } }); }
+});
+document.getElementById('navStats').onclick = ()=>{ show('stats'); renderStats(); };
+document.getElementById('navSettings').onclick = ()=>{ show('settings'); renderSettings(); };
+document.getElementById('navHelp').onclick = ()=>show('help');
+document.getElementById('gBack').onclick = ()=>{ if(G && !G.done) saveGame(true); goBack(); };
+document.getElementById('gPause').onclick = ()=>{ if(G && !G.done) setPaused(!G.paused); };
+document.getElementById('gResume').onclick = ()=>setPaused(false);
+document.getElementById('board').addEventListener('pointerdown', e=>{
+  const el = e.target.closest('.c.w'); if(!el || !G || G.paused) return;
+  G.sel = +el.dataset.i; renderBoard();
+});
+document.getElementById('pad').addEventListener('click', e=>{ const b=e.target.closest('[data-d]'); if(b) input(+b.dataset.d); });
+document.getElementById('tNotes').onclick = ()=>{ if(!G) return; G.notesMode=!G.notesMode; renderPad(); };
+document.getElementById('tErase').onclick = erase;
+document.getElementById('tUndo').onclick = undo;
+document.getElementById('tCheck').onclick = checkCell;
+document.getElementById('tMore').onclick = ()=>{ if(G && !G.done) moreSheet(); };
+document.addEventListener('keydown', e=>{
+  if(current!=='game' || !G || document.getElementById('overlay').innerHTML) return;
+  if(/^[1-9]$/.test(e.key)){ input(+e.key); e.preventDefault(); }
+  else if(e.key==='Backspace'||e.key==='Delete'||e.key==='0'){ erase(); e.preventDefault(); }
+  else if(e.key==='ArrowUp'){ move(-1,0); e.preventDefault(); }
+  else if(e.key==='ArrowDown'){ move(1,0); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'){ move(0,-1); e.preventDefault(); }
+  else if(e.key==='ArrowRight'){ move(0,1); e.preventDefault(); }
+  else if(e.key==='n'||e.key==='N'){ G.notesMode=!G.notesMode; renderPad(); }
+  else if((e.ctrlKey||e.metaKey) && e.key==='z'){ undo(); e.preventDefault(); }
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ if(current==='game' && G && !G.done && !G.paused) setPaused(true); if(cloud){ clearTimeout(cloudTimer); pushCloud(); } }
+});
+window.addEventListener('resize', ()=>sizeBoard());
+
+renderHome();
+/* Stoneley Games shell: the phone's back button. Returning false goes back to the games list. */
+window.SG_BACK=()=>{
+  if(document.getElementById('overlay').innerHTML){ if(G && G.done) return true; closeSheet(); return true; }
+  if(current==='home') return false;
+  if(current==='game'){ if(G && !G.done) saveGame(true); }
+  goBack(); return true;
+};
+</script>
+<script src="../../shell.js"></script>
+
+</body></html>

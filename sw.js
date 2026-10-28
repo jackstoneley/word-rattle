@@ -1,6 +1,12 @@
-/* Word Rattle offline support: keeps the game on the phone so it opens with no connection. */
-const CACHE = "wordrattle-v7";
-const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable.png", "./apple-touch-icon.png"];
+/* Stoneley Games offline support for the website: keeps the home page and every game on the phone
+   so they open with no connection. tools/build.py rewrites VERSION whenever a game changes. */
+const VERSION = "ad7019fd66";
+const CACHE = "stoneley-games-" + VERSION;
+const CORE = [
+  "./", "./index.html", "./shell.js", "./manifest.webmanifest",
+  "./icon-192.png", "./icon-512.png", "./icon-maskable.png", "./apple-touch-icon.png",
+  "./games/word-rattle/index.html", "./games/cross-sums/index.html", "./games/gem-bastion/index.html"
+];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
@@ -12,12 +18,17 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (req.mode === "navigate" || url.origin === location.origin) { e.respondWith(networkFirst(req)); return; }
+  if (url.origin === location.origin) { e.respondWith(networkFirst(req)); return; }
   if (/(^|\.)(fonts\.googleapis\.com|fonts\.gstatic\.com|unpkg\.com)$/.test(url.hostname)) e.respondWith(cacheFirst(req));
 });
+function cacheKey(req) {
+  const u = new URL(req.url);
+  u.hash = ""; u.search = "";
+  if (u.pathname.endsWith("/")) u.pathname += "index.html";
+  return u.href;
+}
 async function networkFirst(req) {
-  const c = await caches.open(CACHE);
-  const key = req.mode === "navigate" ? "./index.html" : req;
+  const c = await caches.open(CACHE), key = cacheKey(req);
   try {
     const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 5000);
     const res = await fetch(req, { signal: ctrl.signal });
@@ -25,8 +36,7 @@ async function networkFirst(req) {
     if (res.ok) c.put(key, res.clone());
     return res;
   } catch (err) {
-    const hit = await c.match(key, { ignoreSearch: true });
-    return hit || Response.error();
+    return (await c.match(key)) || (await c.match(req, { ignoreSearch: true })) || Response.error();
   }
 }
 async function cacheFirst(req) {

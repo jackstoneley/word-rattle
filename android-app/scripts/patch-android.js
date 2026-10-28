@@ -1,4 +1,5 @@
-// Adds Word Rattle's native plugin, permissions, link handling, icons, splash and signing to the generated Android project.
+// Adds Stoneley Games' native plugin, update installer, permissions, link handling, icons, splash and signing
+// to the Android project that `npx cap add android` generates.
 const fs = require("fs"), path = require("path");
 const app = path.resolve(__dirname, ".."), droid = path.join(app, "android", "app");
 const res = path.join(droid, "src", "main", "res");
@@ -10,6 +11,9 @@ const code = parseInt(process.env.VERSION_CODE || "1", 10);
 const pkgDir = path.join(droid, "src", "main", "java", "com", "jackstoneley", "wordrattle");
 fs.mkdirSync(pkgDir, { recursive: true });
 fs.copyFileSync(path.join(app, "native", "WordRattlePlugin.java"), path.join(pkgDir, "WordRattlePlugin.java"));
+fs.copyFileSync(path.join(app, "native", "UpdateFileProvider.java"), path.join(pkgDir, "UpdateFileProvider.java"));
+fs.mkdirSync(path.join(res, "xml"), { recursive: true });
+fs.copyFileSync(path.join(app, "native", "update_paths.xml"), path.join(res, "xml", "update_paths.xml"));
 fs.writeFileSync(path.join(pkgDir, "MainActivity.java"), `package com.jackstoneley.wordrattle;
 
 import android.os.Bundle;
@@ -54,7 +58,8 @@ edit(path.join(droid, "src", "main", "AndroidManifest.xml"), s => {
     '<uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />',
     '<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />',
     '<uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />',
-    '<uses-permission android:name="android.permission.VIBRATE" />'
+    '<uses-permission android:name="android.permission.VIBRATE" />',
+    '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />'
   ].join("\n    ");
   s = s.replace("<application", perms + "\n\n    <application");
   s = s.replace(/android:name="\.MainActivity"/, 'android:name=".MainActivity"\n            android:screenOrientation="portrait"');
@@ -66,6 +71,14 @@ edit(path.join(droid, "src", "main", "AndroidManifest.xml"), s => {
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="jackstoneley.github.io" android:pathPrefix="/word-rattle" />
             </intent-filter>`);
+  s = s.replace("</application>", `    <provider
+            android:name=".UpdateFileProvider"
+            android:authorities="\${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_paths" />
+        </provider>
+    </application>`);
   return s;
 });
 
