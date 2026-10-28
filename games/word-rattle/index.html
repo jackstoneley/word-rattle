@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#1F3A93">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Word Rattle">
-<title>Word Rattle</title>
+<meta name="apple-mobile-web-app-title" content="Boggle">
+<title>Boggle</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -251,7 +251,7 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
 <!-- HOME -->
 <section class="screen" id="home">
   <a class="sg-home" href="../../index.html">← All games</a>
-  <div class="logo" aria-label="Word Rattle"><div class="logo-row" id="logo1"></div><div class="logo-row" id="logo2"></div></div>
+  <div class="logo" aria-label="Boggle"><div class="logo-row" id="logo1"></div><div class="logo-row" id="logo2"></div></div>
   <div class="notice" id="note" hidden></div>
 
   <div class="daily" id="dailyCard"></div>
@@ -342,7 +342,7 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
   <span class="label" id="liveKind">Live game code</span>
   <div class="bigcode" id="liveCode">----</div>
   <div class="row nowrap" id="liveShare"><button class="btn block" id="liveInvite">Send invite</button><button class="btn block" id="liveCopy">Copy code</button></div>
-  <p class="muted small" id="liveNearbyHint" hidden>Others open Word Rattle and tap Find nearby games. Keep Bluetooth on and stay within a few metres.</p>
+  <p class="muted small" id="liveNearbyHint" hidden>Others open Boggle and tap Find nearby games. Keep Bluetooth on and stay within a few metres.</p>
   <div class="card list" id="nearbyList" hidden></div>
   <div class="card" id="livePlayersCard"><h2 id="livePlayersTitle">Players</h2><div class="list" id="livePlayers"></div></div>
   <div class="field" id="liveBoard"><span class="label">Board</span><div class="chips" id="liveChips"></div><div class="legend" id="liveLegend"></div></div>
@@ -171014,14 +171014,14 @@ function flash(btn,txt){const o=btn.dataset.label||btn.textContent;btn.dataset.l
 async function copyText(text,btn){try{if(NATIVE)await NATIVE.copy({text});else await navigator.clipboard.writeText(text);flash(btn,"Copied")}catch(e){window.prompt("Copy this",text)}}
 async function shareOrCopy(text,url,btn){
   if(NATIVE){try{await NATIVE.share({text:text+" "+url});return}catch(e){}}
-  if(navigator.share){try{await navigator.share({title:"Word Rattle",text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
+  if(navigator.share){try{await navigator.share({title:"Boggle",text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
   copyText(text+" "+url,btn);
 }
 function needName(inputId){if(myName())return false;const i=$(inputId);i.focus();i.placeholder="Add your name first";return true}
 function sendSync(btn,inputId,toName){
   if(needName(inputId))return;
   const n=getHistory().length;
-  shareOrCopy(`Word Rattle sync from ${myName()}: ${n} game${n===1?"":"s"}${toName?"":""}. Open it to see my boards to beat, then send yours back.`,buildSync(),btn);
+  shareOrCopy(`Boggle sync from ${myName()}: ${n} game${n===1?"":"s"}${toName?"":""}. Open it to see my boards to beat, then send yours back.`,buildSync(),btn);
 }
 function chipsFor(s){const a=[`${s.size}×${s.size}`,timeLabel(s.time),`${s.minLen}+ letters`,s.scoring==="letters"?"Letter points":"Word length scoring"];
   if(s.pmask)a.push(`Power-ups: ${PTYPES.filter((t,i)=>s.pmask&(1<<i)).join(" ")} · ${AMOUNTS[s.amount]}`);
@@ -171033,7 +171033,7 @@ const ago=t=>{const s=(Date.now()-t)/1000;return s<90?"just now":s<3600?`${Math.
 const dateOf=at=>new Date(at).toLocaleDateString(undefined,{day:"numeric",month:"short"});
 
 /* ================= logo ================= */
-[["W","O","R","D"],["R","A","T","T","L","E"]].forEach((w,ri)=>w.forEach((c,i)=>{const d=el("div","ldie",c);d.style.animationDelay=(ri*4+i)*45+"ms";$(ri?"logo2":"logo1").append(d)}));
+[["B","O","G","G","L","E"]].forEach((w,ri)=>w.forEach((c,i)=>{const d=el("div","ldie",c);d.style.animationDelay=(ri*4+i)*45+"ms";$(ri?"logo2":"logo1").append(d)}));
 
 /* ================= settings ================= */
 const S=Object.assign({size:4,time:180,minLen:3,cancel:true,scoring:"classic",pmask:0,amount:1,turn:true},loadJSON("wr.settings",{}));
@@ -171107,7 +171107,7 @@ function handleCode(text){
   const sd=parseSeed(part);if(sd){showReady(sd.seed);return true}
   return false;
 }
-$("seedGo").onclick=()=>{note("");if(!handleCode($("seedIn").value)){note("That isn't a seed or a Word Rattle link. Seeds are 8 characters, like K7QX-9M2P.");$("seedIn").focus()}else $("seedIn").value=""};
+$("seedGo").onclick=()=>{note("");if(!handleCode($("seedIn").value)){note("That isn't a seed or a Boggle link. Seeds are 8 characters, like K7QX-9M2P.");$("seedIn").focus()}else $("seedIn").value=""};
 $("seedIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("seedGo").onclick()});
 $("createBtn").onclick=()=>{note("");showReady(makeSeed(S))};
 $("homeSync").onclick=e=>sendSync(e.currentTarget,"nameIn");
@@ -171147,7 +171147,7 @@ function showReady(seed){
 $("readyBack").onclick=()=>showHome();
 $("seeRes").onclick=()=>showResults(readySeed);
 $("copySeed").onclick=e=>copyText(fmtSeed(readySeed),e.currentTarget);
-$("shareSeed").onclick=e=>{const g=getGame(readySeed);shareOrCopy(`Play my Word Rattle board. Seed ${fmtSeed(g.seed)} (${rulesShort(g.s)}).`,baseURL()+"#"+g.seed,e.currentTarget)};
+$("shareSeed").onclick=e=>{const g=getGame(readySeed);shareOrCopy(`Play my Boggle board. Seed ${fmtSeed(g.seed)} (${rulesShort(g.s)}).`,baseURL()+"#"+g.seed,e.currentTarget)};
 $("startBtn").onclick=()=>{const g=getGame(readySeed);if(g.s.turn)enableMotion();const cur={seed:readySeed,startAt:Date.now()+3200,words:[],times:{}};saveJSON("wr.current",cur);enterPlay(cur)};
 
 /* ================= play ================= */
@@ -171652,7 +171652,7 @@ $("joinLive").onclick=()=>{const c=$("liveIn").value.trim().toUpperCase();if(!/^
 $("liveIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("joinLive").onclick()});
 $("liveLeave").onclick=()=>{leaveLive();showHome()};
 $("liveStart").onclick=()=>{enableMotion();if(!LIVE)return;if(LIVE.host)hostStartLive();else liveSend({t:"start"})};
-$("liveInvite").onclick=e=>shareOrCopy(`Join my live Word Rattle game. Code ${LIVE.code}.`,baseURL()+"#live."+LIVE.code,e.currentTarget);
+$("liveInvite").onclick=e=>shareOrCopy(`Join my live Boggle game. Code ${LIVE.code}.`,baseURL()+"#live."+LIVE.code,e.currentTarget);
 $("liveCopy").onclick=e=>copyText(LIVE.code,e.currentTarget);
 function playAgainLive(btn){if(!LIVE)return;if(LIVE.host)hostAgainLive();else{liveSend({t:"again"});btn.textContent="Waiting for the host…"}}
 $("cmpAgain").onclick=e=>playAgainLive(e.currentTarget);

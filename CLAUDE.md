@@ -2,6 +2,15 @@
 
 A home page plus three self-contained HTML games, published two ways:
 
+| Name on screen | Folder / code name | Saved-data prefix |
+| --- | --- | --- |
+| Boggle | `games/word-rattle` (Word Rattle) | `wr.` |
+| Kakuro | `games/cross-sums` (Cross Sums) | `kk.` |
+| Gem Tower Defence | `games/gem-bastion` (Gem Bastion) | `gembastion.` |
+
+The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
+changed: renaming them would break saved games and old links.
+
 - **Website** (GitHub Pages, from the `main` branch root): https://jackstoneley.github.io/word-rattle/
 - **Android app** (Capacitor wrapper), built by GitHub Actions on every push and published to the
   `latest` GitHub release. The app's **Check for updates** button installs new builds itself.

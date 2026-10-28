@@ -1,7 +1,7 @@
 {
   "name": "Stoneley Games",
   "short_name": "Stoneley Games",
-  "description": "Word Rattle, Cross Sums and Gem Bastion in one place.",
+  "description": "Boggle, Kakuro and Gem Tower Defence in one place.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
