@@ -1,5 +1,5 @@
 /* Word Rattle offline support: keeps the game on the phone so it opens with no connection. */
-const CACHE = "wordrattle-v4";
+const CACHE = "wordrattle-v5";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
