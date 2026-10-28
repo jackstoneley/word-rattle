@@ -1,0 +1,65 @@
+name: Android app
+
+on:
+  push:
+    branches: [main]
+    paths: ["index.html", "android-app/**", ".github/workflows/android.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare web files
+        run: node scripts/prepare-www.js
+
+      - name: Create Android project
+        run: npx cap add android
+
+      - name: Add Word Rattle native features
+        run: node scripts/patch-android.js
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+
+      - name: Sync
+        run: npx cap sync android
+
+      - name: Build APK
+        working-directory: android-app/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Publish to the "latest" release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android-app/android/app/build/outputs/apk/debug/app-debug.apk word-rattle.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest word-rattle.apk \
+            --title "Word Rattle for Android (build ${{ github.run_number }})" \
+            --notes "On your phone, download word-rattle.apk and open it to install or update." \
+            --latest

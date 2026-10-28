@@ -259,6 +259,11 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
   <div class="card">
     <h2>Play live</h2>
     <p class="muted small">Same board at the same moment on up to 8 phones, with everyone's progress shown as you play. Uses the New board rules below. Every phone needs internet.</p>
+    <div class="field" id="nearbyBtns" hidden>
+      <span class="label">No internet? Play nearby</span>
+      <div class="row nowrap"><button class="btn primary block" id="hostNearby">Host nearby</button><button class="btn block" id="findNearby">Find nearby games</button></div>
+      <span class="label" style="margin-top:6px">Online</span>
+    </div>
     <button class="btn primary block" id="hostLive">Host a live game</button>
     <div class="row nowrap"><input class="textin" id="liveIn" maxlength="4" placeholder="Live code" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:.1em"><button class="btn" id="joinLive">Join</button></div>
   </div>
@@ -332,11 +337,13 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
 <!-- LIVE LOBBY -->
 <section class="screen" id="live" hidden>
   <div class="row spread"><button class="btn ghost sm" id="liveLeave">← Leave</button><span class="conn" id="liveConn"><span class="dot"></span><span></span></span></div>
-  <span class="label">Live game code</span>
+  <span class="label" id="liveKind">Live game code</span>
   <div class="bigcode" id="liveCode">----</div>
   <div class="row nowrap" id="liveShare"><button class="btn block" id="liveInvite">Send invite</button><button class="btn block" id="liveCopy">Copy code</button></div>
-  <div class="card"><h2 id="livePlayersTitle">Players</h2><div class="list" id="livePlayers"></div></div>
-  <div class="field"><span class="label">Board</span><div class="chips" id="liveChips"></div><div class="legend" id="liveLegend"></div></div>
+  <p class="muted small" id="liveNearbyHint" hidden>Others open Word Rattle and tap Find nearby games. Keep Bluetooth on and stay within a few metres.</p>
+  <div class="card list" id="nearbyList" hidden></div>
+  <div class="card" id="livePlayersCard"><h2 id="livePlayersTitle">Players</h2><div class="list" id="livePlayers"></div></div>
+  <div class="field" id="liveBoard"><span class="label">Board</span><div class="chips" id="liveChips"></div><div class="legend" id="liveLegend"></div></div>
   <button class="btn primary block" id="liveStart" disabled>Start</button>
   <p class="hint">Either player can start. Both boards start together.</p>
 </section>
@@ -170996,10 +171003,13 @@ const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+String(s%60
 function note(msg,ok){$("note").textContent=msg||"";$("note").hidden=!msg;$("note").classList.toggle("ok",!!ok)}
 const SCREENS=["home","ready","play","results","compare","rival","live","lb"];let view="home";
 function show(id){for(const s of SCREENS)$(s).hidden=s!==id;view=id;$(id).scrollTop=0}
-const baseURL=()=>location.href.split("#")[0];
+const IS_APP=!!window.WR_APP, SITE_URL="https://jackstoneley.github.io/word-rattle/";
+const NATIVE=IS_APP&&window.Capacitor?(typeof Capacitor.registerPlugin==="function"?Capacitor.registerPlugin("WordRattle"):(Capacitor.Plugins||{}).WordRattle)||null:null;
+const baseURL=()=>IS_APP?SITE_URL:location.href.split("#")[0];
 function flash(btn,txt){const o=btn.dataset.label||btn.textContent;btn.dataset.label=o;btn.textContent=txt;setTimeout(()=>btn.textContent=o,1600)}
-async function copyText(text,btn){try{await navigator.clipboard.writeText(text);flash(btn,"Copied")}catch(e){window.prompt("Copy this",text)}}
+async function copyText(text,btn){try{if(NATIVE)await NATIVE.copy({text});else await navigator.clipboard.writeText(text);flash(btn,"Copied")}catch(e){window.prompt("Copy this",text)}}
 async function shareOrCopy(text,url,btn){
+  if(NATIVE){try{await NATIVE.share({text:text+" "+url});return}catch(e){}}
   if(navigator.share){try{await navigator.share({title:"Word Rattle",text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
   copyText(text+" "+url,btn);
 }
@@ -171184,8 +171194,8 @@ function enterPlay(cur){
     cd.hidden=true;playing=true;const left=(endAt-t)/1000;$("timer").textContent=fmt(left);$("timer").classList.toggle("low",left<=15);if(t>=endAt)finishGame()};
   tickT=setInterval(tick,200);tick();
 }
-function requestWake(){try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>wakeLock=l).catch(()=>{})}catch(e){}}
-function stopPlay(){clearInterval(tickT);tickT=null;playing=false;$("countdown").hidden=true;try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null}
+function requestWake(){if(NATIVE){NATIVE.keepAwake({on:true}).catch(()=>{});return}try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>wakeLock=l).catch(()=>{})}catch(e){}}
+function stopPlay(){clearInterval(tickT);tickT=null;playing=false;$("countdown").hidden=true;if(NATIVE)NATIVE.keepAwake({on:false}).catch(()=>{});try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null}
 function finishGame(){
   stopPlay();path=[];
   const g=getGame(CUR.seed),words=(CUR.words||[]).filter(w=>g.sol.has(w));
@@ -171395,10 +171405,11 @@ $("rivSync").onclick=e=>sendSync(e.currentTarget,"nameIn");
 $("rivPasteGo").onclick=()=>{const v=$("rivPaste").value;$("rivPaste").value="";if(!handleCode(v))$("rivPaste").placeholder="That isn't a sync link. Try again."};
 
 /* ================= live play =================
-   Phones connect through PeerJS (its free public broker introduces them). The host's phone is the hub:
+   Two ways to connect: online through PeerJS (its free public broker introduces the phones), or, in the
+   Android app, nearby over Bluetooth/Wi-Fi with no internet. Either way the host's phone is the hub:
    it holds the game state and relays everyone's progress and final words. Up to 8 players. */
 let LIVE=null,LB=null;
-const PEERJS="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js", LIVE_PREFIX="wordrattle-live-v1-", LIVE_MAX=8;
+const PEERJS=IS_APP?"peerjs.min.js":"https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js", LIVE_PREFIX="wordrattle-live-v1-", LIVE_MAX=8;
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement("script");sc.src=PEERJS;sc.onload=()=>window.Peer?res():rej();sc.onerror=()=>{sc.remove();rej()};document.head.append(sc)})}
 const liveCodeGen=()=>{const A="ABCDEFGHJKLMNPQRSTUVWXYZ";let c="";for(let i=0;i<4;i++)c+=A[Math.floor(Math.random()*A.length)];return c};
 const liveName=()=>myName()||"Player";
@@ -171413,33 +171424,50 @@ function setLiveConn(state,text){if(!LIVE)return;LIVE.connState=state;LIVE.connT
 function resetRound(){LIVE.prog={};LIVE.myFinal=null}
 function leaveLive(){if(!LIVE)return;clearTimeout(LIVE.retry);
   try{LIVE.conn&&LIVE.conn.close()}catch(e){}if(LIVE.conns)for(const c of LIVE.conns.values())try{c.conn.close()}catch(e){}
-  try{LIVE.peer&&LIVE.peer.destroy()}catch(e){}LIVE=null}
+  try{LIVE.peer&&LIVE.peer.destroy()}catch(e){}
+  if(LIVE.transport==="nearby"&&NATIVE)NATIVE.stopAll().catch(()=>{});
+  LIVE=null}
+const newLive=(host,transport,extra)=>({host,transport,code:host?liveCodeGen():"",seed:host?makeSeed(S):null,status:"lobby",startAt:0,
+  conns:new Map(),roster:[{pid:PID,name:liveName()}],prog:{},roundPids:null,open:!!host,offset:0,chans:{},found:{},...extra});
 
-/* host */
+/* a channel object that looks like a PeerJS connection, used for nearby links */
+class Chan{constructor(id){this.id=id;this.connectionId=id;this.peer=id;this.h={};this.open=false}
+  on(ev,f){(this.h[ev]=this.h[ev]||[]).push(f)}
+  emit(ev,a){(this.h[ev]||[]).forEach(f=>{try{f(a)}catch(e){console.error(e)}})}
+  send(m){if(this.open)NATIVE.send({id:this.id,data:JSON.stringify(m)}).catch(()=>{})}
+  close(){if(this.open){this.open=false;NATIVE.disconnect({id:this.id}).catch(()=>{})}}}
+
+/* ---------- host ---------- */
 async function hostLive(){
-  leaveLive();try{await loadPeer()}catch(e){note("Live games need an internet connection. Try again when you're online.");return}
-  LIVE={host:true,code:liveCodeGen(),seed:makeSeed(S),status:"lobby",startAt:0,conns:new Map(),roster:[{pid:PID,name:liveName()}],prog:{},roundPids:null,open:true};
-  startHostPeer();showLive();
+  leaveLive();try{await loadPeer()}catch(e){note("Online live games need an internet connection."+(NATIVE?" With no internet, use Host nearby instead.":""));return}
+  LIVE=newLive(true,"online");startHostPeer();showLive();
+}
+async function hostNearby(){
+  leaveLive();if(!(await nearbyReady()))return;
+  LIVE=newLive(true,"nearby");const L=LIVE;
+  try{await NATIVE.startAdvertising({name:`${L.code}|${liveName()}`})}catch(e){LIVE=null;note("Couldn't start a nearby game. Check Bluetooth is on, then try again.");showHome();return}
+  hostRoster();showLive();
 }
 function hostRoster(){const L=LIVE;
   L.roster=[{pid:PID,name:liveName()},...[...L.conns.values()].filter(c=>c.pid).map(c=>({pid:c.pid,name:c.name}))];
   hostRelay({t:"roster",players:L.roster});
   const n=L.roster.length;setLiveConn(n>1?"":"wait",n>1?`${n} players connected`:"Waiting for players");
 }
+function acceptHostConn(conn){
+  const L=LIVE,entry={conn,pid:null,name:"Player"};
+  conn.on("open",()=>{if(LIVE!==L)return;
+    if([...L.conns.values()].filter(c=>c.pid).length>=LIVE_MAX-1){try{conn.send({t:"full"})}catch(e){}setTimeout(()=>conn.close(),300);return}
+    L.conns.set(connKey(conn),entry);try{conn.send({t:"hello",pid:PID,name:liveName()})}catch(e){}
+    if(entry.pid){hostRoster();sendLiveState(conn)}});
+  conn.on("data",d=>onHostData(entry,d));
+  const lost=()=>{if(LIVE!==L)return;if(L.conns.get(connKey(conn))===entry){L.conns.delete(connKey(conn));hostRoster()}};
+  conn.on("close",lost);conn.on("error",lost);
+}
 function startHostPeer(){
   const L=LIVE;setLiveConn("wait","Starting…");
   const peer=new Peer(LIVE_PREFIX+L.code);L.peer=peer;
   peer.on("open",()=>{if(LIVE===L)hostRoster()});
-  peer.on("connection",conn=>{
-    const entry={conn,pid:null,name:"Player"};
-    conn.on("open",()=>{if(LIVE!==L)return;
-      if([...L.conns.values()].filter(c=>c.pid).length>=LIVE_MAX-1){try{conn.send({t:"full"})}catch(e){}setTimeout(()=>conn.close(),300);return}
-      L.conns.set(connKey(conn),entry);try{conn.send({t:"hello",pid:PID,name:liveName()})}catch(e){}
-      if(entry.pid){hostRoster();sendLiveState(conn)}});
-    conn.on("data",d=>onHostData(entry,d));
-    const lost=()=>{if(LIVE!==L)return;if(L.conns.get(connKey(conn))===entry){L.conns.delete(connKey(conn));hostRoster()}};
-    conn.on("close",lost);conn.on("error",lost);
-  });
+  peer.on("connection",conn=>{if(LIVE===L)acceptHostConn(conn)});
   peer.on("disconnected",()=>{setTimeout(()=>{try{!peer.destroyed&&peer.reconnect()}catch(e){}},1000)});
   peer.on("error",err=>{if(LIVE!==L)return;
     if(err.type==="unavailable-id"){L.code=liveCodeGen();try{peer.destroy()}catch(e){}startHostPeer();if(view==="live")renderLive()}
@@ -171472,22 +171500,36 @@ function hostStartLive(){const L=LIVE;if(!L||!L.host||L.status==="playing"||L.ro
   L.status="playing";L.startAt=Date.now()+3500;L.roundPids=L.roster.map(p=>p.pid);resetRound();sendLiveState();startLivePlay()}
 function hostAgainLive(){const L=LIVE;if(!L||!L.host)return;L.seed=makeSeed(parseSeed(L.seed).settings);L.status="lobby";L.startAt=0;L.roundPids=null;resetRound();sendLiveState();showLive()}
 
-/* joiner */
+/* ---------- joiner ---------- */
+function attachJoinConn(conn){
+  const L=LIVE;L.conn=conn;
+  conn.on("open",()=>{if(LIVE!==L)return;L.open=true;setLiveConn("","Connected");conn.send({t:"hello",pid:PID,name:liveName()});if(L.myFinal)conn.send(L.myFinal);if(view==="live")renderLive()});
+  conn.on("data",d=>onJoinData(d));
+  const lost=()=>{if(LIVE!==L||L.conn!==conn||L.full)return;L.open=false;setLiveConn("wait","Reconnecting…");clearTimeout(L.retry);L.retry=setTimeout(()=>L.reconnect&&L.reconnect(),2500)};
+  conn.on("close",lost);conn.on("error",lost);
+}
 async function joinLive(code){
-  leaveLive();try{await loadPeer()}catch(e){note("Live games need an internet connection. Try again when you're online.");showHome();return}
-  LIVE={host:false,code,seed:null,status:"lobby",startAt:0,roster:[{pid:PID,name:liveName()}],prog:{},roundPids:null,open:false,offset:0};
+  leaveLive();try{await loadPeer()}catch(e){note("Online live games need an internet connection."+(NATIVE?" With no internet, use Find nearby games instead.":""));showHome();return}
+  LIVE=newLive(false,"online",{code});
   const L=LIVE,peer=new Peer();L.peer=peer;showLive();setLiveConn("wait","Connecting…");
-  const connect=()=>{if(LIVE!==L||peer.destroyed)return;const conn=peer.connect(LIVE_PREFIX+code,{reliable:true});L.conn=conn;
-    conn.on("open",()=>{if(LIVE!==L)return;L.open=true;setLiveConn("","Connected");conn.send({t:"hello",pid:PID,name:liveName()});if(L.myFinal)conn.send(L.myFinal)});
-    conn.on("data",d=>onJoinData(d));
-    const lost=()=>{if(LIVE!==L||L.conn!==conn||L.full)return;L.open=false;setLiveConn("wait","Reconnecting…");clearTimeout(L.retry);L.retry=setTimeout(connect,2500)};
-    conn.on("close",lost);conn.on("error",lost)};
-  L.connect=connect;
-  peer.on("open",connect);
+  L.reconnect=()=>{if(LIVE!==L||peer.destroyed)return;attachJoinConn(peer.connect(LIVE_PREFIX+code,{reliable:true}))};
+  peer.on("open",L.reconnect);
   peer.on("disconnected",()=>{setTimeout(()=>{try{!peer.destroyed&&peer.reconnect()}catch(e){}},1000)});
   peer.on("error",err=>{if(LIVE!==L)return;
-    if(err.type==="peer-unavailable"){setLiveConn("off",L.roster.length>1?"Lost the host. Retrying…":`Can't find live game ${code}. Is it open on the host's phone?`);clearTimeout(L.retry);L.retry=setTimeout(connect,3000)}
+    if(err.type==="peer-unavailable"){setLiveConn("off",L.roster.length>1?"Lost the host. Retrying…":`Can't find live game ${code}. Is it open on the host's phone?`);clearTimeout(L.retry);L.retry=setTimeout(L.reconnect,3000)}
     else if(["network","server-error","socket-error","browser-incompatible"].includes(err.type))setLiveConn("off","No connection. Check your internet.")});
+}
+async function findNearby(){
+  leaveLive();if(!(await nearbyReady()))return;
+  LIVE=newLive(false,"nearby");const L=LIVE;
+  try{await NATIVE.startDiscovery()}catch(e){LIVE=null;note("Couldn't search for nearby games. Check Bluetooth is on, then try again.");showHome();return}
+  showLive();setLiveConn("wait","Looking for nearby games…");
+}
+function joinNearbyGame(id){
+  const L=LIVE;if(!L)return;const f=L.found[id];if(!f)return;
+  L.code=f.code;L.target=id;setLiveConn("wait",`Joining ${f.name}'s game…`);
+  L.reconnect=()=>{if(LIVE!==L)return;NATIVE.connect({id:L.target,name:liveName()}).catch(()=>{if(LIVE===L&&!L.open){setLiveConn("wait","Trying again…");clearTimeout(L.retry);L.retry=setTimeout(L.reconnect,3000)}})};
+  L.reconnect();
 }
 function onJoinData(d){
   const L=LIVE;if(!L||!d||typeof d!=="object")return;
@@ -171507,7 +171549,28 @@ function onJoinData(d){
   if(d.t==="final"){processFinal(d);return}
 }
 
-/* shared */
+/* ---------- nearby plumbing (Android app only) ---------- */
+let NB_READY=false;
+async function nearbyReady(){
+  if(!NATIVE){note("Nearby games work in the Android app.");return false}
+  let ok=false;try{ok=(await NATIVE.ensurePermissions()).granted}catch(e){}
+  if(!ok){note("Nearby games need permission to find devices near you. Allow it when asked, or turn it on in the app's settings under Permissions.");showHome();return false}
+  if(!NB_READY){NB_READY=true;
+    NATIVE.addListener("found",e=>{const L=LIVE;if(!L||L.host||L.transport!=="nearby")return;const [code,...rest]=String(e.name||"").split("|");L.found[e.id]={id:e.id,code:code||"????",name:rest.join("|")||"Someone"};if(view==="live")renderLive()});
+    NATIVE.addListener("lost",e=>{const L=LIVE;if(L&&L.found&&L.found[e.id]&&L.target!==e.id){delete L.found[e.id];if(view==="live")renderLive()}});
+    NATIVE.addListener("result",e=>{const L=LIVE;if(!L||L.transport!=="nearby")return;
+      if(!e.ok){if(!L.host&&e.id===L.target&&!L.open){setLiveConn("wait","Couldn't connect. Trying again…");clearTimeout(L.retry);L.retry=setTimeout(()=>L.reconnect&&L.reconnect(),3000)}return}
+      const ch=new Chan(e.id);L.chans[e.id]=ch;
+      if(L.host)acceptHostConn(ch);else{attachJoinConn(ch);NATIVE.stopDiscovery().catch(()=>{})}
+      ch.open=true;ch.emit("open")});
+    NATIVE.addListener("message",e=>{const ch=LIVE&&LIVE.chans[e.id];if(!ch)return;let d;try{d=JSON.parse(e.data)}catch(x){return}ch.emit("data",d)});
+    NATIVE.addListener("disconnected",e=>{const L=LIVE,ch=L&&L.chans[e.id];if(!ch)return;ch.open=false;delete L.chans[e.id];ch.emit("close");
+      if(!L.host&&L.transport==="nearby")NATIVE.startDiscovery().catch(()=>{})});
+  }
+  return true;
+}
+
+/* ---------- shared ---------- */
 function processFinal(d){
   const L=LIVE;if(!L||typeof d.from!=="string"||d.from===PID)return;
   const g=getGame(d.seed);if(!g||!Array.isArray(d.words))return;
@@ -171530,21 +171593,31 @@ function liveFinish(g,words,dur){const L=LIVE;if(!L||L.seed!==g.seed)return fals
   L.myFinal={t:"final",from:PID,name:liveName(),seed:g.seed,words,dur};liveSend(L.myFinal);routeLiveResults(g.seed);return true}
 function renderOpps(){const box=$("opps");if(!box||box.hidden)return;box.innerHTML="";if(!LIVE)return;
   if(!liveConnected()){box.append(el("span","opp",LIVE.connText||"Connection lost. Your game still counts."));return}
-  const pids=roundOthers(LIVE.seed);
-  for(const pid of pids){const p=LIVE.prog[pid];box.append(el("span","opp",`${nameOf(pid)}: ${p?p.n:0}w · ${p?p.score:0}${p&&p.done?" ✓":""}`))}}
+  for(const pid of roundOthers(LIVE.seed)){const p=LIVE.prog[pid];box.append(el("span","opp",`${nameOf(pid)}: ${p?p.n:0}w · ${p?p.score:0}${p&&p.done?" ✓":""}`))}}
 function showLive(){renderLive();show("live")}
 function renderLive(){
-  const L=LIVE;if(!L)return;$("liveCode").textContent=L.code;$("liveShare").hidden=!L.host;
+  const L=LIVE;if(!L)return;
+  const searching=L.transport==="nearby"&&!L.host&&!L.open;
+  $("liveKind").textContent=L.transport==="nearby"?"Nearby game · no internet needed":"Online game code";
+  $("liveCode").textContent=searching?(L.target?L.code:"Searching…"):L.code;
+  $("liveShare").hidden=!(L.host&&L.transport==="online");
+  $("liveNearbyHint").hidden=!(L.host&&L.transport==="nearby");
+  const nl=$("nearbyList");nl.hidden=!searching;nl.innerHTML="";
+  if(searching){const games=Object.values(L.found);
+    nl.append(el("h2",null,games.length?"Games near you":"Looking for games near you…"));
+    if(!games.length)nl.append(el("p","muted small","Make sure the host has tapped Host nearby, and that both phones have Bluetooth on. Keep the phones within a few metres."));
+    for(const f of games){const b=el("button","lrow");b.append(el("span","code",`${f.name}'s game`),el("span","sc",f.code),el("span","meta",L.target===f.id?"Joining…":"Tap to join"));b.onclick=()=>joinNearbyGame(f.id);nl.append(b)}}
+  $("livePlayersCard").hidden=searching;
   const pl=$("livePlayers");pl.innerHTML="";
   for(const p of L.roster){const r=el("div","pl");r.append(el("span","dot"),el("span",null,p.pid===PID?`${liveName()} (you)`:p.name+(p.pid===(L.roster[0]&&L.roster[0].pid)&&!L.host?" · host":"")));pl.append(r)}
   $("livePlayersTitle").textContent=`Players · ${L.roster.length} of ${LIVE_MAX}`;
-  if(L.roster.length<2){const r=el("div","pl muted");r.append(el("span","dot"),el("span",null,L.host?"Send the invite or share the code.":"Waiting for the host…"));r.firstChild.style.background="var(--line)";pl.append(r)}
-  if(L.seed){const g=getGame(L.seed);renderBoardInfo(g,$("liveChips"),$("liveLegend"))}else{$("liveChips").innerHTML="";$("liveLegend").innerHTML=""}
-  const busy=L.status==="playing",ok=!busy&&liveConnected()&&L.seed&&L.roster.length>=2;$("liveStart").disabled=!ok;
+  if(L.roster.length<2){const r=el("div","pl muted");r.append(el("span","dot"),el("span",null,L.host?(L.transport==="nearby"?"Others tap Find nearby games on their phones.":"Send the invite or share the code."):"Waiting for the host…"));r.firstChild.style.background="var(--line)";pl.append(r)}
+  if(L.seed){const g=getGame(L.seed);renderBoardInfo(g,$("liveChips"),$("liveLegend"));$("liveBoard").hidden=false}else $("liveBoard").hidden=true;
+  const busy=L.status==="playing",ok=!busy&&liveConnected()&&L.seed&&L.roster.length>=2;$("liveStart").disabled=!ok;$("liveStart").hidden=searching;
   $("liveStart").textContent=busy?"Round in progress. You're in the next one.":ok?"Start":"Waiting for players…";
 }
 
-/* group results */
+/* ---------- group results ---------- */
 function showLeaderboard(seed,others){LB={seed,pids:[PID,...others]};renderLeaderboard();show("lb")}
 function renderLeaderboard(){
   const g=getGame(LB.seed),h=getHist(LB.seed);if(!g||!h)return;
@@ -171566,6 +171639,8 @@ function renderLeaderboard(){
   $("lbAgain").hidden=!liveConnected();
 }
 $("hostLive").onclick=()=>{note("");if(S.turn)enableMotion();hostLive()};
+$("hostNearby").onclick=()=>{note("");hostNearby()};
+$("findNearby").onclick=()=>{note("");findNearby()};
 $("joinLive").onclick=()=>{const c=$("liveIn").value.trim().toUpperCase();if(!/^[A-Z]{4}$/.test(c)){$("liveIn").focus();return}if(S.turn)enableMotion();note("");$("liveIn").value="";joinLive(c)};
 $("liveIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("joinLive").onclick()});
 $("liveLeave").onclick=()=>{leaveLive();showHome()};
@@ -171582,7 +171657,17 @@ $("lbMine").onclick=()=>showResults(LB.seed);
 window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(!h||view==="play")return;history.replaceState(null,"",location.pathname+location.search);note("");handleCode(h)});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(view==="play"&&!wakeLock)requestWake();if(view==="home")renderDaily();
   if(LIVE&&LIVE.peer&&!LIVE.peer.destroyed){try{if(LIVE.peer.disconnected)LIVE.peer.reconnect()}catch(e){}if(!LIVE.host&&!LIVE.open&&!LIVE.full&&LIVE.connect){clearTimeout(LIVE.retry);LIVE.connect()}}}});
-if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(!IS_APP&&"serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(NATIVE){
+  $("nearbyBtns").hidden=false;
+  NATIVE.addListener("appUrl",e=>{if(e&&e.url&&view!=="play"){note("");handleCode(e.url)}});
+  NATIVE.addListener("back",()=>{
+    if(view==="home")NATIVE.minimise().catch(()=>{});
+    else if(view==="play")$("endBtn").click();
+    else if(view==="compare")$("cmpBack").click();
+    else if(view==="live"||view==="lb"){leaveLive();showHome()}
+    else showHome()});
+}
 (function boot(){
   const old=loadJSON("wr.opps",null);
   if(old){for(const [seed,o] of Object.entries(old)){const g=getGame(seed),w=g&&decodeWords(g,o.bits);if(w)mergeRival("legacy-"+String(o.name||"opponent").toLowerCase(),o.name||"Opponent",{[g.seed]:{score:sumPts(g,w),n:w.length,dur:o.dur||0,at:Date.now(),bits:o.bits}})}delKey("wr.opps")}
@@ -171596,6 +171681,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
   }
   if(hash){history.replaceState(null,"",location.pathname+location.search);if(handleCode(hash))return}
   showHome();
+  if(NATIVE)NATIVE.getLaunchUrl().then(r=>{if(r&&r.url)handleCode(r.url)}).catch(()=>{});
 })();
 </script>
 </body>

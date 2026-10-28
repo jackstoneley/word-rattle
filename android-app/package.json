@@ -1,0 +1,16 @@
+{
+  "name": "word-rattle-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Android app build of Word Rattle",
+  "dependencies": {
+    "@capacitor/android": "~6.2.0",
+    "@capacitor/core": "~6.2.0",
+    "@fontsource/archivo-black": "^5.0.0",
+    "@fontsource/figtree": "^5.0.0",
+    "peerjs": "1.5.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "~6.2.0"
+  }
+}

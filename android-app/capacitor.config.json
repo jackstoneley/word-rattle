@@ -1,0 +1,8 @@
+{
+  "appId": "com.jackstoneley.wordrattle",
+  "appName": "Word Rattle",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#E8EDF4"
+  }
+}
