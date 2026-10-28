@@ -1,7 +1,7 @@
 {
   "name": "Stoneley Games",
   "short_name": "Stoneley Games",
-  "description": "Boggle, Kakuro and Gem Tower Defence in one place.",
+  "description": "Word Rattle, Link Up, Kakuro and Gem Tower Defence in one place.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

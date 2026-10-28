@@ -4,7 +4,7 @@ Our family games in one place: a home page to pick a game, playable on the web a
 
 | Game | What it is |
 | --- | --- |
-| **Boggle** (folder `word-rattle`) | Word dice. Daily board, seeds, sync links for a head-to-head record, live play for up to 8 (online, or nearby with no internet in the app). |
+| **Word Rattle** (folder `word-rattle`) | Word dice. Daily board, seeds, sync links for a head-to-head record, live play for up to 8 (online, or nearby with no internet in the app). |
 | **Kakuro** (folder `cross-sums`) | Kakuro: 200 puzzles, notes, checks, best times, product variants. |
 | **Gem Tower Defence** (folder `gem-bastion`) | Tower defence: forge and merge gems, six maps, permanent upgrades. |
 

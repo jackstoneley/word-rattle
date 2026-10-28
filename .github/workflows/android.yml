@@ -70,7 +70,9 @@ jobs:
           cp android-app/android/app/build/outputs/apk/debug/app-debug.apk stoneley-games.apk
           cp stoneley-games.apk word-rattle.apk
           gh release delete latest --yes --cleanup-tag || true
+          NOTE=$(jq -r '.notes | max_by(.id) | "**" + .headline + "**\n\n" + (.details | map("- " + .) | join("\n"))' release-notes.json)
+          printf '%b\n\nInstall: on your phone, download stoneley-games.apk and open it. After that, the app updates itself (word-rattle.apk is the same file, kept for old links).\n' "$NOTE" > notes.md
           gh release create latest stoneley-games.apk word-rattle.apk \
             --title "Stoneley Games for Android (build ${{ github.run_number }})" \
-            --notes "Install: on your phone, download stoneley-games.apk and open it. After that, use Check for updates in the app. (word-rattle.apk is the same file, kept for old links.)" \
+            --notes-file notes.md \
             --latest

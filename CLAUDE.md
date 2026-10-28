@@ -1,10 +1,11 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus three self-contained HTML games, published two ways:
+A home page plus four self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
-| Boggle | `games/word-rattle` (Word Rattle) | `wr.` |
+| Word Rattle | `games/word-rattle` | `wr.` |
+| Link Up | `games/link-up` | `lu.` |
 | Kakuro | `games/cross-sums` (Cross Sums) | `kk.` |
 | Gem Tower Defence | `games/gem-bastion` (Gem Bastion) | `gembastion.` |
 
@@ -28,9 +29,22 @@ manifest.webmanifest, *.png  Website install metadata and icons
 games/<id>/index.html      One self-contained game per folder (all CSS/JS inline)
 games/word-rattle/src/     Word Rattle source: template.html + words.txt + common.txt -> built index.html
 tools/build.py             Build step. Run after ANY change, before committing
+release-notes.json         What's new in each release; shown in the app's update banner
 android-app/               Capacitor project: config, native plugin, build scripts, icons, signing key
 .github/workflows/android.yml  Builds the APK and replaces the "latest" release
 ```
+
+## Release notes (the app's update banner)
+
+When a change is worth telling the players about, add an entry to `release-notes.json` with the next `id`:
+
+```json
+{ "id": 2, "type": "features", "headline": "Word Rattle: hints", "details": ["Short plain sentence", "..."] }
+```
+
+`type` is `new-game`, `features` or `fixes`. The app compares the notes it was built with against the live copy
+on the website and shows the newer entries in the banner ("New game", "New features" or "Fixes"), so write
+headlines and details for the players, not for developers. The GitHub release text uses the newest entry.
 
 ## The one rule
 
@@ -55,6 +69,15 @@ list is injected at `__WORDS__`).
 - In the app, `window.SG_APP` (and `window.WR_APP`) is `true`, and the native plugin is
   `Capacitor.registerPlugin("WordRattle")` (the name is historical; it serves every game).
 
+### Link Up (`games/link-up`)
+
+A daily connections puzzle (NYT difficulty, not the TV wall). Puzzles live in the
+`<script type="application/json" id="puzzles">` block: a list of puzzles, each four groups
+`{"l": 1-4, "c": "Group name", "w": [four words]}`, level 1 easiest (yellow) to 4 trickiest (purple, usually
+wordplay). Puzzle #1 is 28 October 2026 and the daily puzzle cycles through the list, so **append** new
+puzzles (never reorder or edit old ones: saved games are keyed by puzzle number). Each word must fit only one
+group, unless it is a deliberate red herring that the other groups rule out. `tools/build.py` checks the shape.
+
 ### Adding a new game
 
 1. Create `games/<id>/index.html` (self-contained), add the shell script tag, home link and `SG_BACK`.
@@ -62,7 +85,8 @@ list is injected at `__WORDS__`).
 3. Add the page to `CORE` in `sw.js`.
 4. If it uses a Google Font not already bundled, add the `@fontsource/<family>` package to
    `android-app/package.json` and an entry to `FACES` in `android-app/scripts/prepare-www.js`.
-5. Run `python3 tools/build.py`, test, commit, push.
+5. Add a `new-game` entry to `release-notes.json`.
+6. Run `python3 tools/build.py`, test, commit, push.
 
 ## Word Rattle specifics (handle with care)
 

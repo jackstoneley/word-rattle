@@ -41,6 +41,7 @@ for (const rel of pages) {
   fs.writeFileSync(out, html);
 }
 fs.copyFileSync(path.join(root, "shell.js"), path.join(www, "shell.js"));
+fs.copyFileSync(path.join(root, "release-notes.json"), path.join(www, "release-notes.json"));
 
 // 3. PeerJS for online live games in Word Rattle (it loads "peerjs.min.js" next to itself)
 fs.copyFileSync(path.join(nm, "peerjs", "dist", "peerjs.min.js"), path.join(www, "games", "word-rattle", "peerjs.min.js"));

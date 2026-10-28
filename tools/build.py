@@ -29,6 +29,31 @@ def build_word_rattle():
     print(f"word-rattle: {len(words)} words, {len(common)} common")
 
 
+def check_link_up():
+    """Every Link Up puzzle: four groups at levels 1-4, four words each, sixteen different words."""
+    import json
+    html = (ROOT / "games" / "link-up" / "index.html").read_text(encoding="utf-8")
+    m = re.search(r'<script type="application/json" id="puzzles">(.*?)</script>', html, re.S)
+    if not m:
+        sys.exit("link-up: puzzle block not found")
+    puzzles = json.loads(m.group(1))
+    for i, p in enumerate(puzzles, 1):
+        words = [w for g in p for w in g["w"]]
+        if len(p) != 4 or sorted(g["l"] for g in p) != [1, 2, 3, 4] or any(len(g["w"]) != 4 for g in p) or len(set(words)) != 16:
+            sys.exit(f"link-up: puzzle {i} is malformed")
+    print(f"link-up: {len(puzzles)} puzzles ok")
+
+
+def check_release_notes():
+    """release-notes.json: unique ids, a known type, a headline and details on every note."""
+    import json
+    notes = json.loads((ROOT / "release-notes.json").read_text(encoding="utf-8"))["notes"]
+    ids = [n["id"] for n in notes]
+    if len(ids) != len(set(ids)) or any(n["type"] not in ("new-game", "features", "fixes") or not n.get("headline") or not n.get("details") for n in notes):
+        sys.exit("release-notes.json: each note needs a unique id, a type (new-game, features or fixes), a headline and details")
+    print(f"release notes: latest is #{max(ids)} ({next(n for n in notes if n['id'] == max(ids))['headline']})")
+
+
 def stamp_service_worker():
     h = hashlib.sha256()
     for p in pages():
@@ -67,5 +92,7 @@ def check_scripts():
 
 if __name__ == "__main__":
     build_word_rattle()
+    check_link_up()
+    check_release_notes()
     stamp_service_worker()
     check_scripts()
