@@ -171100,6 +171100,7 @@ function showHome(){
 function handleCode(text){
   text=String(text||"").trim();if(!text)return false;
   const part=decodeURIComponent(text.includes("#")?text.slice(text.lastIndexOf("#")+1):text);
+  if(/^lu\./.test(part)){location.href="../link-up/index.html#"+part;return true}
   if(/^WRB\./.test(part)){return restoreBackup(part)}
   const sy=parseSync(part);if(sy){receiveSync(sy);return true}
   const lg=parseLegacy(part);if(lg){receiveSync(lg);return true}

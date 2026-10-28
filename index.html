@@ -13,8 +13,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Figtree:wght@400;500;600;700;800&display=swap">
 <script>
-/* Old Word Rattle links (…/word-rattle/#seed, #s.…, #live.…) land here: pass them on to the game. */
-if (location.hash.length > 1) location.replace("games/word-rattle/index.html" + location.hash);
+/* Links: "#lu.…" is a Link Up board; every other link (sync links, seeds, live codes) belongs to Word Rattle. */
+const gameForLink = h => (/^#?lu\./.test(h) ? "games/link-up/" : "games/word-rattle/") + "index.html";
+if (location.hash.length > 1) location.replace(gameForLink(location.hash) + location.hash);
 </script>
 <style>
 /* Layout: one scrolling column. A dark "shelf" header, then one tall card per game, each wearing its own game's colours. */
@@ -263,7 +264,7 @@ if(NATIVE){
   $("checkBtn").onclick=()=>checkForUpdate(true);
   NATIVE.addListener("updateProgress",e=>{const p=Math.max(0,Math.min(100,Math.round(e&&e.pct||0)));$("updFill").style.width=p+"%"});
   NATIVE.addListener("back",()=>NATIVE.minimise().catch(()=>{}));
-  const openLink=url=>{const i=String(url||"").indexOf("#");if(i>=0&&url.length>i+1)location.href="games/word-rattle/index.html"+url.slice(i)};
+  const openLink=url=>{const i=String(url||"").indexOf("#");if(i>=0&&url.length>i+1)location.href=gameForLink(url.slice(i))+url.slice(i)};
   NATIVE.addListener("appUrl",e=>openLink(e&&e.url));
   NATIVE.getLaunchUrl().then(r=>r&&r.url&&openLink(r.url)).catch(()=>{});
   checkForUpdate(false);

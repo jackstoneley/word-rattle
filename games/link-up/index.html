@@ -96,6 +96,7 @@ details p{margin:8px 0 0;max-width:62ch}
 .wall{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .tile{border:0;border-radius:12px;background:var(--tile);color:var(--tile-ink);aspect-ratio:1.12;max-width:100%;min-width:0;display:grid;place-items:center;padding:4px;
   font-family:var(--body);font-weight:700;font-size:15px;letter-spacing:.01em;text-transform:uppercase;white-space:nowrap;overflow:hidden;line-height:1.05;transition:background .12s,transform .12s}
+.tile span{display:block;white-space:normal;text-align:center;max-width:100%}
 .tile.s8{font-size:13px}.tile.s10{font-size:11.5px}.tile.s12{font-size:10px}
 .tile.on{background:var(--sel);color:var(--sel-ink);transform:scale(.96)}
 .tile.shake{animation:shake .35s}
@@ -109,6 +110,38 @@ details p{margin:8px 0 0;max-width:62ch}
 .grid{font-size:22px;line-height:1.15;letter-spacing:2px;white-space:pre}
 .result .row{display:flex;gap:8px;width:100%}
 .result .row .btn{flex:1}
+/* more puzzles, boards */
+.cardhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.small{font-size:14px;margin:0}
+.btn.sm{padding:8px 14px;font-size:14px}
+.arch.bonus button small{font-size:10px}
+.boards{display:flex;flex-direction:column;gap:8px}
+.bd{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.bd .bt{display:flex;align-items:center;gap:10px;min-width:0}
+.bd .bt .sw{display:grid;grid-template-columns:repeat(2,8px);gap:2px;flex:none}
+.bd .bt .sw i{width:8px;height:8px;border-radius:2px}
+.bd .bt div{min-width:0}
+.bd b{display:block;font-family:var(--display);font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bd small{display:block;color:var(--muted);font-size:13px}
+.bd .ops{display:flex;flex-wrap:wrap;gap:6px}
+.bd .ops .btn{padding:7px 12px;font-size:13px}
+.bd .ops .btn.danger{color:var(--bad)}
+.empty{color:var(--muted);font-size:14px;margin:0}
+.paste{display:flex;gap:8px}
+.paste input{flex:1;min-width:0}
+input.f{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+input.f:focus{outline:2px solid var(--g3);outline-offset:0;border-color:transparent}
+label.lab{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
+.grp{border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;color:var(--g-ink)}
+.grp.l1{background:var(--g1)}.grp.l2{background:var(--g2)}.grp.l3{background:var(--g3)}.grp.l4{background:var(--g4)}
+.grp .gh{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.grp input.f{background:rgba(255,255,255,.72);border-color:transparent;color:#1B2430}
+.grp input.w{text-transform:uppercase;font-weight:700}
+.grp .ws{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.grp input.f.bad{outline:2px solid var(--bad);outline-offset:0}
+.err{color:var(--bad);font-weight:700;font-size:14px;margin:0;min-height:1.2em}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.top h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 @keyframes pop{from{transform:scale(.94);opacity:.4}to{transform:none;opacity:1}}
 @keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -124,15 +157,32 @@ details p{margin:8px 0 0;max-width:62ch}
   </div>
   <div class="card today" id="today"></div>
   <div class="card">
-    <span class="eyebrow">Your stats</span>
+    <span class="eyebrow">Daily puzzle stats</span>
     <div class="stats" id="stats"></div>
     <span class="eyebrow" style="margin-top:4px">Mistakes in wins</span>
     <div class="dist" id="dist"></div>
   </div>
   <div class="card">
-    <span class="eyebrow">Every puzzle so far</span>
+    <span class="eyebrow">Past daily puzzles</span>
     <div class="legend"><span><i style="background:var(--g1)"></i>Perfect</span><span><i style="background:var(--g2)"></i>Solved</span><span><i style="background:var(--tile)"></i>Not solved</span><span><i style="background:var(--g3);border-radius:50%"></i>In progress</span></div>
     <div class="arch" id="arch"></div>
+  </div>
+  <div class="card">
+    <div class="cardhead"><span class="eyebrow">Bonus puzzles</span><span class="muted small" id="bonusCount"></span></div>
+    <p class="muted small">Extra puzzles to play any time. They never turn up as a daily puzzle, so nothing gets spoiled.</p>
+    <button class="btn block" id="randomBtn">Play a random one</button>
+    <div class="arch bonus" id="bonusArch"></div>
+  </div>
+  <div class="card" id="boardsCard">
+    <div class="cardhead"><span class="eyebrow">Your boards</span><button class="btn primary sm" id="makeBtn">+ Make a board</button></div>
+    <p class="muted small">Write your own puzzle, then send it as a link. Whoever taps the link gets it in Link Up.</p>
+    <div class="boards" id="mineList"></div>
+  </div>
+  <div class="card">
+    <span class="eyebrow">Shared with you</span>
+    <div class="boards" id="sharedList"></div>
+    <label class="lab" for="pasteIn">Got a board link? Paste it here</label>
+    <div class="paste"><input class="f" id="pasteIn" placeholder="Paste the message or link" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn" id="pasteBtn">Add</button></div>
   </div>
   <div class="card">
     <details>
@@ -143,6 +193,7 @@ details p{margin:8px 0 0;max-width:62ch}
       <p>Groups run from straightforward to tricky:</p>
       <div class="levels"><i style="background:var(--g1)"></i><span>Straightforward</span><i style="background:var(--g2)"></i><span>Takes a moment</span><i style="background:var(--g3)"></i><span>Trickier</span><i style="background:var(--g4)"></i><span>Wordplay, like hidden words or ___ phrases</span></div>
       <p>Everyone gets the same puzzle each day. Share your result to compare.</p>
+      <p>Want more? Play the bonus puzzles, or make a board of your own and send it to someone.</p>
     </details>
   </div>
 </section>
@@ -165,13 +216,31 @@ details p{margin:8px 0 0;max-width:62ch}
     <div class="row"><button class="btn primary" id="shareBtn">Share result</button><button class="btn" id="doneBtn">All puzzles</button></div>
   </div>
 </section>
+<!-- MAKE A BOARD -->
+<section class="view" id="make" hidden>
+  <div class="top"><button class="back" id="mBack">← Puzzles</button><h2 id="mHead">Make a board</h2><span class="time"></span></div>
+  <div class="card">
+    <label class="lab">Board name<input class="f" id="mTitle" maxlength="40" placeholder="e.g. Our holidays" autocomplete="off"></label>
+    <label class="lab">Your name<input class="f" id="mName" maxlength="24" placeholder="So they know who made it" autocomplete="off"></label>
+  </div>
+  <p class="muted small">Four groups of four words. Yellow should be the easiest, purple the trickiest. The words get shuffled for whoever plays it.</p>
+    <div class="grp l1"><span class="gh">Yellow · straightforward</span><input class="f c" data-g="0" maxlength="32" placeholder="What links them? e.g. Cheeses" autocomplete="off"><div class="ws"><input class="f w" data-g="0" data-i="0" maxlength="20" placeholder="Word 1" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="0" data-i="1" maxlength="20" placeholder="Word 2" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="0" data-i="2" maxlength="20" placeholder="Word 3" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="0" data-i="3" maxlength="20" placeholder="Word 4" autocomplete="off" autocapitalize="characters" spellcheck="false"></div></div>
+    <div class="grp l2"><span class="gh">Green · takes a moment</span><input class="f c" data-g="1" maxlength="32" placeholder="What links them? e.g. Famous Pauls" autocomplete="off"><div class="ws"><input class="f w" data-g="1" data-i="0" maxlength="20" placeholder="Word 1" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="1" data-i="1" maxlength="20" placeholder="Word 2" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="1" data-i="2" maxlength="20" placeholder="Word 3" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="1" data-i="3" maxlength="20" placeholder="Word 4" autocomplete="off" autocapitalize="characters" spellcheck="false"></div></div>
+    <div class="grp l3"><span class="gh">Blue · trickier</span><input class="f c" data-g="2" maxlength="32" placeholder="What links them? e.g. Have keys" autocomplete="off"><div class="ws"><input class="f w" data-g="2" data-i="0" maxlength="20" placeholder="Word 1" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="2" data-i="1" maxlength="20" placeholder="Word 2" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="2" data-i="2" maxlength="20" placeholder="Word 3" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="2" data-i="3" maxlength="20" placeholder="Word 4" autocomplete="off" autocapitalize="characters" spellcheck="false"></div></div>
+    <div class="grp l4"><span class="gh">Purple · trickiest</span><input class="f c" data-g="3" maxlength="32" placeholder="What links them? e.g. ___ cake" autocomplete="off"><div class="ws"><input class="f w" data-g="3" data-i="0" maxlength="20" placeholder="Word 1" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="3" data-i="1" maxlength="20" placeholder="Word 2" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="3" data-i="2" maxlength="20" placeholder="Word 3" autocomplete="off" autocapitalize="characters" spellcheck="false"><input class="f w" data-g="3" data-i="3" maxlength="20" placeholder="Word 4" autocomplete="off" autocapitalize="characters" spellcheck="false"></div></div>
+  <p class="muted small">Tip: a good red herring is a word that looks like it fits two groups, as long as only one way of sorting all sixteen works.</p>
+  <p class="err" id="mErr" role="alert"></p>
+  <div class="mrow"><button class="btn" id="mSave">Save</button><button class="btn primary" id="mShare">Save and send</button></div>
+</section>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script type="application/json" id="puzzles">[[{"l":1,"c":"Shades of blue","w":["NAVY","TEAL","COBALT","AZURE"]},{"l":2,"c":"Things with keys","w":["PIANO","TYPEWRITER","LAPTOP","JAILER"]},{"l":3,"c":"Card games","w":["SNAP","RUMMY","PATIENCE","BRIDGE"]},{"l":4,"c":"___ball","w":["FOOT","NET","SNOW","MEAT"]}],[{"l":1,"c":"Fruit","w":["MANGO","PLUM","KIWI","LIME"]},{"l":2,"c":"Garden birds","w":["WREN","ROBIN","JAY","SWIFT"]},{"l":3,"c":"Herbs","w":["SAGE","MINT","BASIL","DILL"]},{"l":4,"c":"Hidden numbers","w":["OFTEN","STONE","WEIGHT","CANINE"]}],[{"l":1,"c":"Planets","w":["MARS","VENUS","SATURN","JUPITER"]},{"l":2,"c":"Car makers","w":["JAGUAR","MINI","FORD","FIAT"]},{"l":3,"c":"Greek letters","w":["ALPHA","DELTA","SIGMA","OMEGA"]},{"l":4,"c":"Members of Queen","w":["MERCURY","MAY","TAYLOR","DEACON"]}],[{"l":1,"c":"Kitchen utensils","w":["WHISK","LADLE","SPATULA","TONGS"]},{"l":2,"c":"Dog breeds","w":["BOXER","POODLE","BEAGLE","PUG"]},{"l":3,"c":"London bridges","w":["TOWER","WESTMINSTER","MILLENNIUM","BLACKFRIARS"]},{"l":4,"c":"___cake","w":["CUP","PAN","FISH","CHEESE"]}],[{"l":1,"c":"Weather","w":["HAIL","SLEET","FOG","DRIZZLE"]},{"l":2,"c":"Shakespeare plays","w":["OTHELLO","MACBETH","CORIOLANUS","PERICLES"]},{"l":3,"c":"Snooker terms","w":["CUSHION","POCKET","BREAK","REST"]},{"l":4,"c":"Places people live, small to large","w":["HAMLET","VILLAGE","TOWN","CITY"]}],[{"l":1,"c":"Joints","w":["ELBOW","KNEE","ANKLE","WRIST"]},{"l":2,"c":"Cheeses","w":["BRIE","FETA","EDAM","STILTON"]},{"l":3,"c":"Board games","w":["RISK","CLUEDO","MONOPOLY","SCRABBLE"]},{"l":4,"c":"Hidden animals","w":["SCATTER","BEARD","DOGMA","CRATER"]}],[{"l":1,"c":"Rainbow colours","w":["RED","YELLOW","INDIGO","VIOLET"]},{"l":2,"c":"Football club nicknames","w":["GUNNERS","SAINTS","MAGPIES","CANARIES"]},{"l":3,"c":"James Bond actors","w":["CONNERY","MOORE","DALTON","CRAIG"]},{"l":4,"c":"___stone","w":["MILE","CORNER","KIDNEY","BRIM"]}],[{"l":1,"c":"Orchestra instruments","w":["FLUTE","HARP","OBOE","CELLO"]},{"l":2,"c":"Chess pieces","w":["KNIGHT","BISHOP","ROOK","PAWN"]},{"l":3,"c":"Birds of prey","w":["KESTREL","HARRIER","BUZZARD","OSPREY"]},{"l":4,"c":"___ band","w":["RUBBER","BOY","BRASS","ELASTIC"]}],[{"l":1,"c":"Months","w":["MAY","JUNE","AUGUST","APRIL"]},{"l":2,"c":"Ways to walk","w":["STROLL","AMBLE","TRUDGE","MARCH"]},{"l":3,"c":"Things with shells","w":["EGG","TORTOISE","SNAIL","NUT"]},{"l":4,"c":"___fish","w":["STAR","SWORD","CAT","JELLY"]}],[{"l":1,"c":"Trees","w":["OAK","ASH","ELM","BIRCH"]},{"l":2,"c":"The Beatles","w":["JOHN","PAUL","GEORGE","RINGO"]},{"l":3,"c":"Things with a crown","w":["TOOTH","HAT","ANCHOR","HEAD"]},{"l":4,"c":"___pot","w":["TEA","JACK","HOT","CRACK"]}],[{"l":1,"c":"Pasta","w":["PENNE","FUSILLI","RIGATONI","ORZO"]},{"l":2,"c":"Ballroom dances","w":["TANGO","WALTZ","RUMBA","FOXTROT"]},{"l":3,"c":"Sauces","w":["PESTO","GRAVY","CUSTARD","SALSA"]},{"l":4,"c":"Hidden vehicles","w":["BUSTLE","VANITY","SCARF","CABIN"]}],[{"l":1,"c":"British money","w":["PENNY","POUND","SHILLING","FARTHING"]},{"l":2,"c":"Weights","w":["OUNCE","GRAM","STONE","TONNE"]},{"l":3,"c":"Countries","w":["GUINEA","CHAD","PERU","OMAN"]},{"l":4,"c":"Palindromes","w":["KAYAK","LEVEL","RADAR","CIVIC"]}],[{"l":1,"c":"Root vegetables","w":["LEEK","CARROT","PARSNIP","TURNIP"]},{"l":2,"c":"TV detectives","w":["POIROT","MARPLE","FROST","REBUS"]},{"l":3,"c":"Types of code","w":["MORSE","AREA","DRESS","ZIP"]},{"l":4,"c":"___ roll","w":["SPRING","SAUSAGE","DRUM","EGG"]}],[{"l":1,"c":"Seas","w":["BALTIC","CASPIAN","RED","DEAD"]},{"l":2,"c":"Scottish islands","w":["SKYE","MULL","ISLAY","ARRAN"]},{"l":3,"c":"Famous Davids","w":["BECKHAM","BOWIE","JASON","TENNANT"]},{"l":4,"c":"___pan","w":["PETER","FRYING","BED","DUST"]}],[{"l":1,"c":"Shapes","w":["SQUARE","CIRCLE","OVAL","HEXAGON"]},{"l":2,"c":"Percussion","w":["DRUM","CYMBAL","XYLOPHONE","TRIANGLE"]},{"l":3,"c":"Beans","w":["KIDNEY","BROAD","RUNNER","BUTTER"]},{"l":4,"c":"Famous Toms","w":["JONES","CRUISE","HANKS","DALEY"]}],[{"l":1,"c":"Racket sports","w":["TENNIS","BADMINTON","PADEL","SQUASH"]},{"l":2,"c":"Gourds","w":["PUMPKIN","MARROW","COURGETTE","GOURD"]},{"l":3,"c":"In the toolbox","w":["HAMMER","CHISEL","SPANNER","PLIERS"]},{"l":4,"c":"Hidden fish","w":["CODE","CARPET","SOLEMN","SHAKE"]}],[{"l":1,"c":"Winter wear","w":["JUMPER","SCARF","MITTEN","BEANIE"]},{"l":2,"c":"Racecourses","w":["EPSOM","AINTREE","GOODWOOD","CHELTENHAM"]},{"l":3,"c":"Things with teeth","w":["COMB","SAW","ZIP","GEAR"]},{"l":4,"c":"___ jump","w":["LONG","HIGH","SKI","BUNGEE"]}],[{"l":1,"c":"Jobs","w":["BAKER","PILOT","PLUMBER","DENTIST"]},{"l":2,"c":"Sharks","w":["HAMMERHEAD","MAKO","TIGER","NURSE"]},{"l":3,"c":"Monopoly streets","w":["BOND","OXFORD","REGENT","COVENTRY"]},{"l":4,"c":"Cockney rhyming slang","w":["APPLES","PLATES","LOAF","BOAT"]}],[{"l":1,"c":"Insects","w":["BEE","WASP","ANT","MOTH"]},{"l":2,"c":"Breakfast","w":["TOAST","EGGS","CEREAL","KIPPERS"]},{"l":3,"c":"Philosophers","w":["BACON","HUME","LOCKE","KANT"]},{"l":4,"c":"Hidden insects","w":["PANTRY","MOTHER","TICKLE","BEETROOT"]}],[{"l":1,"c":"Currencies","w":["EURO","DOLLAR","YEN","RAND"]},{"l":2,"c":"Mountains","w":["EVEREST","SNOWDON","MATTERHORN","KILIMANJARO"]},{"l":3,"c":"Puddings","w":["TRIFLE","CRUMBLE","PAVLOVA","ROULADE"]},{"l":4,"c":"___board","w":["DART","SKATE","FLOOR","CHESS"]}],[{"l":1,"c":"Gemstones","w":["RUBY","EMERALD","SAPPHIRE","OPAL"]},{"l":2,"c":"Card suits","w":["HEARTS","SPADES","DIAMONDS","CLUBS"]},{"l":3,"c":"Golf scores","w":["EAGLE","BIRDIE","PAR","BOGEY"]},{"l":4,"c":"___ garden","w":["BEER","ROCK","ROOF","COVENT"]}],[{"l":1,"c":"Breads","w":["BAGEL","NAAN","BRIOCHE","FOCACCIA"]},{"l":2,"c":"Famous Charleses","w":["DICKENS","DARWIN","BABBAGE","CHAPLIN"]},{"l":3,"c":"Imperial lengths","w":["FOOT","MILE","FURLONG","INCH"]},{"l":4,"c":"___yard","w":["SCOTLAND","SHIP","BACK","VINE"]}],[{"l":1,"c":"Snakes","w":["COBRA","VIPER","ADDER","BOA"]},{"l":2,"c":"Programming languages","w":["JAVA","RUBY","SWIFT","PYTHON"]},{"l":3,"c":"Grand ___","w":["PIANO","CANYON","PRIX","SLAM"]},{"l":4,"c":"Sound like letters","w":["TEA","SEA","EYE","PEA"]}],[{"l":1,"c":"Fabrics","w":["SILK","WOOL","LINEN","SATIN"]},{"l":2,"c":"Bedding","w":["DUVET","PILLOW","BLANKET","QUILT"]},{"l":3,"c":"Knots","w":["REEF","BOWLINE","GRANNY","SHEEPSHANK"]},{"l":4,"c":"___ candy","w":["COTTON","EYE","ARM","ROCK"]}],[{"l":1,"c":"Shoes","w":["SANDAL","SLIPPER","CLOG","BROGUE"]},{"l":2,"c":"Parts of a car","w":["BOOT","BONNET","BUMPER","WINDSCREEN"]},{"l":3,"c":"Hats","w":["FEDORA","BERET","TRILBY","BOWLER"]},{"l":4,"c":"Things that run","w":["NOSE","TAP","RIVER","ENGINE"]}],[{"l":1,"c":"Dog commands","w":["SIT","STAY","FETCH","ROLL"]},{"l":2,"c":"Parts of the foot","w":["TOE","ARCH","SOLE","HEEL"]},{"l":3,"c":"Fish","w":["COD","HADDOCK","PLAICE","TROUT"]},{"l":4,"c":"___ bag","w":["TEA","SLEEPING","BUM","CARRIER"]}],[{"l":1,"c":"Big cats","w":["LION","TIGER","LEOPARD","PUMA"]},{"l":2,"c":"British car makers","w":["JAGUAR","BENTLEY","ROVER","MORGAN"]},{"l":3,"c":"Yoga poses","w":["LOTUS","COBRA","TREE","WARRIOR"]},{"l":4,"c":"___fly","w":["BUTTER","DRAGON","HOUSE","FIRE"]}],[{"l":1,"c":"British wildlife","w":["BADGER","HEDGEHOG","OTTER","STOAT"]},{"l":2,"c":"Tube lines","w":["CENTRAL","JUBILEE","PICCADILLY","NORTHERN"]},{"l":3,"c":"Queens of England","w":["ELIZABETH","ANNE","MARY","VICTORIA"]},{"l":4,"c":"___glove","w":["FOX","KID","BOXING","OVEN"]}],[{"l":1,"c":"Cocktails","w":["MOJITO","MARTINI","DAIQUIRI","MARGARITA"]},{"l":2,"c":"Spices","w":["CUMIN","PAPRIKA","TURMERIC","CLOVE"]},{"l":3,"c":"Football skills","w":["NUTMEG","STEPOVER","VOLLEY","HEADER"]},{"l":4,"c":"___ jacket","w":["DINNER","BOMBER","DONKEY","STRAIT"]}],[{"l":1,"c":"At the seaside","w":["BEACH","PIER","PROMENADE","ARCADE"]},{"l":2,"c":"Composers","w":["BACH","ELGAR","HOLST","HANDEL"]},{"l":3,"c":"Things with handles","w":["DOOR","MUG","KETTLE","SUITCASE"]},{"l":4,"c":"Sound like body parts","w":["MUSSEL","NAVAL","HEAL","HARE"]}],[{"l":1,"c":"Kitchen appliances","w":["TOASTER","KETTLE","BLENDER","FRIDGE"]},{"l":2,"c":"Ballet moves","w":["PLIE","PIROUETTE","ARABESQUE","JETE"]},{"l":3,"c":"Famous Jameses","w":["BOND","CORDEN","MAY","BLUNT"]},{"l":4,"c":"___ line","w":["PUNCH","DEAD","FINISH","CLOTHES"]}],[{"l":1,"c":"Shellfish","w":["CRAB","LOBSTER","PRAWN","MUSSEL"]},{"l":2,"c":"Constellations","w":["ORION","PLOUGH","CASSIOPEIA","PEGASUS"]},{"l":3,"c":"Things with tails","w":["KITE","COMET","COIN","AEROPLANE"]},{"l":4,"c":"___walk","w":["CAT","BOARD","MOON","SPACE"]}],[{"l":1,"c":"Garden tools","w":["RAKE","HOE","SPADE","TROWEL"]},{"l":2,"c":"English rivers","w":["THAMES","SEVERN","TRENT","MERSEY"]},{"l":3,"c":"___ache","w":["BELLY","TOOTH","HEAD","EAR"]},{"l":4,"c":"___step","w":["DOOR","QUICK","GIANT","SIDE"]}],[{"l":1,"c":"Cheeses","w":["CHEDDAR","GOUDA","CAMEMBERT","HALLOUMI"]},{"l":2,"c":"Famous Olivers","w":["CROMWELL","TWIST","REED","HARDY"]},{"l":3,"c":"Salad leaves","w":["ICEBERG","ROMAINE","COS","ROCKET"]},{"l":4,"c":"___ship","w":["FRIEND","CHAMPION","OWNER","WAR"]}],[{"l":1,"c":"Music genres","w":["JAZZ","BLUES","REGGAE","FOLK"]},{"l":2,"c":"Snooker balls","w":["PINK","BLACK","BROWN","BLUE"]},{"l":3,"c":"Pickled","w":["ONION","EGG","HERRING","GHERKIN"]},{"l":4,"c":"___bird","w":["JAIL","LOVE","SONG","LADY"]}],[{"l":1,"c":"Brass instruments","w":["TRUMPET","TROMBONE","TUBA","CORNET"]},{"l":2,"c":"At the ice cream van","w":["CONE","SCOOP","WAFER","FLAKE"]},{"l":3,"c":"Cattle breeds","w":["ANGUS","JERSEY","HEREFORD","FRIESIAN"]},{"l":4,"c":"___man","w":["SNOW","POST","SUPER","MILK"]}],[{"l":1,"c":"Pencil case","w":["STAPLER","RULER","PENCIL","RUBBER"]},{"l":2,"c":"Italian cities","w":["ROME","MILAN","VENICE","NAPLES"]},{"l":3,"c":"Things with strings","w":["GUITAR","PUPPET","VIOLIN","APRON"]},{"l":4,"c":"Things that go flat","w":["TYRE","BATTERY","CAP","PACK"]}],[{"l":1,"c":"Clouds","w":["CUMULUS","STRATUS","CIRRUS","NIMBUS"]},{"l":2,"c":"Famous Harrys","w":["KANE","STYLES","HILL","HOUDINI"]},{"l":3,"c":"Tennis terms","w":["LOVE","DEUCE","ACE","LET"]},{"l":4,"c":"___boat","w":["LIFE","ROW","GRAVY","SPEED"]}],[{"l":1,"c":"In the bathroom","w":["TOWEL","TOOTHBRUSH","FLANNEL","RAZOR"]},{"l":2,"c":"Cakes","w":["SPONGE","BATTENBERG","MADEIRA","ECCLES"]},{"l":3,"c":"___box","w":["SOAP","JUKE","LETTER","MATCH"]},{"l":4,"c":"___light","w":["SPOT","MOON","FLOOD","HEAD"]}],[{"l":1,"c":"Sea creatures","w":["OCTOPUS","SQUID","JELLYFISH","STARFISH"]},{"l":2,"c":"Newspapers","w":["TIMES","MIRROR","SUN","GUARDIAN"]},{"l":3,"c":"Things you break","w":["RECORD","NEWS","ICE","LEG"]},{"l":4,"c":"___flower","w":["WALL","MAY","CORN","PASSION"]}],[{"l":1,"c":"Organs","w":["LIVER","LUNG","KIDNEY","BRAIN"]},{"l":2,"c":"Famous Jennifers","w":["ANISTON","LAWRENCE","LOPEZ","SAUNDERS"]},{"l":3,"c":"In your wallet","w":["CARD","CASH","RECEIPT","PHOTO"]},{"l":4,"c":"Sweet___","w":["HEART","CORN","PEA","BREAD"]}],[{"l":1,"c":"Winter sports","w":["SKIING","LUGE","BOBSLEIGH","SLALOM"]},{"l":2,"c":"Haircuts","w":["BOB","MULLET","QUIFF","CREW"]},{"l":3,"c":"Fish","w":["COD","HAKE","TROUT","PIKE"]},{"l":4,"c":"___ iron","w":["CURLING","WAFFLE","STEAM","SOLDERING"]}],[{"l":1,"c":"Farm animals","w":["COW","GOAT","SHEEP","HEN"]},{"l":2,"c":"Star signs","w":["ARIES","LEO","PISCES","VIRGO"]},{"l":3,"c":"Nuts","w":["WALNUT","PECAN","CASHEW","ALMOND"]},{"l":4,"c":"___tail","w":["PIG","PONY","COCK","FISH"]}],[{"l":1,"c":"Grains","w":["WHEAT","BARLEY","OATS","RYE"]},{"l":2,"c":"Found in a pub","w":["BAR","TAP","OPTIC","PUMP"]},{"l":3,"c":"Shades of brown","w":["TAN","BEIGE","KHAKI","TAUPE"]},{"l":4,"c":"Anagrams of numbers","w":["EON","TOW","THERE","NET"]}],[{"l":1,"c":"Toys","w":["KITE","DOLL","TEDDY","MARBLES"]},{"l":2,"c":"Saws","w":["HACKSAW","CHAINSAW","FRETSAW","JIGSAW"]},{"l":3,"c":"Things with bells","w":["CHURCH","BICYCLE","DOOR","SCHOOL"]},{"l":4,"c":"___ clock","w":["ALARM","GRANDFATHER","CUCKOO","BODY"]}],[{"l":1,"c":"Rooms","w":["LOUNGE","ATTIC","CELLAR","LARDER"]},{"l":2,"c":"Lizards","w":["GECKO","IGUANA","CHAMELEON","SKINK"]},{"l":3,"c":"Things you draw","w":["CURTAINS","BATH","BREATH","CONCLUSION"]},{"l":4,"c":"Look closely at","w":["STUDY","SCAN","INSPECT","SURVEY"]}],[{"l":1,"c":"Christmas","w":["TINSEL","BAUBLE","STOCKING","CRACKER"]},{"l":2,"c":"Biscuits","w":["DIGESTIVE","BOURBON","GARIBALDI","SHORTBREAD"]},{"l":3,"c":"Often stuffed","w":["TURKEY","PEPPER","MUSHROOM","CUSHION"]},{"l":4,"c":"___fish","w":["GOLD","FLAT","MONK","CRAY"]}],[{"l":1,"c":"Units of time","w":["SECOND","HOUR","DECADE","CENTURY"]},{"l":2,"c":"Shades of red","w":["SCARLET","CRIMSON","MAROON","RUBY"]},{"l":3,"c":"Very small","w":["MINUTE","WEE","TEENY","PETITE"]},{"l":4,"c":"___back","w":["HORSE","PAPER","HUNCH","FLASH"]}],[{"l":1,"c":"Boats","w":["YACHT","CANOE","FERRY","BARGE"]},{"l":2,"c":"Ways to cook eggs","w":["POACHED","SCRAMBLED","FRIED","BOILED"]},{"l":3,"c":"___ party","w":["HEN","STAG","GARDEN","DINNER"]},{"l":4,"c":"Things you jump","w":["GUN","QUEUE","SHIP","SHARK"]}],[{"l":1,"c":"Sea mammals","w":["WHALE","DOLPHIN","SEAL","WALRUS"]},{"l":2,"c":"Musicals","w":["CATS","EVITA","GREASE","OLIVER"]},{"l":3,"c":"Things you seal","w":["ENVELOPE","DEAL","FATE","LIPS"]},{"l":4,"c":"___brush","w":["HAIR","TOOTH","PAINT","NAIL"]}]]</script>
+<script type="application/json" id="bonus">[[{"l":1,"c":"Dairy","w":["MILK","CREAM","YOGURT","CHEESE"]},{"l":2,"c":"Famous Bills","w":["GATES","CLINTON","MURRAY","ODDIE"]},{"l":3,"c":"Things with wings","w":["PLANE","ANGEL","HOSPITAL","STAGE"]},{"l":4,"c":"___cup","w":["BUTTER","TEA","EGG","WORLD"]}],[{"l":1,"c":"Wild flowers","w":["BLUEBELL","POPPY","PRIMROSE","FOXGLOVE"]},{"l":2,"c":"Pies","w":["PORK","APPLE","COTTAGE","MINCE"]},{"l":3,"c":"London parks","w":["HYDE","REGENTS","GREEN","RICHMOND"]},{"l":4,"c":"___ chain","w":["DAISY","FOOD","KEY","BICYCLE"]}],[{"l":1,"c":"Dog breeds","w":["COLLIE","SPANIEL","TERRIER","DALMATIAN"]},{"l":2,"c":"Famous Emmas","w":["WATSON","THOMPSON","STONE","RADUCANU"]},{"l":3,"c":"___house","w":["GREEN","LIGHT","TREE","WARE"]},{"l":4,"c":"Hidden body parts","w":["CHINA","SHIPYARD","SEARCH","ELEGANT"]}],[{"l":1,"c":"Stone fruit","w":["PEACH","CHERRY","APRICOT","PLUM"]},{"l":2,"c":"Computer kit","w":["MOUSE","KEYBOARD","MONITOR","SPEAKER"]},{"l":3,"c":"Rodents","w":["RAT","VOLE","HAMSTER","GERBIL"]},{"l":4,"c":"___ tart","w":["BAKEWELL","JAM","TREACLE","CUSTARD"]}],[{"l":1,"c":"Public transport","w":["BUS","TRAM","TAXI","COACH"]},{"l":2,"c":"At a wedding","w":["VEIL","BOUQUET","GARTER","TRAIN"]},{"l":3,"c":"Strictly judges","w":["GOODMAN","TONIOLI","BUSSELL","HORWOOD"]},{"l":4,"c":"Famous Ronnies","w":["BARKER","CORBETT","WOOD","KRAY"]}],[{"l":1,"c":"Tableware","w":["PLATE","BOWL","CUP","MUG"]},{"l":2,"c":"Pastry","w":["PUFF","FILO","CHOUX","SHORTCRUST"]},{"l":3,"c":"Football positions","w":["KEEPER","STRIKER","WINGER","SWEEPER"]},{"l":4,"c":"Flying ___","w":["SAUCER","DOCTOR","FISH","SQUAD"]}],[{"l":1,"c":"Farm buildings","w":["BARN","STABLE","SILO","SHED"]},{"l":2,"c":"Elements","w":["GOLD","NEON","ZINC","COBALT"]},{"l":3,"c":"Famous Marks","w":["RONSON","KNOPFLER","WAHLBERG","TWAIN"]},{"l":4,"c":"___man","w":["IRON","BIN","FIRE","MILK"]}],[{"l":1,"c":"Bread","w":["LOAF","ROLL","BAP","BAGUETTE"]},{"l":2,"c":"Famous Rogers","w":["FEDERER","MOORE","DALTREY","BANNISTER"]},{"l":3,"c":"Things you roll","w":["DICE","EYES","CREDITS","SLEEVES"]},{"l":4,"c":"French ___","w":["KISS","HORN","WINDOW","DRESSING"]}],[{"l":1,"c":"South American countries","w":["CHILE","PERU","COLOMBIA","ECUADOR"]},{"l":2,"c":"Nuts","w":["BRAZIL","HAZEL","PISTACHIO","PECAN"]},{"l":3,"c":"Theatre jobs","w":["USHER","DIRECTOR","PROMPTER","STAGEHAND"]},{"l":4,"c":"___ butter","w":["GARLIC","COCOA","SHEA","BRANDY"]}],[{"l":1,"c":"Seasons","w":["SUMMER","AUTUMN","WINTER","FALL"]},{"l":2,"c":"Famous Tims","w":["HENMAN","PEAKE","BURTON","VINE"]},{"l":3,"c":"Ways to cook","w":["BAKE","ROAST","STEW","GRILL"]},{"l":4,"c":"___ roll","w":["SPRING","SWISS","BREAD","BARREL"]}],[{"l":1,"c":"Royal homes","w":["BALMORAL","SANDRINGHAM","HIGHGROVE","CLARENCE"]},{"l":2,"c":"Soups","w":["TOMATO","MINESTRONE","BROTH","GAZPACHO"]},{"l":3,"c":"Fonts","w":["ARIAL","TIMES","CALIBRI","VERDANA"]},{"l":4,"c":"___ castle","w":["SAND","BOUNCY","WINDSOR","EDINBURGH"]}],[{"l":1,"c":"Things to ride","w":["SCOOTER","TRIKE","SKATEBOARD","SLEDGE"]},{"l":2,"c":"They hibernate","w":["BEAR","HEDGEHOG","DORMOUSE","TORTOISE"]},{"l":3,"c":"Cricket","w":["STUMPS","BAILS","CREASE","BAT"]},{"l":4,"c":"___bug","w":["LADY","BED","LOVE","LITTER"]}],[{"l":1,"c":"On the beach","w":["SAND","PEBBLE","SEAWEED","DUNE"]},{"l":2,"c":"Petrol stations","w":["SHELL","ESSO","TEXACO","GULF"]},{"l":3,"c":"Famous Kates","w":["MOSS","BUSH","WINSLET","MIDDLETON"]},{"l":4,"c":"Brain___","w":["STORM","WAVE","CHILD","WASH"]}],[{"l":1,"c":"Things to write with","w":["PEN","CRAYON","MARKER","QUILL"]},{"l":2,"c":"Bodies of water","w":["LAKE","POND","LOCH","TARN"]},{"l":3,"c":"Famous Ians","w":["BOTHAM","WRIGHT","MCKELLEN","HISLOP"]},{"l":4,"c":"___ case","w":["PENCIL","NUT","PILLOW","BRIEF"]}],[{"l":1,"c":"Units of volume","w":["LITRE","GALLON","QUART","GILL"]},{"l":2,"c":"Scottish cities","w":["GLASGOW","DUNDEE","ABERDEEN","INVERNESS"]},{"l":3,"c":"Australian cities","w":["SYDNEY","DARWIN","HOBART","PERTH"]},{"l":4,"c":"Things you pull","w":["PINT","CRACKER","MUSCLE","STRINGS"]}],[{"l":1,"c":"At the bakery","w":["SCONE","CROISSANT","ECLAIR","BAGEL"]},{"l":2,"c":"Things with buttons","w":["SHIRT","REMOTE","LIFT","COAT"]},{"l":3,"c":"Famous Margarets","w":["THATCHER","ATWOOD","BECKETT","COURT"]},{"l":4,"c":"English ___","w":["MUFFIN","CHANNEL","BREAKFAST","RIVIERA"]}],[{"l":1,"c":"Amphibians","w":["FROG","NEWT","AXOLOTL","SALAMANDER"]},{"l":2,"c":"Famous Gordons","w":["RAMSAY","BROWN","BANKS","STRACHAN"]},{"l":3,"c":"Golf clubs","w":["DRIVER","PUTTER","WEDGE","IRON"]},{"l":4,"c":"___stool","w":["TOAD","FOOT","BAR","PIANO"]}],[{"l":1,"c":"Sewing box","w":["NEEDLE","THREAD","THIMBLE","BUTTON"]},{"l":2,"c":"Famous Pauls","w":["MCCARTNEY","HOLLYWOOD","NEWMAN","SCHOLES"]},{"l":3,"c":"Evergreens","w":["PINE","FIR","YEW","SPRUCE"]},{"l":4,"c":"___ cushion","w":["PIN","WHOOPEE","SCATTER","AIR"]}],[{"l":1,"c":"School subjects","w":["MATHS","HISTORY","SCIENCE","MUSIC"]},{"l":2,"c":"Famous Johns","w":["LENNON","MAJOR","TERRY","LEGEND"]},{"l":3,"c":"Shades of grey","w":["SLATE","CHARCOAL","PEWTER","GUNMETAL"]},{"l":4,"c":"___work","w":["ART","HOME","TEAM","FRAME"]}],[{"l":1,"c":"Containers","w":["JAR","BOTTLE","CARTON","TUB"]},{"l":2,"c":"Metals","w":["TIN","LEAD","COPPER","ZINC"]},{"l":3,"c":"Pirate things","w":["PARROT","PLANK","TREASURE","CUTLASS"]},{"l":4,"c":"___cast","w":["BROAD","FORE","OUT","POD"]}],[{"l":1,"c":"Fruit","w":["BANANA","GRAPE","PEAR","MELON"]},{"l":2,"c":"Tech companies","w":["APPLE","AMAZON","GOOGLE","NETFLIX"]},{"l":3,"c":"Rivers","w":["NILE","DANUBE","VOLGA","RHINE"]},{"l":4,"c":"Sound like vegetables","w":["LEAK","BEAT","SUEDE","PEACE"]}],[{"l":1,"c":"Christmas dinner","w":["SPROUTS","STUFFING","GRAVY","PARSNIPS"]},{"l":2,"c":"Countries","w":["TURKEY","JAPAN","EGYPT","KENYA"]},{"l":3,"c":"In a band","w":["DRUMMER","BASSIST","SINGER","GUITARIST"]},{"l":4,"c":"Lap___","w":["TOP","DOG","LAND","WING"]}],[{"l":1,"c":"Bags","w":["HANDBAG","RUCKSACK","SATCHEL","HOLDALL"]},{"l":2,"c":"Famous Lewises","w":["HAMILTON","CAPALDI","CARROLL","COLLINS"]},{"l":3,"c":"Patron saints","w":["PATRICK","GEORGE","DAVID","ANDREW"]},{"l":4,"c":"Things that bark","w":["DOG","TREE","SEAL","FOX"]}],[{"l":1,"c":"Holidays","w":["CRUISE","CAMPING","SKIING","GLAMPING"]},{"l":2,"c":"Birds that can't fly","w":["OSTRICH","EMU","PENGUIN","KIWI"]},{"l":3,"c":"Bond films","w":["SKYFALL","GOLDFINGER","MOONRAKER","THUNDERBALL"]},{"l":4,"c":"___ park","w":["SAFARI","CAR","THEME","SKATE"]}],[{"l":1,"c":"Boxing","w":["JAB","UPPERCUT","CROSS","ROUND"]},{"l":2,"c":"Fishing","w":["ROD","REEL","BAIT","HOOK"]},{"l":3,"c":"___ chair","w":["DECK","ARM","HIGH","ROCKING"]},{"l":4,"c":"___ race","w":["RAT","HORSE","HUMAN","SPACE"]}],[{"l":1,"c":"Coffee","w":["LATTE","MOCHA","ESPRESSO","CAPPUCCINO"]},{"l":2,"c":"Bike parts","w":["PEDAL","CHAIN","SADDLE","BELL"]},{"l":3,"c":"Famous Christophers","w":["WREN","COLUMBUS","NOLAN","ECCLESTON"]},{"l":4,"c":"Past tenses","w":["SPOKE","ROSE","BORE","LEFT"]}],[{"l":1,"c":"At the fair","w":["DODGEMS","WALTZER","CAROUSEL","CANDYFLOSS"]},{"l":2,"c":"Famous Bobs","w":["MARLEY","GELDOF","DYLAN","HOSKINS"]},{"l":3,"c":"Snooker players","w":["DAVIS","HIGGINS","TRUMP","SELBY"]},{"l":4,"c":"Dead___","w":["END","LINE","LOCK","PAN"]}],[{"l":1,"c":"Crafts","w":["KNITTING","SEWING","CROCHET","QUILTING"]},{"l":2,"c":"Owls","w":["TAWNY","SNOWY","EAGLE","LITTLE"]},{"l":3,"c":"Famous Joans","w":["COLLINS","RIVERS","BAKEWELL","ARMATRADING"]},{"l":4,"c":"___ dance","w":["BARN","TAP","LINE","MORRIS"]}],[{"l":1,"c":"First aid kit","w":["BANDAGE","ANTISEPTIC","TWEEZERS","SPLINT"]},{"l":2,"c":"Building materials","w":["BRICK","CEMENT","TIMBER","PLASTER"]},{"l":3,"c":"Golden ___","w":["RETRIEVER","SYRUP","HANDSHAKE","GLOBE"]},{"l":4,"c":"Traffic ___","w":["LIGHT","JAM","WARDEN","CONE"]}],[{"l":1,"c":"Ice cream flavours","w":["VANILLA","CHOCOLATE","PISTACHIO","MINT"]},{"l":2,"c":"Famous Jamies","w":["REDKNAPP","DORNAN","CARRAGHER","CULLUM"]},{"l":3,"c":"Musicals","w":["WICKED","MATILDA","OLIVER","HAMILTON"]},{"l":4,"c":"___ blonde","w":["STRAWBERRY","PLATINUM","DIRTY","ASH"]}]]</script>
 <script>
 "use strict";
 /* ---------- puzzles and dates ---------- */
 const PUZZLES = JSON.parse(document.getElementById("puzzles").textContent);
+const BONUS = JSON.parse(document.getElementById("bonus").textContent); // never used as daily puzzles; append only
 const DAY = 864e5, LAUNCH = Date.UTC(2026, 9, 28); // puzzle #1 is 28 October 2026
 const dayIndex = (d = new Date()) => Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - LAUNCH) / DAY);
 const todayNo = () => Math.max(1, dayIndex() + 1);
@@ -184,18 +253,29 @@ const EMOJI = ["", "🟨", "🟩", "🟦", "🟪"];
 const $ = id => document.getElementById(id);
 const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-let GAMES = load("lu.games", {});
-const persist = () => save("lu.games", GAMES);
+let GAMES = load("lu.games", {});      // daily puzzles, keyed by puzzle number
+let BGAMES = load("lu.bonus", {});     // bonus puzzles, keyed by bonus number
+let CGAMES = load("lu.cgames", {});    // boards people made, keyed by board id
+let MINE = load("lu.mine", []);        // boards I made: [{id, t, a, g:[{l,c,w}], at}]
+let SHARED = load("lu.shared", []);    // boards sent to me: same shape
+const STORES = { daily: ["lu.games", () => GAMES], bonus: ["lu.bonus", () => BGAMES], custom: ["lu.cgames", () => CGAMES] };
+let REF = null;                        // what's being played: {kind, key, P, title, seed, board}
+const persist = () => { const [k, get] = STORES[REF ? REF.kind : "daily"]; save(k, get()); };
 
 function seeded(n) { let a = n * 2654435761 >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function shuffle(arr, rnd = Math.random) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
-function gameFor(no) {
-  if (!GAMES[no]) {
-    const words = puzzleFor(no).flatMap(g => g.w);
-    GAMES[no] = { order: shuffle(words.slice(), seeded(no)), found: [], guesses: [], mistakes: 0, done: false, won: false, start: 0, end: 0 };
+function gameFor(ref) {
+  const store = STORES[ref.kind][1]();
+  if (!store[ref.key]) {
+    const words = ref.P.flatMap(g => g.w);
+    store[ref.key] = { order: shuffle(words.slice(), seeded(ref.seed)), found: [], guesses: [], mistakes: 0, done: false, won: false, start: 0, end: 0 };
   }
-  return GAMES[no];
+  return store[ref.key];
 }
+const dailyRef = no => ({ kind: "daily", key: no, P: puzzleFor(no), title: `Link Up #${no}`, seed: no });
+const bonusRef = n => ({ kind: "bonus", key: n, P: BONUS[n - 1], title: `Bonus #${n}`, seed: 100000 + n });
+const boardRef = b => ({ kind: "custom", key: b.id, P: b.g, title: b.t, seed: parseInt(b.id, 36) || 1, board: b });
+const statusClass = gm => gm && gm.done ? (gm.won ? (gm.mistakes ? "won" : "perfect") : "lost") : gm && gm.guesses.length ? "prog" : "";
 const groupOf = (P, w) => P.findIndex(g => g.w.includes(w));
 
 /* ---------- stats ---------- */
@@ -229,28 +309,161 @@ function renderHome() {
     bt.append(document.createTextNode(String(n)), el("small", null, dateLabel(n, { day: "numeric", month: "short" })));
     bt.setAttribute("aria-label", `Puzzle ${n}`); bt.onclick = () => openPuzzle(n); ar.append(bt);
   }
+  const ba = $("bonusArch"); ba.textContent = "";
+  BONUS.forEach((_, i) => { const n = i + 1, bt = el("button", statusClass(BGAMES[n])); bt.append(document.createTextNode(String(n)), el("small", null, "Bonus"));
+    bt.setAttribute("aria-label", `Bonus puzzle ${n}`); bt.onclick = () => openRef(bonusRef(n)); ba.append(bt); });
+  const bDone = BONUS.filter((_, i) => BGAMES[i + 1] && BGAMES[i + 1].done).length;
+  $("bonusCount").textContent = `${bDone} of ${BONUS.length} played`;
+  $("randomBtn").textContent = bDone >= BONUS.length ? "Play a random one again" : "Play a random one";
+  renderBoards();
 }
+
+/* ---------- boards people make ---------- */
+const SITE_URL = "https://jackstoneley.github.io/word-rattle/";
+const utf8 = s => new TextEncoder().encode(s), fromUtf8 = b => new TextDecoder().decode(b);
+function b64u(bytes) { let s = ""; bytes.forEach(b => s += String.fromCharCode(b)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+function unb64u(str) { str = str.replace(/-/g, "+").replace(/_/g, "/"); while (str.length % 4) str += "="; const s = atob(str); return Uint8Array.from(s, c => c.charCodeAt(0)); }
+const MAXW = 11, MAXL = 20, MAXC = 32, MAXT = 40, MAXA = 24;
+const cleanWord = w => String(w || "").toUpperCase().replace(/\s+/g, " ").trim();
+const cleanText = (t, n) => String(t || "").replace(/\s+/g, " ").trim().slice(0, n);
+function hashId(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+/* A board link is SITE_URL + "#lu." + base64url(JSON [1, title, author, [[group, [4 words]] x4, yellow first]]). */
+function makeBoard(t, a, groups) {
+  const g = groups.map((x, i) => ({ l: i + 1, c: cleanText(x.c, MAXC), w: x.w.map(cleanWord) }));
+  t = cleanText(t, MAXT) || "Untitled board"; a = cleanText(a, MAXA);
+  const id = hashId(JSON.stringify([t, a, g.map(x => [x.c, x.w])]));
+  return { id, t, a, g, at: Date.now() };
+}
+const boardCode = b => "lu." + b64u(utf8(JSON.stringify([1, b.t, b.a, b.g.map(x => [x.c, x.w])])));
+const boardLink = b => SITE_URL + "#" + boardCode(b);
+function boardProblem(groups) {
+  const all = groups.flatMap(x => x.w.map(cleanWord));
+  if (groups.some(x => !cleanText(x.c, MAXC))) return "Give every group a name.";
+  if (all.some(w => !w)) return "Fill in all sixteen words.";
+  if (all.some(w => w.length > MAXL || w.split(" ").some(p => p.length > MAXW))) return `Words can be up to ${MAXW} letters, so they fit on a tile. Two short words like ICE CREAM are fine.`;
+  const dup = all.find((w, i) => all.indexOf(w) !== i); if (dup) return `${dup} is in there twice. Every word must be different.`;
+  return "";
+}
+function parseBoard(text) {
+  const m = String(text || "").match(/(?:^|[#\s])lu\.([A-Za-z0-9_-]{20,})/); if (!m) return null;
+  try {
+    const d = JSON.parse(fromUtf8(unb64u(m[1])));
+    if (!Array.isArray(d) || d[0] !== 1 || !Array.isArray(d[3]) || d[3].length !== 4) return null;
+    const groups = d[3].map(x => ({ c: String(x[0] || ""), w: Array.isArray(x[1]) && x[1].length === 4 ? x[1].map(String) : [] }));
+    if (boardProblem(groups)) return null;
+    return makeBoard(String(d[1] || ""), String(d[2] || ""), groups);
+  } catch (e) { return null; }
+}
+const saveBoards = () => { save("lu.mine", MINE); save("lu.shared", SHARED); };
+/* Receive a board from a link or pasted message. Returns true if the text was a board. */
+function receiveBoard(text, quiet) {
+  const b = parseBoard(text); if (!b) return false;
+  let have = MINE.find(x => x.id === b.id) || SHARED.find(x => x.id === b.id);
+  if (!have) { have = b; SHARED.unshift(b); saveBoards(); if (!quiet) toast(`Added "${b.t}"${b.a ? " from " + b.a : ""}`); }
+  openRef(boardRef(have));
+  return true;
+}
+function boardRow(b, mine) {
+  const gm = CGAMES[b.id], row = el("div", "bd"), top = el("div", "bt"), sw = el("span", "sw"), txt = el("div");
+  for (let i = 1; i <= 4; i++) { const q = el("i"); q.style.background = `var(--g${i})`; sw.append(q); }
+  const state = gm && gm.done ? (gm.won ? (gm.mistakes ? `Solved, ${gm.mistakes} mistake${gm.mistakes > 1 ? "s" : ""}` : "Perfect") : "Not solved") : gm && gm.guesses.length ? "In progress" : "Not played yet";
+  txt.append(el("b", null, b.t), el("small", null, (mine ? "Made by you" : b.a ? "From " + b.a : "Shared with you") + " · " + state));
+  top.append(sw, txt); row.append(top);
+  const ops = el("div", "ops"), add = (label, fn, cls) => { const x = el("button", "btn" + (cls ? " " + cls : ""), label); x.onclick = fn; ops.append(x); return x; };
+  add(gm && gm.done ? "See result" : gm && gm.guesses.length ? "Continue" : mine ? "Try it" : "Play", () => openRef(boardRef(b)), mine ? "" : "primary");
+  if (mine) { add("Send", () => sendBoard(b), "primary"); add("Edit", () => openMaker(b)); }
+  else add("Send on", () => sendBoard(b));
+  const del = add("Delete", () => {
+    if (!del.dataset.armed) { del.dataset.armed = "1"; del.textContent = "Tap again to delete"; setTimeout(() => { if (del.isConnected) { delete del.dataset.armed; del.textContent = "Delete"; } }, 3000); return; }
+    if (mine) MINE = MINE.filter(x => x.id !== b.id); else SHARED = SHARED.filter(x => x.id !== b.id);
+    saveBoards(); renderBoards();
+  }, "danger");
+  row.append(ops); return row;
+}
+function renderBoards() {
+  const ml = $("mineList"), sl = $("sharedList"); ml.textContent = ""; sl.textContent = "";
+  MINE.forEach(b => ml.append(boardRow(b, true)));
+  if (!MINE.length) ml.append(el("p", "empty", "You haven't made any boards yet."));
+  SHARED.forEach(b => sl.append(boardRow(b, false)));
+  if (!SHARED.length) sl.append(el("p", "empty", "When someone sends you a board, it shows up here."));
+}
+async function shareText(text, okMsg) {
+  try { if (NATIVE) { await NATIVE.share({ text }); return; } } catch (e) {}
+  try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+  try { await (NATIVE ? NATIVE.copy({ text }) : navigator.clipboard.writeText(text)); toast(okMsg || "Copied. Paste it into a message"); } catch (e) { window.prompt("Copy this", text); }
+}
+function sendBoard(b) {
+  shareText(`${b.a ? b.a + " made" : "Here's"} a Link Up puzzle for you: "${b.t}". Tap the link to play it in Stoneley Games:\n${boardLink(b)}`, "Link copied. Paste it into a message");
+}
+
+/* ---------- the board maker ---------- */
+let EDIT = null; // id of the board being edited, or null for a new one
+const mInputs = () => ({ c: [...document.querySelectorAll("#make input.c")], w: [...document.querySelectorAll("#make input.w")] });
+function makerGroups() { const { c, w } = mInputs(); return c.map((x, i) => ({ c: x.value, w: w.filter(y => +y.dataset.g === i).map(y => y.value) })); }
+function fillMaker(d) {
+  const { c, w } = mInputs(); $("mTitle").value = d.t || ""; $("mName").value = d.a != null ? d.a : load("lu.name", "");
+  c.forEach((x, i) => x.value = d.g && d.g[i] ? d.g[i].c : "");
+  w.forEach(y => y.value = d.g && d.g[+y.dataset.g] ? d.g[+y.dataset.g].w[+y.dataset.i] || "" : "");
+}
+function saveDraft() { save("lu.draft", { edit: EDIT, t: $("mTitle").value, a: $("mName").value, g: makerGroups() }); }
+function openMaker(b) {
+  const draft = load("lu.draft", null);
+  if (b) { EDIT = b.id; fillMaker(draft && draft.edit === b.id ? draft : b); }
+  else { EDIT = null; fillMaker(draft && !draft.edit ? draft : {}); }
+  $("mHead").textContent = EDIT ? "Edit board" : "Make a board"; $("mErr").textContent = "";
+  document.querySelectorAll("#make input.bad").forEach(x => x.classList.remove("bad"));
+  show("make");
+}
+function markProblems() {
+  const { c, w } = mInputs(), vals = w.map(y => cleanWord(y.value));
+  c.forEach(x => x.classList.toggle("bad", !cleanText(x.value, MAXC)));
+  w.forEach((y, i) => { const v = vals[i]; y.classList.toggle("bad", !v || v.length > MAXL || v.split(" ").some(p => p.length > MAXW) || vals.indexOf(v) !== i || vals.lastIndexOf(v) !== i); });
+}
+function saveMaker(andSend) {
+  const groups = makerGroups(), problem = boardProblem(groups);
+  if (problem) { $("mErr").textContent = problem; markProblems(); const first = document.querySelector("#make input.bad"); if (first) first.focus(); return; }
+  const b = makeBoard($("mTitle").value, $("mName").value, groups);
+  save("lu.name", b.a);
+  const at = EDIT ? MINE.findIndex(x => x.id === EDIT) : -1;
+  if (at >= 0) MINE[at] = b; else if (!MINE.some(x => x.id === b.id)) MINE.unshift(b);
+  saveBoards(); save("lu.draft", null); EDIT = null;
+  goHome(); toast(andSend ? "Saved" : "Saved. Tap Send to share it");
+  if (andSend) sendBoard(b);
+}
+$("makeBtn").onclick = () => openMaker(null);
+$("mBack").onclick = () => goHome();
+$("mSave").onclick = () => saveMaker(false);
+$("mShare").onclick = () => saveMaker(true);
+$("make").addEventListener("input", e => { if (e.target.classList.contains("bad")) markProblems(); saveDraft(); });
+$("pasteBtn").onclick = () => { const v = $("pasteIn").value; if (receiveBoard(v)) $("pasteIn").value = ""; else toast(v.trim() ? "That isn't a Link Up board link" : "Paste a board link first"); };
+$("pasteIn").addEventListener("keydown", e => { if (e.key === "Enter") $("pasteBtn").onclick(); });
+$("randomBtn").onclick = () => {
+  const left = BONUS.map((_, i) => i + 1).filter(n => !(BGAMES[n] && BGAMES[n].done)), pool = left.length ? left : BONUS.map((_, i) => i + 1);
+  const fresh = pool.filter(n => !(BGAMES[n] && BGAMES[n].guesses.length)), pick = (fresh.length ? fresh : pool);
+  openRef(bonusRef(pick[Math.floor(Math.random() * pick.length)]));
+};
 
 /* ---------- play ---------- */
 let NO = 0, P = null, G = null, SEL = new Set(), tick = null, view = "home";
-function show(v) { $("home").hidden = v !== "home"; $("play").hidden = v !== "play"; view = v; window.scrollTo(0, 0); }
-function openPuzzle(no) {
-  NO = no; P = puzzleFor(no); G = gameFor(no); SEL = new Set();
+function show(v) { ["home", "play", "make"].forEach(x => $(x).hidden = v !== x); view = v; window.scrollTo(0, 0); }
+const openPuzzle = no => openRef(dailyRef(no));
+function openRef(ref) {
+  REF = ref; NO = ref.kind === "daily" ? ref.key : 0; P = ref.P; G = gameFor(ref); SEL = new Set();
   if (!G.start) G.start = Date.now();
   persist();
-  $("pTitle").textContent = `Link Up #${no}`;
+  $("pTitle").textContent = ref.title;
   show("play"); renderPlay();
   clearInterval(tick); tick = setInterval(updTime, 1000); updTime();
 }
 function updTime() { if (!G) return; $("pTime").textContent = fmtTime((G.done ? G.end : Date.now()) - G.start); }
-function sizeClass(w) { return w.length > 11 ? " s12" : w.length > 9 ? " s10" : w.length > 7 ? " s8" : ""; }
+function sizeClass(w) { w = w.split(" ").reduce((a, b) => a.length > b.length ? a : b); return w.length > 11 ? " s12" : w.length > 9 ? " s10" : w.length > 7 ? " s8" : ""; }
 function renderPlay() {
   const bands = $("bands"); bands.textContent = "";
   const shown = G.done ? [...G.found, ...[0, 1, 2, 3].filter(i => !G.found.includes(i))] : G.found;
   for (const gi of shown) { const g = P[gi], b = el("div", "band l" + g.l); b.append(el("b", null, g.c), el("span", null, g.w.join(", "))); bands.append(b); }
   const wall = $("wall"); wall.textContent = "";
   if (!G.done) for (const w of G.order) {
-    const t = el("button", "tile" + sizeClass(w) + (SEL.has(w) ? " on" : ""), w); t.dataset.w = w; t.setAttribute("aria-pressed", String(SEL.has(w)));
+    const t = el("button", "tile" + sizeClass(w) + (SEL.has(w) ? " on" : "")); t.append(el("span", null, w)); t.dataset.w = w; t.setAttribute("aria-pressed", String(SEL.has(w)));
     t.onclick = () => { if (SEL.has(w)) SEL.delete(w); else if (SEL.size < 4) SEL.add(w); renderPlay(); };
     wall.append(t);
   }
@@ -269,9 +482,9 @@ function renderPlay() {
 /* Shrink a tile's text until the whole word fits on one line. */
 function fitTiles() {
   document.querySelectorAll(".tile").forEach(t => {
-    t.style.fontSize = ""; let size = parseFloat(getComputedStyle(t).fontSize), room = t.clientWidth - 8;
-    while (t.scrollWidth > t.clientWidth - 2 && size > 8) { size -= .5; t.style.fontSize = size + "px"; }
-    if (room <= 0) t.style.fontSize = "";
+    t.style.fontSize = ""; const word = t.firstChild, room = t.clientWidth - 10; if (!word || room <= 0) return;
+    let size = parseFloat(getComputedStyle(t).fontSize);
+    while ((word.scrollWidth > room || word.offsetHeight > t.clientHeight - 8) && size > 6.5) { size -= .5; t.style.fontSize = size + "px"; }
   });
 }
 window.addEventListener("resize", () => { if (view === "play") fitTiles(); });
@@ -310,17 +523,28 @@ $("doneBtn").onclick = goHome;
 
 /* ---------- sharing ---------- */
 const NATIVE = window.SG_APP && window.Capacitor ? (typeof Capacitor.registerPlugin === "function" ? Capacitor.registerPlugin("WordRattle") : (Capacitor.Plugins || {}).WordRattle) || null : null;
-$("shareBtn").onclick = async () => {
-  const text = `Link Up #${NO}\n${emojiGrid()}\n${G.won ? (G.mistakes ? `Solved with ${G.mistakes} mistake${G.mistakes > 1 ? "s" : ""} in ${fmtTime(G.end - G.start)}` : `Perfect, in ${fmtTime(G.end - G.start)}`) : "Not this time"}`;
-  try { if (NATIVE) { await NATIVE.share({ text }); return; } } catch (e) {}
-  try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
-  try { await (NATIVE ? NATIVE.copy({ text }) : navigator.clipboard.writeText(text)); toast("Copied. Paste it into a message"); } catch (e) { window.prompt("Copy this", text); }
+$("shareBtn").onclick = () => {
+  const head = REF.kind === "custom" ? `Link Up: "${REF.title}"` : REF.title;
+  const line = G.won ? (G.mistakes ? `Solved with ${G.mistakes} mistake${G.mistakes > 1 ? "s" : ""} in ${fmtTime(G.end - G.start)}` : `Perfect, in ${fmtTime(G.end - G.start)}`) : "Not this time";
+  shareText(`${head}\n${emojiGrid()}\n${line}` + (REF.kind === "custom" ? `\nPlay it: ${boardLink(REF.board)}` : ""));
 };
 
 /* Stoneley Games shell: the phone's back button. Returning false goes back to the games list. */
-window.SG_BACK = () => { if (view === "play") { goHome(); return true; } return false; };
+window.SG_BACK = () => { if (view === "play" || view === "make") { goHome(); return true; } return false; };
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && view === "home") renderHome(); });
+
+/* Links: "#lu.…" is a board for Link Up; anything else (sync links, seeds, live codes) belongs to Word Rattle. */
+window.SG_HANDLES_LINKS = true;
+function handleLink(url) {
+  url = String(url || ""); const i = url.indexOf("#"); const h = i >= 0 ? url.slice(i + 1) : url;
+  if (!h) return false;
+  if (receiveBoard(decodeURIComponent(h))) return true;
+  location.href = "../word-rattle/index.html#" + h; return true;
+}
+window.addEventListener("hashchange", () => { const h = location.hash; if (h.length > 1) { history.replaceState(null, "", location.pathname + location.search); handleLink(h); } });
+if (NATIVE) NATIVE.addListener("appUrl", e => { if (e && e.url && view !== "make") handleLink(e.url); });
 renderHome();
+if (location.hash.length > 1) { const h = location.hash; history.replaceState(null, "", location.pathname + location.search); handleLink(h); }
 </script>
 <script src="../../shell.js"></script>
 </body>

@@ -9,6 +9,18 @@
         "Same daily puzzle for both of you: share your result to compare",
         "Word Rattle is back to its original name"
       ]
+    },
+    {
+      "id": 2,
+      "type": "features",
+      "headline": "Link Up: bonus puzzles and make your own",
+      "details": [
+        "30 bonus puzzles you can play any time, plus every past daily puzzle.",
+        "Make your own board: four groups of four words, in the four colours.",
+        "Tap Send to share your board as a link. Whoever taps it gets it in Link Up.",
+        "Boards sent to you appear under Shared with you.",
+        "Words on the tiles are a readable size again."
+      ]
     }
   ]
 }

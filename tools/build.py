@@ -33,15 +33,18 @@ def check_link_up():
     """Every Link Up puzzle: four groups at levels 1-4, four words each, sixteen different words."""
     import json
     html = (ROOT / "games" / "link-up" / "index.html").read_text(encoding="utf-8")
-    m = re.search(r'<script type="application/json" id="puzzles">(.*?)</script>', html, re.S)
-    if not m:
-        sys.exit("link-up: puzzle block not found")
-    puzzles = json.loads(m.group(1))
-    for i, p in enumerate(puzzles, 1):
-        words = [w for g in p for w in g["w"]]
-        if len(p) != 4 or sorted(g["l"] for g in p) != [1, 2, 3, 4] or any(len(g["w"]) != 4 for g in p) or len(set(words)) != 16:
-            sys.exit(f"link-up: puzzle {i} is malformed")
-    print(f"link-up: {len(puzzles)} puzzles ok")
+    counts = []
+    for block in ("puzzles", "bonus"):
+        m = re.search(rf'<script type="application/json" id="{block}">(.*?)</script>', html, re.S)
+        if not m:
+            sys.exit(f"link-up: {block} block not found")
+        puzzles = json.loads(m.group(1))
+        for i, p in enumerate(puzzles, 1):
+            words = [w for g in p for w in g["w"]]
+            if len(p) != 4 or sorted(g["l"] for g in p) != [1, 2, 3, 4] or any(len(g["w"]) != 4 for g in p) or len(set(words)) != 16:
+                sys.exit(f"link-up: {block} puzzle {i} is malformed")
+        counts.append(f"{len(puzzles)} {block}")
+    print(f"link-up: {', '.join(counts)} ok")
 
 
 def check_release_notes():

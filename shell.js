@@ -2,7 +2,7 @@
    - Website: registers the offline service worker (sw.js at the site root).
    - Android app: routes the phone's back button. A game may define window.SG_BACK();
      returning true means the game handled it, false (or no SG_BACK) goes back to the games list.
-   - Android app: game links opened while a non-Word-Rattle page is showing are passed to Word Rattle. */
+   - Android app: game links opened while another game is showing go to Link Up (#lu.…) or Word Rattle. */
 (function () {
   var HUB = "../../index.html";
   var APP = !!(window.SG_APP || window.WR_APP);
@@ -28,7 +28,7 @@
     P.addListener("appUrl", function (e) {
       var url = e && e.url ? String(e.url) : "";
       var i = url.indexOf("#");
-      if (i >= 0 && url.length > i + 1) location.href = "../word-rattle/index.html" + url.slice(i);
+      if (i >= 0 && url.length > i + 1) location.href = (/^#lu\./.test(url.slice(i)) ? "../link-up/" : "../word-rattle/") + "index.html" + url.slice(i);
     });
   }
 })();

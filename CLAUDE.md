@@ -78,6 +78,13 @@ wordplay). Puzzle #1 is 28 October 2026 and the daily puzzle cycles through the 
 puzzles (never reorder or edit old ones: saved games are keyed by puzzle number). Each word must fit only one
 group, unless it is a deliberate red herring that the other groups rule out. `tools/build.py` checks the shape.
 
+- **Bonus puzzles** live in the `id="bonus"` block (same shape). They are never used as daily puzzles; saved games
+  are keyed by bonus number in `lu.bonus`, so append only here too.
+- **Boards people make** (`lu.mine`, received ones in `lu.shared`, their games in `lu.cgames` keyed by board id).
+  There is no server: a board travels as a link, `SITE_URL#lu.` + base64url(JSON `[1, title, author,
+  [[group, [4 words]] x4]]`, yellow first). The hub and `shell.js` send `#lu.…` links to Link Up and every other
+  link to Word Rattle; Word Rattle forwards any `lu.` code it gets. Keep that link format readable forever.
+
 ### Adding a new game
 
 1. Create `games/<id>/index.html` (self-contained), add the shell script tag, home link and `SG_BACK`.
