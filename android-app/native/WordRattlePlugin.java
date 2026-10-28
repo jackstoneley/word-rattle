@@ -1,6 +1,10 @@
 package com.jackstoneley.wordrattle;
 
 import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
+import android.location.LocationManager;
+import android.provider.Settings;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -19,7 +23,9 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.nearby.Nearby;
+import com.google.android.gms.nearby.connection.ConnectionsStatusCodes;
 import com.google.android.gms.nearby.connection.AdvertisingOptions;
 import com.google.android.gms.nearby.connection.ConnectionInfo;
 import com.google.android.gms.nearby.connection.ConnectionLifecycleCallback;
@@ -125,13 +131,12 @@ public class WordRattlePlugin extends Plugin {
     /* ---------- permissions for nearby play ---------- */
 
     private String[] requiredAliases() {
-        if (Build.VERSION.SDK_INT >= 33) return new String[] { "bluetooth", "wifi" };
+        if (Build.VERSION.SDK_INT >= 33) return new String[] { "bluetooth", "wifi", "location" };
         if (Build.VERSION.SDK_INT >= 31) return new String[] { "bluetooth", "location" };
         return new String[] { "location" };
     }
 
     private String[] requestAliases() {
-        if (Build.VERSION.SDK_INT >= 33) return new String[] { "bluetooth", "wifi", "location" };
         return requiredAliases();
     }
 
@@ -155,7 +160,54 @@ public class WordRattlePlugin extends Plugin {
     private void permissionsDone(PluginCall call) {
         JSObject o = new JSObject();
         o.put("granted", allGranted());
+        JSObject states = new JSObject();
+        for (String a : requiredAliases()) states.put(a, getPermissionState(a).toString());
+        o.put("states", states);
         call.resolve(o);
+    }
+
+    /* Is Bluetooth on, and are location services on? (Android needs both to find nearby phones.) */
+    @PluginMethod
+    public void status(PluginCall call) {
+        boolean bt = false, loc = false;
+        try {
+            BluetoothManager bm = (BluetoothManager) getContext().getSystemService(Context.BLUETOOTH_SERVICE);
+            BluetoothAdapter ad = bm != null ? bm.getAdapter() : null;
+            bt = ad != null && ad.isEnabled();
+        } catch (Exception ignored) {}
+        try {
+            LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+            if (lm != null) loc = Build.VERSION.SDK_INT >= 28 ? lm.isLocationEnabled()
+                : (lm.isProviderEnabled(LocationManager.GPS_PROVIDER) || lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
+        } catch (Exception ignored) {}
+        JSObject o = new JSObject();
+        o.put("bluetooth", bt);
+        o.put("location", loc);
+        o.put("sdk", Build.VERSION.SDK_INT);
+        call.resolve(o);
+    }
+
+    @PluginMethod
+    public void openSettings(PluginCall call) {
+        String which = call.getString("which", "app");
+        Intent i;
+        if ("bluetooth".equals(which)) i = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+        else if ("location".equals(which)) i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        else { i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS); i.setData(android.net.Uri.parse("package:" + getContext().getPackageName())); }
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(i);
+        call.resolve();
+    }
+
+    private void fail(PluginCall call, Exception e) {
+        if (e instanceof ApiException) {
+            int code = ((ApiException) e).getStatusCode();
+            call.reject(ConnectionsStatusCodes.getStatusCodeString(code) + " (" + code + ")", String.valueOf(code));
+        } else call.reject(String.valueOf(e.getMessage()));
+    }
+
+    private boolean already(Exception e, int code) {
+        return e instanceof ApiException && ((ApiException) e).getStatusCode() == code;
     }
 
     /* ---------- nearby connections ---------- */
@@ -218,17 +270,19 @@ public class WordRattlePlugin extends Plugin {
     @PluginMethod
     public void startAdvertising(PluginCall call) {
         AdvertisingOptions options = new AdvertisingOptions.Builder().setStrategy(Strategy.P2P_STAR).build();
+        client.stopAdvertising();
         client.startAdvertising(call.getString("name", "Word Rattle"), SERVICE_ID, lifecycle, options)
             .addOnSuccessListener(v -> call.resolve())
-            .addOnFailureListener(e -> call.reject(String.valueOf(e.getMessage())));
+            .addOnFailureListener(e -> { if (already(e, ConnectionsStatusCodes.STATUS_ALREADY_ADVERTISING)) call.resolve(); else fail(call, e); });
     }
 
     @PluginMethod
     public void startDiscovery(PluginCall call) {
         DiscoveryOptions options = new DiscoveryOptions.Builder().setStrategy(Strategy.P2P_STAR).build();
+        client.stopDiscovery();
         client.startDiscovery(SERVICE_ID, discovery, options)
             .addOnSuccessListener(v -> call.resolve())
-            .addOnFailureListener(e -> call.reject(String.valueOf(e.getMessage())));
+            .addOnFailureListener(e -> { if (already(e, ConnectionsStatusCodes.STATUS_ALREADY_DISCOVERING)) call.resolve(); else fail(call, e); });
     }
 
     @PluginMethod
@@ -243,7 +297,7 @@ public class WordRattlePlugin extends Plugin {
         if (id == null) { call.reject("Missing id"); return; }
         client.requestConnection(call.getString("name", "Player"), id, lifecycle)
             .addOnSuccessListener(v -> call.resolve())
-            .addOnFailureListener(e -> call.reject(String.valueOf(e.getMessage())));
+            .addOnFailureListener(e -> { if (already(e, ConnectionsStatusCodes.STATUS_ALREADY_CONNECTED_TO_ENDPOINT)) call.resolve(); else fail(call, e); });
     }
 
     @PluginMethod

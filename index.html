@@ -171001,6 +171001,8 @@ const rivalDailyDays=r=>dailyDays(new Set(Object.keys(r.games)));
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
 function note(msg,ok){$("note").textContent=msg||"";$("note").hidden=!msg;$("note").classList.toggle("ok",!!ok)}
+function noteAction(msg,actions){note(msg);const r=el("div","row");r.style.marginTop="8px";for(const [label,fn] of actions){const b=el("button","btn sm",label);b.onclick=fn;r.append(b)}$("note").append(r);$("home").scrollTop=0}
+const androidSays=e=>e&&e.message?` Android said: ${e.message}.`:"";
 const SCREENS=["home","ready","play","results","compare","rival","live","lb"];let view="home";
 function show(id){for(const s of SCREENS)$(s).hidden=s!==id;view=id;$(id).scrollTop=0}
 const IS_APP=!!window.WR_APP, SITE_URL="https://jackstoneley.github.io/word-rattle/";
@@ -171445,7 +171447,7 @@ async function hostLive(){
 async function hostNearby(){
   leaveLive();if(!(await nearbyReady()))return;
   LIVE=newLive(true,"nearby");const L=LIVE;
-  try{await NATIVE.startAdvertising({name:`${L.code}|${liveName()}`})}catch(e){LIVE=null;note("Couldn't start a nearby game. Check Bluetooth is on, then try again.");showHome();return}
+  try{await NATIVE.startAdvertising({name:`${L.code}|${liveName()}`})}catch(e){LIVE=null;showHome();note("Couldn't start a nearby game."+androidSays(e)+" Send me a screenshot of this message if it keeps happening.");return}
   hostRoster();showLive();
 }
 function hostRoster(){const L=LIVE;
@@ -171522,13 +171524,13 @@ async function joinLive(code){
 async function findNearby(){
   leaveLive();if(!(await nearbyReady()))return;
   LIVE=newLive(false,"nearby");const L=LIVE;
-  try{await NATIVE.startDiscovery()}catch(e){LIVE=null;note("Couldn't search for nearby games. Check Bluetooth is on, then try again.");showHome();return}
+  try{await NATIVE.startDiscovery()}catch(e){LIVE=null;showHome();note("Couldn't search for nearby games."+androidSays(e)+" Send me a screenshot of this message if it keeps happening.");return}
   showLive();setLiveConn("wait","Looking for nearby games…");
 }
 function joinNearbyGame(id){
   const L=LIVE;if(!L)return;const f=L.found[id];if(!f)return;
   L.code=f.code;L.target=id;setLiveConn("wait",`Joining ${f.name}'s game…`);
-  L.reconnect=()=>{if(LIVE!==L)return;NATIVE.connect({id:L.target,name:liveName()}).catch(()=>{if(LIVE===L&&!L.open){setLiveConn("wait","Trying again…");clearTimeout(L.retry);L.retry=setTimeout(L.reconnect,3000)}})};
+  L.reconnect=()=>{if(LIVE!==L)return;NATIVE.connect({id:L.target,name:liveName()}).catch(e=>{if(LIVE===L&&!L.open){setLiveConn("wait","Trying again…"+androidSays(e));clearTimeout(L.retry);L.retry=setTimeout(L.reconnect,3000)}})};
   L.reconnect();
 }
 function onJoinData(d){
@@ -171553,8 +171555,11 @@ function onJoinData(d){
 let NB_READY=false;
 async function nearbyReady(){
   if(!NATIVE){note("Nearby games work in the Android app.");return false}
-  let ok=false;try{ok=(await NATIVE.ensurePermissions()).granted}catch(e){}
-  if(!ok){note("Nearby games need permission to find devices near you. Allow it when asked, or turn it on in the app's settings under Permissions.");showHome();return false}
+  let perm=null;try{perm=await NATIVE.ensurePermissions()}catch(e){}
+  if(!perm||!perm.granted){showHome();noteAction("Nearby games need the Nearby devices and Location permissions. Allow them when asked, or switch them on in the app's settings under Permissions.",[["Open app settings",()=>NATIVE.openSettings({which:"app"}).catch(()=>{})]]);return false}
+  let st=null;try{st=await NATIVE.status()}catch(e){}
+  if(st&&!st.bluetooth){showHome();noteAction("Turn on Bluetooth, then try again.",[["Bluetooth settings",()=>NATIVE.openSettings({which:"bluetooth"}).catch(()=>{})]]);return false}
+  if(st&&!st.location){showHome();noteAction("Turn on Location, then try again. The game doesn't use where you are, but Android needs Location switched on to find nearby phones.",[["Location settings",()=>NATIVE.openSettings({which:"location"}).catch(()=>{})]]);return false}
   if(!NB_READY){NB_READY=true;
     NATIVE.addListener("found",e=>{const L=LIVE;if(!L||L.host||L.transport!=="nearby")return;const [code,...rest]=String(e.name||"").split("|");L.found[e.id]={id:e.id,code:code||"????",name:rest.join("|")||"Someone"};if(view==="live")renderLive()});
     NATIVE.addListener("lost",e=>{const L=LIVE;if(L&&L.found&&L.found[e.id]&&L.target!==e.id){delete L.found[e.id];if(view==="live")renderLive()}});
