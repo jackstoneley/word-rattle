@@ -8,6 +8,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Word Rattle">
 <title>Word Rattle</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>
@@ -228,6 +230,12 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
 .tabs button b{display:block;font-family:var(--display);font-weight:400;font-size:1.05rem;color:var(--ink)}
 .tabs button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 0 var(--line),0 0 0 1px var(--line)}
 .stiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.conn{font-size:.8rem;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);flex:none}
+.conn.off .dot{background:var(--bad)}.conn.wait .dot{background:var(--warn)}
+.pl{display:flex;align-items:center;gap:10px;font-weight:700}
+.opps{display:flex;gap:6px;flex-wrap:wrap}
+.opp{font-size:.82rem;font-weight:800;padding:4px 10px;border-radius:99px;background:color-mix(in srgb,var(--them) 16%,var(--surface));color:var(--them);border:1px solid color-mix(in srgb,var(--them) 30%,transparent);font-variant-numeric:tabular-nums}
 
 @keyframes roll{from{transform:rotate(-90deg) scale(.4);opacity:0}to{opacity:1}}
 @keyframes spin{from{transform:rotate(-90deg)}to{transform:none}}
@@ -246,6 +254,13 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
   <div class="daily" id="dailyCard"></div>
 
   <div id="rivalCards" class="list"></div>
+
+  <div class="card">
+    <h2>Play live</h2>
+    <p class="muted small">Same board at the same moment on two phones, with each other's progress shown as you play. Uses the New board rules below. Both phones need internet.</p>
+    <button class="btn primary block" id="hostLive">Host a live game</button>
+    <div class="row nowrap"><input class="textin" id="liveIn" maxlength="4" placeholder="Live code" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:.1em"><button class="btn" id="joinLive">Join</button></div>
+  </div>
 
   <div class="card">
     <h2>Sync with a friend</h2>
@@ -313,6 +328,18 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
   <p class="hint">Anyone who enters this seed gets exactly this board and these rules.</p>
 </section>
 
+<!-- LIVE LOBBY -->
+<section class="screen" id="live" hidden>
+  <div class="row spread"><button class="btn ghost sm" id="liveLeave">← Leave</button><span class="conn" id="liveConn"><span class="dot"></span><span></span></span></div>
+  <span class="label">Live game code</span>
+  <div class="bigcode" id="liveCode">----</div>
+  <div class="row nowrap" id="liveShare"><button class="btn block" id="liveInvite">Send invite</button><button class="btn block" id="liveCopy">Copy code</button></div>
+  <div class="card"><h2>Players</h2><div class="list" id="livePlayers"></div></div>
+  <div class="field"><span class="label">Board</span><div class="chips" id="liveChips"></div><div class="legend" id="liveLegend"></div></div>
+  <button class="btn primary block" id="liveStart" disabled>Start</button>
+  <p class="hint">Either player can start. Both boards start together.</p>
+</section>
+
 <!-- PLAY -->
 <section class="screen" id="play" hidden>
   <div class="hud">
@@ -321,6 +348,7 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
     <div class="stat"><span class="label">Words</span><b id="myCount">0</b></div>
     <button class="btn sm" id="endBtn">End</button>
   </div>
+  <div class="opps" id="opps" hidden></div>
   <div class="wordbar" id="wordbar" aria-live="polite"></div>
   <div class="trayw"><div class="tray"><div class="grid" id="grid"></div></div></div>
   <div class="turnrow" id="turnRow"><button class="btn sm" id="turnBtn">↻ Turn board</button><span class="hint" id="shakeHint">or shake your phone</span></div>
@@ -356,6 +384,7 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
   <div class="vs" id="vs"></div>
   <p class="muted small" id="cmpRule" style="text-align:center"></p>
   <button class="btn primary block" id="cmpSync">Send my result back</button>
+  <button class="btn primary block" id="cmpAgain" hidden>Play again live</button>
   <div class="card stats" id="stats"></div>
   <div id="cmpWordsWrap">
     <div class="tracebar"><div class="tray"><div class="grid" id="cmpGrid"></div></div><div class="sel" id="cmpSel"></div></div>
@@ -170954,7 +170983,7 @@ const rivalDailyDays=r=>dailyDays(new Set(Object.keys(r.games)));
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
 function note(msg,ok){$("note").textContent=msg||"";$("note").hidden=!msg;$("note").classList.toggle("ok",!!ok)}
-const SCREENS=["home","ready","play","results","compare","rival"];let view="home";
+const SCREENS=["home","ready","play","results","compare","rival","live"];let view="home";
 function show(id){for(const s of SCREENS)$(s).hidden=s!==id;view=id;$(id).scrollTop=0}
 const baseURL=()=>location.href.split("#")[0];
 function flash(btn,txt){const o=btn.dataset.label||btn.textContent;btn.dataset.label=o;btn.textContent=txt;setTimeout(()=>btn.textContent=o,1600)}
@@ -171049,6 +171078,7 @@ function handleCode(text){
   if(/^WRB\./.test(part)){return restoreBackup(part)}
   const sy=parseSync(part);if(sy){receiveSync(sy);return true}
   const lg=parseLegacy(part);if(lg){receiveSync(lg);return true}
+  const lv=part.match(/^(?:live\.)?([A-Za-z]{4})$/);if(lv){joinLive(lv[1].toUpperCase());return true}
   const sd=parseSeed(part);if(sd){showReady(sd.seed);return true}
   return false;
 }
@@ -171132,7 +171162,7 @@ function enterPlay(cur){
   stopPlay();G=getGame(cur.seed);CUR=cur;show("play");
   found=(cur.words||[]).filter(w=>G.sol.has(w));foundSet=new Set(found);
   ROT=0;VIEW=rotation(G.s.size,0);buildGrid($("grid"),G,true,VIEW);drawPath($("grid"),[],"on");
-  $("turnRow").hidden=!G.s.turn;$("shakeHint").hidden=typeof DeviceMotionEvent==="undefined";
+  $("turnRow").hidden=!G.s.turn;$("opps").hidden=!cur.live;renderOpps();$("shakeHint").hidden=typeof DeviceMotionEvent==="undefined";
   $("found").innerHTML="";found.forEach(w=>addFoundChip(w));updateScore();
   $("wordbar").textContent="";$("wordbar").className="wordbar";
   endAt=cur.startAt+G.s.time*1000;endArmed=false;$("endBtn").textContent="End";
@@ -171151,7 +171181,9 @@ function finishGame(){
   const dur=Math.max(1000,Math.min(Date.now(),CUR.startAt+g.s.time*1000)-CUR.startAt),tm=CUR.times||{};
   const h={seed:g.seed,words,score:sumPts(g,words),at:Date.now(),dur,times:words.map(w=>tm[w]==null?null:tm[w])};
   saveJSON("wr.history",[h,...getHistory().filter(x=>x.seed!==g.seed)].slice(0,300));
-  delKey("wr.current");CUR=null;
+  const wasLive=CUR.live;delKey("wr.current");CUR=null;
+  if(wasLive&&LIVE&&LIVE.seed===g.seed){LIVE.myFinal={t:"final",seed:g.seed,words,dur};liveSend(LIVE.myFinal)}
+  if(wasLive&&LIVE&&LIVE.opp){const m=getRivals()[LIVE.opp.pid];if(m&&m.games[g.seed]){showCompare(g.seed,LIVE.opp.pid);return}showResults(g.seed);return}
   const r=rivalList().find(r=>r.games[g.seed]);
   if(r)showCompare(g.seed,r.pid);else showResults(g.seed);
 }
@@ -171190,7 +171222,7 @@ function submit(w){
   if(!G.sol.has(w)){feedback(w,"no");return}
   found.push(w);foundSet.add(w);CUR.words=found.slice();CUR.times=CUR.times||{};CUR.times[w]=Date.now()-CUR.startAt;saveJSON("wr.current",CUR);
   feedback(`${w} +${pts(G,w)}`,"ok");try{navigator.vibrate&&navigator.vibrate([12,30,12])}catch(err){}
-  addFoundChip(w,true);updateScore();
+  addFoundChip(w,true);updateScore();liveProgress();
 }
 
 /* ================= results ================= */
@@ -171212,6 +171244,7 @@ function showResults(seed){
   for(const r of rivalList()){const m=matchup(seed,r.pid);if(!m)continue;const b=el("button","lrow");
     const t=el("span","code",`vs ${r.name}`);t.append(el("span","res "+m.res,m.res));b.append(t,el("span","sc",`${m.a} – ${m.b}`),el("span","meta","See the full comparison"));
     b.onclick=()=>showCompare(seed,r.pid);cmp.append(b)}
+  if(LIVE&&LIVE.seed===seed&&LIVE.opp&&!cmp.children.length)cmp.append(el("p","muted",`Waiting for ${LIVE.opp.name} to finish… the comparison opens as soon as they do.`));
   const waitingOn=rivalList().filter(r=>!r.games[seed]).map(r=>r.name);
   $("resSyncText").textContent=waitingOn.length?`Send your games so ${waitingOn.join(" and ")} can try to beat this board. When they sync back, you'll see the comparison.`:"Send your games so they can try to beat this board. When they sync back, you'll see the comparison.";
   const st=statsFor(g,h.words,h.dur,h.times),k=$("resKpis");k.innerHTML="";
@@ -171268,6 +171301,7 @@ function showCompare(seed,pid,back){
   vs.append(side("You",m.a,m.a>m.b,false),el("span","mid","VS"),side(r.name,m.b,m.b>m.a,true));
   $("cmpRule").textContent=m.theirs?(g.s.cancel?`Words you both found score zero (${m.both.length} shared).`:`Shared words count for both (${m.both.length} shared).`):"";
   $("cmpSync").textContent=`Send my result to ${r.name}`;
+  const liveHere=!!(LIVE&&LIVE.opp&&LIVE.opp.pid===pid&&LIVE.open);$("cmpAgain").hidden=!liveHere;$("cmpSync").hidden=liveHere;
   const st=$("stats");st.innerHTML="";
   const row=(label,a,b,bar,fa=String(a),fb=String(b))=>{const rw=el("div","srow"),t=el("div","t");
     const la=el("b",null,fa),lb=el("b","r",fb);if(bar&&a!==b)(a>b?la:lb).classList.add("lead");
@@ -171349,9 +171383,104 @@ $("rivBack").onclick=()=>showHome();
 $("rivSync").onclick=e=>sendSync(e.currentTarget,"nameIn");
 $("rivPasteGo").onclick=()=>{const v=$("rivPaste").value;$("rivPaste").value="";if(!handleCode(v))$("rivPaste").placeholder="That isn't a sync link. Try again."};
 
+/* ================= live play =================
+   Phones connect directly through PeerJS (its free public broker introduces them). The host's phone keeps the game state. */
+let LIVE=null;
+const PEERJS="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js", LIVE_PREFIX="wordrattle-live-v1-";
+function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement("script");sc.src=PEERJS;sc.onload=()=>window.Peer?res():rej();sc.onerror=()=>{sc.remove();rej()};document.head.append(sc)})}
+const liveCodeGen=()=>{const A="ABCDEFGHJKLMNPQRSTUVWXYZ";let c="";for(let i=0;i<4;i++)c+=A[Math.floor(Math.random()*A.length)];return c};
+function liveSend(m){try{if(LIVE&&LIVE.conn&&LIVE.conn.open)LIVE.conn.send(m)}catch(e){}}
+function setLiveConn(state,text){if(!LIVE)return;LIVE.connState=state;LIVE.connText=text;const c=$("liveConn");c.className="conn "+state;c.lastElementChild.textContent=text;renderOpps();if(view==="live")renderLive()}
+function leaveLive(){if(!LIVE)return;clearTimeout(LIVE.retry);try{LIVE.conn&&LIVE.conn.close()}catch(e){}try{LIVE.peer&&LIVE.peer.destroy()}catch(e){}LIVE=null}
+async function hostLive(){
+  leaveLive();try{await loadPeer()}catch(e){note("Live games need an internet connection. Try again when you're online.");return}
+  LIVE={host:true,code:liveCodeGen(),seed:makeSeed(S),status:"lobby",startAt:0,opp:null,open:false};
+  startHostPeer();showLive();
+}
+function startHostPeer(){
+  const L=LIVE;setLiveConn("wait","Starting…");
+  const peer=new Peer(LIVE_PREFIX+L.code);L.peer=peer;
+  peer.on("open",()=>{if(LIVE!==L)return;setLiveConn("wait","Waiting for the other player")});
+  peer.on("connection",conn=>{
+    if(L.conn&&L.conn.open){conn.on("open",()=>{try{conn.send({t:"full"})}catch(e){}setTimeout(()=>conn.close(),300)});return}
+    L.conn=conn;
+    conn.on("open",()=>{if(LIVE!==L)return;L.open=true;setLiveConn("","Connected");conn.send({t:"hello",pid:PID,name:myName()||"Player"});sendLiveState();if(L.myFinal)conn.send(L.myFinal)});
+    conn.on("data",d=>onLiveData(d));
+    const lost=()=>{if(LIVE!==L||L.conn!==conn)return;L.open=false;setLiveConn("wait",`${L.opp?L.opp.name:"The other player"} disconnected. Waiting…`)};
+    conn.on("close",lost);conn.on("error",lost);
+  });
+  peer.on("disconnected",()=>{setTimeout(()=>{try{!peer.destroyed&&peer.reconnect()}catch(e){}},1000)});
+  peer.on("error",err=>{if(LIVE!==L)return;
+    if(err.type==="unavailable-id"){L.code=liveCodeGen();try{peer.destroy()}catch(e){}startHostPeer();if(view==="live")renderLive()}
+    else if(["network","server-error","socket-error","browser-incompatible"].includes(err.type))setLiveConn("off","No connection. Check your internet.")});
+}
+async function joinLive(code){
+  leaveLive();try{await loadPeer()}catch(e){note("Live games need an internet connection. Try again when you're online.");showHome();return}
+  LIVE={host:false,code,seed:null,status:"lobby",startAt:0,opp:null,open:false,offset:0};
+  const L=LIVE;const peer=new Peer();L.peer=peer;showLive();setLiveConn("wait","Connecting…");
+  const connect=()=>{if(LIVE!==L||peer.destroyed)return;const conn=peer.connect(LIVE_PREFIX+code,{reliable:true});L.conn=conn;
+    conn.on("open",()=>{if(LIVE!==L)return;L.open=true;setLiveConn("","Connected");conn.send({t:"hello",pid:PID,name:myName()||"Player"});if(L.myFinal)conn.send(L.myFinal)});
+    conn.on("data",d=>onLiveData(d));
+    const lost=()=>{if(LIVE!==L||L.conn!==conn)return;L.open=false;setLiveConn("wait","Reconnecting…");clearTimeout(L.retry);L.retry=setTimeout(connect,2500)};
+    conn.on("close",lost);conn.on("error",lost)};
+  L.connect=connect;
+  peer.on("open",connect);
+  peer.on("disconnected",()=>{setTimeout(()=>{try{!peer.destroyed&&peer.reconnect()}catch(e){}},1000)});
+  peer.on("error",err=>{if(LIVE!==L)return;
+    if(err.type==="peer-unavailable"){setLiveConn("off",L.opp?"Lost the host. Retrying…":`Can't find live game ${code}. Is it open on the other phone?`);clearTimeout(L.retry);L.retry=setTimeout(connect,3000)}
+    else if(["network","server-error","socket-error","browser-incompatible"].includes(err.type))setLiveConn("off","No connection. Check your internet.")});
+}
+function sendLiveState(){if(!LIVE||!LIVE.host)return;liveSend({t:"state",seed:LIVE.seed,status:LIVE.status,startAt:LIVE.startAt,hostNow:Date.now()})}
+function onLiveData(d){
+  const L=LIVE;if(!L||!d||typeof d!=="object")return;
+  if(d.t==="full"){setLiveConn("off","That live game already has two players.");return}
+  if(d.t==="hello"&&typeof d.pid==="string"){L.opp={pid:d.pid.slice(0,40),name:String(d.name||"Player").slice(0,16)};if(view==="live")renderLive();renderOpps();return}
+  if(d.t==="state"&&!L.host){const p=parseSeed(d.seed);if(!p)return;L.offset=Date.now()-(+d.hostNow||Date.now());
+    const newSeed=L.seed!==p.seed;L.seed=p.seed;L.status=d.status;L.startAt=d.startAt?d.startAt+L.offset:0;
+    if(newSeed){L.myFinal=null;L.oppProg=null}
+    if(L.status==="playing"&&!(view==="play"&&CUR&&CUR.seed===L.seed)&&!getHist(L.seed))startLivePlay();
+    else if(L.status==="lobby"&&view!=="play")showLive();
+    return}
+  if(d.t==="start"&&L.host){hostStartLive();return}
+  if(d.t==="again"&&L.host){hostAgainLive();return}
+  if(d.t==="prog"&&d.seed===L.seed){L.oppProg={n:+d.n||0,score:+d.score||0,done:!!d.done};renderOpps();return}
+  if(d.t==="final"&&L.opp){const g=getGame(d.seed);if(!g||!Array.isArray(d.words))return;
+    const words=d.words.filter(w=>typeof w==="string"&&g.sol.has(w));
+    mergeRival(L.opp.pid,L.opp.name,{[g.seed]:{score:sumPts(g,words),n:words.length,dur:+d.dur||0,at:Date.now(),bits:wordBits(g,words)}});
+    L.oppProg={n:words.length,score:sumPts(g,words),done:true};renderOpps();
+    if(view==="results"&&RES&&RES.g.seed===g.seed)showCompare(g.seed,L.opp.pid);
+    return}
+}
+function hostStartLive(){if(!LIVE||!LIVE.host||LIVE.status==="playing")return;LIVE.status="playing";LIVE.startAt=Date.now()+3500;sendLiveState();startLivePlay()}
+function hostAgainLive(){if(!LIVE||!LIVE.host)return;LIVE.seed=makeSeed(parseSeed(LIVE.seed).settings);LIVE.status="lobby";LIVE.startAt=0;LIVE.myFinal=null;LIVE.oppProg=null;sendLiveState();showLive()}
+function startLivePlay(){const g=getGame(LIVE.seed);LIVE.oppProg=null;const cur={seed:g.seed,startAt:LIVE.startAt,words:[],times:{},live:true};saveJSON("wr.current",cur);enterPlay(cur)}
+function liveProgress(){if(LIVE&&CUR&&CUR.live)liveSend({t:"prog",seed:CUR.seed,n:found.length,score:sumPts(G,found)})}
+function renderOpps(){const box=$("opps");if(!box||box.hidden)return;box.innerHTML="";if(!LIVE)return;
+  const nm=LIVE.opp?LIVE.opp.name:"Opponent",p=LIVE.oppProg;
+  box.append(el("span","opp",LIVE.open?(p?`${nm}: ${p.n} words · ${p.score} pts${p.done?" · finished":""}`:`${nm}: 0 words`):(LIVE.connText||"Connection lost. Your game still counts.")))}
+function showLive(){renderLive();show("live")}
+function renderLive(){
+  const L=LIVE;if(!L)return;$("liveCode").textContent=L.code;$("liveShare").hidden=!L.host;
+  const pl=$("livePlayers");pl.innerHTML="";
+  const me=el("div","pl");me.append(el("span","dot"),el("span",null,(myName()||"Player")+" (you)"));pl.append(me);
+  const op=el("div","pl"+(L.opp&&L.open?"":" muted"));op.append(el("span","dot"),el("span",null,L.opp?(L.opp.name+(L.open?"":" · reconnecting")):(L.host?"Send the invite or tell them the code.":"Waiting for the host…")));if(!(L.opp&&L.open))op.firstChild.style.background="var(--line)";pl.append(op);
+  if(L.seed){const g=getGame(L.seed);renderBoardInfo(g,$("liveChips"),$("liveLegend"))}else{$("liveChips").innerHTML="";$("liveLegend").innerHTML=""}
+  $("liveStart").disabled=!(L.open&&L.seed);$("liveStart").textContent=L.open?"Start":"Waiting for both phones…";
+}
+$("hostLive").onclick=()=>{note("");if(S.turn)enableMotion();hostLive()};
+$("joinLive").onclick=()=>{const c=$("liveIn").value.trim().toUpperCase();if(!/^[A-Z]{4}$/.test(c)){$("liveIn").focus();return}if(S.turn)enableMotion();note("");$("liveIn").value="";joinLive(c)};
+$("liveIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("joinLive").onclick()});
+$("liveLeave").onclick=()=>{leaveLive();showHome()};
+$("liveStart").onclick=()=>{enableMotion();if(!LIVE)return;if(LIVE.host)hostStartLive();else liveSend({t:"start"})};
+$("liveInvite").onclick=e=>shareOrCopy(`Join my live Word Rattle game. Code ${LIVE.code}.`,baseURL()+"#live."+LIVE.code,e.currentTarget);
+$("liveCopy").onclick=e=>copyText(LIVE.code,e.currentTarget);
+$("cmpAgain").onclick=()=>{if(!LIVE)return;if(LIVE.host)hostAgainLive();else{liveSend({t:"again"});$("cmpAgain").textContent="Waiting for the host…"}};
+
 /* ================= wake / boot ================= */
 window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(!h||view==="play")return;history.replaceState(null,"",location.pathname+location.search);note("");handleCode(h)});
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(view==="play"&&!wakeLock)requestWake();if(view==="home")renderDaily()}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(view==="play"&&!wakeLock)requestWake();if(view==="home")renderDaily();
+  if(LIVE&&LIVE.peer&&!LIVE.peer.destroyed){try{if(LIVE.peer.disconnected)LIVE.peer.reconnect()}catch(e){}if(!LIVE.host&&!LIVE.open&&LIVE.connect){clearTimeout(LIVE.retry);LIVE.connect()}}}});
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 (function boot(){
   const old=loadJSON("wr.opps",null);
   if(old){for(const [seed,o] of Object.entries(old)){const g=getGame(seed),w=g&&decodeWords(g,o.bits);if(w)mergeRival("legacy-"+String(o.name||"opponent").toLowerCase(),o.name||"Opponent",{[g.seed]:{score:sumPts(g,w),n:w.length,dur:o.dur||0,at:Date.now(),bits:o.bits}})}delKey("wr.opps")}
