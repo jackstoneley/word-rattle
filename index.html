@@ -32,7 +32,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15p
   overscroll-behavior:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-button,input{font:inherit;color:inherit}
+button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .screen{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
@@ -42,6 +42,7 @@ button{cursor:pointer}
 h1,h2,h3{margin:0;text-wrap:balance}
 h2{font-family:var(--display);font-size:1.05rem;letter-spacing:.01em;font-weight:400}
 p{margin:0}
+details summary{cursor:pointer;font-weight:800}
 .label{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
 .muted{color:var(--muted)}
 .small{font-size:.86rem}
@@ -57,10 +58,10 @@ p{margin:0}
 .btn.block{width:100%}
 .btn:disabled{opacity:.5;cursor:default}
 .textin{width:100%;min-width:0;padding:12px 13px;border-radius:11px;border:1px solid var(--line);background:var(--bg);font-weight:600}
+textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-monospace,Menlo,monospace}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
-.seg button,.chipgrid button{border:0;background:transparent;border-radius:8px;padding:8px 4px;font-weight:700;font-size:.92rem;color:var(--muted)}
-.seg button[aria-pressed="true"],.chipgrid button[aria-pressed="true"]{background:var(--tray);color:#fff}
-.chipgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:3px}
+.seg button{border:0;background:transparent;border-radius:8px;padding:8px 4px;font-weight:700;font-size:.92rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--tray);color:#fff}
 .field{display:flex;flex-direction:column;gap:6px}
 .tval{font-family:var(--display);font-weight:400;font-size:1.35rem;font-variant-numeric:tabular-nums;line-height:1}
 .range{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;margin:0;touch-action:pan-y}
@@ -71,21 +72,18 @@ p{margin:0}
 .range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--surface)}
 .ticks{position:relative;height:16px;font-size:.72rem;font-weight:700;color:var(--muted)}
 .ticks span{position:absolute;top:0;transform:translateX(-50%);font-variant-numeric:tabular-nums}
-.pb{align-self:flex-start;font-size:.8rem;font-weight:800;padding:4px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line)}
-.pb.new{background:var(--accent);color:var(--accent-ink);border-color:transparent}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .switch{appearance:none;-webkit-appearance:none;width:46px;height:28px;border-radius:99px;background:var(--line);position:relative;flex:none;margin:0;cursor:pointer;transition:background .15s}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
 .switch:checked{background:var(--tray)}
 .switch:checked::after{transform:translateX(18px)}
 .notice{border-radius:11px;padding:10px 12px;background:color-mix(in srgb,var(--warn) 16%,transparent);font-size:.9rem}
+.notice.ok{background:color-mix(in srgb,var(--good) 16%,transparent)}
 .info{border-radius:12px;padding:12px;background:var(--tray);color:#fff;display:flex;flex-direction:column;gap:8px}
 .info b{font-weight:800}
-
-/* power-up pickers */
 .pugrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .pubtn{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:11px;border:1px solid var(--line);background:var(--bg);text-align:left;font-weight:700;font-size:.9rem}
-.pubtn .sw{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:.72rem;font-weight:800;color:var(--die-ink);flex:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
+.sw{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:.72rem;font-weight:800;color:var(--die-ink);flex:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
 .pubtn[aria-pressed="true"]{border-color:var(--tray);box-shadow:inset 0 0 0 2px var(--tray)}
 .pubtn[aria-pressed="false"] .sw{opacity:.45}
 .dim{opacity:.55}
@@ -98,12 +96,29 @@ p{margin:0}
   font-family:var(--display);font-size:18px;box-shadow:inset 0 -3px 0 var(--die-edge),0 2px 0 rgba(0,0,0,.18);animation:roll .5s cubic-bezier(.2,1.4,.4,1) both}
 .tagline{font-size:.95rem;color:var(--muted);max-width:36ch}
 
-/* recent */
-.recent{display:flex;flex-direction:column;gap:6px}
-.rrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;border-radius:11px;background:var(--bg);border:1px solid var(--line);text-align:left}
-.rrow .code{font-family:var(--display);letter-spacing:.06em}
-.rrow .sc{font-family:var(--display);font-size:1.15rem;text-align:right;font-variant-numeric:tabular-nums}
-.rrow .meta{font-size:.82rem;color:var(--muted);grid-column:1/-1}
+/* daily */
+.daily{background:var(--tray);color:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 5px 0 var(--tray-deep)}
+.daily .label{color:rgba(255,255,255,.72)}
+.daily h2{font-size:1.4rem}
+.daily .chips .chip{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff}
+.daily .scores{display:flex;gap:18px;flex-wrap:wrap}
+.daily .scores div{display:flex;flex-direction:column}
+.daily .scores b{font-family:var(--display);font-weight:400;font-size:1.8rem;line-height:1}
+.streaks{display:flex;gap:8px;flex-wrap:wrap}
+.streak{background:rgba(255,255,255,.12);border-radius:10px;padding:6px 10px;font-size:.82rem;font-weight:700}
+.streak b{font-family:var(--display);font-weight:400;font-size:1.05rem;margin-right:4px}
+
+/* list rows */
+.list{display:flex;flex-direction:column;gap:6px}
+.lrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;border-radius:11px;background:var(--bg);border:1px solid var(--line);text-align:left;align-items:center;width:100%}
+.lrow .code{font-family:var(--display);letter-spacing:.05em}
+.lrow .sc{font-family:var(--display);font-size:1.1rem;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lrow .meta{font-size:.82rem;color:var(--muted);grid-column:1/-1}
+.res{display:inline-block;min-width:22px;text-align:center;font-family:var(--body);font-weight:900;font-size:.78rem;padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:middle}
+.res.W{background:var(--good);color:#fff}.res.L{background:var(--bad);color:#fff}.res.D{background:var(--line);color:var(--ink)}
+.rivalbtn{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;text-align:left;width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.rivalbtn .rec{font-family:var(--display);font-size:1.6rem;line-height:1;font-variant-numeric:tabular-nums}
+.rivalbtn .tobeat{grid-column:1/-1;font-size:.86rem;font-weight:700;color:var(--warn)}
 
 /* ready */
 .bigcode{font-family:var(--display);font-size:2.7rem;letter-spacing:.08em;line-height:1;color:var(--tray);user-select:all;-webkit-user-select:all}
@@ -112,7 +127,7 @@ p{margin:0}
 .chip{border-radius:99px;padding:4px 10px;font-size:.82rem;font-weight:700;background:var(--surface);border:1px solid var(--line)}
 .legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:.85rem;font-weight:600}
 .legend span{display:flex;align-items:center;gap:6px}
-.legend .sw{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:.62rem;font-weight:800;color:var(--die-ink)}
+.legend .sw{width:22px;height:22px;border-radius:6px;font-size:.62rem}
 
 /* play */
 #play{gap:10px;overflow:hidden}
@@ -127,10 +142,11 @@ p{margin:0}
 .wordbar.dup{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .wordbar.no{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad);animation:shake .3s}
 .trayw{display:flex;justify-content:center}
-.tray{width:min(100%, calc(100dvh - 340px));min-width:240px;max-width:100%;aspect-ratio:1;background:var(--tray);border-radius:18px;padding:3.2%;
+.tray{width:min(100%, calc(100dvh - 370px));min-width:240px;max-width:100%;aspect-ratio:1;background:var(--tray);border-radius:18px;padding:3.2%;
   box-shadow:inset 0 0 0 3px var(--tray-deep),inset 0 8px 18px rgba(0,0,0,.25),0 6px 0 var(--tray-deep);container-type:inline-size}
 .grid{position:relative;width:100%;height:100%;display:grid;grid-template-columns:repeat(var(--n),1fr);grid-template-rows:repeat(var(--n),1fr);
   gap:calc(14cqi / var(--n));touch-action:none;user-select:none;-webkit-user-select:none}
+.grid.spin{animation:spin .35s cubic-bezier(.3,1.3,.5,1)}
 .die{position:relative;background:var(--die);color:var(--die-ink);border-radius:18%;display:grid;place-items:center;
   font-family:var(--display);font-size:calc(50cqi / var(--n));line-height:1;
   box-shadow:inset 0 calc(-6cqi / var(--n)) 0 var(--die-edge),0 calc(4cqi / var(--n)) 0 rgba(0,0,0,.28);transition:background .08s,transform .08s}
@@ -142,6 +158,7 @@ p{margin:0}
 .die.hl.start{background:var(--accent)}
 .grid.rolling .die{animation:roll .55s cubic-bezier(.2,1.4,.4,1) both}
 .pathsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.turnrow{display:flex;justify-content:center;align-items:center;gap:10px}
 .found{flex:1;min-height:0;overflow-y:auto;display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px}
 .found .w{font-weight:700;font-size:.88rem;padding:4px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--line)}
 .found .w small{color:var(--muted);font-weight:700;margin-left:4px}
@@ -154,6 +171,8 @@ p{margin:0}
 #results>.top,#compare>.top{padding-top:calc(10px + env(safe-area-inset-top,0px))}
 .bigscore{font-family:var(--display);font-size:2.6rem;line-height:1}
 .bigscore small{font-size:1rem;color:var(--muted);font-family:var(--body);font-weight:700;margin-left:6px}
+.pb{align-self:flex-start;font-size:.8rem;font-weight:800;padding:4px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line)}
+.pb.new{background:var(--accent);color:var(--accent-ink);border-color:transparent}
 .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .kpi small{font-size:.78rem;color:var(--muted);font-weight:700}
@@ -184,14 +203,13 @@ p{margin:0}
 .ans.both.cx .w{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:var(--bad)}
 .ans.sel{outline:3px solid var(--sel);outline-offset:1px}
 .empty{color:var(--muted);font-size:.9rem;padding:4px 0}
-
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;background:var(--tray);color:#fff;border-radius:16px;padding:16px 14px;box-shadow:0 5px 0 var(--tray-deep)}
 .vs .side{display:flex;flex-direction:column;gap:2px;min-width:0}
 .vs .side.r{text-align:right;align-items:flex-end}
 .vs .nm{font-weight:800;font-size:.95rem;overflow-wrap:anywhere}
 .vs .pts{font-family:var(--display);font-size:2.4rem;line-height:1;font-variant-numeric:tabular-nums}
 .vs .side.win .pts{color:var(--accent)}
-.vs .mid{font-family:var(--display);font-size:1rem;opacity:.7}
+.vs .mid{font-family:var(--display);font-size:1rem;opacity:.7;text-align:center}
 .verdict{font-family:var(--display);font-size:1.5rem;line-height:1.1;text-align:center}
 .stats{display:flex;flex-direction:column;gap:12px}
 .srow{display:flex;flex-direction:column;gap:5px}
@@ -209,8 +227,10 @@ p{margin:0}
 .tabs button{border:0;background:transparent;border-radius:8px;padding:7px 2px;font-weight:700;font-size:.8rem;color:var(--muted);line-height:1.2}
 .tabs button b{display:block;font-family:var(--display);font-weight:400;font-size:1.05rem;color:var(--ink)}
 .tabs button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 0 var(--line),0 0 0 1px var(--line)}
+.stiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 
 @keyframes roll{from{transform:rotate(-90deg) scale(.4);opacity:0}to{opacity:1}}
+@keyframes spin{from{transform:rotate(-90deg)}to{transform:none}}
 @keyframes pop{from{transform:scale(1.25);background:var(--sel)}}
 @keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -221,20 +241,20 @@ p{margin:0}
 <!-- HOME -->
 <section class="screen" id="home">
   <div class="logo" aria-label="Word Rattle"><div class="logo-row" id="logo1"></div><div class="logo-row" id="logo2"></div></div>
-  <p class="tagline">Shake the dice, swipe through touching letters, and find as many words as you can. Share the seed so someone else can play the exact same board, then compare.</p>
   <div class="notice" id="note" hidden></div>
 
-  <div class="card">
-    <div class="field"><label class="label" for="nameIn">Your name</label>
-      <input class="textin" id="nameIn" maxlength="16" placeholder="e.g. Jack" autocomplete="off"></div>
-  </div>
+  <div class="daily" id="dailyCard"></div>
+
+  <div id="rivalCards" class="list"></div>
 
   <div class="card">
-    <h2>Play someone's board</h2>
-    <p class="muted small">Enter a seed, or paste a seed or results link someone sent you.</p>
+    <h2>Sync with a friend</h2>
+    <p class="muted small">Send your games link. They get your boards to beat, and when they sync back you both get a head-to-head record.</p>
+    <div class="field"><label class="label" for="nameIn">Your name</label><input class="textin" id="nameIn" maxlength="16" placeholder="e.g. Jack" autocomplete="off"></div>
+    <button class="btn primary block" id="homeSync">Send my games</button>
     <div class="row nowrap">
-      <input class="textin" id="seedIn" placeholder="e.g. K7QX-9M2P" autocomplete="off" autocapitalize="characters" spellcheck="false">
-      <button class="btn primary" id="seedGo">Go</button>
+      <input class="textin" id="seedIn" placeholder="Paste a link, or type a seed" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button class="btn" id="seedGo">Go</button>
     </div>
   </div>
 
@@ -254,20 +274,34 @@ p{margin:0}
       <div class="pugrid" id="puGrid"></div>
       <div class="seg" id="segAmount" role="group" aria-label="How many power-ups"><button data-v="0">Few</button><button data-v="1">Some</button><button data-v="2">Lots</button></div>
       <p class="muted small" id="puHelp"></p></div>
+    <label class="toggle" for="turnIn"><span><b>Board turning</b><br><span class="muted small">Rotate the board mid-game with a button or a shake. Same letters, new angle.</span></span>
+      <input type="checkbox" class="switch" id="turnIn"></label>
     <label class="toggle" for="cancelIn"><span><b>Shared words score zero</b><br><span class="muted small">When you compare, a word you both found counts for nobody.</span></span>
       <input type="checkbox" class="switch" id="cancelIn"></label>
     <button class="btn primary block" id="createBtn">Create board</button>
   </div>
 
   <div class="card" id="recentCard" hidden>
-    <h2>Recent games</h2>
-    <div class="recent" id="recent"></div>
+    <h2>Your recent games</h2>
+    <div class="list" id="recent"></div>
+  </div>
+
+  <div class="card">
+    <details id="backupBox">
+      <summary>Back up or restore</summary>
+      <div class="field" style="margin-top:12px">
+        <p class="muted small">Your games and records live on this phone only. Copy a backup code and keep it somewhere safe, like a note or a message to yourself.</p>
+        <button class="btn" id="backupBtn">Copy backup code</button>
+        <textarea class="textin" id="restoreIn" placeholder="Paste a backup code to restore" spellcheck="false"></textarea>
+        <button class="btn" id="restoreBtn">Restore</button>
+      </div>
+    </details>
   </div>
 </section>
 
 <!-- READY -->
 <section class="screen" id="ready" hidden>
-  <div class="row spread"><button class="btn ghost sm" id="readyBack">← Back</button><span class="label">Board seed</span></div>
+  <div class="row spread"><button class="btn ghost sm" id="readyBack">← Back</button><span class="label" id="readyLabel">Board seed</span></div>
   <div class="bigcode" id="readyCode">----</div>
   <div class="chips" id="readyChips"></div>
   <div class="legend" id="readyLegend"></div>
@@ -282,15 +316,15 @@ p{margin:0}
 <!-- PLAY -->
 <section class="screen" id="play" hidden>
   <div class="hud">
-    <div class="tbox"><div class="timer" id="timer">3:00</div><span class="label" id="timerLabel">Time left</span></div>
+    <div class="tbox"><div class="timer" id="timer">3:00</div><span class="label">Time left</span></div>
     <div class="stat"><span class="label">Score</span><b id="myScore">0</b></div>
     <div class="stat"><span class="label">Words</span><b id="myCount">0</b></div>
     <button class="btn sm" id="endBtn">End</button>
   </div>
   <div class="wordbar" id="wordbar" aria-live="polite"></div>
   <div class="trayw"><div class="tray"><div class="grid" id="grid"></div></div></div>
+  <div class="turnrow" id="turnRow"><button class="btn sm" id="turnBtn">↻ Turn board</button><span class="hint" id="shakeHint">or shake your phone</span></div>
   <div class="found" id="found"></div>
-  <div class="hint">Drag across touching letters, including diagonals. Lift to enter.</div>
 </section>
 <div class="countdown" id="countdown" hidden>3</div>
 
@@ -299,35 +333,59 @@ p{margin:0}
   <div class="top row spread"><span class="label" id="resMeta"></span><button class="btn ghost sm" id="resHome">Home</button></div>
   <div class="bigscore" id="resScore"></div>
   <span class="pb" id="resPB" hidden></span>
+  <div class="list" id="resCompare"></div>
   <div class="kpis" id="resKpis"></div>
-
-  <div class="card" id="cmpCard">
-    <h2>Compare</h2>
-    <div class="info" id="oppReady" hidden></div>
-    <div class="field"><label class="label" for="nameIn2">Sharing as</label><input class="textin" id="nameIn2" maxlength="16" placeholder="Your name" autocomplete="off"></div>
-    <div class="row nowrap"><button class="btn primary block" id="shareRes">Send my results</button><button class="btn block" id="copyRes">Copy link</button></div>
-    <p class="muted small">Their phone opens the same board. Once they've played, it shows you both side by side.</p>
-    <div class="row nowrap"><input class="textin" id="pasteIn" placeholder="Paste their results link" autocomplete="off" spellcheck="false"><button class="btn" id="pasteGo">Compare</button></div>
+  <div class="card">
+    <h2>Sync</h2>
+    <p class="muted small" id="resSyncText">Send your games so they can try to beat this board. When they sync back, you'll see the comparison.</p>
+    <div class="field"><label class="label" for="nameIn2">Your name</label><input class="textin" id="nameIn2" maxlength="16" placeholder="Your name" autocomplete="off"></div>
+    <div class="row nowrap"><button class="btn primary block" id="shareRes">Send my games</button><button class="btn block" id="copyRes">Copy link</button></div>
+    <div class="row nowrap"><input class="textin" id="pasteIn" placeholder="Paste their sync link" autocomplete="off" spellcheck="false"><button class="btn" id="pasteGo">Sync</button></div>
   </div>
-
-  <div class="tracebar" id="resTrace"><div class="tray"><div class="grid" id="resGrid"></div></div><div class="sel" id="resSel"></div></div>
-
-  <div class="row spread"><h2>Every scoring word</h2></div>
+  <div class="tracebar"><div class="tray"><div class="grid" id="resGrid"></div></div><div class="sel" id="resSel"></div></div>
+  <h2>Every scoring word</h2>
   <div class="seg" id="resFilter" role="group" aria-label="Filter words"></div>
   <div class="groups" id="resGroups"></div>
-  <div class="row nowrap"><button class="btn block" id="newSame">New board, same rules</button></div>
+  <button class="btn block" id="newSame">New board, same rules</button>
 </section>
 
 <!-- COMPARE -->
 <section class="screen" id="compare" hidden>
-  <div class="top row spread"><button class="btn ghost sm" id="cmpBack">← My results</button><span class="label" id="cmpMeta"></span></div>
+  <div class="top row spread"><button class="btn ghost sm" id="cmpBack">← Back</button><span class="label" id="cmpMeta"></span></div>
   <div class="verdict" id="verdict"></div>
   <div class="vs" id="vs"></div>
   <p class="muted small" id="cmpRule" style="text-align:center"></p>
+  <button class="btn primary block" id="cmpSync">Send my result back</button>
   <div class="card stats" id="stats"></div>
-  <div class="tracebar" id="cmpTrace"><div class="tray"><div class="grid" id="cmpGrid"></div></div><div class="sel" id="cmpSel"></div></div>
-  <div class="tabs" id="cmpTabs" role="group" aria-label="Word lists"></div>
-  <div class="words" id="cmpWords"></div>
+  <div id="cmpWordsWrap">
+    <div class="tracebar"><div class="tray"><div class="grid" id="cmpGrid"></div></div><div class="sel" id="cmpSel"></div></div>
+    <div class="tabs" id="cmpTabs" role="group" aria-label="Word lists" style="margin-top:12px"></div>
+    <div class="words" id="cmpWords" style="margin-top:12px"></div>
+  </div>
+  <p class="muted small" id="cmpNoWords" hidden>Their word list for this board wasn't included in the sync, so only scores are shown.</p>
+</section>
+
+<!-- RIVAL -->
+<section class="screen" id="rival" hidden>
+  <div class="row spread"><button class="btn ghost sm" id="rivBack">← Home</button><span class="label" id="rivSynced"></span></div>
+  <div class="vs" id="rivVs"></div>
+  <p class="verdict" id="rivVerdict" style="font-size:1.15rem"></p>
+  <div class="stiles" id="rivStreaks"></div>
+  <div class="card" id="toBeatCard">
+    <div class="row spread"><h2 id="toBeatTitle">Boards to beat</h2></div>
+    <div class="list" id="toBeat"></div>
+  </div>
+  <div class="card">
+    <h2>Sync</h2>
+    <p class="muted small" id="rivSyncText"></p>
+    <button class="btn primary block" id="rivSync">Send my games</button>
+    <div class="row nowrap"><input class="textin" id="rivPaste" placeholder="Paste their sync link" autocomplete="off" spellcheck="false"><button class="btn" id="rivPasteGo">Sync</button></div>
+  </div>
+  <div class="card stats" id="rivStats"></div>
+  <div class="card">
+    <h2>Head to head</h2>
+    <div class="list" id="h2hList"></div>
+  </div>
 </section>
 
 <script type="text/plain" id="wordData">aah
@@ -170715,6 +170773,7 @@ const PWEIGHT={"2L":4,"3L":2,"2W":2,"3W":1}, AMOUNTS=["Few","Some","Lots"], AMT_
 const ALPHA="23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const clock=t=>`${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}`;
 const timeLabel=t=>t<60?`${t} sec`:t%60?`${clock(t)} min`:`${t/60} min`;
+const DAY_MS=864e5, EPOCH=Date.UTC(2026,0,1);
 
 /* ================= dictionary (ENABLE word list, public domain; * marks common words) ================= */
 let WORDS=[], DICT, COMMON=new Set();
@@ -170727,19 +170786,19 @@ function neighbours(n){if(NB[n])return NB[n];const a=[];for(let i=0;i<n*n;i++){c
   for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const rr=r+dr,cc=c+dc;if(rr>=0&&cc>=0&&rr<n&&cc<n)l.push(rr*n+cc)}a.push(l)}return NB[n]=a}
 const adj=(a,b,n)=>neighbours(n)[a].includes(b);
 
-/* ================= seeds ================= */
-// scoring + power-ups packed into 47 states: 0 classic, 1 letters plain, 2.. letters with power-up mask and amount
+/* ================= seeds =================
+   8 characters: 3 for the rules, 4 random (the last one's lowest bit is the board-turning flag), 1 check character. */
 function settingsIndex(s){const L=s.scoring==="letters",pm=L?s.pmask:0,ps=!L?0:!pm?1:2+(pm-1)*3+s.amount;
   let x=SIZES.indexOf(s.size);x=x*20+TIMES.indexOf(s.time);x=x*3+MINS.indexOf(s.minLen);x=x*2+(s.cancel?1:0);x=x*47+ps;return x}
 function indexSettings(x){const ps=x%47;x=(x-ps)/47;const c=x%2;x=(x-c)/2;const mi=x%3;x=(x-mi)/3;const ti=x%20;const si=(x-ti)/20;
   if(si>2)return null;const pm=ps>=2?Math.floor((ps-2)/3)+1:0,am=ps>=2?(ps-2)%3:0;
   return{size:SIZES[si],time:TIMES[ti],minLen:MINS[mi],cancel:!!c,scoring:ps?"letters":"classic",pmask:pm,amount:am}}
 const checkDigit=a=>{let s=11;a.forEach((v,i)=>s+=v*(i+3));return s%32};
-function makeSeed(s){const d=[];let v=settingsIndex(s);for(let i=0;i<3;i++){d.unshift(v%32);v=Math.floor(v/32)}
-  for(let i=0;i<4;i++)d.push(Math.floor(Math.random()*32));d.push(checkDigit(d));return d.map(i=>ALPHA[i]).join("")}
+function makeSeed(s,rnd=Math.random){const d=[];let v=settingsIndex(s);for(let i=0;i<3;i++){d.unshift(v%32);v=Math.floor(v/32)}
+  for(let i=0;i<4;i++)d.push(Math.floor(rnd()*32));d[6]=(d[6]&~1)|(s.turn?1:0);d.push(checkDigit(d));return d.map(i=>ALPHA[i]).join("")}
 function parseSeed(str){const t=String(str||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(t.length!==8)return null;
   const d=[...t].map(ch=>ALPHA.indexOf(ch));if(d.some(v=>v<0))return null;if(checkDigit(d.slice(0,7))!==d[7])return null;
-  const s=indexSettings(d[0]*1024+d[1]*32+d[2]);return s?{seed:t,settings:s}:null}
+  const s=indexSettings(d[0]*1024+d[1]*32+d[2]);if(!s)return null;s.turn=!!(d[6]&1);return{seed:t,settings:s}}
 const fmtSeed=s=>s.slice(0,4)+"-"+s.slice(4);
 
 /* ================= board ================= */
@@ -170752,8 +170811,7 @@ function buildBoard(seed,s){
   const pu=new Array(letters.length).fill(null);
   if(s.scoring==="letters"&&s.pmask){
     const types=PTYPES.filter((t,i)=>s.pmask&(1<<i)),tot=types.reduce((a,t)=>a+PWEIGHT[t],0);
-    const n=Math.max(types.length,Math.round(letters.length*AMT_FRAC[s.amount]));
-    const cells=shuf([...letters.keys()]);
+    const n=Math.max(types.length,Math.round(letters.length*AMT_FRAC[s.amount])),cells=shuf([...letters.keys()]);
     for(let k=0;k<n;k++){let t;if(k<types.length)t=types[k];else{let r=rnd()*tot;for(t of types){r-=PWEIGHT[t];if(r<0)break}}pu[cells[k]]=t}
   }
   return{letters,pu};
@@ -170776,44 +170834,127 @@ function solve(s,b){
 }
 const GAMES=new Map();
 function getGame(seed){
-  if(GAMES.has(seed))return GAMES.get(seed);
   const p=parseSeed(seed);if(!p)return null;
+  if(GAMES.has(p.seed))return GAMES.get(p.seed);
   const board=buildBoard(p.seed,p.settings),sol=solve(p.settings,board);
   const g={seed:p.seed,s:p.settings,board,sol,solList:[...sol.keys()].sort()};
-  GAMES.set(seed,g);return g;
+  GAMES.set(p.seed,g);return g;
 }
 const pts=(g,w)=>{const e=g.sol.get(w);return e?e.pts:0};
 const sumPts=(g,ws)=>ws.reduce((a,w)=>a+pts(g,w),0);
 const byPts=g=>(a,b)=>pts(g,b)-pts(g,a)||b.length-a.length||a.localeCompare(b);
 
-/* ================= results codes ================= */
+/* ================= daily board ================= */
+function dayNum(d=new Date()){return Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-EPOCH)/DAY_MS)}
+const dayLabel=(day,opts={weekday:"short",day:"numeric",month:"short"})=>new Date(EPOCH+day*DAY_MS).toLocaleDateString(undefined,{...opts,timeZone:"UTC"});
+const DAILY=new Map();
+function dailySeed(day){
+  if(DAILY.has(day))return DAILY.get(day);
+  const r=mulberry(hashStr("wordrattle-daily|"+day)),size=r()<.6?4:5;
+  const s={size,time:180,minLen:size===4?3:4,cancel:true,scoring:"classic",pmask:0,amount:0,turn:true};
+  if(r()<.5){s.scoring="letters";if(r()<.75){let pm=0;while(!pm)pm=Math.floor(r()*16);s.pmask=pm;s.amount=Math.floor(r()*3)}}
+  const seed=makeSeed(s,r);DAILY.set(day,seed);return seed;
+}
+function dailyDayOf(seed){const t=dayNum();for(let d=t+1;d>t-400;d--)if(dailySeed(d)===seed)return d;return null}
+
+/* ================= encoding helpers ================= */
 function b64u(bytes){let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function unb64u(str){str=str.replace(/-/g,"+").replace(/_/g,"/");while(str.length%4)str+="=";const s=atob(str);return Uint8Array.from(s,c=>c.charCodeAt(0))}
-function resultsCode(g,name,words,dur){const set=new Set(words),bytes=new Uint8Array(Math.ceil(g.solList.length/8));
-  g.solList.forEach((w,i)=>{if(set.has(w))bytes[i>>3]|=1<<(i&7)});
-  return "r."+g.seed+"."+b64u(new TextEncoder().encode(name))+"."+b64u(bytes)+(dur?"."+Math.round(dur/1000).toString(36):"")}
-function parseResults(str){const m=String(str||"").match(/r\.([2-9A-Za-z]{8})\.([A-Za-z0-9_-]*)\.([A-Za-z0-9_-]*)(?:\.([0-9a-z]+))?/);if(!m)return null;
-  const sd=parseSeed(m[1]);if(!sd)return null;let name="";try{name=new TextDecoder().decode(unb64u(m[2])).trim().slice(0,16)}catch(e){}
-  return{seed:sd.seed,name:name||"Opponent",bits:m[3],dur:m[4]?parseInt(m[4],36)*1000:null}}
-function decodeWords(g,bits){let bytes;try{bytes=unb64u(bits)}catch(e){return null}
+const utf8=s=>new TextEncoder().encode(s), fromUtf8=b=>new TextDecoder().decode(b);
+function wordBits(g,words){const set=new Set(words),bytes=new Uint8Array(Math.ceil(g.solList.length/8));g.solList.forEach((w,i)=>{if(set.has(w))bytes[i>>3]|=1<<(i&7)});return b64u(bytes)}
+function decodeWords(g,bits){if(!bits)return null;let bytes;try{bytes=unb64u(bits)}catch(e){return null}
   if(bytes.length!==Math.ceil(g.solList.length/8))return null;return g.solList.filter((w,i)=>bytes[i>>3]&(1<<(i&7)))}
 
-/* ================= storage & helpers ================= */
+/* ================= storage ================= */
 const $=id=>document.getElementById(id);
 const loadJSON=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
-const saveJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const saveJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
 const delKey=k=>{try{localStorage.removeItem(k)}catch(e){}};
-function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
-const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+let PID=loadJSON("wr.pid",null);if(!PID){PID="p"+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);saveJSON("wr.pid",PID)}
+const myName=()=>(loadJSON("wr.name","")||"").trim().slice(0,16);
+function setName(v){saveJSON("wr.name",v.trim());for(const id of ["nameIn","nameIn2"])if($(id).value!==v)$(id).value=v}
 const getHistory=()=>loadJSON("wr.history",[]);
 const getHist=seed=>getHistory().find(h=>h.seed===seed)||null;
-const getOpps=()=>loadJSON("wr.opps",{});
-const getOpp=seed=>getOpps()[seed]||null;
-function saveOpp(seed,o){const all=getOpps();delete all[seed];all[seed]=o;const keys=Object.keys(all);while(keys.length>30)delete all[keys.shift()];saveJSON("wr.opps",all)}
-const myName=()=>(loadJSON("wr.name","")||"").trim().slice(0,16);
-function setName(v){saveJSON("wr.name",v.trim());if($("nameIn").value!==v)$("nameIn").value=v;if($("nameIn2").value!==v)$("nameIn2").value=v}
-function note(msg){$("note").textContent=msg||"";$("note").hidden=!msg}
-const SCREENS=["home","ready","play","results","compare"];let view="home";
+const getRivals=()=>loadJSON("wr.rivals",{});
+const saveRivals=r=>saveJSON("wr.rivals",r);
+const rivalList=()=>Object.entries(getRivals()).map(([pid,r])=>({pid,...r})).sort((a,b)=>(b.syncedAt||0)-(a.syncedAt||0));
+
+/* ================= sync links =================
+   A sync link carries your id, name and recent games (seed, score, words found, time played, day). */
+const SYNC_GAMES=60, SYNC_BITS=30;
+function buildSync(){
+  const hist=getHistory().slice(0,SYNC_GAMES);
+  const games=hist.map((h,i)=>{const g=i<SYNC_BITS?getGame(h.seed):null;
+    return [h.seed,h.score.toString(36),h.words.length.toString(36),Math.round((h.dur||0)/1000).toString(36),Math.floor(h.at/DAY_MS).toString(36),g?wordBits(g,h.words):""].join(",")});
+  const text=["WR2",PID,encodeURIComponent(myName()||"Player"),...games].join("|");
+  return baseURL()+"#s."+b64u(utf8(text));
+}
+function parseSync(str){
+  const m=String(str||"").match(/s\.([A-Za-z0-9_-]+)/);if(!m)return null;
+  let text;try{text=fromUtf8(unb64u(m[1]))}catch(e){return null}
+  const parts=text.split("|");if(parts[0]!=="WR2"||parts.length<3)return null;
+  let name="Player";try{name=decodeURIComponent(parts[2]).trim().slice(0,16)||"Player"}catch(e){}
+  const games={};
+  for(const gs of parts.slice(3)){const [seed,sc,n,dur,day,bits]=gs.split(",");const p=parseSeed(seed);if(!p)continue;
+    games[p.seed]={score:parseInt(sc,36)||0,n:parseInt(n,36)||0,dur:(parseInt(dur,36)||0)*1000,at:(parseInt(day,36)||0)*DAY_MS,bits:bits||null}}
+  return{pid:String(parts[1]).slice(0,40),name,games};
+}
+function mergeRival(pid,name,games){
+  const all=getRivals(),r=all[pid]||{name,games:{}};r.name=name;r.syncedAt=Date.now();
+  for(const [seed,gm] of Object.entries(games)){const old=r.games[seed];r.games[seed]={...gm,bits:gm.bits||(old&&old.bits)||null}}
+  const keys=Object.keys(r.games);if(keys.length>300){keys.sort((a,b)=>r.games[a].at-r.games[b].at);keys.slice(0,keys.length-300).forEach(k=>delete r.games[k])}
+  all[pid]=r;saveRivals(all);return r;
+}
+function receiveSync(sy){
+  if(sy.pid===PID){note("That's your own sync link. Send it to the other player instead.");showHome();return}
+  const before=getRivals()[sy.pid];const r=mergeRival(sy.pid,sy.name,sy.games);
+  const fresh=Object.keys(sy.games).filter(s=>!getHist(s)&&!(before&&before.games[s])).length;
+  showRival(sy.pid,`Synced with ${r.name}.${fresh?` ${fresh} new board${fresh>1?"s":""} to beat.`:""}`);
+}
+/* links from the earlier version: r.SEED.name.bits[.dur] */
+function parseLegacy(str){const m=String(str||"").match(/r\.([2-9A-Za-z]{8})\.([A-Za-z0-9_-]*)\.([A-Za-z0-9_-]*)(?:\.([0-9a-z]+))?/);if(!m)return null;
+  const sd=parseSeed(m[1]);if(!sd)return null;let name="";try{name=fromUtf8(unb64u(m[2])).trim().slice(0,16)}catch(e){}
+  name=name||"Opponent";const g=getGame(sd.seed),w=decodeWords(g,m[3]);if(!w)return null;
+  return{pid:"legacy-"+name.toLowerCase(),name,games:{[sd.seed]:{score:sumPts(g,w),n:w.length,dur:m[4]?parseInt(m[4],36)*1000:0,at:Date.now(),bits:m[3]}}}}
+
+/* ================= stats, matchups, streaks ================= */
+function statsFor(g,words,dur,times){
+  const n=words.length,mins=Math.max(dur||g.s.time*1000,1000)/60000,score=sumPts(g,words),total=sumPts(g,g.solList);
+  const longest=words.slice().sort((a,b)=>b.length-a.length||pts(g,b)-pts(g,a))[0]||null;
+  const best=words.slice().sort(byPts(g))[0]||null;
+  const t=(times||[]).filter(x=>x!=null).sort((a,b)=>a-b);
+  let streak=0;for(let i=0,j=0;i<t.length;i++){while(t[i]-t[j]>15000)j++;streak=Math.max(streak,i-j+1)}
+  return{n,score,mins,longest,best,wpm:n/mins,ppm:score/mins,avg:n?words.reduce((a,w)=>a+w.length,0)/n:0,
+    rare:words.filter(w=>!COMMON.has(w)).length,pctPts:Math.round(100*score/Math.max(1,total)),streak:t.length?streak:null,first:t.length?t[0]/1000:null};
+}
+const sameRules=(a,b)=>a.size===b.size&&a.time===b.time&&a.minLen===b.minLen&&a.scoring===b.scoring&&a.pmask===b.pmask&&a.amount===b.amount;
+const f1=x=>(Math.round(x*10)/10).toFixed(1);
+function matchup(seed,pid){
+  const g=getGame(seed),h=getHist(seed),r=getRivals()[pid],rg=r&&r.games[seed];if(!g||!h||!rg)return null;
+  const theirs=decodeWords(g,rg.bits);let a=h.score,b=rg.score,both=null,onlyA=null,onlyB=null;
+  if(theirs){const A=new Set(h.words),B=new Set(theirs);both=[...A].filter(w=>B.has(w));onlyA=[...A].filter(w=>!B.has(w));onlyB=[...B].filter(w=>!A.has(w));
+    a=sumPts(g,onlyA)+(g.s.cancel?0:sumPts(g,both));b=sumPts(g,onlyB)+(g.s.cancel?0:sumPts(g,both))}
+  return{g,h,r,rg,theirs,a,b,both,onlyA,onlyB,res:a>b?"W":a<b?"L":"D",at:Math.max(h.at,rg.at||0)};
+}
+function h2h(pid){
+  const r=getRivals()[pid];if(!r)return null;const mine=getHistory();
+  const games=mine.filter(h=>r.games[h.seed]).map(h=>matchup(h.seed,pid)).filter(Boolean).sort((x,y)=>y.at-x.at);
+  const rec={W:0,L:0,D:0};games.forEach(m=>rec[m.res]++);
+  const mySeeds=new Set(mine.map(h=>h.seed));
+  const toBeat=Object.entries(r.games).filter(([s])=>!mySeeds.has(s)&&parseSeed(s)).map(([seed,gm])=>({seed,...gm})).sort((a,b)=>b.at-a.at);
+  const waiting=mine.filter(h=>!r.games[h.seed]).length;
+  return{r,games,rec,toBeat,waiting};
+}
+function streakOf(days){let d=dayNum();if(!days.has(d))d--;let n=0;while(days.has(d)){n++;d--}return n}
+function dailyDays(seeds){const out=new Set(),t=dayNum();for(let d=t;d>t-400;d--)if(seeds.has(dailySeed(d)))out.add(d);return out}
+const myDailyDays=()=>dailyDays(new Set(getHistory().map(h=>h.seed)));
+const rivalDailyDays=r=>dailyDays(new Set(Object.keys(r.games)));
+
+/* ================= UI helpers ================= */
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+function note(msg,ok){$("note").textContent=msg||"";$("note").hidden=!msg;$("note").classList.toggle("ok",!!ok)}
+const SCREENS=["home","ready","play","results","compare","rival"];let view="home";
 function show(id){for(const s of SCREENS)$(s).hidden=s!==id;view=id;$(id).scrollTop=0}
 const baseURL=()=>location.href.split("#")[0];
 function flash(btn,txt){const o=btn.dataset.label||btn.textContent;btn.dataset.label=o;btn.textContent=txt;setTimeout(()=>btn.textContent=o,1600)}
@@ -170822,121 +170963,184 @@ async function shareOrCopy(text,url,btn){
   if(navigator.share){try{await navigator.share({title:"Word Rattle",text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
   copyText(text+" "+url,btn);
 }
+function needName(inputId){if(myName())return false;const i=$(inputId);i.focus();i.placeholder="Add your name first";return true}
+function sendSync(btn,inputId,toName){
+  if(needName(inputId))return;
+  const n=getHistory().length;
+  shareOrCopy(`Word Rattle sync from ${myName()}: ${n} game${n===1?"":"s"}${toName?"":""}. Open it to see my boards to beat, then send yours back.`,buildSync(),btn);
+}
 function chipsFor(s){const a=[`${s.size}×${s.size}`,timeLabel(s.time),`${s.minLen}+ letters`,s.scoring==="letters"?"Letter points":"Word length scoring"];
   if(s.pmask)a.push(`Power-ups: ${PTYPES.filter((t,i)=>s.pmask&(1<<i)).join(" ")} · ${AMOUNTS[s.amount]}`);
-  a.push(s.cancel?"Shared words score 0":"Shared words count");return a}
+  a.push(s.turn?"Turning on":"Turning off");a.push(s.cancel?"Shared words score 0":"Shared words count");return a}
+const rulesShort=s=>`${s.size}×${s.size} · ${timeLabel(s.time)} · ${s.scoring==="letters"?(s.pmask?"power-ups":"letter points"):"word length"}`;
 const SCORING_HELP={classic:"3–4 letters 1 pt · 5 → 2 · 6 → 3 · 7 → 5 · 8+ → 11.",
   letters:"Each letter scores its value (shown on the die), and power-up tiles multiply it. Words of 5+ letters get +3 per extra letter."};
+const ago=t=>{const s=(Date.now()-t)/1000;return s<90?"just now":s<3600?`${Math.round(s/60)} min ago`:s<86400?`${Math.round(s/3600)} h ago`:`${Math.round(s/86400)} days ago`};
+const dateOf=at=>new Date(at).toLocaleDateString(undefined,{day:"numeric",month:"short"});
 
 /* ================= logo ================= */
 [["W","O","R","D"],["R","A","T","T","L","E"]].forEach((w,ri)=>w.forEach((c,i)=>{const d=el("div","ldie",c);d.style.animationDelay=(ri*4+i)*45+"ms";$(ri?"logo2":"logo1").append(d)}));
 
 /* ================= settings ================= */
-const S=Object.assign({size:4,time:180,minLen:3,cancel:true,scoring:"classic",pmask:0,amount:1},loadJSON("wr.settings",{}));
+const S=Object.assign({size:4,time:180,minLen:3,cancel:true,scoring:"classic",pmask:0,amount:1,turn:true},loadJSON("wr.settings",{}));
 if(!SIZES.includes(S.size))S.size=4;if(!TIMES.includes(S.time))S.time=180;if(!MINS.includes(S.minLen))S.minLen=3;
 [15,60,120,180,240,300].forEach(t=>{const p=(t-15)/285,sp=el("span",null,t<60?t+"s":t/60+"m");sp.style.left=`calc(${p*100}% + ${14-28*p}px)`;$("ticks").append(sp)});
-$("timeRange").addEventListener("input",e=>{S.time=+e.target.value;paintSettings()});
-PTYPES.forEach((t,i)=>{const b=el("button","pubtn");b.dataset.bit=i;const sw=el("span","sw p"+t.toLowerCase(),t);b.append(sw,el("span",null,PNAMES[t]));$("puGrid").append(b)});
+PTYPES.forEach((t,i)=>{const b=el("button","pubtn");b.dataset.bit=i;b.append(el("span","sw p"+t.toLowerCase(),t),el("span",null,PNAMES[t]));$("puGrid").append(b)});
 function paintSettings(){
   const pr=(id,val)=>$(id).querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(val))));
-  pr("segSize",S.size);const tr=$("timeRange");tr.value=S.time;tr.style.setProperty("--fill",((S.time-15)/285*100)+"%");$("timeVal").textContent=clock(S.time);pr("segMin",S.minLen);pr("segScoring",S.scoring);pr("segAmount",S.amount);
+  pr("segSize",S.size);pr("segMin",S.minLen);pr("segScoring",S.scoring);pr("segAmount",S.amount);
+  const tr=$("timeRange");tr.value=S.time;tr.style.setProperty("--fill",((S.time-15)/285*100)+"%");$("timeVal").textContent=clock(S.time);
   $("puGrid").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(!!(S.pmask&(1<<+b.dataset.bit)))));
   const live=S.scoring==="letters";
   $("puGrid").classList.toggle("dim",!live);$("segAmount").hidden=!(live&&S.pmask);
   $("puHelp").textContent=!live?"Power-ups use letter points. Tap one to switch scoring on.":S.pmask?"Each word scores its best route through the board.":"Pick any mix. None picked means a plain board.";
   $("scoringHelp").textContent=SCORING_HELP[S.scoring];
-  $("cancelIn").checked=S.cancel;saveJSON("wr.settings",S);
+  $("cancelIn").checked=S.cancel;$("turnIn").checked=S.turn;saveJSON("wr.settings",S);
 }
 const segBind=(id,key,conv)=>$(id).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S[key]=conv(b.dataset.v);
   if(key==="size")S.minLen=S.size===4?3:4;paintSettings()});
 segBind("segSize","size",Number);segBind("segMin","minLen",Number);segBind("segScoring","scoring",String);segBind("segAmount","amount",Number);
+$("timeRange").addEventListener("input",e=>{S.time=+e.target.value;paintSettings()});
 $("puGrid").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.pmask^=1<<+b.dataset.bit;if(S.pmask&&S.scoring!=="letters")S.scoring="letters";paintSettings()});
 $("cancelIn").onchange=e=>{S.cancel=e.target.checked;paintSettings()};
+$("turnIn").onchange=e=>{S.turn=e.target.checked;paintSettings()};
 paintSettings();
 $("nameIn").value=myName();$("nameIn2").value=myName();
 $("nameIn").addEventListener("input",e=>setName(e.target.value));$("nameIn2").addEventListener("input",e=>setName(e.target.value));
 
 /* ================= home ================= */
+function renderDaily(){
+  const box=$("dailyCard");box.innerHTML="";const today=dayNum(),seed=dailySeed(today),p=parseSeed(seed),h=getHist(seed);
+  const head=el("div","row spread");head.append(el("span","label",`Daily board · ${dayLabel(today)}`),el("span","label",fmtSeed(seed)));box.append(head);
+  box.append(el("h2",null,h?"Today's done":"Today's board"));
+  const ch=el("div","chips");[`${p.settings.size}×${p.settings.size}`,timeLabel(p.settings.time),p.settings.scoring==="letters"?(p.settings.pmask?"Power-ups":"Letter points"):"Word length"].forEach(t=>ch.append(el("span","chip",t)));box.append(ch);
+  const sc=el("div","scores");
+  if(h){const d=el("div");d.append(el("span","label","You"),el("b",null,String(h.score)));sc.append(d)}
+  for(const r of rivalList()){const gm=r.games[seed];if(!gm)continue;const d=el("div");d.append(el("span","label",r.name),el("b",null,h?String(gm.score):"?"));sc.append(d)}
+  if(sc.children.length)box.append(sc);
+  const st=el("div","streaks"),mine=myDailyDays();
+  const addS=(n,t)=>{const s=el("span","streak");s.append(el("b",null,String(n)),document.createTextNode(t));st.append(s)};
+  const ms=streakOf(mine);addS(ms,ms===1?" day streak":" day streak");
+  const r0=rivalList()[0];if(r0){const theirs=rivalDailyDays(r0),joint=new Set([...mine].filter(d=>theirs.has(d)));const js=streakOf(joint);addS(js,` day${js===1?"":"s"} in a row with ${r0.name}`)}
+  box.append(st);
+  const b=el("button","btn primary block",h?"See today's results":"Play today's board");b.onclick=()=>h?showResults(seed):showReady(seed);box.append(b);
+}
+function renderRivalCards(){
+  const box=$("rivalCards");box.innerHTML="";
+  for(const r of rivalList()){const x=h2h(r.pid);const b=el("button","rivalbtn");
+    const left=el("div");left.append(el("span","label",`You vs ${r.name}`));const rec=el("div","rec",`${x.rec.W} – ${x.rec.L}`);left.append(rec);
+    b.append(left,el("span","label",x.rec.D?`${x.rec.D} draw${x.rec.D>1?"s":""}`:`synced ${ago(r.syncedAt)}`));
+    if(x.toBeat.length)b.append(el("span","tobeat",`${x.toBeat.length} board${x.toBeat.length>1?"s":""} to beat`));
+    b.onclick=()=>showRival(r.pid);box.append(b)}
+}
 function showHome(){
+  renderDaily();renderRivalCards();
   const hist=getHistory(),box=$("recent");box.innerHTML="";$("recentCard").hidden=!hist.length;
-  for(const h of hist.slice(0,10)){const p=parseSeed(h.seed);if(!p)continue;const o=getOpp(h.seed);
-    const b=el("button","rrow");b.append(el("span","code",fmtSeed(h.seed)),el("span","sc",h.score));
-    const when=new Date(h.at).toLocaleDateString(undefined,{day:"numeric",month:"short"});
-    b.append(el("span","meta",`${p.settings.size}×${p.settings.size} · ${timeLabel(p.settings.time)} · ${h.words.length} words · ${when}${o?" · vs "+o.name:""}`));
+  for(const h of hist.slice(0,10)){const p=parseSeed(h.seed);if(!p)continue;
+    const b=el("button","lrow");b.append(el("span","code",fmtSeed(h.seed)),el("span","sc",h.score));
+    const vs=rivalList().filter(r=>r.games[h.seed]).map(r=>{const m=matchup(h.seed,r.pid);return m?`${m.res==="W"?"beat":m.res==="L"?"lost to":"drew with"} ${r.name}`:""}).filter(Boolean);
+    b.append(el("span","meta",`${rulesShort(p.settings)} · ${h.words.length} words · ${dateOf(h.at)}${vs.length?" · "+vs.join(", "):""}`));
     b.onclick=()=>showResults(h.seed);box.append(b)}
   show("home");
 }
 function handleCode(text){
-  text=String(text||"").trim();const part=text.includes("#")?text.slice(text.lastIndexOf("#")+1):text;
-  const r=parseResults(decodeURIComponent(part));if(r){receiveOpp(r);return true}
+  text=String(text||"").trim();if(!text)return false;
+  const part=decodeURIComponent(text.includes("#")?text.slice(text.lastIndexOf("#")+1):text);
+  if(/^WRB\./.test(part)){return restoreBackup(part)}
+  const sy=parseSync(part);if(sy){receiveSync(sy);return true}
+  const lg=parseLegacy(part);if(lg){receiveSync(lg);return true}
   const sd=parseSeed(part);if(sd){showReady(sd.seed);return true}
   return false;
 }
-function receiveOpp(r){
-  const g=getGame(r.seed);const w=g&&decodeWords(g,r.bits);
-  if(!w){note("That results link doesn't match this board. Ask them to send it again.");showHome();return}
-  saveOpp(r.seed,{name:r.name,bits:r.bits,dur:r.dur});
-  if(getHist(r.seed))showCompare(r.seed);else showReady(r.seed);
-}
-$("seedGo").onclick=()=>{note("");if(!handleCode($("seedIn").value)){note("That doesn't look like a seed. Seeds are 8 characters, like K7QX-9M2P.");$("seedIn").focus()}else $("seedIn").value=""};
+$("seedGo").onclick=()=>{note("");if(!handleCode($("seedIn").value)){note("That isn't a seed or a Word Rattle link. Seeds are 8 characters, like K7QX-9M2P.");$("seedIn").focus()}else $("seedIn").value=""};
 $("seedIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("seedGo").onclick()});
-$("createBtn").onclick=()=>{note("");setName($("nameIn").value);showReady(makeSeed(S))};
+$("createBtn").onclick=()=>{note("");showReady(makeSeed(S))};
+$("homeSync").onclick=e=>sendSync(e.currentTarget,"nameIn");
+
+/* backup */
+function backupCode(){return "WRB."+b64u(utf8(JSON.stringify({v:1,pid:PID,name:myName(),history:getHistory(),rivals:getRivals(),settings:S})))}
+function restoreBackup(code){
+  let d;try{d=JSON.parse(fromUtf8(unb64u(code.replace(/^.*?WRB\./,"").trim())))}catch(e){note("That backup code didn't work. Make sure you copied all of it.");showHome();return true}
+  if(!d||d.v!==1){note("That backup code didn't work. Make sure you copied all of it.");showHome();return true}
+  const byS=new Map();[...(d.history||[]),...getHistory()].forEach(h=>{const o=byS.get(h.seed);if(!o||h.at>o.at)byS.set(h.seed,h)});
+  saveJSON("wr.history",[...byS.values()].sort((a,b)=>b.at-a.at).slice(0,300));
+  for(const [pid,r] of Object.entries(d.rivals||{})){const cur=getRivals()[pid];mergeRival(pid,r.name,r.games||{});if(cur){const all=getRivals();all[pid].syncedAt=Math.max(cur.syncedAt||0,r.syncedAt||0);saveRivals(all)}}
+  if(d.pid){PID=d.pid;saveJSON("wr.pid",PID)}if(d.name&&!myName())setName(d.name);
+  note(`Restored ${(d.history||[]).length} games.`,true);showHome();return true;
+}
+$("backupBtn").onclick=e=>copyText(backupCode(),e.currentTarget);
+$("restoreBtn").onclick=()=>{const v=$("restoreIn").value.trim();if(!v)return;$("restoreIn").value="";restoreBackup(v)};
 
 /* ================= ready ================= */
 let readySeed=null;
 function renderBoardInfo(g,chipBox,legendBox){
   chipBox.innerHTML="";chipsFor(g.s).forEach(t=>chipBox.append(el("span","chip",t)));
-  if(legendBox){legendBox.innerHTML="";PTYPES.forEach((t,i)=>{if(!(g.s.pmask&(1<<i)))return;const sp=el("span");sp.append(el("span","sw p"+t.toLowerCase(),t),document.createTextNode(PNAMES[t]));legendBox.append(sp)})}
+  legendBox.innerHTML="";PTYPES.forEach((t,i)=>{if(!(g.s.pmask&(1<<i)))return;const sp=el("span");sp.append(el("span","sw p"+t.toLowerCase(),t),document.createTextNode(PNAMES[t]));legendBox.append(sp)});
 }
 function showReady(seed){
   const g=getGame(seed);if(!g)return;readySeed=g.seed;
+  const dd=dailySeed(dayNum())===g.seed;
+  $("readyLabel").textContent=dd?`Daily board · ${dayLabel(dayNum())}`:"Board seed";
   $("readyCode").textContent=fmtSeed(g.seed);renderBoardInfo(g,$("readyChips"),$("readyLegend"));
   $("readyScoring").textContent=SCORING_HELP[g.s.scoring];
-  const o=getOpp(g.seed),h=getHist(g.seed),ch=$("challenge");
-  if(o&&!h){const w=decodeWords(g,o.bits)||[];ch.innerHTML="";ch.append(el("b",null,`${o.name} scored ${sumPts(g,w)} points with ${w.length} words.`),el("span",null,"Play this board and you'll see the full comparison straight after."));ch.hidden=false}else ch.hidden=true;
+  const h=getHist(g.seed),ch=$("challenge");ch.innerHTML="";
+  if(!h)for(const r of rivalList()){const gm=r.games[g.seed];if(!gm)continue;ch.append(el("b",null,`${r.name} scored ${gm.score} with ${gm.n} words.`))}
+  if(ch.children.length){ch.append(el("span",null,"Play this board and you'll see the full comparison straight after."));ch.hidden=false}else ch.hidden=true;
   $("playedNote").hidden=!h;$("startBtn").textContent=h?"Play it again":"Start";
   show("ready");
 }
-$("readyBack").onclick=showHome;
+$("readyBack").onclick=()=>showHome();
 $("seeRes").onclick=()=>showResults(readySeed);
 $("copySeed").onclick=e=>copyText(fmtSeed(readySeed),e.currentTarget);
-$("shareSeed").onclick=e=>{const g=getGame(readySeed);shareOrCopy(`Play my Word Rattle board. Seed ${fmtSeed(g.seed)} (${g.s.size}×${g.s.size}, ${timeLabel(g.s.time)}).`,baseURL()+"#"+g.seed,e.currentTarget)};
-$("startBtn").onclick=()=>{const cur={seed:readySeed,startAt:Date.now()+3200,words:[]};saveJSON("wr.current",cur);enterPlay(cur)};
+$("shareSeed").onclick=e=>{const g=getGame(readySeed);shareOrCopy(`Play my Word Rattle board. Seed ${fmtSeed(g.seed)} (${rulesShort(g.s)}).`,baseURL()+"#"+g.seed,e.currentTarget)};
+$("startBtn").onclick=()=>{const g=getGame(readySeed);if(g.s.turn)enableMotion();const cur={seed:readySeed,startAt:Date.now()+3200,words:[],times:{}};saveJSON("wr.current",cur);enterPlay(cur)};
 
 /* ================= play ================= */
-let G=null,CUR=null,tickT=null,playing=false,path=[],found=[],foundSet=new Set(),wakeLock=null,endAt=0,endArmed=false;
+let G=null,CUR=null,tickT=null,playing=false,path=[],found=[],foundSet=new Set(),wakeLock=null,endAt=0,endArmed=false,VIEW=null,ROT=0;
 const NS="http://www.w3.org/2000/svg";
-function buildGrid(box,g,anim){
-  const n=g.s.size;box.style.setProperty("--n",n);box.innerHTML="";
-  g.board.letters.forEach((c,i)=>{const p=g.board.pu[i];const d=el("div","die"+(c==="Qu"?" qu":"")+(p?" p"+p.toLowerCase():""));
-    d.append(el("span","lt",c));if(g.s.scoring==="letters")d.append(el("span","val",String(c==="Qu"?10:VAL[c])));if(p)d.append(el("span","badge",p));
-    if(anim)d.style.animationDelay=(i*22)+"ms";box.append(d)});
+function buildGrid(box,g,anim,order){
+  const n=g.s.size;order=order||[...Array(n*n).keys()];box.style.setProperty("--n",n);box.innerHTML="";box._inv=[];
+  order.forEach((i,p)=>{box._inv[i]=p;const c=g.board.letters[i],pw=g.board.pu[i];const d=el("div","die"+(c==="Qu"?" qu":"")+(pw?" p"+pw.toLowerCase():""));
+    d.append(el("span","lt",c));if(g.s.scoring==="letters")d.append(el("span","val",String(c==="Qu"?10:VAL[c])));if(pw)d.append(el("span","badge",pw));
+    if(anim)d.style.animationDelay=(p*22)+"ms";box.append(d)});
   const svg=document.createElementNS(NS,"svg");svg.setAttribute("class","pathsvg");svg.setAttribute("viewBox",`0 0 ${n} ${n}`);svg.setAttribute("preserveAspectRatio","none");
   const pl=document.createElementNS(NS,"polyline");pl.setAttribute("fill","none");pl.setAttribute("stroke","var(--path)");pl.setAttribute("stroke-width","0.16");pl.setAttribute("stroke-linecap","round");pl.setAttribute("stroke-linejoin","round");
   svg.append(pl);box.append(svg);
   if(anim){box.classList.remove("rolling");void box.offsetWidth;box.classList.add("rolling")}
 }
 function drawPath(box,idxs,cls){
-  const n=+box.style.getPropertyValue("--n");
+  const n=+box.style.getPropertyValue("--n"),inv=box._inv;
   box.querySelectorAll(".die").forEach(d=>d.classList.remove("on","hl","start"));
-  idxs.forEach((i,k)=>{box.children[i].classList.add(cls);if(k===0&&cls==="hl")box.children[i].classList.add("start")});
-  box.querySelector("polyline").setAttribute("points",idxs.map(i=>`${i%n+.5},${Math.floor(i/n)+.5}`).join(" "));
+  idxs.forEach((i,k)=>{const d=box.children[inv[i]];d.classList.add(cls);if(k===0&&cls==="hl")d.classList.add("start")});
+  box.querySelector("polyline").setAttribute("points",idxs.map(i=>{const p=inv[i];return `${p%n+.5},${Math.floor(p/n)+.5}`}).join(" "));
 }
+function rotation(n,r){const v=[];for(let p=0;p<n*n;p++){let rr=Math.floor(p/n),cc=p%n;for(let k=0;k<r;k++){const nr=n-1-cc;cc=rr;rr=nr}v.push(rr*n+cc)}return v}
+function turnBoard(){
+  if(!G||!G.s.turn||!playing||path.length)return;
+  ROT=(ROT+1)%4;VIEW=rotation(G.s.size,ROT);buildGrid(grid,G,false,VIEW);drawPath(grid,[],"on");
+  grid.classList.remove("spin");void grid.offsetWidth;grid.classList.add("spin");
+  try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}
+}
+let motionOn=false,lastShake=0;
+function onMotion(e){const a=e.accelerationIncludingGravity||e.acceleration;if(!a)return;const m=Math.hypot(a.x||0,a.y||0,a.z||0);
+  if(m>23&&Date.now()-lastShake>900&&view==="play"){lastShake=Date.now();turnBoard()}}
+function enableMotion(){if(motionOn)return;try{
+  if(typeof DeviceMotionEvent!=="undefined"&&typeof DeviceMotionEvent.requestPermission==="function"){
+    DeviceMotionEvent.requestPermission().then(r=>{if(r==="granted"){window.addEventListener("devicemotion",onMotion);motionOn=true}}).catch(()=>{})}
+  else if(typeof DeviceMotionEvent!=="undefined"){window.addEventListener("devicemotion",onMotion);motionOn=true}}catch(e){}}
 function enterPlay(cur){
   stopPlay();G=getGame(cur.seed);CUR=cur;show("play");
   found=(cur.words||[]).filter(w=>G.sol.has(w));foundSet=new Set(found);
-  buildGrid($("grid"),G,true);drawPath($("grid"),[],"on");
-  $("found").innerHTML="";found.forEach(addFoundChip);updateScore();
+  ROT=0;VIEW=rotation(G.s.size,0);buildGrid($("grid"),G,true,VIEW);drawPath($("grid"),[],"on");
+  $("turnRow").hidden=!G.s.turn;$("shakeHint").hidden=typeof DeviceMotionEvent==="undefined";
+  $("found").innerHTML="";found.forEach(w=>addFoundChip(w));updateScore();
   $("wordbar").textContent="";$("wordbar").className="wordbar";
-  endAt=G.s.time?cur.startAt+G.s.time*1000:0;$("timerLabel").textContent=G.s.time?"Time left":"No limit";
-  endArmed=false;$("endBtn").textContent="End";
+  endAt=cur.startAt+G.s.time*1000;endArmed=false;$("endBtn").textContent="End";
   requestWake();
   const cd=$("countdown");
   const tick=()=>{const t=Date.now();
-    if(t<cur.startAt){cd.hidden=false;cd.textContent=Math.ceil((cur.startAt-t)/1000);playing=false;$("timer").textContent=G.s.time?fmt(G.s.time):"0:00";return}
-    cd.hidden=true;playing=true;
-    if(G.s.time){const left=(endAt-t)/1000;$("timer").textContent=fmt(left);$("timer").classList.toggle("low",left<=15);if(t>=endAt)finishGame()}
-    else{$("timer").textContent=fmt((t-cur.startAt)/1000-.5);$("timer").classList.remove("low")}};
+    if(t<cur.startAt){cd.hidden=false;cd.textContent=Math.ceil((cur.startAt-t)/1000);playing=false;$("timer").textContent=fmt(G.s.time);return}
+    cd.hidden=true;playing=true;const left=(endAt-t)/1000;$("timer").textContent=fmt(left);$("timer").classList.toggle("low",left<=15);if(t>=endAt)finishGame()};
   tickT=setInterval(tick,200);tick();
 }
 function requestWake(){try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>wakeLock=l).catch(()=>{})}catch(e){}}
@@ -170944,13 +171148,15 @@ function stopPlay(){clearInterval(tickT);tickT=null;playing=false;$("countdown")
 function finishGame(){
   stopPlay();path=[];
   const g=getGame(CUR.seed),words=(CUR.words||[]).filter(w=>g.sol.has(w));
-  const dur=Math.max(1000,Math.min(Date.now(),CUR.startAt+(g.s.time||21600)*1000)-CUR.startAt),tm=CUR.times||{};
+  const dur=Math.max(1000,Math.min(Date.now(),CUR.startAt+g.s.time*1000)-CUR.startAt),tm=CUR.times||{};
   const h={seed:g.seed,words,score:sumPts(g,words),at:Date.now(),dur,times:words.map(w=>tm[w]==null?null:tm[w])};
-  saveJSON("wr.history",[h,...getHistory().filter(x=>x.seed!==g.seed)].slice(0,30));
+  saveJSON("wr.history",[h,...getHistory().filter(x=>x.seed!==g.seed)].slice(0,300));
   delKey("wr.current");CUR=null;
-  if(getOpp(g.seed))showCompare(g.seed);else showResults(g.seed);
+  const r=rivalList().find(r=>r.games[g.seed]);
+  if(r)showCompare(g.seed,r.pid);else showResults(g.seed);
 }
 $("endBtn").onclick=()=>{if(endArmed){finishGame();return}endArmed=true;$("endBtn").textContent="Tap again";setTimeout(()=>{endArmed=false;$("endBtn").textContent="End"},2500)};
+$("turnBtn").onclick=turnBoard;
 function addFoundChip(w,isNew){const c=el("span","w"+(isNew?" new":""),w);c.append(el("small",null,"+"+pts(G,w)));$("found").prepend(c)}
 function updateScore(){$("myCount").textContent=found.length;$("myScore").textContent=sumPts(G,found)}
 const grid=$("grid");
@@ -170958,11 +171164,11 @@ function cellAt(x,y,loose){
   const r=grid.getBoundingClientRect(),n=G.s.size,px=(x-r.left)/r.width*n,py=(y-r.top)/r.height*n;
   if(px<0||py<0||px>=n||py>=n)return -1;const c=Math.floor(px),rr=Math.floor(py);
   if(!loose){const dx=px-c-.5,dy=py-rr-.5;if(dx*dx+dy*dy>0.42*0.42)return -1}
-  return rr*n+c;
+  return VIEW[rr*n+c];
 }
 const curWord=()=>path.map(i=>G.board.letters[i]).join("").toLowerCase();
 function tryAdd(e,loose){
-  const i=cellAt(e.clientX,e.clientY,loose);if(i<0)return;
+  const i=cellAt(e.clientX,e.clientY,loose);if(i==null||i<0)return;
   if(!path.length)path.push(i);
   else{const last=path[path.length-1];if(i===last)return;
     if(path.length>1&&i===path[path.length-2])path.pop();
@@ -170987,19 +171193,6 @@ function submit(w){
   addFoundChip(w,true);updateScore();
 }
 
-/* ================= stats ================= */
-function statsFor(g,words,dur,times){
-  const n=words.length,mins=Math.max(dur||g.s.time*1000,1000)/60000,score=sumPts(g,words),total=sumPts(g,g.solList);
-  const longest=words.slice().sort((a,b)=>b.length-a.length||pts(g,b)-pts(g,a))[0]||null;
-  const best=words.slice().sort(byPts(g))[0]||null;
-  const t=(times||[]).filter(x=>x!=null).sort((a,b)=>a-b);
-  let streak=0;for(let i=0,j=0;i<t.length;i++){while(t[i]-t[j]>15000)j++;streak=Math.max(streak,i-j+1)}
-  return{n,score,mins,longest,best,wpm:n/mins,ppm:score/mins,avg:n?words.reduce((a,w)=>a+w.length,0)/n:0,
-    rare:words.filter(w=>!COMMON.has(w)).length,pctPts:Math.round(100*score/Math.max(1,total)),streak:t.length?streak:null,first:t.length?t[0]/1000:null};
-}
-const sameRules=(a,b)=>a.size===b.size&&a.time===b.time&&a.minLen===b.minLen&&a.scoring===b.scoring&&a.pmask===b.pmask&&a.amount===b.amount;
-const f1=x=>(Math.round(x*10)/10).toFixed(1);
-
 /* ================= results ================= */
 let RES=null;
 function selectWord(gridBox,selBox,g,w,tag,tagCls,chip){
@@ -171012,8 +171205,15 @@ function selPrompt(selBox,text){selBox.innerHTML="";selBox.append(el("span","lab
 function showResults(seed){
   const g=getGame(seed),h=getHist(seed);if(!g||!h){showHome();return}
   const mine=new Set(h.words);RES={g,h,mine,filter:"all"};
-  $("resMeta").textContent=`Board ${fmtSeed(g.seed)} · ${g.s.size}×${g.s.size} · ${timeLabel(g.s.time)}`;
+  const dd=dailyDayOf(g.seed);
+  $("resMeta").textContent=`${dd!=null?"Daily "+dayLabel(dd,{day:"numeric",month:"short"}):"Board "+fmtSeed(g.seed)} · ${g.s.size}×${g.s.size} · ${timeLabel(g.s.time)}`;
   $("resScore").innerHTML="";$("resScore").append(document.createTextNode(String(h.score)),el("small",null,"points"));
+  const cmp=$("resCompare");cmp.innerHTML="";
+  for(const r of rivalList()){const m=matchup(seed,r.pid);if(!m)continue;const b=el("button","lrow");
+    const t=el("span","code",`vs ${r.name}`);t.append(el("span","res "+m.res,m.res));b.append(t,el("span","sc",`${m.a} – ${m.b}`),el("span","meta","See the full comparison"));
+    b.onclick=()=>showCompare(seed,r.pid);cmp.append(b)}
+  const waitingOn=rivalList().filter(r=>!r.games[seed]).map(r=>r.name);
+  $("resSyncText").textContent=waitingOn.length?`Send your games so ${waitingOn.join(" and ")} can try to beat this board. When they sync back, you'll see the comparison.`:"Send your games so they can try to beat this board. When they sync back, you'll see the comparison.";
   const st=statsFor(g,h.words,h.dur,h.times),k=$("resKpis");k.innerHTML="";
   const kpi=(lab,val,sub)=>{const d=el("div","kpi");d.append(el("span","label",lab),el("b",null,val));if(sub)d.append(el("small",null,sub));k.append(d)};
   kpi("Words found",String(st.n),`of ${g.solList.length} on the board`);
@@ -171030,8 +171230,6 @@ function showResults(seed){
   const pbEl=$("resPB");
   if(prev.length){const pb=Math.max(...prev.map(x=>x.score));pbEl.hidden=false;pbEl.className="pb"+(h.score>pb?" new":"");
     pbEl.textContent=h.score>pb?`New personal best (old best ${pb})`:`Personal best with these rules: ${pb}`}else pbEl.hidden=true;
-  const o=getOpp(seed),ob=$("oppReady");
-  if(o){ob.innerHTML="";ob.append(el("b",null,`${o.name}'s results are in.`));const b=el("button","btn primary","See the comparison");b.onclick=()=>showCompare(seed);ob.append(b);ob.hidden=false}else ob.hidden=true;
   $("nameIn2").value=myName();
   buildGrid($("resGrid"),g,false);selPrompt($("resSel"),"to trace its route on the board.");
   renderAnswers();show("results");
@@ -171042,86 +171240,127 @@ function renderAnswers(){
   [["all",`All ${all.length}`],["got",`Found ${got.length}`],["miss",`Missed ${all.length-got.length}`]].forEach(([k,t])=>{const b=el("button",null,t);b.setAttribute("aria-pressed",String(RES.filter===k));b.onclick=()=>{RES.filter=k;renderAnswers()};f.append(b)});
   const box=$("resGroups");box.innerHTML="";
   const groups=new Map();for(const w of all){const L=Math.min(w.length,8);if(!groups.has(L))groups.set(L,[]);groups.get(L).push(w)}
-  const keys=[...groups.keys()].sort((a,b)=>b-a);
-  for(const L of keys){const ws=groups.get(L).sort(byPts(g)),n=ws.filter(w=>mine.has(w)).length;
-    const show=ws.filter(w=>RES.filter==="all"||(RES.filter==="got")===mine.has(w));if(!show.length)continue;
+  for(const L of [...groups.keys()].sort((a,b)=>b-a)){const ws=groups.get(L).sort(byPts(g)),n=ws.filter(w=>mine.has(w)).length;
+    const shown=ws.filter(w=>RES.filter==="all"||(RES.filter==="got")===mine.has(w));if(!shown.length)continue;
     const grp=el("div","group"),gh=el("div","gh");gh.append(el("h2",null,L===8?"8+ letters":`${L} letters`),el("span","label",`${n} of ${ws.length} found`));grp.append(gh);
     const wrap=el("div","words");
-    for(const w of show){const got=mine.has(w),b=el("button","ans "+(got?"got":"miss"));b.append(el("span","w",w),el("span","p",String(pts(g,w))));
+    for(const w of shown){const got=mine.has(w),b=el("button","ans "+(got?"got":"miss"));b.append(el("span","w",w),el("span","p",String(pts(g,w))));
       b.onclick=()=>selectWord($("resGrid"),$("resSel"),g,w,got?"You found this":"You missed this",got?"got":"miss",b);wrap.append(b)}
     grp.append(wrap);box.append(grp)}
   if(!box.children.length)box.append(el("p","empty",RES.filter==="got"?"No words found this time.":"You found every word on the board!"));
 }
-$("resHome").onclick=showHome;
+$("resHome").onclick=()=>showHome();
 $("newSame").onclick=()=>showReady(makeSeed(RES.g.s));
-function myResultsLink(){return baseURL()+"#"+resultsCode(RES.g,myName()||"Player",RES.h.words,RES.h.dur)}
-$("shareRes").onclick=e=>shareOrCopy(`I scored ${RES.h.score} on Word Rattle board ${fmtSeed(RES.g.seed)}. Play the same board and compare:`,myResultsLink(),e.currentTarget);
-$("copyRes").onclick=e=>copyText(myResultsLink(),e.currentTarget);
-$("pasteGo").onclick=()=>{const v=$("pasteIn").value;const r=parseResults(decodeURIComponent(v.includes("#")?v.slice(v.lastIndexOf("#")+1):v));
-  if(!r){$("pasteIn").value="";$("pasteIn").placeholder="That isn't a results link. Try again.";return}
-  $("pasteIn").value="";receiveOpp(r)};
+$("shareRes").onclick=e=>sendSync(e.currentTarget,"nameIn2");
+$("copyRes").onclick=e=>{if(needName("nameIn2"))return;copyText(buildSync(),e.currentTarget)};
+$("pasteGo").onclick=()=>{const v=$("pasteIn").value;$("pasteIn").value="";if(!handleCode(v))$("pasteIn").placeholder="That isn't a sync link. Try again."};
 
 /* ================= compare ================= */
 let CMP=null;
-function showCompare(seed){
-  const g=getGame(seed),h=getHist(seed),o=getOpp(seed);if(!g||!h||!o){showResults(seed);return}
-  const theirs=decodeWords(g,o.bits)||[];
-  if(!RES||RES.g.seed!==seed){RES={g,h,mine:new Set(h.words),filter:"all"}}
-  const A=new Set(h.words),B=new Set(theirs);
-  const both=[...A].filter(w=>B.has(w)).sort(byPts(g)),onlyA=[...A].filter(w=>!B.has(w)).sort(byPts(g)),onlyB=[...B].filter(w=>!A.has(w)).sort(byPts(g));
-  const nobody=g.solList.filter(w=>!A.has(w)&&!B.has(w)).sort(byPts(g));
-  const sA=sumPts(g,onlyA)+(g.s.cancel?0:sumPts(g,both)),sB=sumPts(g,onlyB)+(g.s.cancel?0:sumPts(g,both));
-  const meN="You",themN=o.name;
-  CMP={g,both,onlyA,onlyB,nobody,tab:"onlyA",themN};
-  $("cmpMeta").textContent=`Board ${fmtSeed(g.seed)}`;
-  $("verdict").textContent=sA===sB?`It's a tie at ${sA}`:sA>sB?`You win by ${sA-sB}`:`${themN} wins by ${sB-sA}`;
+function showCompare(seed,pid,back){
+  const m=matchup(seed,pid);if(!m){showResults(seed);return}
+  const {g,h,r}=m;CMP={g,pid,tab:"onlyA",m,back:back||"results"};
+  const dd=dailyDayOf(g.seed);
+  $("cmpMeta").textContent=dd!=null?`Daily · ${dayLabel(dd,{day:"numeric",month:"short"})}`:`Board ${fmtSeed(g.seed)}`;
+  $("verdict").textContent=m.a===m.b?`It's a tie at ${m.a}`:m.a>m.b?`You win by ${m.a-m.b}`:`${r.name} wins by ${m.b-m.a}`;
   const vs=$("vs");vs.innerHTML="";
-  const side=(nm,p,win,r)=>{const d=el("div","side"+(r?" r":"")+(win?" win":""));d.append(el("span","nm",nm),el("span","pts",String(p)));return d};
-  vs.append(side(meN,sA,sA>sB,false),el("span","mid","VS"),side(themN,sB,sB>sA,true));
-  $("cmpRule").textContent=g.s.cancel?`Words you both found score zero (${both.length} shared).`:`Shared words count for both (${both.length} shared).`;
+  const side=(nm,p,win,right)=>{const d=el("div","side"+(right?" r":"")+(win?" win":""));d.append(el("span","nm",nm),el("span","pts",String(p)));return d};
+  vs.append(side("You",m.a,m.a>m.b,false),el("span","mid","VS"),side(r.name,m.b,m.b>m.a,true));
+  $("cmpRule").textContent=m.theirs?(g.s.cancel?`Words you both found score zero (${m.both.length} shared).`:`Shared words count for both (${m.both.length} shared).`):"";
+  $("cmpSync").textContent=`Send my result to ${r.name}`;
   const st=$("stats");st.innerHTML="";
-  const total=sumPts(g,g.solList);
-  const row=(label,a,b,bar,fa=String(a),fb=String(b))=>{const r=el("div","srow"),t=el("div","t");
+  const row=(label,a,b,bar,fa=String(a),fb=String(b))=>{const rw=el("div","srow"),t=el("div","t");
     const la=el("b",null,fa),lb=el("b","r",fb);if(bar&&a!==b)(a>b?la:lb).classList.add("lead");
-    t.append(la,el("span","label",label),lb);r.append(t);
-    if(bar){const mx=Math.max(a,b,1),bs=el("div","bars"),s1=el("span"),s2=el("span"),i1=el("i"),i2=el("i");i1.style.width=(100*a/mx)+"%";i2.style.width=(100*b/mx)+"%";s1.append(i1);s2.append(i2);bs.append(s1,s2);r.append(bs)}
-    st.append(r)};
-  row("Points",sA,sB,true);
-  row("Words found",A.size,B.size,true);
-  row("Unique words",onlyA.length,onlyB.length,true);
-  const pA=Math.round(100*sumPts(g,[...A])/Math.max(1,total)),pB=Math.round(100*sumPts(g,[...B])/Math.max(1,total));
-  row("% of board",pA,pB,true,pA+"%",pB+"%");
-  const xa=statsFor(g,[...A],h.dur,null),xb=statsFor(g,[...B],o.dur,null);
-  if(h.dur&&o.dur)row("Words per minute",xa.wpm,xb.wpm,true,f1(xa.wpm),f1(xb.wpm));
-  row("Average length",xa.avg,xb.avg,true,f1(xa.avg),f1(xb.avg));
-  row("Rarer words",xa.rare,xb.rare,true);
-  row("Longest word",0,0,false,xa.longest||"–",xb.longest||"–");
-  row("Highest scoring",0,0,false,xa.best?`${xa.best} (${pts(g,xa.best)})`:"–",xb.best?`${xb.best} (${pts(g,xb.best)})`:"–");
-  buildGrid($("cmpGrid"),g,false);selPrompt($("cmpSel"),"to see its route and who found it.");
-  renderCmpWords();show("compare");
+    t.append(la,el("span","label",label),lb);rw.append(t);
+    if(bar){const mx=Math.max(a,b,1e-9),bs=el("div","bars"),s1=el("span"),s2=el("span"),i1=el("i"),i2=el("i");i1.style.width=(100*a/mx)+"%";i2.style.width=(100*b/mx)+"%";s1.append(i1);s2.append(i2);bs.append(s1,s2);rw.append(bs)}
+    st.append(rw)};
+  row("Points",m.a,m.b,true);
+  if(m.theirs){
+    const A=h.words,B=m.theirs,xa=statsFor(g,A,h.dur,null),xb=statsFor(g,B,m.rg.dur,null);
+    row("Words found",A.length,B.length,true);
+    row("Unique words",m.onlyA.length,m.onlyB.length,true);
+    row("% of board",xa.pctPts,xb.pctPts,true,xa.pctPts+"%",xb.pctPts+"%");
+    if(h.dur&&m.rg.dur)row("Words per minute",xa.wpm,xb.wpm,true,f1(xa.wpm),f1(xb.wpm));
+    row("Average length",xa.avg,xb.avg,true,f1(xa.avg),f1(xb.avg));
+    row("Rarer words",xa.rare,xb.rare,true);
+    row("Longest word",0,0,false,xa.longest||"–",xb.longest||"–");
+    row("Highest scoring",0,0,false,xa.best?`${xa.best} (${pts(g,xa.best)})`:"–",xb.best?`${xb.best} (${pts(g,xb.best)})`:"–");
+    $("cmpWordsWrap").hidden=false;$("cmpNoWords").hidden=true;
+    buildGrid($("cmpGrid"),g,false);selPrompt($("cmpSel"),"to see its route and who found it.");renderCmpWords();
+  }else{row("Words found",h.words.length,m.rg.n,true);$("cmpWordsWrap").hidden=true;$("cmpNoWords").hidden=false}
+  show("compare");
 }
 function renderCmpWords(){
-  const c=CMP,t=$("cmpTabs");t.innerHTML="";
-  [["onlyA","Only you",c.onlyA],["both","Both",c.both],["onlyB","Only "+c.themN,c.onlyB],["nobody","Nobody",c.nobody]].forEach(([k,lab,list])=>{
-    const b=el("button");b.append(el("b",null,String(list.length)),document.createTextNode(lab));b.setAttribute("aria-pressed",String(c.tab===k));b.onclick=()=>{c.tab=k;renderCmpWords()};t.append(b)});
+  const c=CMP,m=c.m,nm=m.r.name,t=$("cmpTabs");t.innerHTML="";
+  const A=new Set(m.h.words),B=new Set(m.theirs),nobody=c.g.solList.filter(w=>!A.has(w)&&!B.has(w));
+  const lists={onlyA:m.onlyA,both:m.both,onlyB:m.onlyB,nobody};
+  [["onlyA","Only you"],["both","Both"],["onlyB","Only "+nm],["nobody","Nobody"]].forEach(([k,lab])=>{
+    const b=el("button");b.append(el("b",null,String(lists[k].length)),document.createTextNode(lab));b.setAttribute("aria-pressed",String(c.tab===k));b.onclick=()=>{c.tab=k;renderCmpWords()};t.append(b)});
   const box=$("cmpWords");box.innerHTML="";
-  const list=c[c.tab],cls={onlyA:"mine",both:"both"+(c.g.s.cancel?" cx":""),onlyB:"theirs",nobody:"miss"}[c.tab];
-  const tag={onlyA:["Only you found this","got"],both:["You both found this","both"],onlyB:[`Only ${c.themN} found this`,"them"],nobody:["Nobody found this","miss"]}[c.tab];
+  const list=lists[c.tab].slice().sort(byPts(c.g)),cls={onlyA:"mine",both:"both"+(c.g.s.cancel?" cx":""),onlyB:"theirs",nobody:"miss"}[c.tab];
+  const tag={onlyA:["Only you found this","got"],both:["You both found this","both"],onlyB:[`Only ${nm} found this`,"them"],nobody:["Nobody found this","miss"]}[c.tab];
   for(const w of list){const b=el("button","ans "+cls);b.append(el("span","w",w),el("span","p",String(pts(c.g,w))));b.onclick=()=>selectWord($("cmpGrid"),$("cmpSel"),c.g,w,tag[0],tag[1],b);box.append(b)}
   if(!list.length)box.append(el("p","empty","No words here."));
 }
-$("cmpBack").onclick=()=>showResults(CMP.g.seed);
+$("cmpBack").onclick=()=>CMP.back==="rival"?showRival(CMP.pid):showResults(CMP.g.seed);
+$("cmpSync").onclick=e=>sendSync(e.currentTarget,"nameIn");
+
+/* ================= rival ================= */
+let RIV=null;
+function showRival(pid,msg){
+  const x=h2h(pid);if(!x){showHome();return}RIV=pid;const r=x.r;
+  $("rivSynced").textContent=`Synced ${ago(r.syncedAt)}`;
+  const vs=$("rivVs");vs.innerHTML="";
+  const side=(nm,p,win,right)=>{const d=el("div","side"+(right?" r":"")+(win?" win":""));d.append(el("span","nm",nm),el("span","pts",String(p)));return d};
+  const mid=el("span","mid");mid.append(document.createTextNode("WINS"));if(x.rec.D){mid.append(el("br"),el("span","small",`${x.rec.D} draw${x.rec.D>1?"s":""}`))}
+  vs.append(side("You",x.rec.W,x.rec.W>x.rec.L,false),mid,side(r.name,x.rec.L,x.rec.L>x.rec.W,true));
+  $("rivVerdict").textContent=msg||(x.games.length?(x.rec.W===x.rec.L?"All square":x.rec.W>x.rec.L?`You lead by ${x.rec.W-x.rec.L}`:`${r.name} leads by ${x.rec.L-x.rec.W}`):"No shared boards yet. Play one of theirs below.");
+  const st=$("rivStreaks");st.innerHTML="";
+  const mine=myDailyDays(),theirs=rivalDailyDays(r),joint=new Set([...mine].filter(d=>theirs.has(d)));
+  const tile=(lab,v,sub)=>{const d=el("div","kpi");d.append(el("span","label",lab),el("b",null,String(v)),el("small",null,sub));st.append(d)};
+  tile("Your streak",streakOf(mine),"daily boards");tile(`${r.name}'s streak`,streakOf(theirs),"daily boards");tile("Together",streakOf(joint),"days in a row");
+  const tb=$("toBeat");tb.innerHTML="";$("toBeatTitle").textContent=x.toBeat.length?`Boards to beat · ${x.toBeat.length}`:"Boards to beat";
+  for(const gm of x.toBeat.slice(0,30)){const p=parseSeed(gm.seed),dd=dailyDayOf(gm.seed),b=el("button","lrow");
+    b.append(el("span","code",dd!=null?`Daily ${dayLabel(dd,{day:"numeric",month:"short"})}`:fmtSeed(gm.seed)),el("span","sc",`${r.name}: ${gm.score}`));
+    b.append(el("span","meta",`${rulesShort(p.settings)} · ${gm.n} words · ${dateOf(gm.at)} · tap to play`));b.onclick=()=>showReady(gm.seed);tb.append(b)}
+  if(!x.toBeat.length)tb.append(el("p","empty",`You've played every board ${r.name} has sent. Ask them to sync again after their next game.`));
+  $("rivSyncText").textContent=x.waiting?`${r.name} hasn't seen ${x.waiting} of your games yet. Send a sync so they can try to beat them, and so your results reach their phone.`:`Send a sync after each game so ${r.name}'s phone has your latest results.`;
+  const ss=$("rivStats");ss.innerHTML="";
+  if(x.games.length){
+    const avg=k=>x.games.reduce((a,m)=>a+m[k],0)/x.games.length;
+    const big=x.games.reduce((best,m)=>Math.abs(m.a-m.b)>Math.abs(best.a-best.b)?m:best,x.games[0]);
+    const add=(label,a,b,bar,fa,fb)=>{const rw=el("div","srow"),t=el("div","t"),la=el("b",null,fa??String(a)),lb=el("b","r",fb??String(b));if(bar&&a!==b)(a>b?la:lb).classList.add("lead");t.append(la,el("span","label",label),lb);rw.append(t);
+      if(bar){const mx=Math.max(a,b,1e-9),bs=el("div","bars"),s1=el("span"),s2=el("span"),i1=el("i"),i2=el("i");i1.style.width=(100*a/mx)+"%";i2.style.width=(100*b/mx)+"%";s1.append(i1);s2.append(i2);bs.append(s1,s2);rw.append(bs)}ss.append(rw)};
+    ss.append(el("h2",null,"On shared boards"));
+    add("Average score",avg("a"),avg("b"),true,f1(avg("a")),f1(avg("b")));
+    add("Best score",Math.max(...x.games.map(m=>m.a)),Math.max(...x.games.map(m=>m.b)),true);
+    const wg=x.games.filter(m=>m.theirs),wa=wg.reduce((s,m)=>s+m.h.words.length,0),wb=wg.reduce((s,m)=>s+m.theirs.length,0);
+    add("Total words",wa,wb,true);
+    ss.append(el("p","muted small",`Biggest margin: ${big.a>=big.b?"you":r.name} by ${Math.abs(big.a-big.b)} on ${fmtSeed(big.g.seed)}.`));
+    ss.hidden=false}else ss.hidden=true;
+  const hl=$("h2hList");hl.innerHTML="";
+  for(const m of x.games.slice(0,40)){const dd=dailyDayOf(m.g.seed),b=el("button","lrow");
+    const t=el("span","code",dd!=null?`Daily ${dayLabel(dd,{day:"numeric",month:"short"})}`:fmtSeed(m.g.seed));t.append(el("span","res "+m.res,m.res));
+    b.append(t,el("span","sc",`${m.a} – ${m.b}`),el("span","meta",`${rulesShort(m.g.s)} · ${dateOf(m.at)}`));b.onclick=()=>showCompare(m.g.seed,pid,"rival");hl.append(b)}
+  if(!x.games.length)hl.append(el("p","empty","Boards you've both played show up here."));
+  show("rival");
+}
+$("rivBack").onclick=()=>showHome();
+$("rivSync").onclick=e=>sendSync(e.currentTarget,"nameIn");
+$("rivPasteGo").onclick=()=>{const v=$("rivPaste").value;$("rivPaste").value="";if(!handleCode(v))$("rivPaste").placeholder="That isn't a sync link. Try again."};
 
 /* ================= wake / boot ================= */
 window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(!h||view==="play")return;history.replaceState(null,"",location.pathname+location.search);note("");handleCode(h)});
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&view==="play"&&!wakeLock)requestWake()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(view==="play"&&!wakeLock)requestWake();if(view==="home")renderDaily()}});
 (function boot(){
+  const old=loadJSON("wr.opps",null);
+  if(old){for(const [seed,o] of Object.entries(old)){const g=getGame(seed),w=g&&decodeWords(g,o.bits);if(w)mergeRival("legacy-"+String(o.name||"opponent").toLowerCase(),o.name||"Opponent",{[g.seed]:{score:sumPts(g,w),n:w.length,dur:o.dur||0,at:Date.now(),bits:o.bits}})}delKey("wr.opps")}
   const hash=location.hash.slice(1);
   const cur=loadJSON("wr.current",null);
   if(cur&&cur.seed&&getGame(cur.seed)){
-    const g=getGame(cur.seed),end=g.s.time?cur.startAt+g.s.time*1000:cur.startAt+6*3600e3;
-    if(hash){const r=parseResults(decodeURIComponent(hash));if(r){const gg=getGame(r.seed);if(gg&&decodeWords(gg,r.bits))saveOpp(r.seed,{name:r.name,bits:r.bits,dur:r.dur})}}
-    if(Date.now()<end){enterPlay(cur);return}
+    const g=getGame(cur.seed);
+    if(hash){const sy=parseSync(decodeURIComponent(hash));if(sy&&sy.pid!==PID)mergeRival(sy.pid,sy.name,sy.games)}
+    if(Date.now()<cur.startAt+g.s.time*1000){enterPlay(cur);return}
     CUR=cur;finishGame();return;
   }
   if(hash){history.replaceState(null,"",location.pathname+location.search);if(handleCode(hash))return}
