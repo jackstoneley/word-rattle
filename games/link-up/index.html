@@ -142,6 +142,18 @@ label.lab{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:
 .err{color:var(--bad);font-weight:700;font-size:14px;margin:0;min-height:1.2em}
 .mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .top h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* times */
+.band small{display:block;font-size:12px;font-weight:700;opacity:.72;margin-top:2px;font-variant-numeric:tabular-nums}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;padding:2px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.stats.t b{font-size:21px}
+.ctab{display:grid;grid-template-columns:1fr auto auto auto;gap:7px 14px;align-items:center;font-size:14px;font-variant-numeric:tabular-nums}
+.ctab .h{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right}
+.ctab .h:first-child{text-align:left}
+.ctab .n{display:flex;align-items:center;gap:8px;font-weight:700}
+.ctab .n i{width:14px;height:14px;border-radius:4px;flex:none}
+.ctab .v{text-align:right}
 @keyframes pop{from{transform:scale(.94);opacity:.4}to{transform:none;opacity:1}}
 @keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -161,6 +173,13 @@ label.lab{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:
     <div class="stats" id="stats"></div>
     <span class="eyebrow" style="margin-top:4px">Mistakes in wins</span>
     <div class="dist" id="dist"></div>
+  </div>
+  <div class="card">
+    <div class="cardhead"><span class="eyebrow">Times</span><div class="seg" id="tScope"><button data-s="daily">Daily</button><button data-s="all">All puzzles</button></div></div>
+    <div class="stats t" id="tStats"></div>
+    <span class="eyebrow" style="margin-top:4px">Time to find each colour</span>
+    <div class="ctab" id="cTab"></div>
+    <p class="muted small" id="tNote"></p>
   </div>
   <div class="card">
     <span class="eyebrow">Past daily puzzles</span>
@@ -279,6 +298,43 @@ const statusClass = gm => gm && gm.done ? (gm.won ? (gm.mistakes ? "won" : "perf
 const groupOf = (P, w) => P.findIndex(g => g.w.includes(w));
 
 /* ---------- stats ---------- */
+/* Active time for a game; older saves only have start and end. */
+const dur = g => g.act != null ? g.act : Math.max(0, (g.end || 0) - (g.start || 0));
+/* [[level, ms it took], ...] in the order the groups were found, or null if the game has no split times. */
+function splits(g) {
+  if (!g.ft || g.ft.length !== g.found.length || !g.ft.length) return null;
+  return g.ft.map(([l, t], k) => [l, Math.max(0, t - (k ? g.ft[k - 1][1] : 0))]);
+}
+const fmtLong = ms => { if (ms < 60000) return fmtTime(ms); const m = Math.round(ms / 60000); return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`; };
+let TSCOPE = load("lu.tscope", "daily");
+function timeGames() {
+  const own = new Set(MINE.map(b => b.id));
+  const list = Object.values(GAMES);
+  if (TSCOPE === "all") list.push(...Object.values(BGAMES), ...Object.entries(CGAMES).filter(([id]) => !own.has(id)).map(e => e[1]));
+  return list.filter(g => g && g.guesses && g.guesses.length);
+}
+function renderTimes() {
+  document.querySelectorAll("#tScope button").forEach(b => b.classList.toggle("on", b.dataset.s === TSCOPE));
+  const games = timeGames(), wins = games.filter(g => g.done && g.won), wt = wins.map(dur).filter(x => x > 0);
+  const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+  const tst = $("tStats"); tst.textContent = "";
+  [["Average", wt.length ? fmtTime(avg(wt)) : "–"], ["Fastest", wt.length ? fmtTime(Math.min(...wt)) : "–"],
+   ["Solved", String(wins.length)], ["Total time", fmtLong(games.reduce((a, g) => a + dur(g), 0))]]
+    .forEach(([lab, v]) => { const d = el("div"); d.append(el("b", null, v), el("span", null, lab)); tst.append(d); });
+  const per = [1, 2, 3, 4].map(() => ({ t: [], first: 0 })); let missing = 0;
+  games.forEach(g => { const sp = splits(g); if (!sp) { if (g.found.length) missing++; return; } sp.forEach(([l, ms], k) => { per[l - 1].t.push(ms); if (!k) per[l - 1].first++; }); });
+  const ct = $("cTab"); ct.textContent = "";
+  ["Colour", "Found", "Average", "Fastest"].forEach(h => ct.append(el("span", "h", h)));
+  ["Yellow", "Green", "Blue", "Purple"].forEach((name, i) => {
+    const n = el("span", "n"), sw = el("i"); sw.style.background = `var(--g${i + 1})`; n.append(sw, document.createTextNode(name));
+    const t = per[i].t; ct.append(n, el("span", "v", String(t.length)), el("span", "v", t.length ? fmtTime(avg(t)) : "–"), el("span", "v", t.length ? fmtTime(Math.min(...t)) : "–"));
+  });
+  const firsts = per.map((p, i) => [p.first, ["yellow", "green", "blue", "purple"][i]]).filter(x => x[0]).sort((a, b) => b[0] - a[0]);
+  $("tNote").textContent = (firsts.length ? `You find ${firsts[0][1]} first most often (${firsts[0][0]} time${firsts[0][0] > 1 ? "s" : ""}). ` : "") +
+    "Each colour's time runs from the group before it. The clock pauses when you leave the puzzle." + (missing ? " Puzzles played before this update have no colour times." : "") +
+    (TSCOPE === "all" ? " Boards you made yourself aren't counted." : "");
+}
+document.querySelectorAll("#tScope button").forEach(b => b.onclick = () => { TSCOPE = b.dataset.s; save("lu.tscope", TSCOPE); renderTimes(); });
 function computeStats() {
   const nos = Object.keys(GAMES).map(Number).filter(n => GAMES[n].done);
   const wins = nos.filter(n => GAMES[n].won);
@@ -296,7 +352,7 @@ function renderHome() {
   const no = todayNo(), g = GAMES[no], t = $("today"); t.textContent = "";
   const badge = el("div", "badge"); badge.append(el("b", null, String(dateOf(no).getUTCDate())), el("small", null, dateLabel(no, { month: "short" })));
   t.append(badge, el("span", "eyebrow", `Puzzle #${no} · ${dateLabel(no, { weekday: "long" })}`), el("h2", null, g && g.done ? (g.won ? (g.mistakes ? `Solved with ${g.mistakes} mistake${g.mistakes > 1 ? "s" : ""}` : "Perfect!") : "Not this time") : "Today's puzzle"));
-  t.append(el("span", "st", g && g.done ? (g.won ? `In ${fmtTime(g.end - g.start)}. Share it to compare.` : "See the answers and share your result.") : g && g.guesses.length ? `${g.found.length} of 4 groups found so far.` : "Find the four groups."));
+  t.append(el("span", "st", g && g.done ? (g.won ? `In ${fmtTime(dur(g))}. Share it to compare.` : "See the answers and share your result.") : g && g.guesses.length ? `${g.found.length} of 4 groups found so far.` : "Find the four groups."));
   const b = el("button", "btn primary block", g && g.done ? "See result" : g && g.guesses.length ? "Continue" : "Play"); b.style.gridColumn = "1 / -1"; b.onclick = () => openPuzzle(no); t.append(b);
   const s = computeStats(), st = $("stats"); st.textContent = "";
   [["Played", s.played], ["Win %", s.pct], ["Streak", s.cur], ["Best streak", s.best]].forEach(([lab, v]) => { const d = el("div"); d.append(el("b", null, String(v)), el("span", null, lab)); st.append(d); });
@@ -315,7 +371,7 @@ function renderHome() {
   const bDone = BONUS.filter((_, i) => BGAMES[i + 1] && BGAMES[i + 1].done).length;
   $("bonusCount").textContent = `${bDone} of ${BONUS.length} played`;
   $("randomBtn").textContent = bDone >= BONUS.length ? "Play a random one again" : "Play a random one";
-  renderBoards();
+  renderBoards(); renderTimes();
 }
 
 /* ---------- boards people make ---------- */
@@ -445,22 +501,34 @@ $("randomBtn").onclick = () => {
 
 /* ---------- play ---------- */
 let NO = 0, P = null, G = null, SEL = new Set(), tick = null, view = "home";
+/* The clock only runs while the puzzle is on screen. G.act = active time so far (ms); G.ft = [[level, ms at find], ...]. */
+let RUN = 0, ticks = 0;
+const elapsed = () => (G.act || 0) + (RUN ? Date.now() - RUN : 0);
+function pauseClock() { if (G && RUN) { G.act = elapsed(); RUN = 0; persist(); } }
+function resumeClock() { if (G && !G.done && !RUN && view === "play") RUN = Date.now(); }
 function show(v) { ["home", "play", "make"].forEach(x => $(x).hidden = v !== x); view = v; window.scrollTo(0, 0); }
 const openPuzzle = no => openRef(dailyRef(no));
 function openRef(ref) {
+  pauseClock(); RUN = 0;
   REF = ref; NO = ref.kind === "daily" ? ref.key : 0; P = ref.P; G = gameFor(ref); SEL = new Set();
   if (!G.start) G.start = Date.now();
+  if (G.act == null) G.act = G.done ? dur(G) : 0;
   persist();
   $("pTitle").textContent = ref.title;
-  show("play"); renderPlay();
+  show("play"); renderPlay(); resumeClock();
   clearInterval(tick); tick = setInterval(updTime, 1000); updTime();
 }
-function updTime() { if (!G) return; $("pTime").textContent = fmtTime((G.done ? G.end : Date.now()) - G.start); }
+function updTime() {
+  if (!G) return; $("pTime").textContent = fmtTime(G.done ? dur(G) : elapsed());
+  if (RUN && ++ticks % 10 === 0) { pauseClock(); resumeClock(); } // save now and then, in case the app is closed
+}
 function sizeClass(w) { w = w.split(" ").reduce((a, b) => a.length > b.length ? a : b); return w.length > 11 ? " s12" : w.length > 9 ? " s10" : w.length > 7 ? " s8" : ""; }
 function renderPlay() {
   const bands = $("bands"); bands.textContent = "";
   const shown = G.done ? [...G.found, ...[0, 1, 2, 3].filter(i => !G.found.includes(i))] : G.found;
-  for (const gi of shown) { const g = P[gi], b = el("div", "band l" + g.l); b.append(el("b", null, g.c), el("span", null, g.w.join(", "))); bands.append(b); }
+  const sp = splits(G);
+  shown.forEach((gi, k) => { const g = P[gi], b = el("div", "band l" + g.l); b.append(el("b", null, g.c), el("span", null, g.w.join(", ")));
+    if (sp && sp[k]) b.append(el("small", null, `${fmtTime(sp[k][1])} · found at ${fmtTime(G.ft[k][1])}`)); bands.append(b); });
   const wall = $("wall"); wall.textContent = "";
   if (!G.done) for (const w of G.order) {
     const t = el("button", "tile" + sizeClass(w) + (SEL.has(w) ? " on" : "")); t.append(el("span", null, w)); t.dataset.w = w; t.setAttribute("aria-pressed", String(SEL.has(w)));
@@ -475,7 +543,7 @@ function renderPlay() {
   $("result").hidden = !G.done;
   if (G.done) {
     $("rHead").textContent = G.won ? (G.mistakes === 0 ? "Perfect!" : G.mistakes === 1 ? "Solved!" : "Phew, solved!") : "Not this time";
-    $("rSub").textContent = G.won ? `${G.mistakes} mistake${G.mistakes === 1 ? "" : "s"} · ${fmtTime(G.end - G.start)}` : "Here are the four groups.";
+    $("rSub").textContent = G.won ? `${G.mistakes} mistake${G.mistakes === 1 ? "" : "s"} · ${fmtTime(dur(G))}` : "Here are the four groups.";
     $("rGrid").textContent = emojiGrid();
   }
 }
@@ -499,15 +567,16 @@ function submit() {
   const counts = [0, 0, 0, 0]; pick.forEach(w => counts[groupOf(P, w)]++);
   const hit = counts.findIndex(c => c === 4);
   if (hit >= 0) {
+    G.ft = G.ft || []; G.ft.push([P[hit].l, elapsed()]);
     G.found.push(hit); G.order = G.order.filter(w => !P[hit].w.includes(w)); SEL = new Set();
     try { navigator.vibrate && navigator.vibrate(20); } catch (e) {}
-    if (G.found.length === 4) { G.done = true; G.won = true; G.end = Date.now(); }
+    if (G.found.length === 4) { G.act = elapsed(); RUN = 0; G.done = true; G.won = true; G.end = Date.now(); }
   } else {
     G.mistakes++;
     const near = counts.some((c, i) => c === 3 && !G.found.includes(i));
     document.querySelectorAll(".tile.on").forEach(t => { t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); });
     try { navigator.vibrate && navigator.vibrate([30, 40, 30]); } catch (e) {}
-    if (G.mistakes >= 4) { G.done = true; G.won = false; G.end = Date.now(); SEL = new Set(); toast("Out of guesses"); }
+    if (G.mistakes >= 4) { G.act = elapsed(); RUN = 0; G.done = true; G.won = false; G.end = Date.now(); SEL = new Set(); toast("Out of guesses"); }
     else toast(near ? "One away…" : "Not a group");
   }
   persist();
@@ -517,7 +586,7 @@ function submit() {
 $("submitBtn").onclick = submit;
 $("clearBtn").onclick = () => { SEL = new Set(); renderPlay(); };
 $("shuffleBtn").onclick = () => { shuffle(G.order); persist(); renderPlay(); };
-function goHome() { clearInterval(tick); show("home"); renderHome(); }
+function goHome() { pauseClock(); clearInterval(tick); show("home"); renderHome(); }
 $("backBtn").onclick = goHome;
 $("doneBtn").onclick = goHome;
 
@@ -525,13 +594,18 @@ $("doneBtn").onclick = goHome;
 const NATIVE = window.SG_APP && window.Capacitor ? (typeof Capacitor.registerPlugin === "function" ? Capacitor.registerPlugin("WordRattle") : (Capacitor.Plugins || {}).WordRattle) || null : null;
 $("shareBtn").onclick = () => {
   const head = REF.kind === "custom" ? `Link Up: "${REF.title}"` : REF.title;
-  const line = G.won ? (G.mistakes ? `Solved with ${G.mistakes} mistake${G.mistakes > 1 ? "s" : ""} in ${fmtTime(G.end - G.start)}` : `Perfect, in ${fmtTime(G.end - G.start)}`) : "Not this time";
-  shareText(`${head}\n${emojiGrid()}\n${line}` + (REF.kind === "custom" ? `\nPlay it: ${boardLink(REF.board)}` : ""));
+  const line = G.won ? (G.mistakes ? `Solved with ${G.mistakes} mistake${G.mistakes > 1 ? "s" : ""} in ${fmtTime(dur(G))}` : `Perfect, in ${fmtTime(dur(G))}`) : "Not this time";
+  const sp = splits(G), times = sp ? "\n" + sp.map(([l, ms]) => EMOJI[l] + " " + fmtTime(ms)).join("  ") : "";
+  shareText(`${head}\n${emojiGrid()}\n${line}${times}` + (REF.kind === "custom" ? `\nPlay it: ${boardLink(REF.board)}` : ""));
 };
 
 /* Stoneley Games shell: the phone's back button. Returning false goes back to the games list. */
 window.SG_BACK = () => { if (view === "play" || view === "make") { goHome(); return true; } return false; };
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && view === "home") renderHome(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") { pauseClock(); return; }
+  if (view === "home") renderHome(); else if (view === "play") resumeClock();
+});
+window.addEventListener("pagehide", pauseClock);
 
 /* Links: "#lu.…" is a board for Link Up; anything else (sync links, seeds, live codes) belongs to Word Rattle. */
 window.SG_HANDLES_LINKS = true;

@@ -21,6 +21,17 @@
         "Boards sent to you appear under Shared with you.",
         "Words on the tiles are a readable size again."
       ]
+    },
+    {
+      "id": 3,
+      "type": "features",
+      "headline": "Link Up: times for every colour",
+      "details": [
+        "After each puzzle, see how long each colour took you to find.",
+        "New Times card: average and fastest solve, total time, and average and fastest time for each colour.",
+        "Switch the Times card between daily puzzles and all puzzles.",
+        "The clock now pauses when you leave a puzzle, and your shared result includes your colour times."
+      ]
     }
   ]
 }
