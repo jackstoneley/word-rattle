@@ -32,6 +32,19 @@
         "Switch the Times card between daily puzzles and all puzzles.",
         "The clock now pauses when you leave a puzzle, and your shared result includes your colour times."
       ]
+    },
+    {
+      "id": 4,
+      "type": "features",
+      "headline": "Gem Tower Defence: rage, handicaps and four new gems",
+      "details": [
+        "Four new gem colours: Onyx grows with every hit, Peridot's hits jump between enemies, Aquamarine stops healing and shields, Pearl hits harder the more coins you save.",
+        "Rage button under the map: tougher waves that pay more coins and earn shards.",
+        "Handicaps: optional harder rules that add to every shard you earn. They open after you clear the first map.",
+        "New players start with Ruby and unlock the other colours with shards. Your six colours are kept.",
+        "Master each colour, and five new upgrades in the Forge.",
+        "Enemies are tougher, especially after wave 30."
+      ]
     }
   ]
 }

@@ -56,6 +56,13 @@ h2{font-family:var(--ff-display);font-weight:600;font-size:1.15rem;margin:0;lett
 .forge{display:flex;flex-direction:column;gap:8px}
 .up{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
 .up .ut{flex:1;min-width:0}
+.up>.gem{--s:28px}
+.up.lock>.gem{filter:grayscale(.85) brightness(.7)}
+.pips.red i.on{background:var(--danger)}
+.shop.two{height:58px}
+.shop.two .buys{grid-template-rows:repeat(2,minmax(0,1fr))}
+.shop.two .buy .gem{--s:20px}
+.shop.two .step{height:56px}
 .up .ut b{font-size:.92rem}
 .up .ut div{font-size:.78rem;color:var(--muted)}
 .pips{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap}
@@ -119,6 +126,7 @@ h2{font-family:var(--ff-display);font-weight:600;font-size:1.15rem;margin:0;lett
 .i-txt .t1 b{font-weight:700}
 .i-txt .t2{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .i-act{display:flex;gap:5px}
+.i-act .btn.rage{border-color:#ef5b70;color:#ffb3bf}
 .i-act .btn{flex:1;padding:5px 8px;font-size:.8rem;height:32px;min-width:0;overflow:hidden}
 
 /* ---------- overlays ---------- */
@@ -171,6 +179,14 @@ h2{font-family:var(--ff-display);font-weight:600;font-size:1.15rem;margin:0;lett
         <div class="seg" id="diffSeg"></div>
       </div>
       <div class="sec">
+        <div class="sec-h"><h2>Gems</h2><small id="gemNote"></small></div>
+        <div class="forge" id="gemList"></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><h2>Handicaps</h2><small id="trNote"></small></div>
+        <div class="forge" id="trList"></div>
+      </div>
+      <div class="sec">
         <div class="sec-h"><h2>The Forge</h2><small>Permanent upgrades, paid in shards</small></div>
         <div class="forge" id="forge"></div>
       </div>
@@ -180,15 +196,19 @@ h2{font-family:var(--ff-display);font-weight:600;font-size:1.15rem;margin:0;lett
           <li>Tap a gem colour in the forge row to see what it does, then press <b>Forge</b>. The gem goes into your pouch, or straight into a socket if you tapped an empty one first.</li>
           <li>Drag a gem from your pouch onto a socket on the map. You can also tap the gem, then tap the socket.</li>
           <li>Drag one gem onto another to <b>merge</b>. Two gems of the same grade make one gem a grade higher. Mixed gems keep most of each colour's power.</li>
-          <li>A gem's two strongest colours unlock a <b>combo</b>, such as Ruby + Emerald for Toxic Splash. There are 15 to find, listed below.</li>
+          <li>A gem's two strongest colours unlock a <b>combo</b>, such as Ruby + Emerald for Toxic Splash. Every pair of colours has one, listed below.</li>
           <li>Grades stop at 10. Merge two grade 10 gems to make a <b>Super gem</b>. Pick one of two paths, then spend coins to raise it to level 3.</li>
           <li>Each boss you beat lets you pick a <b>relic</b>, a perk for the rest of the run.</li>
           <li><b>Traps</b> are the diamond sockets on the path. Their hits are weak, but their powers are twice as strong.</li>
           <li>Every 10th wave is a boss. Bosses drop <b>shards</b> even if you lose the run. Spend shards in the Forge.</li>
           <li>Call the next wave early for bonus coins. Waves overlap, so do not get greedy.</li>
+          <li><b>Rage</b> (button under the map) makes every coming wave tougher. Raging waves pay more coins, and each raging kill earns part of a shard.</li>
+          <li>You start with Ruby only. Spend shards in <b>Gems</b> to unlock more colours and to master the ones you have.</li>
+          <li><b>Handicaps</b> open once you clear the first map. Each level makes runs harder and adds 15% to every shard you earn.</li>
         </ul>
         <h4>Colours</h4><div class="sp" id="specList"></div><h4>Combos</h4><div class="cl" id="comboList"></div><h4>Super gem paths</h4><div class="cl" id="sigList"></div>
       </details>
+      <button class="btn" id="resetBtn" style="align-self:center">Start over from scratch</button>
     </div>
   </section>
 
@@ -204,7 +224,7 @@ h2{font-family:var(--ff-display);font-weight:600;font-size:1.15rem;margin:0;lett
     </div>
     <div class="stage" id="stage"><canvas id="cv"></canvas></div>
     <div class="info" id="info"></div>
-    <div class="shop">
+    <div class="shop" id="shopRow">
       <div class="step"><button id="gDown" aria-label="Lower grade">◀</button><div class="sv"><b id="gVal">Grade 1</b><span><span class="coin"></span> <span id="gCostN">40</span></span></div><button id="gUp" aria-label="Higher grade">▶</button></div>
       <div class="buys" id="buys"></div>
     </div>
@@ -217,15 +237,20 @@ h2{font-family:var(--ff-display);font-weight:600;font-size:1.15rem;margin:0;lett
 <script>
 'use strict';
 /*CORE-START*/
-const GW=9, GH=11, WAVE_GAP=18, MAXG=10;
+const GW=9, GH=11, WAVE_GAP=18, MAXG=10, HP0=12;
 const COLORS=[
   {n:'Ruby',c:'#ec3b55',s:'Splash',d:'Part of each hit splashes onto nearby enemies. Best against swarms.'},
   {n:'Amber',c:'#f38b2b',s:'Plunder',d:'Every hit steals coins. Builds your economy.'},
   {n:'Topaz',c:'#f4d03f',s:'Critical',d:'Chance to strike for several times the damage. Best against bosses.'},
   {n:'Emerald',c:'#2fc173',s:'Poison',d:'Poison ignores armour and shields. Best against brutes and menders.'},
   {n:'Sapphire',c:'#3d82f5',s:'Frost',d:'Slows enemies. Best against swifts. Bosses resist half.'},
-  {n:'Amethyst',c:'#a25cf0',s:'Shatter',d:'Strips armour. Below zero armour, enemies take extra damage.'}
+  {n:'Amethyst',c:'#a25cf0',s:'Shatter',d:'Strips armour. Below zero armour, enemies take extra damage.'},
+  {n:'Onyx',c:'#5b5566',s:'Growth',d:'Grows stronger with every hit it lands, for the rest of the run.'},
+  {n:'Peridot',c:'#a4d93a',s:'Chain',d:'Hits jump on to more enemies nearby. Best against swarms.'},
+  {n:'Aquamarine',c:'#3ed6d0',s:'Suppress',d:'Stops healing, shields and haste, and makes enemies take more damage. Best against menders and bosses.'},
+  {n:'Pearl',c:'#efe6d6',s:'Wealth',d:'Hits harder the more coins you have saved up.'}
 ];
+const NC=COLORS.length;
 // Combo of the two strongest colours (each needs at least 20% of the gem). Key is "low-high" colour index.
 const COMBOS={
   '0-1':{n:'Gold Spray',d:'Splash also plunders every enemy it hits.'},
@@ -242,7 +267,37 @@ const COMBOS={
   '2-5':{n:'Piercing Crit',d:'Crits ignore armour completely.'},
   '3-4':{n:'Frostbite',d:'Poison deals 50% more to slowed enemies.'},
   '3-5':{n:'Corrosion',d:'Poison keeps eating armour while it lasts.'},
-  '4-5':{n:'Brittle',d:'Shatter works twice as fast on slowed enemies.'}
+  '4-5':{n:'Brittle',d:'Shatter works twice as fast on slowed enemies.'},
+  '0-6':{n:'Blood Spray',d:'Growth also strengthens splash.'},
+  '1-6':{n:'Blood Money',d:'Growth also strengthens plunder.'},
+  '2-6':{n:'Killer Instinct',d:'Growth also strengthens crits.'},
+  '3-6':{n:'Black Rot',d:'Growth also strengthens poison.'},
+  '4-6':{n:'Deep Chill',d:'Growth also strengthens frost.'},
+  '5-6':{n:'Grinder',d:'Growth also strengthens shatter.'},
+  '6-8':{n:'Dread',d:'Growth also strengthens suppression.'},
+  '6-9':{n:'Greed',d:'Growth also strengthens wealth.'},
+  '0-7':{n:'Chain Blast',d:'Every chain jump splashes.'},
+  '1-7':{n:'Pickpocket',d:'Every chain jump plunders.'},
+  '2-7':{n:'Forked Lightning',d:'Chain jumps can crit.'},
+  '3-7':{n:'Contagion',d:'Every chain jump poisons.'},
+  '4-7':{n:'Ice Chain',d:'Every chain jump slows.'},
+  '5-7':{n:'Rending Chain',d:'Every chain jump shatters armour.'},
+  '6-7':{n:'Hungry Chain',d:'Every chain jump counts towards growth.'},
+  '7-8':{n:'Hush Chain',d:'Every chain jump suppresses.'},
+  '7-9':{n:'Gilded Chain',d:'Chain jumps deal full damage.'},
+  '0-8':{n:'Hush Wave',d:'Splash suppresses every enemy it hits.'},
+  '1-8':{n:'Ransom',d:'Suppressed enemies give 50% more coins when killed.'},
+  '2-8':{n:'Exposed Heart',d:'Crits on suppressed enemies deal 75% more.'},
+  '3-8':{n:'Wither',d:'Poison deals 50% more to suppressed enemies.'},
+  '4-8':{n:'Stillness',d:'Frost is 50% stronger on suppressed enemies.'},
+  '5-8':{n:'Expose',d:'Shatter works twice as fast on suppressed enemies.'},
+  '0-9':{n:'Gilt Blast',d:'Wealth also strengthens splash.'},
+  '1-9':{n:'Compound',d:'Wealth also strengthens plunder.'},
+  '2-9':{n:'Fortune',d:'Wealth also strengthens crits.'},
+  '3-9':{n:'Gilded Venom',d:'Wealth also strengthens poison.'},
+  '4-9':{n:'Silver Frost',d:'Wealth also strengthens frost.'},
+  '5-9':{n:'Gilt Edge',d:'Wealth also strengthens shatter.'},
+  '8-9':{n:'Hush Money',d:'Wealth also strengthens suppression.'}
 };
 // Super gem signature per colour, plus Overcharge for gems with one colour. Values are per level 1/2/3.
 const SIGS=[
@@ -251,7 +306,11 @@ const SIGS=[
   {n:'Execute',d:'Instantly kills non-boss enemies on low health. Crits hurt bosses more.',v:[.12,.18,.25]},
   {n:'Plague',d:'Its poison spreads to nearby enemies every second, and is stronger.',v:[1.5,2,3]},
   {n:'Blizzard',d:'Freezes every enemy in range solid every few seconds.',v:[5,4,3]},
-  {n:'Annihilate',d:'Each hit strips armour from every enemy near the target.',v:[.1,.18,.3]}
+  {n:'Annihilate',d:'Each hit strips armour from every enemy near the target.',v:[.1,.18,.3]},
+  {n:'Bloodlust',d:'Grows much faster. Each hit counts several times.',v:[3,5,8]},
+  {n:'Storm',d:'Chains jump to more enemies and lose less damage.',v:[2,4,6]},
+  {n:'Nullify',d:'Each hit suppresses every enemy near the target, and suppression is stronger.',v:[.1,.2,.35]},
+  {n:'Hoard',d:'Wealth counts for much more.',v:[1.6,2.2,3]}
 ];
 const OVERCHARGE={n:'Overcharge',d:'Raw power: much more damage and fire rate.',v:[1.6,2.2,3]};
 const TYPES={
@@ -311,8 +370,34 @@ const UPGRADES=[
   {k:'range',n:'Far Sight',d:'+5% tower range per level',max:6,c:3},
   {k:'lives',n:'Bulwark',d:'+4 lives per level',max:5,c:2},
   {k:'socket',n:'Mason',d:'+1 socket open at the start per level',max:3,c:5},
-  {k:'satchel',n:'Satchel',d:'+6 pouch slots',max:1,c:6}
+  {k:'satchel',n:'Satchel',d:'+6 pouch slots',max:1,c:6},
+  {k:'rate',n:'Quick Hands',d:'+3% fire rate per level',max:10,c:3},
+  {k:'thrift',n:'Bargain',d:'Forging and grading cost 3% less per level',max:8,c:3},
+  {k:'trapper',n:'Trapper',d:'+20% trap damage and power per level',max:5,c:3},
+  {k:'fury',n:'Fury',d:'+1 rage level you can use per level',max:4,c:4},
+  {k:'lore',n:'Relic Lore',d:'Choose from 4 relics instead of 3',max:1,c:15}
 ];
+// Colours are bought one at a time; each unlock costs more than the last. Mastery levels raise one colour's damage and power.
+const UNLOCK=[0,3,5,8,11,15,19,24,30,36], MASTERY_MAX=10, masteryCost=l=>2*(l+1);
+// Handicaps: optional rules picked before a run. Each level adds 15% to every shard earned.
+const TRAITS=[
+  {k:'vigour',n:'Vigour',d:'Enemies have 25% more health per level.'},
+  {k:'armour',n:'Iron Hide',d:'Enemies have 50% more armour per level.'},
+  {k:'haste',n:'Haste',d:'Enemies move 10% faster per level.'},
+  {k:'horde',n:'Horde',d:'Waves have 20% more enemies per level.'},
+  {k:'regen',n:'Regrowth',d:'Enemies heal 1% of their health a second per level. Suppress stops it.'},
+  {k:'restless',n:'Restless',d:'Waves come 15% sooner per level.'},
+  {k:'austerity',n:'Austerity',d:'Kills give 12% fewer coins per level.'},
+  {k:'fragile',n:'Fragile Orb',d:'25% fewer lives per level.'}
+];
+const TRAIT_MAX=3;
+const TR=(run,k)=>(run.tr&&run.tr[k])||0;
+const trMult=tr=>1+.15*Object.values(tr||{}).reduce((a,b)=>a+(b|0),0);
+// Rage: the player makes every coming wave tougher for more coins and a trickle of shards.
+const rageMax=run=>1+((run.meta&&run.meta.fury)||0);
+const rageOf=run=>Math.min(run.rage|0,rageMax(run));
+const waveGap=run=>WAVE_GAP*(1-.15*TR(run,'restless'));
+const unlocked=run=>(run.meta&&run.meta.unl)||[0,1,2,3,4,5];
 const TARGETS=['First','Strongest','Weakest','Fastest'];
 const upCost=(u,l)=>u.c*(l+1);
 
@@ -347,12 +432,13 @@ function posAt(md,d,o){
   const a=md.pts[i],b=md.pts[i+1],L=md.cum[i+1]-md.cum[i],f=L?Math.min(1,(d-md.cum[i])/L):0;
   o.x=a.x+(b.x-a.x)*f; o.y=a.y+(b.y-a.y)*f; o.dx=Math.sign(b.x-a.x); o.dy=Math.sign(b.y-a.y); return o;
 }
-const HPG=1.145;
-const hpUnit=n=>10*Math.pow(HPG,n-1);
+const HPG=1.15;
+// Past wave 30 health climbs a little faster each wave, so late maps stay a fight even with every upgrade.
+const hpUnit=n=>HP0*Math.pow(HPG,n-1)*Math.pow(1.03,Math.max(0,n-30));
 const waveValue=n=>45*Math.pow(1.09,n-1);
 const gemValue=g=>40*Math.pow(2,g-1);
 const Q=(run,k)=>(run.rel&&run.rel[k])||0;
-const forgeCost=(run,G)=>Math.round(gemValue(G)*Math.pow(.85,Q(run,'alchemy')));
+const forgeCost=(run,G)=>Math.round(gemValue(G)*Math.pow(.85,Q(run,'alchemy'))*(1-.03*((run.meta&&run.meta.thrift)||0)));
 const upgradeCost=(run,g)=>forgeCost(run,g.grade);
 const superCost=(run,g)=>Math.round(gemValue(MAXG)*(g.lvl===1?1.5:3)*Math.pow(.65,Q(run,'catalyst')));
 const sellValue=g=>Math.floor(gemValue(g.grade)*(g.sup?1:.5));
@@ -377,19 +463,20 @@ function waveComp(run,n){
   return {groups:[{t:a,k:Math.max(1,Math.round(base*TYPES[a].cnt))}]};
 }
 // Specials climb in even steps from grade 1 to 10. A colour with half the gem keeps 80% of its power.
+// Mastery (bought between runs) adds 6% damage and power per level, weighted by how much of that colour is in the gem.
 function gemStats(g,trap,run){
-  const m=run.meta||{}, L=k=>m[k]||0, q=k=>Q(run,k), G=Math.min(MAXG,g.grade);
-  const e=g.w.map(w=>w<.005?0:q('prism')?1:Math.min(1,1.6*w));
-  let dmg=7*Math.pow(2.2,G-1)*(1+.08*L('dmg'));
-  let rate=(.9+.05*(G-1))*(1+.12*q('overclock'));
+  const m=run.meta||{}, L=k=>m[k]||0, q=k=>Q(run,k), G=Math.min(MAXG,g.grade), gm=m.gm||[], w=g.w;
+  const e=w.map(x=>x<.005?0:q('prism')?1:Math.min(1,1.6*x)), mast=i=>1+.06*(gm[i]||0);
+  let dmg=7*Math.pow(2.2,G-1)*(1+.08*L('dmg'))*(1+.06*w.reduce((a,x,i)=>a+x*(gm[i]||0),0));
+  let rate=(.9+.05*(G-1))*(1+.12*q('overclock'))*(1+.03*L('rate'));
   let range=(2.5+.1*(G-1))*(1+.05*L('range'))*(1+.15*q('longshot'));
   let s=(.3+.07*G)*(1+.1*L('spec'));
-  const S={combo:comboKey(g.w),sig:null,lvl:0};
+  const S={combo:comboKey(w),sig:null,lvl:0};
   if(g.sup){
     dmg*=2.5; range+=.4; s*=1.25; S.lvl=g.lvl||0;
     if(S.lvl){ dmg*=1+.5*(S.lvl-1); S.sig=g.path;
       const sv=(g.path==='oc'?OVERCHARGE:SIGS[g.path]).v[S.lvl-1];
-      const f=g.path==='oc'?1:.5+.5*g.w[g.path]/Math.max(...g.w);
+      const f=g.path==='oc'?1:.5+.5*w[g.path]/Math.max(...w);
       if(g.path==='oc'){ dmg*=sv; rate*=1+.1*S.lvl; }
       else if(g.path===0) S.meteor=sv*f;
       else if(g.path===1) S.midas=sv*f;
@@ -397,29 +484,45 @@ function gemStats(g,trap,run){
       else if(g.path===3){ S.plague=1; s*=1+(sv-1)*f; }
       else if(g.path===4){ S.bzCd=sv; S.frz=1+.5*f; }
       else if(g.path===5) S.anni=sv*f;
+      else if(g.path===6) S.blood=Math.max(1,sv*f);
+      else if(g.path===7) S.storm=Math.round(sv*f);
+      else if(g.path===8) S.nullify=sv*f;
+      else if(g.path===9) S.hoard=1+(sv-1)*f;
     }
   }
-  if(trap){ dmg*=.45*(1+q('spikes')); rate*=1.7; range=.55; s*=2; }
+  if(trap){ const tp=1+.2*L('trapper'); dmg*=.45*(1+q('spikes'))*tp; rate*=1.7; range=.55; s*=2*tp; }
+  const sp=i=>(e[i]||0)*s*mast(i), ca=S.combo?S.combo.split('-').map(Number):[], has=i=>ca.includes(i), other=i=>ca[0]===i?ca[1]:ca[0];
+  S.grow=1; if(e[6]>0){ S.grow=1+Math.min(3,sp(6)*.25*Math.log10(1+(g.hits||0)/20)); dmg*=S.grow; }
+  S.wealth=1; if(e[9]>0){ const ref=3*waveValue(Math.max(1,run.wave||1));
+    S.wealth=1+Math.min(3,sp(9)*.2*(S.hoard||1)*(has(6)&&has(9)?1+.5*(S.grow-1):1)*Math.log2(1+Math.min(15,Math.max(0,run.coins||0)/ref))); dmg*=S.wealth; }
+  // Onyx and Pearl combos boost their partner's special; Peridot combos carry it along the chain instead.
+  const bo=new Array(NC).fill(1);
+  if(has(6)&&!has(7)) bo[other(6)]*=1+.5*(S.grow-1);
+  if(has(9)&&!has(6)&&!has(7)) bo[other(9)]*=1+.5*(S.wealth-1);
+  const P=i=>sp(i)*bo[i];
   S.dmg=dmg; S.rate=rate; S.range=range;
-  S.splash=Math.min(1.6,e[0]*.8*s*(1+.4*q('molten'))); S.splR=1.1+.3*q('molten');
-  S.plunder=e[1]*1.2*s;
-  S.critC=Math.min(.75,e[2]*.35*s+(e[2]>0?.08*q('eye'):0)); S.critM=2+.2*G+q('eye')+(g.sup?1:0);
-  S.poison=e[3]*.8*s*(1+.6*q('venom')); S.pdur=3+q('venom');
-  S.slow=Math.min(.85,e[4]*.5*s*(1+.3*q('frost')));
-  S.shred=Math.min(.3,e[5]*.06*s*(1+.5*q('fracture'))); S.floor=-.5-.5*q('fracture')-(S.anni?.5:0);
+  S.splash=Math.min(1.6,P(0)*.8*(1+.4*q('molten'))); S.splR=1.1+.3*q('molten');
+  S.plunder=P(1)*1.2;
+  S.critC=Math.min(.75,P(2)*.35+(e[2]>0?.08*q('eye'):0)); S.critM=2+.2*G+q('eye')+(g.sup?1:0);
+  S.poison=P(3)*.8*(1+.6*q('venom')); S.pdur=3+q('venom');
+  S.slow=Math.min(.85,P(4)*.5*(1+.3*q('frost')));
+  S.shred=Math.min(.3,P(5)*.06*(1+.5*q('fracture'))); S.floor=-.5-.5*q('fracture')-(S.anni?.5:0);
+  S.chain=e[7]>0?Math.min(10,Math.round(1+P(7)*4)+(S.storm||0)):0; S.chF=has(7)&&has(9)?1:S.storm?.75:.5;
+  S.supp=e[8]>0?Math.min(.8,P(8)*.35+(S.nullify||0)):0;
   return S;
 }
-function newGem(run,color,grade){ const w=[0,0,0,0,0,0]; w[color]=1; return {id:run.nid++,grade,w,kills:0}; }
+function newGem(run,color,grade){ const w=new Array(NC).fill(0); w[color]=1; return {id:run.nid++,grade,w,kills:0}; }
 const canMerge=(a,b)=>!a.sup&&!b.sup;
 function mergeGems(run,a,b){
   const va=Math.pow(2,a.grade),vb=Math.pow(2,b.grade), w=a.w.map((x,i)=>(x*va+b.w[i]*vb)/(va+vb));
-  if(a.grade===MAXG&&b.grade===MAXG) return {id:run.nid++,grade:MAXG,sup:1,lvl:0,path:null,w,kills:a.kills+b.kills};
-  return {id:run.nid++,grade:a.grade===b.grade?a.grade+1:Math.max(a.grade,b.grade),w,kills:a.kills+b.kills};
+  if(a.grade===MAXG&&b.grade===MAXG) return {id:run.nid++,grade:MAXG,sup:1,lvl:0,path:null,w,kills:a.kills+b.kills,hits:(a.hits||0)+(b.hits||0)};
+  return {id:run.nid++,grade:a.grade===b.grade?a.grade+1:Math.max(a.grade,b.grade),w,kills:a.kills+b.kills,hits:(a.hits||0)+(b.hits||0)};
 }
-function newRun(mi,di,meta){
+function newRun(mi,di,meta,tr){
   const md=mapData(mi), L=k=>meta[k]||0, def=MAPS[mi];
-  const open=def.open+L('socket'); let k=0;
-  return {v:3,mi,di,meta:Object.assign({},meta),wave:0,goal:def.goal,coins:160+40*L('coins'),lives:20+4*L('lives'),maxLives:20+4*L('lives'),
+  const open=def.open+L('socket'); let k=0; tr=Object.assign({},tr||{});
+  const lives=Math.max(1,Math.round((20+4*L('lives'))*(1-.25*(tr.fragile||0))));
+  return {v:3,mi,di,meta:JSON.parse(JSON.stringify(meta)),tr,rage:0,furyAcc:0,wave:0,goal:def.goal,coins:160+40*L('coins'),lives,maxLives:lives,
     timer:null,enemies:[],proj:[],spawnQ:[],fx:[],events:[],seed:(Math.random()*1e9)|0,bossOff:Math.floor(Math.random()*BOSSES.length),rel:{},relicQ:0,offer:null,
     sockets:md.sockets.map(s=>({c:s.c,r:s.r,trap:s.trap,open:!s.trap&&(k++<open),gem:null,cd:0,tgt:0})),
     inv:new Array(12+6*L('satchel')).fill(null),bs:0,bt:0,kills:0,bossKills:0,shards:0,state:'play',endless:false,t:0,nid:1,cg:1};
@@ -427,36 +530,41 @@ function newRun(mi,di,meta){
 const socketCost=(run,s)=>Math.round((s.trap?140*Math.pow(1.6,run.bt):100*Math.pow(1.6,run.bs))*Math.pow(.6,Q(run,'masonry')));
 function fx(run,o){ if(run.fx.length<160) run.fx.push(o); }
 function spawnWave(run){
-  const n=++run.wave, comp=waveComp(run,n), unit=hpUnit(n)*MAPS[run.mi].hp*DIFFS[run.di].hp, val=waveValue(n);
+  const n=++run.wave, comp=waveComp(run,n), R=rageOf(run), D=DIFFS[run.di];
+  const unit=hpUnit(n)*MAPS[run.mi].hp*D.hp*(1+.25*TR(run,'vigour'))*(1+.35*R), val=waveValue(n)*(1+.3*R), arm=1+.5*TR(run,'armour');
+  const cnt=g=>TYPES[g.t].boss?g.k:Math.max(1,Math.round(g.k*(1+.2*TR(run,'horde'))*(1+.15*R)));
   if(Q(run,'interest')) run.coins+=Math.min(run.coins*.03*Q(run,'interest'),val*3*Q(run,'interest'));
   if(Q(run,'mend')&&n%5===0){ run.lives+=Q(run,'mend'); run.maxLives=Math.max(run.maxLives,run.lives); }
-  let tot=0; for(const g of comp.groups) tot+=TYPES[g.t].hp*g.k;
+  let tot=0, num=0; for(const g of comp.groups){ tot+=TYPES[g.t].hp*cnt(g); num+=cnt(g); }
+  const rs=R?.12*R*D.sh*trMult(run.tr)/num:0;
   let t=0;
-  for(const g of comp.groups){ const T=TYPES[g.t]; for(let i=0;i<g.k;i++){ run.spawnQ.push({t,type:g.t,hp:unit*T.hp,arm:unit*.05*T.arm,rew:val*T.hp/tot,n}); t+=T.gap; } }
+  for(const g of comp.groups){ const T=TYPES[g.t], k=cnt(g), gap=T.gap*g.k/k; for(let i=0;i<k;i++){ run.spawnQ.push({t,type:g.t,hp:unit*T.hp,arm:unit*.05*T.arm*arm,rew:val*T.hp/tot,n,rs}); t+=gap; } }
 }
 function callWave(run){
   if(run.state!=='play') return 0;
-  if(run.wave===0&&run.timer===null){ spawnWave(run); run.timer=WAVE_GAP; return 0; }
+  if(run.wave===0&&run.timer===null){ spawnWave(run); run.timer=waveGap(run); return 0; }
   if(run.timer===null) return 0;
   const bonus=Math.round(run.timer*waveValue(run.wave+1)*.015);
   run.coins+=bonus; spawnWave(run);
-  run.timer=(!run.endless&&run.wave>=run.goal)?null:WAVE_GAP; return bonus;
+  run.timer=(!run.endless&&run.wave>=run.goal)?null:waveGap(run); return bonus;
 }
 function makeEnemy(run,q){
   const T=TYPES[q.type], md=mapData(run.mi);
-  const e={id:run.nid++,type:q.type,hp:q.hp,mhp:q.hp,arm:q.arm,arm0:q.arm,spd:T.spd*(1+Math.min(.35,q.n*.0035)),d:q.d||0,x:0,y:0,dx:0,dy:1,
+  const e={id:run.nid++,type:q.type,hp:q.hp,mhp:q.hp,arm:q.arm,arm0:q.arm,spd:T.spd*(1+Math.min(.35,q.n*.0035))*(1+.1*TR(run,'haste')),rs:q.rs||0,sp:0,spT:0,d:q.d||0,x:0,y:0,dx:0,dy:1,
     slow:0,slowT:0,frz:0,pd:0,pt:0,pcb:null,plg:0,rew:q.rew,life:q.life||T.life,boss:!!T.boss,br:T.brood?3:0,heal:T.heal||0,r:T.r*(q.scale||1),hitT:0,n:q.n,
     gen:q.gen||0,sh:0,shMax:0,shT:0,fp:T.blink?1:0,blinkT:4,haste:1};
   if(T.ward&&!e.gen){ e.sh=e.shMax=e.mhp*.5; e.ward=1; }
   return posAt(md,e.d,e);
 }
 function poisonE(e,S,mult,cb){ const p=S.dmg*S.poison*mult; if(p>=e.pd){ e.pd=p; e.pcb=cb; } e.pt=Math.max(e.pt,S.pdur); if(S.plague) e.plg=1; }
-function slowE(e,S){ if(e.fp||S.slow<=0) return; const s=e.boss?S.slow*.5:S.slow; e.slow=Math.max(e.slowT>0?e.slow:0,s); e.slowT=1.6; }
+function suppressE(e,S,v){ e.sp=Math.max(e.spT>0?e.sp:0,v||S.supp); e.spT=3; if(S.combo==='1-8') e.ransom=1; }
+function slowE(e,S){ if(e.fp||S.slow<=0) return; let s=e.boss?S.slow*.5:S.slow; if(S.combo==='4-8'&&e.spT>0) s=Math.min(.85,s*1.5); e.slow=Math.max(e.slowT>0?e.slow:0,s); e.slowT=1.6; }
 function shredE(e,amt,floor){ if(e.arm0>0) e.arm=Math.max(floor*e.arm0,e.arm-e.arm0*amt); }
 function dealDamage(run,e,amt,pierce,gem){
   if(e.hp<=0) return;
   let d=pierce?amt:Math.max(amt*.15,amt-e.arm);
   if(e.slow>0&&Q(run,'frost')) d*=1+.1*Q(run,'frost');
+  if(e.spT>0) d*=1+e.sp;
   if(gem&&e.sh>0){ const a=Math.min(e.sh,d); e.sh-=a; d-=a; e.shT=0; }
   e.hp-=d; if(gem) e.hitT=.08;
   while(e.br>0&&e.hp>0&&e.hp/e.mhp<=e.br*.25){
@@ -470,11 +578,14 @@ function dealDamage(run,e,amt,pierce,gem){
     if(e.pt>0&&e.pcb==='1-3') mult*=1.5;
     if(S&&S.combo==='1-5'&&e.arm<0) mult*=1.5;
     if(S&&S.midas) mult*=1+S.midas;
-    run.coins+=e.rew*mult;
+    if(e.ransom&&e.spT>0) mult*=1.5;
+    run.coins+=e.rew*mult*(1-.12*TR(run,'austerity'));
+    if(e.rs){ run.furyAcc=(run.furyAcc||0)+e.rs; if(run.furyAcc>=1){ const k=Math.floor(run.furyAcc); run.furyAcc-=k; run.shards+=k; run.events.push({k:'shard',n:k});
+      fx(run,{k:'txt',x:e.x,y:e.y-.4,s:'+'+k+' shard',col:'#bfe0ff',t:0,max:1.2}); } }
     if(gem) gem.kills++;
     fx(run,{k:'burst',x:e.x,y:e.y,col:TYPES[e.type].col,t:0,max:.4,r1:e.r*2.4});
     if(TYPES[e.type].hydra&&e.gen<2){ for(let i=0;i<2;i++) run.enemies.push(makeEnemy(run,{type:'hydra',hp:e.mhp*.45,arm:e.arm0,rew:0,n:e.n,d:e.d-.35*i,gen:e.gen+1,life:e.gen?1:3,scale:e.gen?.55:.75})); }
-    if(e.boss&&!e.gen){ run.bossKills++; const s=Math.max(1,Math.round((2+run.mi+Math.floor(e.n/30))*DIFFS[run.di].sh)); run.shards+=s; run.events.push({k:'shard',n:s}); run.relicQ=(run.relicQ||0)+1;
+    if(e.boss&&!e.gen){ run.bossKills++; const s=Math.max(1,Math.round((2+run.mi+Math.floor(e.n/30))*DIFFS[run.di].sh*trMult(run.tr))); run.shards+=s; run.events.push({k:'shard',n:s}); run.relicQ=(run.relicQ||0)+1;
       fx(run,{k:'txt',x:e.x,y:e.y-.4,s:'+'+s+' shard'+(s>1?'s':''),col:'#bfe0ff',t:0,max:1.6}); }
   }
 }
@@ -482,8 +593,10 @@ function hit(run,e,gem,S){
   const cb=S.combo;
   if(S.exec&&!e.boss&&e.hp<e.mhp*S.exec){ dealDamage(run,e,e.hp+1,true,gem); fx(run,{k:'ring',x:e.x,y:e.y,col:'#f4d03f',t:0,max:.35,r1:.7}); return; }
   let dmg=S.dmg, crit=false;
-  if(S.critC>0&&Math.random()<S.critC){ dmg*=S.critM; crit=true; if(e.boss&&S.bossCrit) dmg*=1+S.bossCrit; if(cb==='2-4'&&e.slow>0) dmg*=1.75; }
-  if(S.shred>0) shredE(e,S.shred*(cb==='4-5'&&e.slow>0?2:1),S.floor);
+  if(gem.w[6]>.005) gem.hits=(gem.hits||0)+(S.blood||1);
+  if(S.critC>0&&Math.random()<S.critC){ dmg*=S.critM; crit=true; if(e.boss&&S.bossCrit) dmg*=1+S.bossCrit; if(cb==='2-4'&&e.slow>0) dmg*=1.75; if(cb==='2-8'&&e.spT>0) dmg*=1.75; }
+  if(S.shred>0) shredE(e,S.shred*((cb==='4-5'&&e.slow>0)||(cb==='5-8'&&e.spT>0)?2:1),S.floor);
+  if(S.supp>0){ suppressE(e,S); if(S.nullify){ for(const o of run.enemies){ if(o.hp>0&&o!==e&&(o.x-e.x)**2+(o.y-e.y)**2<2.25) suppressE(o,S); } } }
   if(S.anni){ for(const o of run.enemies){ if(o.hp>0&&(o.x-e.x)**2+(o.y-e.y)**2<2.25) shredE(o,S.anni,S.floor); } }
   dealDamage(run,e,dmg,crit&&cb==='2-5',gem);
   if(S.poison>0) poisonE(e,S,crit&&cb==='2-3'?3:1,cb);
@@ -493,27 +606,49 @@ function hit(run,e,gem,S){
   if(S.splash>0){ const big=crit&&cb==='0-2', R=S.splR*(big?1.5:1), r2=R*R, sd=dmg*S.splash*(big?2:1);
     for(const o of run.enemies){ if(o===e||o.hp<=0)continue; const dx=o.x-e.x,dy=o.y-e.y; if(dx*dx+dy*dy>r2) continue;
       dealDamage(run,o,sd,false,gem);
-      if(cb==='0-3') poisonE(o,S,.6,cb); else if(cb==='0-4') slowE(o,S); else if(cb==='0-5') shredE(o,S.shred||.03,S.floor); else if(cb==='0-1') run.coins+=o.rew*.1*S.plunder; }
+      if(cb==='0-3') poisonE(o,S,.6,cb); else if(cb==='0-4') slowE(o,S); else if(cb==='0-5') shredE(o,S.shred||.03,S.floor); else if(cb==='0-1') run.coins+=o.rew*.1*S.plunder; else if(cb==='0-8') suppressE(o,S); }
     fx(run,{k:'ring',x:e.x,y:e.y,col:COLORS[0].c,t:0,max:.25,r1:R}); }
+  if(S.chain) chain(run,e,gem,S);
   if(S.meteor){ gem.mc=(gem.mc||0)+1; if(gem.mc%5===0){ const md=S.dmg*S.meteor; for(const o of run.enemies){ if(o.hp>0&&(o.x-e.x)**2+(o.y-e.y)**2<2.56) dealDamage(run,o,md,false,gem); }
     fx(run,{k:'ring',x:e.x,y:e.y,col:'#ff7a3d',t:0,max:.5,r1:1.6}); fx(run,{k:'burst',x:e.x,y:e.y,col:'#ffb36b',t:0,max:.5,r1:1.2}); } }
   if(crit) fx(run,{k:'ring',x:e.x,y:e.y,col:'#f4d03f',t:0,max:.3,r1:.6});
 }
+// Peridot: the hit jumps to the nearest enemy not yet hit, then the next. A Peridot combo carries the partner's special along.
+function chain(run,e,gem,S){
+  const cb=S.combo, seen=new Set([e]); let prev=e;
+  for(let j=0;j<S.chain;j++){
+    let nx=null, nd=3.24; for(const o of run.enemies){ if(o.hp<=0||seen.has(o)) continue; const d=(o.x-prev.x)**2+(o.y-prev.y)**2; if(d<nd){ nd=d; nx=o; } }
+    if(!nx) break; seen.add(nx);
+    let jd=S.dmg*S.chF; if(cb==='2-7'&&Math.random()<S.critC){ jd*=S.critM; fx(run,{k:'ring',x:nx.x,y:nx.y,col:'#f4d03f',t:0,max:.3,r1:.5}); }
+    dealDamage(run,nx,jd,false,gem);
+    if(cb==='0-7'){ const r2=S.splR*S.splR; for(const o of run.enemies){ if(o!==nx&&o.hp>0&&(o.x-nx.x)**2+(o.y-nx.y)**2<=r2) dealDamage(run,o,jd*S.splash,false,gem); } }
+    else if(cb==='1-7') run.coins+=nx.rew*.1*S.plunder;
+    else if(cb==='3-7') poisonE(nx,S,.6,cb);
+    else if(cb==='4-7') slowE(nx,S);
+    else if(cb==='5-7') shredE(nx,S.shred,S.floor);
+    else if(cb==='6-7') gem.hits=(gem.hits||0)+(S.blood||1);
+    else if(cb==='7-8') suppressE(nx,S);
+    fx(run,{k:'zap',x:prev.x,y:prev.y,x2:nx.x,y2:nx.y,col:COLORS[7].c,t:0,max:.18});
+    prev=nx;
+  }
+}
 function step(run,dt){
   if(run.state!=='play') return;
   const md=mapData(run.mi); run.t+=dt;
-  if(run.timer!==null){ run.timer-=dt; if(run.timer<=0){ spawnWave(run); run.timer=(!run.endless&&run.wave>=run.goal)?null:WAVE_GAP; } }
+  if(run.timer!==null){ run.timer-=dt; if(run.timer<=0){ spawnWave(run); run.timer=(!run.endless&&run.wave>=run.goal)?null:waveGap(run); } }
   for(let i=run.spawnQ.length-1;i>=0;i--){ const q=run.spawnQ[i]; q.t-=dt; if(q.t<=0){ run.spawnQ.splice(i,1); run.enemies.push(makeEnemy(run,q)); } }
-  const heralds=run.enemies.filter(e=>e.hp>0&&TYPES[e.type].herald);
+  const heralds=run.enemies.filter(e=>e.hp>0&&TYPES[e.type].herald), rg=.01*TR(run,'regen');
   for(const e of run.enemies){
     if(e.hp<=0) continue;
     if(e.slowT>0){ e.slowT-=dt; if(e.slowT<=0) e.slow=0; }
-    if(e.pt>0){ e.pt-=dt; let pd=e.pd*dt; if(e.pcb==='3-4'&&e.slow>0) pd*=1.5; if(e.pcb==='3-5') shredE(e,.08*dt,-.5);
+    if(e.spT>0) e.spT-=dt;
+    if(rg&&e.hp<e.mhp&&!(e.spT>0)) e.hp=Math.min(e.mhp,e.hp+e.mhp*rg*(e.pt>0?.5:1)*dt);
+    if(e.pt>0){ e.pt-=dt; let pd=e.pd*dt; if(e.pcb==='3-4'&&e.slow>0) pd*=1.5; if(e.pcb==='3-8'&&e.spT>0) pd*=1.5; if(e.pcb==='3-5') shredE(e,.08*dt,-.5);
       dealDamage(run,e,pd,true,null); if(e.pt<=0){ e.pd=0; e.plg=0; } if(e.hp<=0) continue; }
-    if(e.ward){ e.shT+=dt; if(e.shT>2&&e.sh<e.shMax) e.sh=Math.min(e.shMax,e.sh+e.shMax*.25*dt); }
-    if(TYPES[e.type].blink){ e.blinkT-=dt; if(e.blinkT<=0){ e.blinkT=4.5; fx(run,{k:'ring',x:e.x,y:e.y,col:'#b9a8d8',t:0,max:.4,r1:.9}); e.d+=1.6; } }
+    if(e.ward&&!(e.spT>0)){ e.shT+=dt; if(e.shT>2&&e.sh<e.shMax) e.sh=Math.min(e.shMax,e.sh+e.shMax*.25*dt); }
+    if(TYPES[e.type].blink&&!(e.spT>0)){ e.blinkT-=dt; if(e.blinkT<=0){ e.blinkT=4.5; fx(run,{k:'ring',x:e.x,y:e.y,col:'#b9a8d8',t:0,max:.4,r1:.9}); e.d+=1.6; } }
     if(e.hitT>0) e.hitT-=dt;
-    let h=1; for(const H of heralds){ if(H!==e&&(H.x-e.x)**2+(H.y-e.y)**2<4){ h=1.4; break; } } e.haste=h;
+    let h=1; if(!(e.spT>0)) for(const H of heralds){ if(H!==e&&(H.x-e.x)**2+(H.y-e.y)**2<4){ h=1.4; break; } } e.haste=h;
     if(e.frz>0) e.frz-=dt; else e.d+=e.spd*h*(1-e.slow)*dt;
     if(e.d>=md.len){ e.hp=0; e.gone=1; run.lives-=e.life; fx(run,{k:'ring',x:md.orb.x,y:md.orb.y,col:'#ef5b70',t:0,max:.5,r1:1.4});
       if(run.lives<=0){ run.lives=0; run.state='lost'; } continue; }
@@ -523,7 +658,7 @@ function step(run,dt){
   if(run.plT>=1){ run.plT=0; for(const e of run.enemies){ if(!e.plg||e.pt<=0||e.hp<=0) continue;
     for(const o of run.enemies){ if(o===e||o.hp<=0||o.pt>1) continue; if((o.x-e.x)**2+(o.y-e.y)**2<1.69){ o.pd=Math.max(o.pd,e.pd*.8); o.pt=Math.max(o.pt,2); o.pcb=e.pcb; } } } }
   for(const m of run.enemies){ if(!m.heal||m.hp<=0) continue;
-    for(const o of run.enemies){ if(o===m||o.hp<=0||o.hp>=o.mhp) continue; const dx=o.x-m.x,dy=o.y-m.y;
+    for(const o of run.enemies){ if(o===m||o.hp<=0||o.hp>=o.mhp||o.spT>0) continue; const dx=o.x-m.x,dy=o.y-m.y;
       if(dx*dx+dy*dy<2.56) o.hp=Math.min(o.mhp,o.hp+o.mhp*m.heal*(o.boss?.25:1)*(o.pt>0?.5:1)*dt); } }
   for(const s of run.sockets){
     if(!s.open||!s.gem) continue;
@@ -555,7 +690,7 @@ function applyRelic(run,k){
   if(k==='masonry'){ const s=run.sockets.find(s=>!s.open&&!s.trap); if(s) s.open=true; }
   if(k==='spikes'){ const s=run.sockets.find(s=>!s.open&&s.trap); if(s) s.open=true; }
 }
-function relicOffer(run){ const ks=Object.keys(RELICS), o=[]; while(o.length<3){ const k=ks[Math.floor(Math.random()*ks.length)]; if(!o.includes(k)) o.push(k); } return o; }
+function relicOffer(run){ const ks=Object.keys(RELICS), o=[], n=run.meta&&run.meta.lore?4:3; while(o.length<n){ const k=ks[Math.floor(Math.random()*ks.length)]; if(!o.includes(k)) o.push(k); } return o; }
 function choosePath(run,g,p){ if(g.sup&&!g.lvl){ g.path=p; g.lvl=1; } }
 function superUp(run,g){ if(!g.sup||!g.lvl||g.lvl>=3) return false; const c=superCost(run,g); if(run.coins<c) return false; run.coins-=c; g.lvl++; return true; }
 /*CORE-END*/
@@ -566,7 +701,14 @@ function superUp(run,g){ if(!g.sup||!g.lvl||g.lvl>=3) return false; const c=supe
 const $=id=>document.getElementById(id);
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 const MKEY='gembastion.meta', RKEY='gembastion.run';
-let META=Object.assign({shards:0,upg:{},cleared:{},best:{},di:1},store.get(MKEY)||{});
+const freshMeta=()=>({shards:0,upg:{},cleared:{},best:{},di:1,unl:[0],gm:[],tr:{}});
+const storedMeta=store.get(MKEY)||{};
+let META=Object.assign(freshMeta(),storedMeta);
+// Players from before colours were unlockable keep the six they already had.
+if(!Array.isArray(storedMeta.unl)||!storedMeta.unl.length){ const o=storedMeta, old=o.shards||Object.keys(o.upg||{}).length||Object.keys(o.cleared||{}).length||Object.keys(o.best||{}).length; META.unl=old?[0,1,2,3,4,5]:[0]; }
+if(!Array.isArray(META.gm)) META.gm=[]; if(!META.tr||typeof META.tr!=='object') META.tr={};
+const metaForRun=()=>Object.assign({},META.upg,{gm:META.gm.slice(),unl:META.unl.slice().sort((a,b)=>a-b)});
+const newRunFor=(mi,di)=>newRun(mi,di,metaForRun(),META.cleared[0]?META.tr:{});
 const saveMeta=()=>store.set(MKEY,META);
 let RUN=null, MD=null, speed=1, paused=false, sel=null, mergeMode=false, dirtyPouch=true, lastSave=0;
 
@@ -587,6 +729,10 @@ function specLine(S){ const o=[];
   if(S.poison>.005) o.push('Poison '+pct(S.poison)+'/s');
   if(S.slow>.005) o.push('Frost −'+pct(S.slow));
   if(S.shred>.005) o.push('Shatter '+(S.shred*100).toFixed(1)+'%/hit');
+  if(S.grow>1.005) o.push('Growth +'+pct(S.grow-1));
+  if(S.chain) o.push('Chain ×'+S.chain);
+  if(S.supp>.005) o.push('Suppress +'+pct(S.supp));
+  if(S.wealth>1.005) o.push('Wealth +'+pct(S.wealth-1));
   return o.join(' · '); }
 
 /* ---------- menu ---------- */
@@ -602,7 +748,7 @@ function renderMenu(){
     const best=META.best[i]||0;
     b.innerHTML=`<canvas width="180" height="220"></canvas><div class="nm">${m.n}</div><div class="meta"><span>${open?'Survive '+m.goal+' waves':'Clear '+MAPS[i-1].n}</span>${META.cleared[i]?'<span class="done">Cleared ✓</span>':best?`<span>Best ${best}</span>`:''}</div>`;
     drawPreview(b.querySelector('canvas'),i);
-    if(open) b.onclick=()=>{ const s=store.get(RKEY); const go=()=>{store.del(RKEY);startRun(newRun(i,META.di,META.upg));};
+    if(open) b.onclick=()=>{ const s=store.get(RKEY); const go=()=>{store.del(RKEY);startRun(newRunFor(i,META.di));};
       if(s&&s.state==='play') confirmBox('Start a new run?','Your saved run on '+MAPS[s.mi].n+' will be abandoned.','Start new run',go); else go(); };
     ml.appendChild(b);
   });
@@ -614,9 +760,24 @@ function renderMenu(){
     <button class="btn" data-u="${u.k}" ${maxed||META.shards<c?'disabled':''}>${maxed?'Maxed':`<span class="shard"></span>${c}`}</button></div>`; }).join('');
   $('forge').querySelectorAll('button[data-u]').forEach(x=>x.onclick=()=>{ const u=UPGRADES.find(q=>q.k===x.dataset.u), l=META.upg[u.k]||0, c=upCost(u,l);
     if(META.shards>=c&&l<u.max){META.shards-=c;META.upg[u.k]=l+1;saveMeta();renderMenu();} });
-  $('specList').innerHTML=COLORS.map((c,i)=>`<div class="gem" style="background:${pureBg(i)}"></div><div><b>${c.n} · ${c.s}.</b> ${c.d}</div>`).join('');
-  $('comboList').innerHTML=Object.entries(COMBOS).map(([k,v])=>{ const [a,b]=k.split('-').map(Number); return `<div class="pair"><div class="gem" style="background:${pureBg(a)}"></div><div class="gem" style="background:${pureBg(b)}"></div></div><div><b>${v.n}.</b> ${v.d}</div>`; }).join('');
-  $('sigList').innerHTML=SIGS.map((v,i)=>`<div class="pair"><div class="gem" style="background:${pureBg(i)}"></div></div><div><b>${v.n}.</b> ${v.d}</div>`).join('')+`<div class="pair"><div class="gem" style="background:${gemBg({w:[1,1,1,1,1,1].map(x=>x/6)})}"></div></div><div><b>${OVERCHARGE.n}.</b> ${OVERCHARGE.d} Offered to single-colour gems.</div>`;
+  const own=i=>META.unl.includes(i), nU=META.unl.length, ucost=UNLOCK[Math.min(nU,UNLOCK.length-1)], pips=(n,l,c)=>`<div class="pips ${c||''}">${Array.from({length:n},(_,j)=>`<i class="${j<l?'on':''}"></i>`).join('')}</div>`;
+  $('gemNote').textContent=nU<NC?`${nU} of ${NC} colours · next unlock ${ucost} shards`:'Every colour unlocked';
+  $('gemList').innerHTML=COLORS.map((c,i)=>{ const l=META.gm[i]||0, mc=masteryCost(l), mx=l>=MASTERY_MAX;
+    if(!own(i)) return `<div class="up lock"><div class="gem" style="background:${pureBg(i)}"></div><div class="ut"><b>${c.n} · ${c.s}</b><div>${c.d}</div></div><button class="btn" data-unl="${i}" ${META.shards<ucost?'disabled':''}>Unlock <span class="shard"></span>${ucost}</button></div>`;
+    return `<div class="up"><div class="gem" style="background:${pureBg(i)}"></div><div class="ut"><b>${c.n} · ${c.s}</b><div>Mastery ${l}/${MASTERY_MAX}: +${6*l}% damage and power</div>${pips(MASTERY_MAX,l)}</div><button class="btn" data-gm="${i}" ${mx||META.shards<mc?'disabled':''}>${mx?'Maxed':`<span class="shard"></span>${mc}`}</button></div>`; }).join('');
+  $('gemList').querySelectorAll('[data-unl]').forEach(x=>x.onclick=()=>{ const i=+x.dataset.unl; if(META.shards>=ucost&&!own(i)){ META.shards-=ucost; META.unl.push(i); saveMeta(); renderMenu(); } });
+  $('gemList').querySelectorAll('[data-gm]').forEach(x=>x.onclick=()=>{ const i=+x.dataset.gm, l=META.gm[i]||0, c=masteryCost(l); if(META.shards>=c&&l<MASTERY_MAX){ META.shards-=c; META.gm[i]=l+1; saveMeta(); renderMenu(); } });
+  const trOpen=!!META.cleared[0];
+  $('trNote').textContent=trOpen?`Shards ×${trMult(META.tr).toFixed(2)}`:'';
+  $('trList').innerHTML=trOpen?TRAITS.map(t=>{ const l=META.tr[t.k]||0; return `<div class="up"><div class="ut"><b>${t.n}</b><div>${t.d}</div>${pips(TRAIT_MAX,l,'red')}</div><button class="btn" data-tr="${t.k}">${l?'Level '+l:'Off'}</button></div>`; }).join('')
+    :`<div class="howto">Clear ${MAPS[0].n} to unlock handicaps: optional rules that make runs harder and pay more shards.</div>`;
+  $('trList').querySelectorAll('[data-tr]').forEach(x=>x.onclick=()=>{ const k=x.dataset.tr; META.tr[k]=((META.tr[k]||0)+1)%(TRAIT_MAX+1); saveMeta(); renderMenu(); });
+  $('resetBtn').onclick=()=>confirmBox('Start over?','This wipes your shards, unlocked gems, upgrades and cleared maps for this game. Your other games are not touched.','Start over',()=>{ store.del(RKEY); META=freshMeta(); saveMeta(); renderMenu(); });
+  const locked=NC-nU;
+  $('specList').innerHTML=COLORS.map((c,i)=>own(i)?`<div class="gem" style="background:${pureBg(i)}"></div><div><b>${c.n} · ${c.s}.</b> ${c.d}</div>`:'').join('')+(locked?`<div></div><div>${locked} more colour${locked>1?'s':''} to unlock in Gems.</div>`:'');
+  $('comboList').innerHTML=Object.entries(COMBOS).filter(([k])=>k.split('-').every(x=>own(+x))).map(([k,v])=>{ const [a,b]=k.split('-').map(Number); return `<div class="pair"><div class="gem" style="background:${pureBg(a)}"></div><div class="gem" style="background:${pureBg(b)}"></div></div><div><b>${v.n}.</b> ${v.d}</div>`; }).join('');
+  if(!$('comboList').innerHTML) $('comboList').innerHTML='<div></div><div>Unlock a second colour to find combos.</div>';
+  $('sigList').innerHTML=SIGS.map((v,i)=>!own(i)?'':`<div class="pair"><div class="gem" style="background:${pureBg(i)}"></div></div><div><b>${v.n}.</b> ${v.d}</div>`).join('')+`<div class="pair"><div class="gem" style="background:${gemBg({w:[1,1,1,1,1,1].map(x=>x/6)})}"></div></div><div><b>${OVERCHARGE.n}.</b> ${OVERCHARGE.d} Offered to single-colour gems.</div>`;
 }
 function drawPreview(cv,i){
   const c=cv.getContext('2d'), m=MAPS[i], md=mapData(i), t=20;
@@ -636,7 +797,8 @@ function confirmBox(title,text,label,fn){
 }
 
 /* ---------- run lifecycle ---------- */
-function hydrate(s){ s.proj=[]; s.fx=[]; s.events=[]; s.enemies=s.enemies||[]; s.spawnQ=s.spawnQ||[];
+function hydrate(s){ s.proj=[]; s.fx=[]; s.events=[]; s.tr=s.tr||{}; s.rage=s.rage|0; s.furyAcc=s.furyAcc||0; s.meta=s.meta||{};
+  const pad=g=>{ if(g&&g.w&&g.w.length<NC) g.w=g.w.concat(new Array(NC-g.w.length).fill(0)); }; s.inv.forEach(pad); s.sockets.forEach(k=>pad(k.gem)); s.enemies=s.enemies||[]; s.spawnQ=s.spawnQ||[];
   if(s.seed===undefined) s.seed=(Math.random()*1e9)|0; if(s.bossOff===undefined) s.bossOff=0; s.rel=s.rel||{}; s.relicQ=s.relicQ||0;
   const fix=g=>{ if(g&&g.grade>MAXG) g.grade=MAXG; }; s.inv.forEach(fix); s.sockets.forEach(k=>fix(k.gem)); s.cg=Math.min(s.cg||1,MAXG);
   s.enemies=s.enemies.filter(e=>TYPES[e.type]); s.spawnQ=s.spawnQ.filter(q=>TYPES[q.type]); return s; }
@@ -651,11 +813,13 @@ function toMenu(){ saveRun(); RUN=null; $('game').hidden=true; $('menu').hidden=
 const fsOK=()=>!!(document.fullscreenEnabled||document.webkitFullscreenEnabled)&&!(document.fullscreenElement||document.webkitFullscreenElement);
 function pause(){ if(!RUN||RUN.state!=='play') return; paused=true; saveRun();
   const rl=Object.entries(RUN.rel||{}).map(([k,n])=>`<b>${RELICS[k].n}${n>1?' ×'+n:''}</b>: ${RELICS[k].d}`);
+  const tl=TRAITS.filter(t=>TR(RUN,t.k)).map(t=>t.n+' '+TR(RUN,t.k)); if(tl.length) rl.unshift(`<b>Handicaps</b>: ${tl.join(', ')} (shards ×${trMult(RUN.tr).toFixed(2)})`);
+  if(rageOf(RUN)) rl.unshift(`<b>Rage ${rageOf(RUN)}</b>: waves are tougher and pay more`);
   showOv(`<h3>Paused</h3><p>${MAPS[RUN.mi].n} · Wave ${RUN.wave}${RUN.endless?'':' of '+RUN.goal} · ${DIFFS[RUN.di].n}</p>${rl.length?'<div class="rel">'+rl.join('<br>')+'</div>':''}
   <div class="acts"><button class="btn pri" id="pRes">Resume</button><button class="btn" id="pMenu">Save and leave</button><button class="btn" id="pRestart">Restart map</button>${fsOK()?'<button class="btn" id="pFs">Full screen</button>':''}</div>`);
   if($('pFs')) $('pFs').onclick=()=>{ const el=document.documentElement; try{ const p=(el.requestFullscreen||el.webkitRequestFullscreen).call(el); p&&p.catch&&p.catch(()=>{}); }catch(e){} paused=false; hideOv(); };
   $('pRes').onclick=()=>{paused=false;hideOv();}; $('pMenu').onclick=toMenu;
-  $('pRestart').onclick=()=>confirmBox('Restart this map?','You start again from wave 1. Shards already earned are kept.','Restart',()=>{store.del(RKEY);startRun(newRun(RUN.mi,RUN.di,META.upg));});
+  $('pRestart').onclick=()=>confirmBox('Restart this map?','You start again from wave 1. Shards already earned are kept.','Restart',()=>{store.del(RKEY);startRun(newRunFor(RUN.mi,RUN.di));});
 }
 function pendingSuper(){ for(const s of RUN.sockets) if(s.gem&&s.gem.sup&&!s.gem.lvl) return s.gem; for(const g of RUN.inv) if(g&&g.sup&&!g.lvl) return g; return null; }
 const sigOf=p=>p==='oc'?OVERCHARGE:SIGS[p];
@@ -674,20 +838,20 @@ function onRunEnd(){
   const r=RUN, D=DIFFS[r.di];
   META.best[r.mi]=Math.max(META.best[r.mi]||0,r.wave);
   if(r.state==='won'){
-    const base=Math.round((10+8*r.mi)*D.sh), first=META.cleared[r.mi]?0:base;
+    const base=Math.round((10+8*r.mi)*D.sh*trMult(r.tr)), first=META.cleared[r.mi]?0:base;
     META.cleared[r.mi]=true; META.shards+=base+first; r.shards+=base+first; saveMeta(); saveRun();
     const next=MAPS[r.mi+1];
     showOv(`<h3>Bastion holds</h3><p>${MAPS[r.mi].n} cleared on ${D.n}. ${first?'First clear bonus included. ':''}${next?next.n+' is now open.':'Every map is cleared.'}</p>
     <div class="stats"><div><b>${r.wave}</b><span>Waves</span></div><div><b>${fmt(r.kills)}</b><span>Kills</span></div><div><b>+${r.shards}</b><span>Shards</span></div></div>
     <div class="acts"><button class="btn pri" id="eMenu">Back to maps</button><button class="btn" id="eEnd">Keep going in endless mode</button></div>`);
     $('eMenu').onclick=()=>{store.del(RKEY);RUN=null;$('game').hidden=true;$('menu').hidden=false;hideOv();renderMenu();};
-    $('eEnd').onclick=()=>{r.endless=true;r.state='play';r.timer=WAVE_GAP;hideOv();};
+    $('eEnd').onclick=()=>{r.endless=true;r.state='play';r.timer=waveGap(r);hideOv();};
   } else {
     saveMeta(); store.del(RKEY);
     showOv(`<h3>The orb shatters</h3><p>You reached wave ${r.wave} on ${MAPS[r.mi].n}. Boss shards are yours to keep.</p>
     <div class="stats"><div><b>${r.wave}</b><span>Wave</span></div><div><b>${fmt(r.kills)}</b><span>Kills</span></div><div><b>+${r.shards}</b><span>Shards</span></div></div>
     <div class="acts"><button class="btn pri" id="eRetry">Try again</button><button class="btn" id="eMenu">Back to maps</button></div>`);
-    $('eRetry').onclick=()=>startRun(newRun(r.mi,r.di,META.upg));
+    $('eRetry').onclick=()=>startRun(newRunFor(r.mi,r.di));
     $('eMenu').onclick=()=>{RUN=null;$('game').hidden=true;$('menu').hidden=false;hideOv();renderMenu();};
   }
 }
@@ -725,7 +889,7 @@ function hexPath(c,x,y,R){ c.beginPath(); for(let k=0;k<6;k++){ const a=Math.PI/
 function drawGem(c,g,x,y,R,grade){
   if(g.grade>=4){ c.save(); c.globalAlpha=g.sup?.75:Math.min(.55,.06*g.grade); const gl=c.createRadialGradient(x,y,R*.4,x,y,R*1.7); gl.addColorStop(0,'#fff'); gl.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=gl; c.beginPath(); c.arc(x,y,R*1.7,0,7); c.fill(); c.restore(); }
   c.save(); hexPath(c,x,y,R); c.clip();
-  let a=-Math.PI/2; for(let i=0;i<6;i++){ const w=g.w[i]; if(w<.003) continue; c.beginPath(); c.moveTo(x,y); c.arc(x,y,R*1.3,a,a+w*Math.PI*2+.02); c.closePath(); c.fillStyle=COLORS[i].c; c.fill(); a+=w*Math.PI*2; }
+  let a=-Math.PI/2; for(let i=0;i<g.w.length;i++){ const w=g.w[i]; if(w<.003) continue; c.beginPath(); c.moveTo(x,y); c.arc(x,y,R*1.3,a,a+w*Math.PI*2+.02); c.closePath(); c.fillStyle=COLORS[i].c; c.fill(); a+=w*Math.PI*2; }
   const gr=c.createRadialGradient(x-R*.3,y-R*.38,0,x,y,R*1.15); gr.addColorStop(0,'rgba(255,255,255,.65)'); gr.addColorStop(.42,'rgba(255,255,255,.07)'); gr.addColorStop(1,'rgba(0,0,0,.38)');
   c.fillStyle=gr; c.fillRect(x-R,y-R,R*2,R*2);
   c.strokeStyle='rgba(255,255,255,.32)'; c.lineWidth=1; hexPath(c,x,y,R*.5); c.stroke();
@@ -779,6 +943,7 @@ function render(rdt){
     if(e.type==='mender'){ c.strokeStyle='#fff'; c.lineWidth=Math.max(1.5,r*.3); c.beginPath(); c.moveTo(x-r*.5,y); c.lineTo(x+r*.5,y); c.moveTo(x,y-r*.5); c.lineTo(x,y+r*.5); c.stroke(); }
     if(e.boss&&!Ty.hydra){ c.fillStyle='rgba(20,12,8,.7)'; c.beginPath(); c.arc(x,y,r*.38,0,7); c.fill(); }
     if(e.slow>0){ c.strokeStyle='rgba(120,175,255,.9)'; c.lineWidth=1.5; c.beginPath(); c.arc(x,y,r+2.5,0,7); c.stroke(); }
+    if(e.spT>0){ c.fillStyle='#3ed6d0'; c.beginPath(); c.arc(x-r*.75,y-r*.75,Math.max(2,r*.28),0,7); c.fill(); }
     if(e.pt>0){ c.fillStyle='#4fe08d'; c.beginPath(); c.arc(x+r*.75,y-r*.75,Math.max(2,r*.28),0,7); c.fill(); }
     if(e.hp<e.mhp){ const bw=Math.max(r*2.3,14), bh=e.boss?4:3, by=y-r-bh-3; c.fillStyle='rgba(0,0,0,.65)'; c.fillRect(x-bw/2-1,by-1,bw+2,bh+2);
       c.fillStyle=e.boss?'#ffb36b':e.hp/e.mhp>.5?'#7ee08f':'#f2c14e'; c.fillRect(x-bw/2,by,bw*e.hp/e.mhp,bh); }
@@ -790,6 +955,7 @@ function render(rdt){
   for(const f of run.fx){ f.t+=rdt; const k=Math.min(1,f.t/f.max), x=f.x*T, y=f.y*T;
     if(f.k==='ring'){ c.globalAlpha=1-k; c.strokeStyle=f.col; c.lineWidth=2; c.beginPath(); c.arc(x,y,f.r1*T*(.2+.8*k),0,7); c.stroke(); }
     else if(f.k==='burst'){ c.globalAlpha=1-k; c.fillStyle=f.col; for(let j=0;j<6;j++){ const a=j*1.047+f.x*3; c.beginPath(); c.arc(x+Math.cos(a)*f.r1*T*k,y+Math.sin(a)*f.r1*T*k,Math.max(1.5,T*.05*(1-k)+1),0,7); c.fill(); } }
+    else if(f.k==='zap'){ c.globalAlpha=1-k; c.strokeStyle=f.col; c.lineWidth=2; c.beginPath(); c.moveTo(x,y); c.lineTo((x+f.x2*T)/2+(k-.5)*T*.2,(y+f.y2*T)/2-(k-.5)*T*.2); c.lineTo(f.x2*T,f.y2*T); c.stroke(); }
     else if(f.k==='txt'){ c.globalAlpha=1-k*k; c.font=`700 ${Math.max(11,T*.36)}px system-ui,sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.lineWidth=3; c.strokeStyle='rgba(0,0,0,.8)'; c.strokeText(f.s,x,y-k*T*.8); c.fillStyle=f.col; c.fillText(f.s,x,y-k*T*.8); }
     c.globalAlpha=1; }
   run.fx=run.fx.filter(f=>f.t<f.max);
@@ -800,7 +966,7 @@ function render(rdt){
 /* ---------- HUD, shop, pouch, info ---------- */
 let hudCache={}, pouchN=-1;
 function setTxt(id,v){ if(hudCache[id]!==v){ hudCache[id]=v; $(id).textContent=v; } }
-function describeWave(n){ const comp=waveComp(RUN,n); return comp.groups.map(g=>TYPES[g.t].boss?`<span class="boss">Boss: ${TYPES[g.t].n}</span> (${TYPES[g.t].d.replace(/\.$/,'')})`:`${TYPES[g.t].n} ×${g.k}`).join(' + '); }
+function describeWave(n){ const comp=waveComp(RUN,n), R=rageOf(RUN); return (R?`<span class="boss">Rage ${R}</span> · `:'')+comp.groups.map(g=>TYPES[g.t].boss?`<span class="boss">Boss: ${TYPES[g.t].n}</span> (${TYPES[g.t].d.replace(/\.$/,'')})`:`${TYPES[g.t].n} ×${g.k}`).join(' + '); }
 function waveLine(){ const r=RUN;
   if(r.wave===0&&r.timer===null) return `Next: <b>Wave 1</b> · ${describeWave(1)}`;
   if(r.timer===null) return r.enemies.length||r.spawnQ.length?'<b>Final wave</b> · clear the path':'<b>All waves done</b>';
@@ -821,11 +987,13 @@ function updateHud(){
   document.querySelectorAll('#info [data-cost]').forEach(b=>{ b.disabled=r.coins<+b.dataset.cost||(b.dataset.need==='space'&&!dest); });
 }
 function buildShop(){
-  $('buys').innerHTML=COLORS.map((c,i)=>`<button class="buy" data-c="${i}" aria-label="${c.n}: ${c.s}"><div class="gem" style="background:${pureBg(i)}"></div></button>`).join('');
+  const u=unlocked(RUN), two=u.length>6, b=$('buys');
+  $('shopRow').classList.toggle('two',two); b.style.gridTemplateColumns=`repeat(${two?Math.ceil(u.length/2):6},minmax(0,1fr))`;
+  b.innerHTML=u.map(i=>{ const c=COLORS[i]; return `<button class="buy" data-c="${i}" aria-label="${c.n}: ${c.s}"><div class="gem" style="background:${pureBg(i)}"></div></button>`; }).join('');
 }
 function updateShop(){
   const r=RUN; setTxt('gVal','Grade '+r.cg); setTxt('gCostN',fmt(forgeCost(r,r.cg)));
-  [...$('buys').children].forEach((b,i)=>b.classList.toggle('on',!!(sel&&sel.k==='shop'&&sel.c===i)));
+  [...$('buys').children].forEach(b=>b.classList.toggle('on',!!(sel&&sel.k==='shop'&&sel.c===+b.dataset.c)));
 }
 $('buys').addEventListener('click',e=>{ const b=e.target.closest('button[data-c]'); if(!b||!RUN) return; const c=+b.dataset.c;
   let to=null; if(sel&&sel.k==='sock'){ const s=RUN.sockets[sel.i]; if(s.open&&!s.gem) to=sel.i; } else if(sel&&sel.k==='shop') to=sel.to;
@@ -849,7 +1017,7 @@ const gemIcon=g=>`<div class="gwrap${g.sup?' sup':''}"><div class="gem" style="b
 const coinTxt=n=>`<span class="coin"></span> ${fmt(n)}`;
 function renderInfo(force){
   const r=RUN, g=selGem(), so=sel&&sel.k==='sock'?r.sockets[sel.i]:null;
-  const key=JSON.stringify([sel,mergeMode,g&&[g.id,g.grade,g.sup,g.lvl,g.path],so&&[so.open,so.tgt],r.cg,r.wave===0,!sel&&pairsAvailable()]);
+  const key=JSON.stringify([sel,mergeMode,g&&[g.id,g.grade,g.sup,g.lvl,g.path],so&&[so.open,so.tgt],r.cg,r.wave===0,!sel&&pairsAvailable(),rageOf(r)]);
   if(key===infoKey&&!force) return; infoKey=key;
   const el=$('info'); let h;
   if(mergeMode&&g){
@@ -875,7 +1043,7 @@ function renderInfo(force){
   } else {
     const pa=pairsAvailable();
     h=`<div class="i-row"><div class="i-txt"><div class="t1" id="nwT"></div><div class="t2">${r.wave===0?'Tap a gem colour below to see what it does, then Forge. Drag gems onto sockets, then press Start.':'Tap anything to inspect it. Drag one gem onto another to merge them.'}</div></div></div>
-      <div class="i-act"><button class="btn" data-a="automerge" ${pa?'':'disabled'}>Merge matching pairs in pouch</button></div>`;
+      <div class="i-act"><button class="btn" data-a="automerge" ${pa?'':'disabled'}>Merge pairs in pouch</button><button class="btn${rageOf(r)?' rage':''}" data-a="rage">${rageOf(r)?'Rage '+rageOf(r)+'/'+rageMax(r):'Rage: off'}</button></div>`;
   }
   el.innerHTML=h; updateHud();
 }
@@ -922,6 +1090,9 @@ function act(a){
   if(a==='cancel'){ if(mergeMode) mergeMode=false; else sel=null; }
   else if(a==='forge') return forge();
   else if(a==='automerge') return autoMerge();
+  else if(a==='rage'){ r.rage=rageOf(r)>=rageMax(r)?0:rageOf(r)+1; if(r.rage===1&&!META.rageSeen){ META.rageSeen=1; saveMeta();
+    paused=true; showOv(`<h3>Rage</h3><p>Every wave from the next one is tougher: more enemies with more health. In return they give more coins, and each kill of a raging enemy earns part of a shard. Tap again to raise the rage, up to level ${rageMax(r)}. The Fury upgrade raises the limit.</p><div class="acts"><button class="btn pri" id="rOk">Got it</button></div>`);
+    $('rOk').onclick=()=>{paused=false;hideOv();}; } }
   else if(a==='unlock'&&so){ const c=socketCost(r,so); if(r.coins>=c){ r.coins-=c; so.open=true; so.trap?r.bt++:r.bs++; fx(r,{k:'ring',x:so.c+.5,y:so.r+.5,col:'#e9bd5e',t:0,max:.5,r1:1}); } }
   else if(a==='upgrade'&&g&&!g.sup&&g.grade<MAXG){ const c=upgradeCost(r,g); if(r.coins>=c){ r.coins-=c; g.grade++; const p=srcXY(sel); if(p) fx(r,{k:'ring',x:p.x,y:p.y,col:'#fff',t:0,max:.4,r1:.9}); } }
   else if(a==='path'&&g&&g.sup&&!g.lvl) return showPathChoice(g);
