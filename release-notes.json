@@ -114,6 +114,22 @@
     {
       "id": 11,
       "type": "new-game",
+      "headline": "New game: Echo Cartographer",
+      "details": [
+        "A maze in total darkness. Tap to send out a ping and the walls light up for a moment, then fade.",
+        "You only get a few pings, so remember the layout and steer your dot to the green exit.",
+        "30 levels and a new maze every day."
+      ]
+    },
+    {
+      "id": 12,
+      "type": "fixes",
+      "headline": "Echo Cartographer: Restart moved",
+      "details": ["The Restart button is now the ↻ at the top, away from the arrows, so it's harder to tap by accident."]
+    },
+    {
+      "id": 13,
+      "type": "new-game",
       "headline": "New game: Buddy's Big Slide",
       "details": [
         "Draw a track with your finger, press Play, and Buddy rides his sledge down it.",
