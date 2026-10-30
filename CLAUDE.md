@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus seven self-contained HTML games, published two ways:
+A home page plus eight self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -11,6 +11,7 @@ A home page plus seven self-contained HTML games, published two ways:
 | Topple | `games/topple` | `tp.` |
 | Buddy Breakout | `games/mudlark` (Mudlark) | `ml.` |
 | Boxed In | `games/boxed-in` | `bi.` |
+| Echo Cartographer | `games/echo-cartographer` | `ec.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -112,6 +113,14 @@ A top-down zombie survival game (after Boxhead), single player with auto-aim: th
 line of sight, the player only moves (a floating thumb stick on the left). Arenas are strings in `MAPS` and are turned
 on their side on tall screens. Weapons unlock by score within a run (`WEAPONS[].at`). Saved data: `bi.best`, the best
 wave, score and kills per arena index; an arena opens when the one before it has a best wave above 8, so append arenas.
+
+### Echo Cartographer (`games/echo-cartographer`)
+
+A memory maze in the dark: a ping lights the walls the dot can see (rays, so corners hide walls), then they fade.
+Levels 1-30 and the daily maze (`ec.daily`, day number from 30 October 2026) are generated on the phone from their
+number by the code between `/*CORE-START*/` and `/*CORE-END*/`; changing `makeMaze`, `levelSpec` or `makeLevel` changes
+every board, so don't, without a plan. Progress: `ec.levels` keyed by level number (`stars`, `bumps`, `pings`, `at`).
+Stars come from bumps (walking into walls).
 
 ### Adding a new game
 

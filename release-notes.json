@@ -110,6 +110,16 @@
         "The thumb stick works anywhere on the screen and responds straight away",
         "Barrels and barricades drop with one tap, behind you as you run, and your gun keeps firing"
       ]
+    },
+    {
+      "id": 11,
+      "type": "new-game",
+      "headline": "New game: Echo Cartographer",
+      "details": [
+        "A maze in total darkness. Tap to send out a ping and the walls light up for a moment, then fade.",
+        "You only get a few pings, so remember the layout and steer your dot to the green exit.",
+        "30 levels and a new maze every day."
+      ]
     }
   ]
 }

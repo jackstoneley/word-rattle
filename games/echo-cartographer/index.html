@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Echo Cartographer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: menu (daily card, level grid) or play (top bar / dark board canvas / controls). */
+:root{
+  --bg:#000; --bg2:#0A1216; --panel:#0E1A20; --line:#1E3540; --fg:#EAF7FB; --muted:#8FA9B3;
+  --accent:#5FE3FF; --accent-ink:#00222B; --warn:#FF9A4D; --exit:#7CFFB0; --star:#FFD25E;
+  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--body)}
+body{overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+#app{height:100%;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(16px,env(safe-area-inset-left,0px))}
+.screen{flex:1;min-height:0}
+/* menu */
+#menu{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 0 32px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.sg-home{align-self:flex-start;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none}
+.head{display:flex;align-items:center;gap:14px}
+.logo{width:44px;height:44px;position:relative;flex:none;border-radius:50%;
+  background:radial-gradient(circle,#fff 0 3px,transparent 4px),radial-gradient(circle,transparent 9px,rgba(95,227,255,.9) 10px,transparent 12px),radial-gradient(circle,transparent 17px,rgba(95,227,255,.45) 18px,transparent 20px)}
+h1{font-family:var(--display);font-weight:800;font-size:1.9rem;margin:0;line-height:1}
+.head p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.daily{background:linear-gradient(135deg,#0F2A33,#0E1A20)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--bg2);border-radius:12px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.levels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.lv{aspect-ratio:1;border:1px solid var(--line);background:var(--bg2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0}
+.lv b{font-family:var(--display);font-size:1.25rem}
+.lv .st{font-size:.62rem;letter-spacing:.05em;color:var(--star);min-height:.8em;line-height:1}
+.lv.done{background:#10303A}
+.lv.next{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.lv:disabled{opacity:.35}
+.howto{font-size:.9rem;line-height:1.5}
+.howto summary{font-family:var(--display);font-weight:700;font-size:1.05rem;cursor:pointer}
+.howto ul{padding-left:18px;margin:8px 0 0}
+.howto li{margin-bottom:6px}
+/* play */
+#play{display:flex;flex-direction:column;gap:8px;padding:8px 0;max-width:560px;width:100%;margin:0 auto}
+.bar{display:flex;align-items:center;gap:10px;flex:none}
+.bar .ttl{flex:1;min-width:0}
+.bar .ttl b{display:block;font-family:var(--display);font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ttl span{font-size:.8rem;color:var(--muted)}
+.ib{width:42px;height:42px;border:1px solid var(--line);background:var(--panel);border-radius:12px;display:grid;place-items:center;font-size:1.1rem;font-weight:700;padding:0;flex:none}
+.pings{text-align:right}
+.pings .dots{display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;max-width:150px}
+.pings .dots i{width:11px;height:11px;border-radius:50%;border:2px solid var(--accent);display:block}
+.pings .dots i.used{border-color:#22424D}
+.pings .dots i:not(.used){background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.pings span{font-size:.75rem;color:var(--muted)}
+.stage{flex:1;min-height:0;position:relative;touch-action:none;background:#000;border-radius:14px}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(8,20,26,.9);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-weight:700;font-size:.9rem;pointer-events:none;transition:opacity .25s;white-space:nowrap}
+.ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.ctrl .side{display:flex;flex-direction:column;gap:8px;width:96px}
+.ctrl .side .btn{padding:9px 8px;font-size:.9rem}
+.pingBtn{width:96px;height:96px;border-radius:50%;border:2px solid var(--accent);background:radial-gradient(circle,#123843,#071419);color:var(--accent);font-family:var(--display);font-weight:800;font-size:1.1rem;box-shadow:0 0 18px rgba(95,227,255,.25)}
+.pingBtn:active{background:#164552}
+.pingBtn:disabled{opacity:.35;box-shadow:none}
+.pad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,44px);gap:4px}
+.pad button{border:1px solid var(--line);background:var(--panel);border-radius:12px;font-size:1.2rem;padding:0}
+.pad button:active{background:var(--line)}
+.pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .r{grid-column:3;grid-row:2}.pad .d{grid-column:2;grid-row:3}
+.hintline{font-size:.82rem;color:var(--muted);text-align:center;min-height:1.2em;flex:none}
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:end center;z-index:10;padding:16px 16px max(24px,env(safe-area-inset-bottom,0px))}
+.ovc{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;width:min(360px,100%);display:flex;flex-direction:column;gap:12px;text-align:center}
+.ovc h3{font-family:var(--display);font-size:1.6rem;margin:0}
+.ovc p{margin:0;color:var(--muted);line-height:1.45}
+.stars{font-size:2rem;letter-spacing:.15em;color:var(--star)}
+.ovc .acts{display:flex;flex-direction:column;gap:8px}
+@media (max-height:640px){.pad{grid-template-rows:repeat(3,38px);grid-template-columns:repeat(3,46px)}.pingBtn{width:82px;height:82px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="menu" class="screen">
+    <div class="wrap">
+      <a class="sg-home" href="../../index.html">← All games</a>
+      <header class="head"><div class="logo" aria-hidden="true"></div><div><h1>Echo Cartographer</h1><p>The maze is dark. Ping to see the walls, then remember them.</p></div></header>
+      <div class="card daily" id="dailyCard"></div>
+      <div class="card">
+        <div class="row spread"><h2>Levels</h2><span class="muted" id="lvNote"></span></div>
+        <div class="levels" id="levelGrid"></div>
+      </div>
+      <details class="card howto">
+        <summary>How to play</summary>
+        <ul>
+          <li>The maze is pitch black. Your dot is white and the exit glows green.</li>
+          <li><b>Tap the board</b> (or the Ping button) to send out a ping. The walls it reaches light up for a moment, then fade away.</li>
+          <li>A ping only shows what your dot can "see": walls round a corner stay dark. On later levels the ping also reaches less far.</li>
+          <li><b>Swipe</b> on the board, or use the arrows, to move one square at a time.</li>
+          <li>Each level has a few pings. When they're gone, you're steering from memory.</li>
+          <li>Walking into a wall is a <b>bump</b>: that wall flashes orange so you can feel your way. No more than one bump earns three stars, up to four earns two.</li>
+          <li>When you reach the exit, the whole map is drawn for you, with the path you took.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <section id="play" class="screen" hidden>
+    <div class="bar">
+      <button class="ib" id="backBtn" aria-label="Back to levels">←</button>
+      <div class="ttl"><b id="pTitle">Level 1</b><span id="pSub">0 bumps</span></div>
+      <div class="pings"><div class="dots" id="pDots"></div><span id="pLeft">pings</span></div>
+    </div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="toast" id="toast" style="opacity:0"></div></div>
+    <div class="hintline" id="hintLine">Tap the board to ping. Swipe to move.</div>
+    <div class="ctrl">
+      <div class="side"><button class="btn" id="restartBtn">Restart</button></div>
+      <div class="pad" aria-label="Move">
+        <button class="u" data-d="3" aria-label="Up">▲</button><button class="l" data-d="2" aria-label="Left">◀</button>
+        <button class="r" data-d="0" aria-label="Right">▶</button><button class="d" data-d="1" aria-label="Down">▼</button>
+      </div>
+      <button class="pingBtn" id="pingBtn">Ping</button>
+    </div>
+  </section>
+</div>
+<div class="ov" id="ov" hidden><div class="ovc" id="ovc"></div></div>
+
+<script>
+"use strict";
+/*CORE-START*/
+/* Rules, maze generator and echo tracing. No page dependencies, so a Node script can run this part.
+   Levels are made from their number and the daily maze from its day number: changing makeMaze, levelSpec
+   or makeLevel changes every board (and old progress would point at different mazes), so don't, without a plan. */
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+const DX=[1,0,-1,0],DY=[0,1,0,-1]; // directions: 0 right, 1 down, 2 left, 3 up
+const NLEVELS=30;
+// A maze is w x h cells; E[c]=1 is a wall on the east side of cell c, S[c]=1 on its south side. The outer border is always wall.
+function wallAt(M,c,d){const x=c%M.w,y=c/M.w|0;
+  if(d===0)return M.E[c]===1;if(d===1)return M.S[c]===1;if(d===2)return x===0||M.E[c-1]===1;return y===0||M.S[c-M.w]===1}
+function openWall(M,c,d){if(d===0)M.E[c]=0;else if(d===1)M.S[c]=0;else if(d===2)M.E[c-1]=0;else M.S[c-M.w]=0}
+function inside(M,c,d){const x=c%M.w+DX[d],y=(c/M.w|0)+DY[d];return x>=0&&y>=0&&x<M.w&&y<M.h}
+function makeMaze(w,h,rng,braid){
+  const n=w*h,M={w,h,E:new Uint8Array(n).fill(1),S:new Uint8Array(n).fill(1)},seen=new Uint8Array(n),st=[rng()*n|0];
+  seen[st[0]]=1;
+  while(st.length){
+    // growing tree: mostly the newest cell (long corridors), sometimes a random one (more side branches)
+    const k=rng()<.7?st.length-1:rng()*st.length|0,c=st[k],opts=[];
+    for(let d=0;d<4;d++)if(inside(M,c,d)&&!seen[c+DX[d]+DY[d]*w])opts.push(d);
+    if(!opts.length){st.splice(k,1);continue}
+    const d=opts[rng()*opts.length|0],nb=c+DX[d]+DY[d]*w;openWall(M,c,d);seen[nb]=1;st.push(nb);
+  }
+  // braid: knock through some dead ends so there is more than one way round
+  for(let c=0;c<n;c++){
+    let open=0;for(let d=0;d<4;d++)if(!wallAt(M,c,d))open++;
+    if(open!==1||rng()>=braid)continue;
+    const opts=[];for(let d=0;d<4;d++)if(inside(M,c,d)&&wallAt(M,c,d))opts.push(d);
+    if(opts.length)openWall(M,c,opts[rng()*opts.length|0]);
+  }
+  return M;
+}
+function distances(M,src){const n=M.w*M.h,dist=new Int32Array(n).fill(-1),q=[src];dist[src]=0;
+  for(let i=0;i<q.length;i++){const c=q[i];for(let d=0;d<4;d++)if(!wallAt(M,c,d)){const nb=c+DX[d]+DY[d]*M.w;if(dist[nb]<0){dist[nb]=dist[c]+1;q.push(nb)}}}
+  return dist}
+const farthest=dist=>{let b=0;for(let i=1;i<dist.length;i++)if(dist[i]>dist[b])b=i;return b};
+// size, dead ends knocked through, ping reach (cells), and squares of shortest path per ping
+function levelSpec(n){
+  const w=Math.min(10,5+Math.floor((n-1)/5)),h=Math.round(w*1.4);
+  return {w,h,braid:n<4?0:Math.min(.3,.05+n*.01),range:n<=6?Infinity:Math.max(3.5,6-(n-7)*.12),per:Math.min(6,3+n*.1)};
+}
+function makeLevel(spec,seed){
+  const rng=mulberry(seed),M=makeMaze(spec.w,spec.h,rng,spec.braid);
+  const exit=farthest(distances(M,rng()*spec.w*spec.h|0)),dEx=distances(M,exit),start=farthest(dEx),len=dEx[start];
+  return {M,start,exit,len,range:spec.range,pings:Math.max(2,Math.round(len/spec.per))};
+}
+const levelN=n=>makeLevel(levelSpec(n),hashStr("echo-level|"+n));
+const dailySpec=()=>({w:8,h:11,braid:.15,range:4.5,per:5});
+const dailyMaze=day=>makeLevel(dailySpec(),hashStr("echo-daily|"+day));
+// every wall as a unit segment [x1,y1,x2,y2] in cell units; segAt finds the segment for a wall of a cell
+function segments(M){const segs=[],E=new Int32Array(M.w*M.h).fill(-1),S=new Int32Array(M.w*M.h).fill(-1),N=[],W=[];
+  for(let x=0;x<M.w;x++){N.push(segs.length);segs.push([x,0,x+1,0])}
+  for(let y=0;y<M.h;y++){W.push(segs.length);segs.push([0,y,0,y+1])}
+  for(let c=0;c<M.w*M.h;c++){const x=c%M.w,y=c/M.w|0;
+    if(M.E[c]){E[c]=segs.length;segs.push([x+1,y,x+1,y+1])}
+    if(M.S[c]){S[c]=segs.length;segs.push([x,y+1,x+1,y+1])}}
+  return {segs,segAt:(c,d)=>{const x=c%M.w,y=c/M.w|0;
+    if(d===0)return E[c];if(d===1)return S[c];if(d===2)return x?E[c-1]:W[y];return y?S[c-M.w]:N[x]}};
+}
+// An echo: rays from (ox,oy) find the nearest wall in each direction within range.
+// Returns the walls it reached: {i: segment, d: nearest distance, u0,u1: the part of the segment that was seen}.
+function echo(segs,ox,oy,range,rays=720){
+  const hit=new Map();
+  for(let r=0;r<rays;r++){
+    const a=r/rays*Math.PI*2,dx=Math.cos(a),dy=Math.sin(a);let best=range,bi=-1,bu=0;
+    for(let i=0;i<segs.length;i++){const [x1,y1,x2,y2]=segs[i],sx=x2-x1,sy=y2-y1,den=dx*sy-dy*sx;
+      if(Math.abs(den)<1e-9)continue;
+      const px=x1-ox,py=y1-oy,t=(px*sy-py*sx)/den,u=(px*dy-py*dx)/den;
+      if(t>1e-6&&t<best&&u>=-1e-9&&u<=1+1e-9){best=t;bi=i;bu=u}}
+    if(bi<0)continue;
+    const h=hit.get(bi);
+    if(!h)hit.set(bi,{i:bi,d:best,u0:bu,u1:bu});else{h.d=Math.min(h.d,best);h.u0=Math.min(h.u0,bu);h.u1=Math.max(h.u1,bu)}
+  }
+  return [...hit.values()];
+}
+const starsFor=bumps=>bumps<=1?3:bumps<=4?2:1;
+/*CORE-END*/
+
+/* ================= storage ================= */
+const $=id=>document.getElementById(id);
+const loadJSON=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const saveJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const getLv=()=>loadJSON("ec.levels",{});
+const getDaily=()=>loadJSON("ec.daily",{});
+const starTxt=n=>"★".repeat(n)+"☆".repeat(3-n);
+const DAY_MS=864e5, EPOCH=Date.UTC(2026,9,30);
+const dayNum=(d=new Date())=>Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-EPOCH)/DAY_MS);
+
+/* ================= menu ================= */
+let view="menu";
+function show(v){view=v;$("menu").hidden=v!=="menu";$("play").hidden=v!=="play";if(v==="play")requestAnimationFrame(resize)}
+function streak(){const d=getDaily();let t=dayNum();if(!d[t])t--;let n=0;while(d[t]){n++;t--}return n}
+function renderMenu(){
+  const done=getLv(),dd=getDaily(),today=dayNum(),td=dd[today];
+  const date=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}),sk=streak();
+  $("dailyCard").innerHTML=`<div class="row spread"><span class="label">Daily maze · ${date}</span><span class="label">#${today+1}</span></div>
+    <h2>${td?"Done today: "+td.bumps+" bump"+(td.bumps===1?"":"s")+" "+starTxt(td.stars):"A new dark maze every day"}</h2>
+    <p class="muted" style="margin:0">${td?"Come back tomorrow for the next one.":"The same maze for everyone today."}</p>
+    <div class="row"><button class="btn pri" id="dailyBtn">${td?"Play again":"Play today's maze"}</button>${sk>1?`<span class="muted">${sk} day streak</span>`:""}</div>`;
+  $("dailyBtn").onclick=()=>startLevel({daily:today});
+  const grid=$("levelGrid");grid.innerHTML="";
+  let next=0;while(next<NLEVELS&&done[next+1])next++;
+  let nDone=0,stars=0;for(let i=1;i<=NLEVELS;i++)if(done[i]){nDone++;stars+=done[i].stars}
+  $("lvNote").textContent=`${nDone} of ${NLEVELS} · ${stars} ★`;
+  for(let i=0;i<NLEVELS;i++){const r=done[i+1],b=document.createElement("button");b.className="lv"+(r?" done":"")+(i===next?" next":"");
+    b.disabled=!r&&i>next+1;b.innerHTML=`<b>${i+1}</b><span class="st">${r?starTxt(r.stars):""}</span>`;b.onclick=()=>startLevel({n:i+1});grid.append(b)}
+}
+
+/* ================= play ================= */
+const SPEED=7, HOLD=.55, FADE=2.2, STEP=.11; // ping ring speed (cells/s), seconds lit, seconds fading, seconds per step
+let LV=null,G=null;
+const now=()=>performance.now()/1000;
+function startLevel(src){
+  const L=src.daily!=null?dailyMaze(src.daily):levelN(src.n);
+  LV=src;LV.L=L;
+  const {segs,segAt}=segments(L.M);
+  G={L,M:L.M,segs,segAt,pos:L.start,from:L.start,t0:0,queue:[],left:L.pings,bumps:0,echoes:[],flashes:[],trail:[L.start],won:0};
+  $("pTitle").textContent=src.daily!=null?`Daily maze #${src.daily+1}`:`Level ${src.n}`;
+  $("ov").hidden=true;$("toast").style.opacity=0;
+  hud();show("play");
+  setTimeout(()=>{if(G&&G.left===L.pings&&!G.echoes.length&&view==="play")toast("Tap to ping")},700);
+}
+function hud(){
+  const d=$("pDots");d.innerHTML="";for(let i=0;i<G.L.pings;i++){const e=document.createElement("i");if(i>=G.left)e.className="used";d.append(e)}
+  $("pLeft").textContent=`${G.left} ping${G.left===1?"":"s"} left`;
+  $("pSub").textContent=`${G.bumps} bump${G.bumps===1?"":"s"}`+(G.L.range<Infinity?` · ping reach ${G.L.range.toFixed(1).replace(/\.0$/,"")}`:"");
+  $("pingBtn").disabled=!G.left||!!G.won;
+  $("hintLine").textContent=G.won?"":G.left?"Tap the board to ping. Swipe to move.":"No pings left: steer from memory, or restart.";
+}
+const cellXY=c=>[c%G.M.w+.5,(c/G.M.w|0)+.5];
+function dotXY(t){const [x1,y1]=cellXY(G.from),[x2,y2]=cellXY(G.pos),k=Math.min(1,(t-G.t0)/STEP),e=k*(2-k);return [x1+(x2-x1)*e,y1+(y2-y1)*e]}
+function ping(){
+  if(!G||G.won||view!=="play")return;
+  if(!G.left){toast("No pings left");return}
+  const t=now(),[ox,oy]=dotXY(t);
+  G.left--;G.echoes.push({t0:t,ox,oy,hits:echo(G.segs,ox,oy,G.L.range),reach:Math.min(G.L.range,Math.hypot(G.M.w,G.M.h))});
+  try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}
+  hud();
+}
+function tryMove(d){
+  if(!G||G.won)return;
+  const t=now();if(t-G.t0<STEP){if(G.queue.length<1)G.queue.push(d);return}
+  const c=G.pos;
+  if(wallAt(G.M,c,d)){G.bumps++;G.flashes.push({i:G.segAt(c,d),t0:t,c,d});
+    try{navigator.vibrate&&navigator.vibrate(35)}catch(e){}hud();return}
+  G.from=c;G.pos=c+DX[d]+DY[d]*G.M.w;G.t0=t;G.trail.push(G.pos);
+  if(G.pos===G.L.exit){G.won=t+STEP;setTimeout(win,1300)}
+}
+function win(){
+  if(!G||view!=="play")return;
+  const stars=starsFor(G.bumps),used=G.L.pings-G.left,rec={stars,bumps:G.bumps,pings:used,at:Date.now()};
+  let best=false;
+  if(LV.daily!=null){const d=getDaily(),o=d[LV.daily];if(!o||stars>o.stars||(stars===o.stars&&G.bumps<o.bumps)){d[LV.daily]=rec;saveJSON("ec.daily",d);best=!!o}}
+  else{const d=getLv(),o=d[LV.n];if(!o||stars>o.stars||(stars===o.stars&&G.bumps<o.bumps)){d[LV.n]=rec;saveJSON("ec.levels",d);best=!!o}}
+  try{navigator.vibrate&&navigator.vibrate([15,50,15,50,40])}catch(e){}
+  const hasNext=LV.daily==null&&LV.n<NLEVELS;
+  $("ovc").innerHTML=`<h3>${stars===3?"Mapped it!":"Out of the dark"}</h3><div class="stars">${starTxt(stars)}</div>
+    <p>${G.bumps} bump${G.bumps===1?"":"s"} · ${used} of ${G.L.pings} ping${G.L.pings===1?"":"s"} used${best?" · a new best":""}</p>
+    <div class="acts">${hasNext?`<button class="btn pri" id="nextBtn">Next level</button>`:""}
+    <button class="btn${hasNext?"":" pri"}" id="againBtn">Play again</button><button class="btn" id="menuBtn">${LV.daily!=null?"Back to menu":"All levels"}</button></div>`;
+  $("ov").hidden=false;
+  if(hasNext)$("nextBtn").onclick=()=>startLevel({n:LV.n+1});
+  $("againBtn").onclick=()=>startLevel(LV.daily!=null?{daily:LV.daily}:{n:LV.n});
+  $("menuBtn").onclick=toMenu;
+}
+function toMenu(){$("ov").hidden=true;G=null;renderMenu();show("menu")}
+
+/* ================= drawing ================= */
+const cv=$("cv"),ctx=cv.getContext("2d");let VW=0,VH=0,DPR=1;
+function resize(){const r=$("stage").getBoundingClientRect();DPR=Math.min(2.5,window.devicePixelRatio||1);VW=r.width;VH=r.height;
+  cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR)}
+new ResizeObserver(resize).observe($("stage"));
+function lightAt(e,d,t){const dt=t-e.t0-d/SPEED;if(dt<0)return 0;if(dt<.08)return dt/.08;if(dt<HOLD)return 1;return Math.max(0,1-(dt-HOLD)/FADE)}
+function frame(){
+  requestAnimationFrame(frame);
+  if(view!=="play"||!G||!VW)return;
+  const t=now(),M=G.M,m=12,cs=Math.min((VW-2*m)/M.w,(VH-2*m)/M.h),ox=(VW-cs*M.w)/2,oy=(VH-cs*M.h)/2;
+  const X=x=>ox+x*cs,Y=y=>oy+y*cs;
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle="#000";ctx.fillRect(0,0,VW,VH);
+  // faint dots at the cell corners, so you can count squares in the dark
+  ctx.fillStyle="rgba(95,227,255,.10)";
+  for(let y=0;y<=M.h;y++)for(let x=0;x<=M.w;x++){ctx.beginPath();ctx.arc(X(x),Y(y),Math.max(1,cs*.03),0,7);ctx.fill()}
+  G.echoes=G.echoes.filter(e=>t-e.t0<e.reach/SPEED+HOLD+FADE);
+  G.flashes=G.flashes.filter(f=>t-f.t0<.9);
+  ctx.lineCap="round";
+  // the whole map, drawn once you reach the exit
+  if(G.won){const k=Math.min(1,(t-G.won)/1);
+    ctx.strokeStyle=`rgba(95,227,255,${.55*k})`;ctx.lineWidth=Math.max(2,cs*.07);ctx.beginPath();
+    for(const [x1,y1,x2,y2] of G.segs){ctx.moveTo(X(x1),Y(y1));ctx.lineTo(X(x2),Y(y2))}ctx.stroke();
+    ctx.strokeStyle=`rgba(255,255,255,${.35*k})`;ctx.lineWidth=Math.max(2,cs*.12);ctx.lineJoin="round";ctx.beginPath();
+    G.trail.forEach((c,i)=>{const [x,y]=cellXY(c);i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y))});ctx.stroke()}
+  // ping rings
+  for(const e of G.echoes){const r=(t-e.t0)*SPEED;if(r>e.reach)continue;
+    const a=.45*(1-r/e.reach);ctx.strokeStyle=`rgba(95,227,255,${a})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(e.ox),Y(e.oy),r*cs,0,7);ctx.stroke()}
+  // lit walls: brightest of the echoes that reached each one
+  const lit=new Map();
+  for(const e of G.echoes)for(const h of e.hits){let a=lightAt(e,h.d,t);if(e.reach<Infinity)a*=1-.55*h.d/e.reach;if(a<=.01)continue;
+    const o=lit.get(h.i);if(!o||a>o.a)lit.set(h.i,{a,u0:h.u0,u1:h.u1});else{o.u0=Math.min(o.u0,h.u0);o.u1=Math.max(o.u1,h.u1)}}
+  ctx.lineWidth=Math.max(2.5,cs*.09);ctx.shadowColor="#5FE3FF";ctx.shadowBlur=cs*.35;
+  for(const [i,l] of lit){const [x1,y1,x2,y2]=G.segs[i],u0=Math.max(0,l.u0-.04),u1=Math.min(1,l.u1+.04);
+    ctx.strokeStyle=`rgba(150,240,255,${l.a})`;ctx.beginPath();ctx.moveTo(X(x1+(x2-x1)*u0),Y(y1+(y2-y1)*u0));ctx.lineTo(X(x1+(x2-x1)*u1),Y(y1+(y2-y1)*u1));ctx.stroke()}
+  // bumped walls flash orange
+  ctx.shadowColor="#FF9A4D";
+  for(const f of G.flashes){const [x1,y1,x2,y2]=G.segs[f.i],a=1-(t-f.t0)/.9;ctx.strokeStyle=`rgba(255,154,77,${a})`;
+    ctx.beginPath();ctx.moveTo(X(x1),Y(y1));ctx.lineTo(X(x2),Y(y2));ctx.stroke()}
+  // the exit
+  const [ex,ey]=cellXY(G.L.exit),pulse=.75+.25*Math.sin(t*3);
+  ctx.shadowColor="#7CFFB0";ctx.shadowBlur=cs*.6*pulse;ctx.strokeStyle=`rgba(124,255,176,${.8*pulse})`;ctx.lineWidth=Math.max(2,cs*.07);
+  ctx.beginPath();ctx.arc(X(ex),Y(ey),cs*.26,0,7);ctx.stroke();ctx.fillStyle=`rgba(124,255,176,${.25*pulse})`;ctx.fill();
+  // the dot (with a little shake after a bump)
+  let [dx,dy]=dotXY(t);const lb=G.flashes[G.flashes.length-1];
+  if(lb){const k=t-lb.t0;if(k<.2){const s=Math.sin(k*60)*(1-k/.2)*.06;dx+=DX[lb.d]*s;dy+=DY[lb.d]*s}}
+  ctx.shadowColor="#fff";ctx.shadowBlur=cs*.4;ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(X(dx),Y(dy),cs*.17,0,7);ctx.fill();
+  ctx.shadowBlur=0;
+  if(G.queue.length&&t-G.t0>=STEP)tryMove(G.queue.shift());
+}
+requestAnimationFrame(frame);
+
+/* ================= input ================= */
+let toastT=null;
+function toast(s){const el=$("toast");el.textContent=s;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,1600)}
+let sw=null;
+$("stage").addEventListener("pointerdown",e=>{sw={x:e.clientX,y:e.clientY,id:e.pointerId,at:performance.now(),moved:false}});
+$("stage").addEventListener("pointermove",e=>{if(!sw||e.pointerId!==sw.id)return;const dx=e.clientX-sw.x,dy=e.clientY-sw.y;
+  if(Math.hypot(dx,dy)<26)return;
+  // keep swiping without lifting: each 26px of travel is another step
+  tryMove(Math.abs(dx)>Math.abs(dy)?(dx>0?0:2):(dy>0?1:3));sw.x=e.clientX;sw.y=e.clientY;sw.moved=true});
+$("stage").addEventListener("pointerup",e=>{if(sw&&e.pointerId===sw.id&&!sw.moved&&performance.now()-sw.at<450)ping();sw=null});
+$("stage").addEventListener("pointercancel",()=>{sw=null});
+document.querySelectorAll(".pad button").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();tryMove(+b.dataset.d)}));
+$("pingBtn").addEventListener("pointerdown",e=>{e.preventDefault();ping()});
+$("restartBtn").onclick=()=>{if(LV)startLevel(LV.daily!=null?{daily:LV.daily}:{n:LV.n})};
+$("backBtn").onclick=toMenu;
+document.addEventListener("keydown",e=>{if(view!=="play"||!$("ov").hidden)return;
+  const k={ArrowRight:0,d:0,ArrowDown:1,s:1,ArrowLeft:2,a:2,ArrowUp:3,w:3}[e.key];
+  if(k!=null){e.preventDefault();tryMove(k)}else if(e.key===" "||e.key==="Enter"){e.preventDefault();ping()}else if(e.key==="r")$("restartBtn").click()});
+window.SG_BACK=()=>{if(!$("ov").hidden){toMenu();return true}if(view==="play"){toMenu();return true}return false};
+renderMenu();
+</script>
+<script src="../../shell.js"></script>
+</body>
+</html>

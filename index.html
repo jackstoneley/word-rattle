@@ -106,6 +106,13 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .art.bi .h::before,.art.bi .h::after{content:"";position:absolute;top:8px;width:4px;height:5px;background:#222}
 .art.bi .h::before{left:7px}.art.bi .h::after{right:7px}
 .art.bi .z{position:absolute;right:14px;bottom:14px;width:18px;height:18px;background:#7FA86A;border-radius:2px}
+/* Echo Cartographer art: a ping ring lighting two walls in the dark */
+.art.ec{background:#000;overflow:hidden}
+.art.ec .r{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;border:2px solid rgba(95,227,255,.45)}
+.art.ec .w{position:absolute;background:#96F0FF;box-shadow:0 0 8px #5FE3FF;border-radius:2px}
+.art.ec .w1{left:16px;top:18px;width:4px;height:44px}.art.ec .w2{left:58px;top:12px;width:30px;height:4px;opacity:.6}
+.art.ec .d{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff}
+.art.ec .x{position:absolute;right:14px;bottom:14px;width:12px;height:12px;border-radius:50%;border:2px solid #7CFFB0;box-shadow:0 0 8px #7CFFB0}
 /* Gem Tower Defence art: a faceted gem on dusk purple */
 .art.gb{background:#231F31}
 .art.gb .gem{width:48px;height:48px;clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%);
@@ -174,6 +181,11 @@ textarea{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--li
     <div class="info"><span class="kind">Launch and upgrade</span><h2>Buddy Breakout</h2><span class="stat" id="stML">Get Buddy to the lady dogs.</span><span class="go">Play</span></div>
   </a>
 
+  <a class="game" href="games/echo-cartographer/index.html">
+    <div class="art ec" aria-hidden="true"><div class="r"></div><div class="w w1"></div><div class="w w2"></div><div class="d"></div><div class="x"></div></div>
+    <div class="info"><span class="kind">Memory maze · daily</span><h2>Echo Cartographer</h2><span class="stat" id="stEC">Ping the dark. Remember the walls.</span><span class="go">Play</span></div>
+  </a>
+
   <a class="game" href="games/boxed-in/index.html">
     <div class="art bi" aria-hidden="true"><div class="g"></div><div class="h"></div><div class="z"></div></div>
     <div class="info"><span class="kind">Zombie survival</span><h2>Boxed In</h2><span class="stat" id="stBI">Your gun aims itself. Keep moving.</span><span class="go">Play</span></div>
@@ -220,6 +232,8 @@ function renderStats(){
   if(tpn||Object.keys(tpd).length)setHTML("stTP",[{b:String(tpn)}," of 30 levels · ",{b:String(tpS)}," stars",tpToday?" · today's puzzle done":""]);
   const bi=load("bi.best",null);
   if(bi&&Object.keys(bi).length){const top=Object.values(bi).reduce((a,b)=>b.wave>a.wave?b:a);setHTML("stBI",["Best: wave ",{b:String(top.wave)}," · ",{b:top.score.toLocaleString("en-GB")}," points"])}
+  const ecl=load("ec.levels",{}),ecd=load("ec.daily",{}),ecn=Object.keys(ecl).length,ecS=Object.values(ecl).reduce((a,r)=>a+(r&&r.stars||0),0),ecToday=Object.values(ecd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now()));
+  if(ecn||Object.keys(ecd).length)setHTML("stEC",[{b:String(ecn)}," of 30 levels · ",{b:String(ecS)}," stars",ecToday?" · today's maze done":""]);
   const ml=load("ml.save",null);
   if(ml&&ml.best&&ml.best.dist)setHTML("stML",ml.done?["Reached the lady dogs on day ",{b:String(ml.done)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}]:["Day ",{b:String(ml.day)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}," of 3,000 m"]);
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
@@ -228,7 +242,7 @@ function renderStats(){
 }
 
 /* ---------- backup and restore (every game's saved data) ---------- */
-const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi."];
+const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi.","ec."];
 function b64u(str){const bytes=new TextEncoder().encode(str);let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const bin=atob(s);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
 function backupCode(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PREFIXES.some(p=>k.startsWith(p)))data[k]=localStorage.getItem(k)}return "SGB1."+b64u(JSON.stringify({v:1,at:Date.now(),data}))}
