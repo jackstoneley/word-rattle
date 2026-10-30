@@ -94,6 +94,11 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .art.tp .t i{height:9px;background:#8FA3C4;border-radius:2px;box-shadow:0 3px 0 #5E7396}
 .art.tp .t i.g{background:#0E1626;box-shadow:0 3px 0 #0E1626,inset 0 0 0 1.5px #F2A541}
 .art.tp .b{position:absolute;left:50%;bottom:34px;width:18px;height:36px;margin-left:-22px;border-radius:3px;background:linear-gradient(90deg,#D9822F 70%,#C26F25);box-shadow:inset 0 5px 0 #F7B95A;transform:rotate(18deg);transform-origin:bottom right}
+/* Mudlark art: a white doodle sliding down a mud slope under a blue sky */
+.art.ml{background:linear-gradient(#8FD0F5 62%,#7DBA5A 62%);overflow:hidden}
+.art.ml .s{position:absolute;left:-10px;bottom:24px;width:90px;height:60px;background:#6B4423;clip-path:polygon(0 0,100% 100%,0 100%)}
+.art.ml .d{position:absolute;left:30px;top:28px;width:30px;height:18px;border-radius:50%;background:#fff;box-shadow:-8px -3px 0 -2px #fff,8px -5px 0 0 #fff,12px -8px 0 2px #fff,2px 5px 0 -3px #6B4423;transform:rotate(30deg)}
+.art.ml .d::after{content:"";position:absolute;right:-12px;top:-7px;width:4px;height:4px;border-radius:50%;background:#1E1712}
 /* Gem Tower Defence art: a faceted gem on dusk purple */
 .art.gb{background:#231F31}
 .art.gb .gem{width:48px;height:48px;clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%);
@@ -157,6 +162,11 @@ textarea{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--li
     <div class="info"><span class="kind">Block puzzle · daily</span><h2>Topple</h2><span class="stat" id="stTP">Tip the block into the hole.</span><span class="go">Play</span></div>
   </a>
 
+  <a class="game" href="games/mudlark/index.html">
+    <div class="art ml" aria-hidden="true"><div class="s"></div><div class="d"></div></div>
+    <div class="info"><span class="kind">Launch and upgrade</span><h2>Mudlark</h2><span class="stat" id="stML">Slide, fly, upgrade, reach the sea.</span><span class="go">Play</span></div>
+  </a>
+
   <h3>Your data</h3>
   <div class="panel">
     <p>Each game saves on this phone. A backup code holds every game, so you can keep a copy or move to a new phone.</p>
@@ -196,13 +206,15 @@ function renderStats(){
     if(solved||inProg)setHTML("stCS",[{b:String(solved)}," of 200 solved",inProg?` · ${inProg} in progress`:""])}
   const tpl=load("tp.levels",{}),tpd=load("tp.daily",{}),tpn=Object.keys(tpl).length,tpS=Object.values(tpl).reduce((a,r)=>a+(r&&r.stars||0),0),tpToday=Object.values(tpd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now()));
   if(tpn||Object.keys(tpd).length)setHTML("stTP",[{b:String(tpn)}," of 30 levels · ",{b:String(tpS)}," stars",tpToday?" · today's puzzle done":""]);
+  const ml=load("ml.save",null);
+  if(ml&&ml.best&&ml.best.dist)setHTML("stML",ml.done?["Reached the seaside on day ",{b:String(ml.done)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}]:["Day ",{b:String(ml.day)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}," of 3,000 m"]);
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
   {const cleared=Object.values(gb.cleared||{}).filter(Boolean).length;
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}
 }
 
 /* ---------- backup and restore (every game's saved data) ---------- */
-const PREFIXES=["wr.","lu.","kk.","gembastion.","tp."];
+const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml."];
 function b64u(str){const bytes=new TextEncoder().encode(str);let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const bin=atob(s);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
 function backupCode(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PREFIXES.some(p=>k.startsWith(p)))data[k]=localStorage.getItem(k)}return "SGB1."+b64u(JSON.stringify({v:1,at:Date.now(),data}))}

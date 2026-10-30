@@ -67,6 +67,17 @@
         "A new daily puzzle every day, the same for both of you. Weekends are bigger.",
         "Swipe or use the arrows. Undo and Hint are there when you're stuck."
       ]
+    },
+    {
+      "id": 7,
+      "type": "new-game",
+      "headline": "New game: Mudlark",
+      "details": [
+        "A white labradoodle, a big mud slope, and the seaside 3 km away.",
+        "Slide, launch off the lip and tilt the nose with the arrows to glide.",
+        "Catch floating bone treats, earn more for distance, height and speed, and hit goals for bonuses.",
+        "Spend treats on a taller slope, slicker mud, sleds, wings and boosters, all the way to a jet pack."
+      ]
     }
   ]
 }
