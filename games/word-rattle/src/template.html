@@ -239,6 +239,9 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
 .lrow.me{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .opp{font-size:.78rem;font-weight:800;padding:4px 10px;border-radius:99px;background:color-mix(in srgb,var(--them) 16%,var(--surface));color:var(--them);border:1px solid color-mix(in srgb,var(--them) 30%,transparent);font-variant-numeric:tabular-nums}
 
+@keyframes swapfade{0%{opacity:1;transform:none}45%{opacity:0;transform:scale(.7)}55%{opacity:0;transform:scale(.7)}100%{opacity:1;transform:none}}
+.die .lt.swap,.die .val.swap{animation:swapfade .5s ease-in-out both}
+@media (prefers-reduced-motion:reduce){.die .lt.swap,.die .val.swap{animation:none}}
 @keyframes roll{from{transform:rotate(-90deg) scale(.4);opacity:0}to{opacity:1}}
 @keyframes spin{from{transform:rotate(-90deg)}to{transform:none}}
 @keyframes pop{from{transform:scale(1.25);background:var(--sel)}}
@@ -299,6 +302,8 @@ textarea.textin{resize:vertical;min-height:70px;font-size:.8rem;font-family:ui-m
       <p class="muted small" id="puHelp"></p></div>
     <label class="toggle" for="turnIn"><span><b>Board turning</b><br><span class="muted small">Rotate the board mid-game with a button or a shake. Same letters, new angle.</span></span>
       <input type="checkbox" class="switch" id="turnIn"></label>
+    <label class="toggle" for="swapIn"><span><b>Swap letters</b><br><span class="muted small">Letters you use are swapped for new ones, so the board keeps changing. Shared words count for both players.</span></span>
+      <input type="checkbox" class="switch" id="swapIn"></label>
     <label class="toggle" for="cancelIn"><span><b>Shared words score zero</b><br><span class="muted small">When you compare, a word you both found counts for nobody.</span></span>
       <input type="checkbox" class="switch" id="cancelIn"></label>
     <button class="btn primary block" id="createBtn">Create board</button>
@@ -466,11 +471,19 @@ const adj=(a,b,n)=>neighbours(n)[a].includes(b);
 
 /* ================= seeds =================
    8 characters: 3 for the rules, 4 random (the last one's lowest bit is the board-turning flag), 1 check character. */
+const SWAP_BASE=3*20*3*2*47;
 function settingsIndex(s){const L=s.scoring==="letters",pm=L?s.pmask:0,ps=!L?0:!pm?1:2+(pm-1)*3+s.amount;
-  let x=SIZES.indexOf(s.size);x=x*20+TIMES.indexOf(s.time);x=x*3+MINS.indexOf(s.minLen);x=x*2+(s.cancel?1:0);x=x*47+ps;return x}
-function indexSettings(x){const ps=x%47;x=(x-ps)/47;const c=x%2;x=(x-c)/2;const mi=x%3;x=(x-mi)/3;const ti=x%20;const si=(x-ti)/20;
+  let x=SIZES.indexOf(s.size);x=x*20+TIMES.indexOf(s.time);x=x*3+MINS.indexOf(s.minLen);
+  if(s.swap)return SWAP_BASE+x*47+ps;
+  x=x*2+(s.cancel?1:0);x=x*47+ps;return x}
+/* Swap seeds use rules values from SWAP_BASE up (unused before), so every older seed reads exactly as it did. */
+function indexSettings(x){
+  if(x>=SWAP_BASE){x-=SWAP_BASE;const ps=x%47;x=(x-ps)/47;const mi=x%3;x=(x-mi)/3;const ti=x%20;const si=(x-ti)/20;
+    if(si>2)return null;const pm=ps>=2?Math.floor((ps-2)/3)+1:0,am=ps>=2?(ps-2)%3:0;
+    return{size:SIZES[si],time:TIMES[ti],minLen:MINS[mi],cancel:false,swap:true,scoring:ps?"letters":"classic",pmask:pm,amount:am}}
+  const ps=x%47;x=(x-ps)/47;const c=x%2;x=(x-c)/2;const mi=x%3;x=(x-mi)/3;const ti=x%20;const si=(x-ti)/20;
   if(si>2)return null;const pm=ps>=2?Math.floor((ps-2)/3)+1:0,am=ps>=2?(ps-2)%3:0;
-  return{size:SIZES[si],time:TIMES[ti],minLen:MINS[mi],cancel:!!c,scoring:ps?"letters":"classic",pmask:pm,amount:am}}
+  return{size:SIZES[si],time:TIMES[ti],minLen:MINS[mi],cancel:!!c,swap:false,scoring:ps?"letters":"classic",pmask:pm,amount:am}}
 const checkDigit=a=>{let s=11;a.forEach((v,i)=>s+=v*(i+3));return s%32};
 function makeSeed(s,rnd=Math.random){const d=[];let v=settingsIndex(s);for(let i=0;i<3;i++){d.unshift(v%32);v=Math.floor(v/32)}
   for(let i=0;i<4;i++)d.push(Math.floor(rnd()*32));d[6]=(d[6]&~1)|(s.turn?1:0);d.push(checkDigit(d));return d.map(i=>ALPHA[i]).join("")}
@@ -494,6 +507,9 @@ function buildBoard(seed,s){
   }
   return{letters,pu};
 }
+/* Swap letters: used dice are re-rolled from a stream fixed by the seed, so the same words in the same order give the same board. */
+function swapStream(seed,s){const rnd=mulberry(hashStr("wordrattle-swap|"+seed)),dice=s.size===4?DICE4:s.size===5?DICE5:DICE6;
+  return()=>{const d=dice[Math.floor(rnd()*dice.length)],f=d[Math.floor(rnd()*6)];return f==="Q"?"Qu":f}}
 function wordScore(s,b,path){
   const len=path.reduce((a,i)=>a+b.letters[i].length,0);
   if(s.scoring==="classic")return len<=4?1:len===5?2:len===6?3:len===7?5:11;
@@ -518,7 +534,9 @@ function getGame(seed){
   const g={seed:p.seed,s:p.settings,board,sol,solList:[...sol.keys()].sort()};
   GAMES.set(p.seed,g);return g;
 }
-const pts=(g,w)=>{const e=g.sol.get(w);return e?e.pts:0};
+const pts=(g,w)=>{const e=g.sol.get(w)||(g.xs&&g.xs.get(w));return e?e.pts:0};
+/* Swap games score words found on the changing board; their points are saved with the game. */
+const setSwapPts=(g,m)=>{g.xs=new Map(Object.entries(m||{}).map(([w,p])=>[w,{pts:p,path:null}]))};
 const sumPts=(g,ws)=>ws.reduce((a,w)=>a+pts(g,w),0);
 const byPts=g=>(a,b)=>pts(g,b)-pts(g,a)||b.length-a.length||a.localeCompare(b);
 
@@ -563,7 +581,7 @@ const SYNC_GAMES=60, SYNC_BITS=30;
 function buildSync(){
   const hist=getHistory().slice(0,SYNC_GAMES);
   const games=hist.map((h,i)=>{const g=i<SYNC_BITS?getGame(h.seed):null;
-    return [h.seed,h.score.toString(36),h.words.length.toString(36),Math.round((h.dur||0)/1000).toString(36),Math.floor(h.at/DAY_MS).toString(36),g?wordBits(g,h.words):""].join(",")});
+    return [h.seed,h.score.toString(36),h.words.length.toString(36),Math.round((h.dur||0)/1000).toString(36),Math.floor(h.at/DAY_MS).toString(36),g&&!g.s.swap?wordBits(g,h.words):""].join(",")});
   const text=["WR2",PID,encodeURIComponent(myName()||"Player"),...games].join("|");
   return baseURL()+"#s."+b64u(utf8(text));
 }
@@ -605,7 +623,7 @@ function statsFor(g,words,dur,times){
   return{n,score,mins,longest,best,wpm:n/mins,ppm:score/mins,avg:n?words.reduce((a,w)=>a+w.length,0)/n:0,
     rare:words.filter(w=>!COMMON.has(w)).length,pctPts:Math.round(100*score/Math.max(1,total)),streak:t.length?streak:null,first:t.length?t[0]/1000:null};
 }
-const sameRules=(a,b)=>a.size===b.size&&a.time===b.time&&a.minLen===b.minLen&&a.scoring===b.scoring&&a.pmask===b.pmask&&a.amount===b.amount;
+const sameRules=(a,b)=>!!a.swap===!!b.swap&&a.size===b.size&&a.time===b.time&&a.minLen===b.minLen&&a.scoring===b.scoring&&a.pmask===b.pmask&&a.amount===b.amount;
 const f1=x=>(Math.round(x*10)/10).toFixed(1);
 function matchup(seed,pid){
   const g=getGame(seed),h=getHist(seed),r=getRivals()[pid],rg=r&&r.games[seed];if(!g||!h||!rg)return null;
@@ -654,8 +672,8 @@ function sendSync(btn,inputId,toName){
 }
 function chipsFor(s){const a=[`${s.size}×${s.size}`,timeLabel(s.time),`${s.minLen}+ letters`,s.scoring==="letters"?"Letter points":"Word length scoring"];
   if(s.pmask)a.push(`Power-ups: ${PTYPES.filter((t,i)=>s.pmask&(1<<i)).join(" ")} · ${AMOUNTS[s.amount]}`);
-  a.push(s.turn?"Turning on":"Turning off");a.push(s.cancel?"Shared words score 0":"Shared words count");return a}
-const rulesShort=s=>`${s.size}×${s.size} · ${timeLabel(s.time)} · ${s.scoring==="letters"?(s.pmask?"power-ups":"letter points"):"word length"}`;
+  if(s.swap)a.push("Swap letters");a.push(s.turn?"Turning on":"Turning off");a.push(s.cancel?"Shared words score 0":"Shared words count");return a}
+const rulesShort=s=>`${s.size}×${s.size} · ${timeLabel(s.time)} · ${s.scoring==="letters"?(s.pmask?"power-ups":"letter points"):"word length"}${s.swap?" · swap":""}`;
 const SCORING_HELP={classic:"3–4 letters 1 pt · 5 → 2 · 6 → 3 · 7 → 5 · 8+ → 11.",
   letters:"Each letter scores its value (shown on the die), and power-up tiles multiply it. Words of 5+ letters get +3 per extra letter."};
 const ago=t=>{const s=(Date.now()-t)/1000;return s<90?"just now":s<3600?`${Math.round(s/60)} min ago`:s<86400?`${Math.round(s/3600)} h ago`:`${Math.round(s/86400)} days ago`};
@@ -665,7 +683,7 @@ const dateOf=at=>new Date(at).toLocaleDateString(undefined,{day:"numeric",month:
 [["W","O","R","D"],["R","A","T","T","L","E"]].forEach((w,ri)=>w.forEach((c,i)=>{const d=el("div","ldie",c);d.style.animationDelay=(ri*4+i)*45+"ms";$(ri?"logo2":"logo1").append(d)}));
 
 /* ================= settings ================= */
-const S=Object.assign({size:4,time:180,minLen:3,cancel:true,scoring:"classic",pmask:0,amount:1,turn:true},loadJSON("wr.settings",{}));
+const S=Object.assign({size:4,time:180,minLen:3,cancel:true,swap:false,scoring:"classic",pmask:0,amount:1,turn:true},loadJSON("wr.settings",{}));
 if(!SIZES.includes(S.size))S.size=4;if(!TIMES.includes(S.time))S.time=180;if(!MINS.includes(S.minLen))S.minLen=3;
 [15,60,120,180,240,300].forEach(t=>{const p=(t-15)/285,sp=el("span",null,t<60?t+"s":t/60+"m");sp.style.left=`calc(${p*100}% + ${14-28*p}px)`;$("ticks").append(sp)});
 PTYPES.forEach((t,i)=>{const b=el("button","pubtn");b.dataset.bit=i;b.append(el("span","sw p"+t.toLowerCase(),t),el("span",null,PNAMES[t]));$("puGrid").append(b)});
@@ -678,7 +696,7 @@ function paintSettings(){
   $("puGrid").classList.toggle("dim",!live);$("segAmount").hidden=!(live&&S.pmask);
   $("puHelp").textContent=!live?"Power-ups use letter points. Tap one to switch scoring on.":S.pmask?"Each word scores its best route through the board.":"Pick any mix. None picked means a plain board.";
   $("scoringHelp").textContent=SCORING_HELP[S.scoring];
-  $("cancelIn").checked=S.cancel;$("turnIn").checked=S.turn;saveJSON("wr.settings",S);
+  $("cancelIn").checked=S.cancel&&!S.swap;$("cancelIn").disabled=!!S.swap;$("cancelIn").closest("label").classList.toggle("dim",!!S.swap);$("swapIn").checked=!!S.swap;$("turnIn").checked=S.turn;saveJSON("wr.settings",S);
 }
 const segBind=(id,key,conv)=>$(id).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S[key]=conv(b.dataset.v);
   if(key==="size")S.minLen=S.size===4?3:4;paintSettings()});
@@ -687,6 +705,7 @@ $("timeRange").addEventListener("input",e=>{S.time=+e.target.value;paintSettings
 $("puGrid").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.pmask^=1<<+b.dataset.bit;if(S.pmask&&S.scoring!=="letters")S.scoring="letters";paintSettings()});
 $("cancelIn").onchange=e=>{S.cancel=e.target.checked;paintSettings()};
 $("turnIn").onchange=e=>{S.turn=e.target.checked;paintSettings()};
+$("swapIn").onchange=e=>{S.swap=e.target.checked;paintSettings()};
 paintSettings();
 $("nameIn").value=myName();$("nameIn2").value=myName();
 $("nameIn").addEventListener("input",e=>setName(e.target.value));$("nameIn2").addEventListener("input",e=>setName(e.target.value));
@@ -781,8 +800,9 @@ $("shareSeed").onclick=e=>{const g=getGame(readySeed);shareOrCopy(`Play my Word 
 $("startBtn").onclick=()=>{const g=getGame(readySeed);if(g.s.turn)enableMotion();const cur={seed:readySeed,startAt:Date.now()+3200,words:[],times:{}};saveJSON("wr.current",cur);enterPlay(cur)};
 
 /* ================= play ================= */
-let G=null,CUR=null,tickT=null,playing=false,path=[],found=[],foundSet=new Set(),wakeLock=null,endAt=0,endArmed=false,VIEW=null,ROT=0;
+let PB=null,NEXT=null,G=null,CUR=null,tickT=null,playing=false,path=[],found=[],foundSet=new Set(),wakeLock=null,endAt=0,endArmed=false,VIEW=null,ROT=0;
 const NS="http://www.w3.org/2000/svg";
+const playView=()=>PB?{s:G.s,board:PB}:G;
 function buildGrid(box,g,anim,order){
   const n=g.s.size;order=order||[...Array(n*n).keys()];box.style.setProperty("--n",n);box.innerHTML="";box._inv=[];
   order.forEach((i,p)=>{box._inv[i]=p;const c=g.board.letters[i],pw=g.board.pu[i];const d=el("div","die"+(c==="Qu"?" qu":"")+(pw?" p"+pw.toLowerCase():""));
@@ -802,7 +822,7 @@ function drawPath(box,idxs,cls){
 function rotation(n,r){const v=[];for(let p=0;p<n*n;p++){let rr=Math.floor(p/n),cc=p%n;for(let k=0;k<r;k++){const nr=n-1-cc;cc=rr;rr=nr}v.push(rr*n+cc)}return v}
 function turnBoard(){
   if(!G||!G.s.turn||!playing||path.length)return;
-  ROT=(ROT+1)%4;VIEW=rotation(G.s.size,ROT);buildGrid(grid,G,false,VIEW);drawPath(grid,[],"on");
+  ROT=(ROT+1)%4;VIEW=rotation(G.s.size,ROT);buildGrid(grid,playView(),false,VIEW);drawPath(grid,[],"on");
   grid.classList.remove("spin");void grid.offsetWidth;grid.classList.add("spin");
   try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}
 }
@@ -815,8 +835,11 @@ function enableMotion(){if(motionOn)return;try{
   else if(typeof DeviceMotionEvent!=="undefined"){window.addEventListener("devicemotion",onMotion);motionOn=true}}catch(e){}}
 function enterPlay(cur){
   stopPlay();G=getGame(cur.seed);CUR=cur;show("play");
-  found=(cur.words||[]).filter(w=>G.sol.has(w));foundSet=new Set(found);
-  ROT=0;VIEW=rotation(G.s.size,0);buildGrid($("grid"),G,true,VIEW);drawPath($("grid"),[],"on");
+  PB=null;NEXT=null;G.xs=null;
+  if(G.s.swap){PB={letters:G.board.letters.slice(),pu:G.board.pu};NEXT=swapStream(G.seed,G.s);setSwapPts(G,cur.pts);
+    for(const p of cur.paths||[])for(const i of p)PB.letters[i]=NEXT()}
+  found=(cur.words||[]).filter(w=>G.sol.has(w)||(G.xs&&G.xs.has(w)));foundSet=new Set(found);
+  ROT=0;VIEW=rotation(G.s.size,0);buildGrid($("grid"),playView(),true,VIEW);drawPath($("grid"),[],"on");
   $("turnRow").hidden=!G.s.turn;$("opps").hidden=!cur.live;renderOpps();$("shakeHint").hidden=typeof DeviceMotionEvent==="undefined";
   $("found").innerHTML="";found.forEach(w=>addFoundChip(w));updateScore();
   $("wordbar").textContent="";$("wordbar").className="wordbar";
@@ -832,9 +855,11 @@ function requestWake(){if(NATIVE){NATIVE.keepAwake({on:true}).catch(()=>{});retu
 function stopPlay(){clearInterval(tickT);tickT=null;playing=false;$("countdown").hidden=true;if(NATIVE)NATIVE.keepAwake({on:false}).catch(()=>{});try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null}
 function finishGame(){
   stopPlay();path=[];
-  const g=getGame(CUR.seed),words=(CUR.words||[]).filter(w=>g.sol.has(w));
+  const g=getGame(CUR.seed);if(g.s.swap)setSwapPts(g,CUR.pts);
+  const words=(CUR.words||[]).filter(w=>g.sol.has(w)||(g.xs&&g.xs.has(w)));
   const dur=Math.max(1000,Math.min(Date.now(),CUR.startAt+g.s.time*1000)-CUR.startAt),tm=CUR.times||{};
   const h={seed:g.seed,words,score:sumPts(g,words),at:Date.now(),dur,times:words.map(w=>tm[w]==null?null:tm[w])};
+  if(g.s.swap){h.pts={};words.forEach(w=>h.pts[w]=pts(g,w));h.final=PB?PB.letters.slice():null}
   saveJSON("wr.history",[h,...getHistory().filter(x=>x.seed!==g.seed)].slice(0,300));
   const wasLive=CUR.live;delKey("wr.current");CUR=null;
   if(wasLive&&liveFinish(g,words,dur))return;
@@ -852,7 +877,7 @@ function cellAt(x,y,loose){
   if(!loose){const dx=px-c-.5,dy=py-rr-.5;if(dx*dx+dy*dy>0.42*0.42)return -1}
   return VIEW[rr*n+c];
 }
-const curWord=()=>path.map(i=>G.board.letters[i]).join("").toLowerCase();
+const curWord=()=>path.map(i=>(PB||G.board).letters[i]).join("").toLowerCase();
 function tryAdd(e,loose){
   const i=cellAt(e.clientX,e.clientY,loose);if(i==null||i<0)return;
   if(!path.length)path.push(i);
@@ -864,33 +889,43 @@ function tryAdd(e,loose){
 }
 grid.addEventListener("pointerdown",e=>{if(!playing)return;e.preventDefault();try{grid.setPointerCapture(e.pointerId)}catch(err){}path=[];tryAdd(e,true)});
 grid.addEventListener("pointermove",e=>{if(!playing||!path.length)return;tryAdd(e,false)});
-const endSwipe=()=>{if(!path.length)return;const w=curWord();path=[];drawPath(grid,[],"on");submit(w)};
+const endSwipe=()=>{if(!path.length)return;const w=curWord(),p=path.slice();path=[];drawPath(grid,[],"on");submit(w,p)};
 grid.addEventListener("pointerup",endSwipe);grid.addEventListener("pointercancel",endSwipe);
 grid.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
 let fbT=null;
 function feedback(text,cls){const wb=$("wordbar");wb.textContent=text;wb.className="wordbar "+cls;clearTimeout(fbT);fbT=setTimeout(()=>{wb.className="wordbar";wb.textContent=""},900)}
-function submit(w){
+function submit(w,p){
   if(!playing)return;
   if(w.length<G.s.minLen){if(w.length>1)feedback(`${G.s.minLen}+ letters`,"no");else $("wordbar").textContent="";return}
   if(foundSet.has(w)){feedback(w+" · got it","dup");return}
-  if(!G.sol.has(w)){feedback(w,"no");return}
+  if(PB){if(!DICT.has(w)||!p){feedback(w,"no");return}
+    const sc=wordScore(G.s,PB,p);CUR.pts=CUR.pts||{};CUR.pts[w]=sc;CUR.paths=(CUR.paths||[]).concat([p]);G.xs.set(w,{pts:sc,path:null});swapOut(p)}
+  else if(!G.sol.has(w)){feedback(w,"no");return}
   found.push(w);foundSet.add(w);CUR.words=found.slice();CUR.times=CUR.times||{};CUR.times[w]=Date.now()-CUR.startAt;saveJSON("wr.current",CUR);
   feedback(`${w} +${pts(G,w)}`,"ok");try{navigator.vibrate&&navigator.vibrate([12,30,12])}catch(err){}
   addFoundChip(w,true);updateScore();liveProgress();
+}
+
+/* Swap the used letters for fresh ones: the model changes now, the dice fade out and back in over half a second. */
+function swapOut(p){
+  for(const i of p){const L=NEXT();PB.letters[i]=L;const d=grid.children[grid._inv[i]];if(!d)continue;
+    const parts=d.querySelectorAll(".lt,.val");parts.forEach(x=>{x.classList.remove("swap");void x.offsetWidth;x.classList.add("swap")});
+    clearTimeout(d._sw);d._sw=setTimeout(()=>{const lt=d.querySelector(".lt"),v=d.querySelector(".val");if(lt)lt.textContent=L;if(v)v.textContent=String(L==="Qu"?10:VAL[L]);d.classList.toggle("qu",L==="Qu")},250)}
 }
 
 /* ================= results ================= */
 let RES=null;
 function selectWord(gridBox,selBox,g,w,tag,tagCls,chip){
   document.querySelectorAll(".ans.sel").forEach(b=>b.classList.remove("sel"));if(chip)chip.classList.add("sel");
-  drawPath(gridBox,g.sol.get(w).path,"hl");selBox.innerHTML="";
+  const e=g.sol.get(w);drawPath(gridBox,e&&!g.s.swap?e.path:[],"hl");selBox.innerHTML="";
   selBox.append(el("span","selw",w),el("span","label",`${pts(g,w)} point${pts(g,w)===1?"":"s"}${COMMON.has(w)?"":" · rarer word"}`));
   if(tag)selBox.append(el("span","tag "+tagCls,tag));
 }
 function selPrompt(selBox,text){selBox.innerHTML="";selBox.append(el("span","label","Tap any word"),el("span","muted small",text))}
 function showResults(seed){
   const g=getGame(seed),h=getHist(seed);if(!g||!h){showHome();return}
-  const mine=new Set(h.words);RES={g,h,mine,filter:"all"};
+  if(g.s.swap)setSwapPts(g,h.pts);
+  const mine=new Set(h.words);RES={g,h,mine,filter:g.s.swap?"got":"all"};
   const dd=dailyDayOf(g.seed);
   $("resMeta").textContent=`${dd!=null?"Daily "+dayLabel(dd,{day:"numeric",month:"short"}):"Board "+fmtSeed(g.seed)} · ${g.s.size}×${g.s.size} · ${timeLabel(g.s.time)}`;
   $("resScore").innerHTML="";$("resScore").append(document.createTextNode(String(h.score)),el("small",null,"points"));
@@ -904,12 +939,12 @@ function showResults(seed){
   $("resSyncText").textContent=waitingOn.length?`Send your games so ${waitingOn.join(" and ")} can try to beat this board. When they sync back, you'll see the comparison.`:"Send your games so they can try to beat this board. When they sync back, you'll see the comparison.";
   const st=statsFor(g,h.words,h.dur,h.times),k=$("resKpis");k.innerHTML="";
   const kpi=(lab,val,sub)=>{const d=el("div","kpi");d.append(el("span","label",lab),el("b",null,val));if(sub)d.append(el("small",null,sub));k.append(d)};
-  kpi("Words found",String(st.n),`of ${g.solList.length} on the board`);
+  kpi("Words found",String(st.n),g.s.swap?"on a changing board":`of ${g.solList.length} on the board`);
   kpi("Words per minute",f1(st.wpm),`${f1(st.ppm)} points per minute`);
   kpi("Longest word",st.longest||"–",st.longest?`${st.longest.length} letters · ${pts(g,st.longest)} pts`:null);
   kpi("Highest scoring",st.best||"–",st.best?`${pts(g,st.best)} points`:null);
   kpi("Average length",st.n?f1(st.avg):"–","letters per word");
-  kpi("Board cleared",st.pctPts+"%","of all available points");
+  if(!g.s.swap)kpi("Board cleared",st.pctPts+"%","of all available points");
   if(st.streak!=null)kpi("Hot streak",String(st.streak),"words in 15 seconds");
   if(st.first!=null)kpi("First word",f1(st.first)+"s","after the start");
   kpi("Rarer words",String(st.rare),"outside everyday vocabulary");
@@ -919,13 +954,14 @@ function showResults(seed){
   if(prev.length){const pb=Math.max(...prev.map(x=>x.score));pbEl.hidden=false;pbEl.className="pb"+(h.score>pb?" new":"");
     pbEl.textContent=h.score>pb?`New personal best (old best ${pb})`:`Personal best with these rules: ${pb}`}else pbEl.hidden=true;
   $("nameIn2").value=myName();
-  buildGrid($("resGrid"),g,false);selPrompt($("resSel"),"to trace its route on the board.");
+  if(g.s.swap){buildGrid($("resGrid"),{s:g.s,board:{letters:h.final||g.board.letters,pu:g.board.pu}},false);selPrompt($("resSel"),"to see its points. The board shows how it ended.")}
+  else{buildGrid($("resGrid"),g,false);selPrompt($("resSel"),"to trace its route on the board.")}
   renderAnswers();show("results");
 }
 function renderAnswers(){
-  const {g,mine}=RES,all=g.solList,got=all.filter(w=>mine.has(w));
+  const {g,mine}=RES,all=g.s.swap?RES.h.words:g.solList,got=all.filter(w=>mine.has(w));
   const f=$("resFilter");f.innerHTML="";
-  [["all",`All ${all.length}`],["got",`Found ${got.length}`],["miss",`Missed ${all.length-got.length}`]].forEach(([k,t])=>{const b=el("button",null,t);b.setAttribute("aria-pressed",String(RES.filter===k));b.onclick=()=>{RES.filter=k;renderAnswers()};f.append(b)});
+  (g.s.swap?[["got",`Found ${got.length}`]]:[["all",`All ${all.length}`],["got",`Found ${got.length}`],["miss",`Missed ${all.length-got.length}`]]).forEach(([k,t])=>{const b=el("button",null,t);b.setAttribute("aria-pressed",String(RES.filter===k));b.onclick=()=>{RES.filter=k;renderAnswers()};f.append(b)});
   const box=$("resGroups");box.innerHTML="";
   const groups=new Map();for(const w of all){const L=Math.min(w.length,8);if(!groups.has(L))groups.set(L,[]);groups.get(L).push(w)}
   for(const L of [...groups.keys()].sort((a,b)=>b-a)){const ws=groups.get(L).sort(byPts(g)),n=ws.filter(w=>mine.has(w)).length;
@@ -1061,7 +1097,7 @@ function leaveLive(){if(!LIVE)return;clearTimeout(LIVE.retry);
   try{LIVE.peer&&LIVE.peer.destroy()}catch(e){}
   if(LIVE.transport==="nearby"&&NATIVE)NATIVE.stopAll().catch(()=>{});
   LIVE=null}
-const newLive=(host,transport,extra)=>({host,transport,code:host?liveCodeGen():"",seed:host?makeSeed(S):null,status:"lobby",startAt:0,
+const newLive=(host,transport,extra)=>({host,transport,code:host?liveCodeGen():"",seed:host?makeSeed({...S,swap:false}):null,status:"lobby",startAt:0,
   conns:new Map(),roster:[{pid:PID,name:liveName()}],prog:{},roundPids:null,open:!!host,offset:0,chans:{},found:{},...extra});
 
 /* a channel object that looks like a PeerJS connection, used for nearby links */

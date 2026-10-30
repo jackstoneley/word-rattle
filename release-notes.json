@@ -45,6 +45,17 @@
         "Master each colour, and five new upgrades in the Forge.",
         "Enemies are tougher, especially after wave 30."
       ]
+    },
+    {
+      "id": 5,
+      "type": "features",
+      "headline": "Word Rattle: Swap letters",
+      "details": [
+        "New game option: Swap letters. Every word you make swaps its letters for new ones, so the board keeps changing.",
+        "Turn it on in the game settings before you create a board.",
+        "Send the board to each other as usual: you both get the same new letters if you find the same words in the same order.",
+        "Comparing a swap game shows points and word counts. Each board ends up different, so there's no word-by-word list."
+      ]
     }
   ]
 }
