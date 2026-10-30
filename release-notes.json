@@ -99,6 +99,17 @@
         "Land next to them to finish. Fly straight past and Buddy panics.",
         "Your days, treats and kit are all kept."
       ]
+    },
+    {
+      "id": 10,
+      "type": "fixes",
+      "headline": "Boxed In: smoother controls",
+      "details": [
+        "Fixed a wave that could never end because zombies got stuck in a doorway",
+        "You can no longer get trapped inside your own barricade",
+        "The thumb stick works anywhere on the screen and responds straight away",
+        "Barrels and barricades drop with one tap, behind you as you run, and your gun keeps firing"
+      ]
     }
   ]
 }

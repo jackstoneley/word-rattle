@@ -57,11 +57,12 @@ h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
 .combo{position:absolute;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-family:var(--display);font-size:1.3rem;color:var(--accent);text-shadow:0 2px 0 rgba(0,0,0,.6);pointer-events:none;transition:opacity .2s}
 .banner{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);font-family:var(--display);font-size:1.6rem;text-align:center;text-shadow:0 3px 0 rgba(0,0,0,.6);pointer-events:none;transition:opacity .4s;white-space:nowrap}
 .banner small{display:block;font-family:var(--body);font-weight:700;font-size:.95rem;color:var(--accent)}
-.weps{position:absolute;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(4,52px);gap:6px;direction:rtl}
-.weps button{direction:ltr;height:52px;border:2px solid rgba(255,255,255,.25);background:rgba(20,22,18,.78);border-radius:12px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:.62rem;font-weight:700;touch-action:none}
+.weps{position:absolute;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(4,58px);gap:6px;direction:rtl}
+.weps button{direction:ltr;height:58px;border:2px solid rgba(255,255,255,.25);background:rgba(20,22,18,.78);border-radius:12px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:.62rem;font-weight:700;touch-action:none}
 .weps button .ic{font-size:1.15rem;line-height:1}
 .weps button.on{border-color:var(--accent);background:rgba(229,196,67,.25)}
 .weps button.place{background:rgba(229,196,67,.85);color:var(--accent-ink);border-color:#fff}
+.weps button.place.empty{opacity:.4}
 .ov{position:fixed;inset:0;background:rgba(8,10,6,.72);display:grid;place-items:center;z-index:10;padding:16px}
 .ovc{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;width:min(360px,100%);display:flex;flex-direction:column;gap:12px;text-align:center}
 .ovc h3{font-family:var(--display);font-size:1.6rem;margin:0;font-weight:400}
@@ -82,10 +83,10 @@ h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
     <details class="card howto">
       <summary>How to play</summary>
       <ul>
-        <li>Put your thumb anywhere on the left of the screen and drag to walk.</li>
+        <li>Put your thumb anywhere on the screen and drag to walk. Lift it to stop.</li>
         <li>Your gun aims at the nearest zombie you can see and fires by itself. Keep moving and keep them in front of you.</li>
         <li>Your score unlocks new weapons as you go: uzi, shotgun, barrels, grenades, barricades, then rockets. Tap one at the bottom right to switch.</li>
-        <li><b>Barrels</b> and <b>barricades</b> are placed, not fired: pick one and tap <b>Place</b>. Shoot a barrel to blow it up. Zombies have to smash through barricades.</li>
+        <li><b>Barrels</b> and <b>barricades</b> are dropped, not fired: tap one and it lands on the dotted square next to you, behind you as you run (or towards the zombies when you stand still). Your gun keeps firing. Shoot a barrel when zombies reach it. Zombies have to smash through barricades.</li>
         <li>Quick kills in a row build a <b>combo</b> that multiplies your score.</li>
         <li>Red devils appear from wave 4 and throw fireballs. Crates bring health and ammo. Watch out: your own explosions hurt you too. Stay out of trouble for a few seconds and you slowly heal.</li>
         <li>Survive wave 8 in an arena to open the next one.</li>
@@ -189,7 +190,7 @@ function startGame(mi){
   // on a tall screen the arena is turned on its side so it fills the phone
   const M=MAPS[mi],rows=VH>VW*1.1?M.m[0].split("").map((_,x)=>M.m.map(r=>r[x]).join("")):M.m,H=rows.length,W=rows[0].length,grid=[],doors=[];let px=1,py=1;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=rows[y][x];grid.push(c==="#"?1:0);if(c==="S")doors.push([x,y]);if(c==="P"){px=x;py=y}}
-  GM={mi,rows,W,H,grid,doors,obj:new Map(),p:{x:px+.5,y:py+.5,hp:100,face:0,cd:0,hurt:0,walk:0},en:[],shots:[],proj:[],fx:[],items:[],
+  GM={mi,rows,W,H,grid,doors,obj:new Map(),p:{x:px+.5,y:py+.5,hp:100,face:0,cd:0,hurt:0,walk:0,mv:Math.PI/2,mvT:9},en:[],shots:[],proj:[],fx:[],items:[],
     wave:0,toSpawn:[],spawnT:0,breakT:2.5,score:0,kills:0,chain:0,chainT:0,wep:0,ammo:WEAPONS.map(w=>w.k==="pistol"?Infinity:0),unl:1,itemT:8,t:0,over:false,flow:null,flowT:0};
   GM.ammo[0]=Infinity;paused=false;joy=null;renderWeps();banner("Wave 1","Get ready");
 }
@@ -197,8 +198,9 @@ const solid=(x,y)=>{const G=GM;if(x<0||y<0||x>=G.W||y>=G.H)return true;return G.
 const objAt=(x,y)=>GM.obj.get(y*GM.W+x);
 const blocked=(x,y)=>solid(x,y)||!!objAt(x,y);
 function moveCircle(e,dx,dy,r){
+  const over=(x,y,px,py)=>{const cx=Math.max(x,Math.min(px,x+1)),cy=Math.max(y,Math.min(py,y+1));return (px-cx)**2+(py-cy)**2<r*r};
   const tryAxis=(nx,ny)=>{const x0=Math.floor(nx-r),x1=Math.floor(nx+r),y0=Math.floor(ny-r),y1=Math.floor(ny+r);
-    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(blocked(x,y)){const cx=Math.max(x,Math.min(nx,x+1)),cy=Math.max(y,Math.min(ny,y+1));if((nx-cx)**2+(ny-cy)**2<r*r)return{x,y}}return null};
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(solid(x,y)||objAt(x,y)&&!over(x,y,e.x,e.y)){const cx=Math.max(x,Math.min(nx,x+1)),cy=Math.max(y,Math.min(ny,y+1));if((nx-cx)**2+(ny-cy)**2<r*r)return{x,y}}return null};
   let hit=null,h=tryAxis(e.x+dx,e.y);if(!h)e.x+=dx;else hit=h;h=tryAxis(e.x,e.y+dy);if(!h)e.y+=dy;else hit=hit||h;return hit;
 }
 // Distance from every floor tile to the player; placed objects don't count as walls here, so zombies go through them.
@@ -229,14 +231,24 @@ function explode(x,y,R,dmg){const G=GM;G.fx.push({k:"boom",x,y,R,t:0,max:.45});t
 // A ray from the player: stops at the first wall, barrel (which then blows up) or enemy.
 function fireRay(ang,W){const G=GM,p=G.p,dx=Math.cos(ang),dy=Math.sin(ang);let x=p.x,y=p.y,end=W.range;
   for(let s=0;s<W.range;s+=.1){x=p.x+dx*s;y=p.y+dy*s;const tx=Math.floor(x),ty=Math.floor(y);
-    if(solid(tx,ty)){end=s;break}const o=objAt(tx,ty);if(o){if(o.type==="barrel"&&!o.lit)o.lit=.05;if(o.type==="wall"&&s>.8){end=s;break}if(o.type==="barrel"){end=s;break}}
+    if(solid(tx,ty)){end=s;break}const o=objAt(tx,ty);if(o){if(o.type==="wall"&&s>.8){end=s;break}if(o.type==="barrel"&&s>1.4){if(!o.lit)o.lit=.05;end=s;break}}
     let hitE=null;for(const e of G.en){if(e.hp>0&&(e.x-x)**2+(e.y-y)**2<e.r*e.r){hitE=e;break}}
     if(hitE){hurtEnemy(hitE,W.dmg);end=s;break}}
   G.shots.push({x1:p.x+dx*.45,y1:p.y+dy*.45,x2:p.x+dx*end,y2:p.y+dy*end,t:0})}
 function pickTarget(range){const G=GM,p=G.p;let best=null,bd=range;for(const e of G.en){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd&&los(p.x,p.y,e.x,e.y)){bd=d;best=e}}return best}
-function placeObj(){const G=GM,W=WEAPONS[G.wep];if(!W.place||G.ammo[G.wep]<=0)return;const p=G.p,tx=Math.floor(p.x+Math.cos(p.face)*1.05),ty=Math.floor(p.y+Math.sin(p.face)*1.05);
-  if(blocked(tx,ty)||G.en.some(e=>Math.floor(e.x)===tx&&Math.floor(e.y)===ty)||(Math.floor(p.x)===tx&&Math.floor(p.y)===ty)){banner("","No room there");return}
-  G.obj.set(ty*G.W+tx,W.place==="barrel"?{type:"barrel"}:{type:"wall",hp:260,mhp:260});G.ammo[G.wep]--;renderWeps()}
+// Where a barrel or barricade goes: the free tile next to you that is most nearly behind you (you are running away),
+// or towards the nearest zombie when you're standing still. Never on top of you or a zombie.
+const touches=(x,y,cx,cy,r)=>{const nx=Math.max(x,Math.min(cx,x+1)),ny=Math.max(y,Math.min(cy,y+1));return (cx-nx)**2+(cy-ny)**2<r*r};
+function placeSpot(){const G=GM,p=G.p;let ang;
+  if(p.mvT<.8)ang=p.mv+Math.PI;else{const t=pickTarget(9);ang=t?Math.atan2(t.y-p.y,t.x-p.x):p.mv+Math.PI}
+  const px=Math.floor(p.x),py=Math.floor(p.y);let best=null,bs=-.35;
+  for(let y=py-1;y<=py+1;y++)for(let x=px-1;x<=px+1;x++){if(x===px&&y===py||blocked(x,y)||touches(x,y,p.x,p.y,.36))continue;
+    if(G.en.some(e=>touches(x,y,e.x,e.y,e.r))||G.items.some(it=>Math.floor(it.x)===x&&Math.floor(it.y)===y))continue;
+    const a=Math.atan2(y+.5-p.y,x+.5-p.x),sc=Math.cos(a-ang)-(x!==px&&y!==py?.15:0);if(sc>bs){bs=sc;best={x,y}}}
+  return best}
+function placeObj(i){const G=GM,W=WEAPONS[i];if(!W||!W.place||i>=G.unl||G.ammo[i]<=0)return;const s=placeSpot();
+  if(!s){banner("","No room here");return}
+  G.obj.set(s.y*G.W+s.x,W.place==="barrel"?{type:"barrel"}:{type:"wall",hp:260,mhp:260});G.ammo[i]--;renderWeps()}
 
 /* ================= update ================= */
 function update(dt){
@@ -246,11 +258,11 @@ function update(dt){
   // player
   let mx=0,my=0;if(joy&&joy.on){mx=joy.dx;my=joy.dy}if(keys.l)mx-=1;if(keys.r)mx+=1;if(keys.u)my-=1;if(keys.d)my+=1;
   const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml}
-  if(ml>.05){moveCircle(p,mx*4.2*dt,my*4.2*dt,.33);p.walk+=dt*10}
+  p.mvT=(p.mvT||0)+dt;if(ml>.05){moveCircle(p,mx*4.2*dt,my*4.2*dt,.33);p.walk+=dt*10;if(ml>.3){p.mv=Math.atan2(my,mx);p.mvT=0}}
   const W=WEAPONS[G.wep];p.cd-=dt;p.hurt=Math.max(0,p.hurt-dt);p.calm=(p.calm||0)+dt;if(p.calm>3&&p.hp<100)p.hp=Math.min(100,p.hp+2*dt);
-  const tgt=pickTarget(W.place?8:W.range||7);
+  const tgt=pickTarget(W.range||7);
   if(tgt)p.face=Math.atan2(tgt.y-p.y,tgt.x-p.x);else if(ml>.05)p.face=Math.atan2(my,mx);
-  if(!W.place&&tgt&&p.cd<=0&&G.ammo[G.wep]>0){p.cd=1/W.rate;
+  if(tgt&&p.cd<=0&&G.ammo[G.wep]>0){p.cd=1/W.rate;
     if(W.throw){const d=Math.hypot(tgt.x-p.x,tgt.y-p.y);G.proj.push({k:"gren",x:p.x,y:p.y,sx:p.x,sy:p.y,tx:tgt.x,ty:tgt.y,t:0,dur:Math.max(.35,d/9)})}
     else if(W.rocket)G.proj.push({k:"rocket",x:p.x,y:p.y,vx:Math.cos(p.face)*11,vy:Math.sin(p.face)*11,t:0});
     else for(let i=0;i<(W.pellets||1);i++)fireRay(p.face+(Math.random()-.5)*2*W.spread,W);
@@ -263,19 +275,21 @@ function update(dt){
       if(dist<3.5){vx=-dx/dist;vy=-dy/dist}}
     else if(see&&dist<2.2){vx=dx/dist;vy=dy/dist}
     else{const tx=Math.floor(e.x),ty=Math.floor(e.y),here=G.flow[ty*G.W+tx];let best=null,bv=here<0?1e9:here;
-      for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){const v=G.flow[(ty+oy)*G.W+tx+ox];if(v>=0&&v<bv){bv=v;best=[tx+ox+.5,ty+oy+.5]}}
+      for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=tx+ox,ny=ty+oy;if(nx<0||ny<0||nx>=G.W||ny>=G.H)continue;const v=G.flow[ny*G.W+nx];if(v>=0&&v<bv){bv=v;best=[tx+ox+.5,ty+oy+.5]}}
       if(best){const a=best[0]-e.x,b=best[1]-e.y,l=Math.hypot(a,b)||1;vx=a/l;vy=b/l}else if(dist>0){vx=dx/dist;vy=dy/dist}}
     // keep apart from each other
     for(const o of G.en){if(o===e||o.hp<=0)continue;const ax=e.x-o.x,ay=e.y-o.y,d2=ax*ax+ay*ay,rr=(e.r+o.r)*.95;if(d2<rr*rr&&d2>1e-6){const d=Math.sqrt(d2);vx+=ax/d*.8;vy+=ay/d*.8}}
     const vl=Math.hypot(vx,vy);if(vl>0){e.face=Math.atan2(vy,vx);const hit=moveCircle(e,vx/vl*e.spd*dt,vy/vl*e.spd*dt,e.r*.9);
       if(hit){const o=objAt(hit.x,hit.y);if(o){e.atk-=dt;if(e.atk<=0){e.atk=.6;if(o.type==="wall"){o.hp-=T.dmg;if(o.hp<=0)G.obj.delete(hit.y*G.W+hit.x)}else if(!o.lit)o.lit=.4}}}}
+    // safety net: a zombie that hasn't got anywhere for 8 seconds (and isn't fighting) comes back in through a door
+    if(Math.hypot(e.x-(e.ax??e.x),e.y-(e.ay??e.y))>.5||see&&dist<7||e.hurt>0){e.ax=e.x;e.ay=e.y;e.stk=0}else if((e.stk=(e.stk||0)+dt)>8){const dr=G.doors[Math.floor(Math.random()*G.doors.length)];e.x=e.ax=dr[0]+.5;e.y=e.ay=dr[1]+.5;e.stk=0}
     if(dist<e.r+.36){e.atk-=dt;if(e.atk<=0){e.atk=.9;hurtPlayer(T.dmg*(1+.03*(G.wave-1)))}}}
   G.en=G.en.filter(e=>e.hp>0);
   // projectiles
   for(const q of G.proj){q.t+=dt;
     if(q.k==="gren"){const k=Math.min(1,q.t/q.dur);q.x=q.sx+(q.tx-q.sx)*k;q.y=q.sy+(q.ty-q.sy)*k;q.z=Math.sin(k*Math.PI)*1.2;if(k>=1){explode(q.x,q.y,2.1,110);q.dead=1}}
     else{q.x+=q.vx*dt;q.y+=q.vy*dt;const tx=Math.floor(q.x),ty=Math.floor(q.y),o=objAt(tx,ty);
-      if(q.k==="rocket"){if(solid(tx,ty)||o||G.en.some(e=>(e.x-q.x)**2+(e.y-q.y)**2<e.r*e.r)||q.t>1.2){explode(q.x-q.vx*.02,q.y-q.vy*.02,1.9,150);q.dead=1}}
+      if(q.k==="rocket"){if(solid(tx,ty)||o&&q.t>.14||G.en.some(e=>(e.x-q.x)**2+(e.y-q.y)**2<e.r*e.r)||q.t>1.2){explode(q.x-q.vx*.02,q.y-q.vy*.02,1.9,150);q.dead=1}}
       else{if(solid(tx,ty)||q.t>3){q.dead=1}else if(o){if(o.type==="wall"){o.hp-=12;if(o.hp<=0)G.obj.delete(ty*G.W+tx)}else if(!o.lit)o.lit=.05;q.dead=1}
         else if((p.x-q.x)**2+(p.y-q.y)**2<.16){hurtPlayer(9*(1+.03*(G.wave-1)));q.dead=1}}}}
   G.proj=G.proj.filter(q=>!q.dead);
@@ -300,21 +314,20 @@ function update(dt){
 let bannerT=null;function banner(t,s){const b=$("banner");b.innerHTML=(t?t:"")+(s?`<small>${s}</small>`:"");b.style.opacity=1;clearTimeout(bannerT);bannerT=setTimeout(()=>b.style.opacity=0,1700)}
 function showCombo(m){const c=$("combo");if(m>1){c.textContent="Combo ×"+m;c.style.opacity=1}else c.style.opacity=0}
 function renderWeps(){const G=GM,box=$("weps");box.innerHTML="";
-  for(let i=0;i<G.unl;i++){const W=WEAPONS[i],b=document.createElement("button");b.className=i===G.wep?"on":"";
-    b.innerHTML=`<span class="ic">${W.ic}</span><span>${W.ammo===Infinity?W.n:G.ammo[i]}</span>`;b.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();if(G.ammo[i]>0||i===0){G.wep=i;renderWeps()}});box.append(b)}
-  const W=WEAPONS[G.wep];if(W.place){const b=document.createElement("button");b.className="place";b.style.gridColumn="span 2";b.innerHTML=`<span class="ic">▼</span><span>Place</span>`;
-    b.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();placeObj()});box.prepend(b)}}
+  for(let i=0;i<G.unl;i++){const W=WEAPONS[i],b=document.createElement("button");b.className=W.place?"place"+(G.ammo[i]>0?"":" empty"):i===G.wep?"on":"";
+    b.innerHTML=`<span class="ic">${W.ic}</span><span>${W.ammo===Infinity?W.n:W.place?"Drop "+G.ammo[i]:G.ammo[i]}</span>`;
+    b.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();if(W.place)placeObj(i);else if(G.ammo[i]>0||i===0){G.wep=i;renderWeps()}});box.append(b)}}
 
 /* ================= input: a floating thumb stick on the left ================= */
 let joy=null;const keys={};
-$("game").addEventListener("pointerdown",e=>{if(e.target!==$("cv")||joy&&joy.on)return;if(e.clientX>window.innerWidth*.62&&e.clientY>window.innerHeight*.55)return;
+$("game").addEventListener("pointerdown",e=>{if(e.target.closest("button")||!GM||GM.over||paused)return;if(joy&&joy.on&&joy.id!==e.pointerId)try{$("cv").releasePointerCapture(joy.id)}catch(_){}
   joy={on:true,id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY,dx:0,dy:0};try{$("cv").setPointerCapture(e.pointerId)}catch(_){}});
 $("game").addEventListener("pointermove",e=>{if(!joy||!joy.on||e.pointerId!==joy.id)return;let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),R=55;
-  if(l>R){joy.ox+=dx*(1-R/l);joy.oy+=dy*(1-R/l);dx=e.clientX-joy.ox;dy=e.clientY-joy.oy}joy.x=e.clientX;joy.y=e.clientY;joy.dx=dx/R;joy.dy=dy/R});
-const joyEnd=e=>{if(joy&&e.pointerId===joy.id)joy.on=false};$("game").addEventListener("pointerup",joyEnd);$("game").addEventListener("pointercancel",joyEnd);
+  if(l>R){joy.ox+=dx*(1-R/l);joy.oy+=dy*(1-R/l);dx=e.clientX-joy.ox;dy=e.clientY-joy.oy}joy.x=e.clientX;joy.y=e.clientY;const m=Math.hypot(dx,dy),k=m<4?0:Math.min(1,m/28)/m;joy.dx=dx*k;joy.dy=dy*k});
+const joyEnd=e=>{if(joy&&e.pointerId===joy.id)joy.on=false};$("game").addEventListener("pointerup",joyEnd);$("game").addEventListener("pointercancel",joyEnd);$("cv").addEventListener("lostpointercapture",joyEnd);
 $("game").addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
 const KM={ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r",ArrowUp:"u",w:"u",ArrowDown:"d",s:"d"};
-document.addEventListener("keydown",e=>{if(view!=="game")return;if(KM[e.key]){keys[KM[e.key]]=true;e.preventDefault()}else if(e.key===" "){placeObj();e.preventDefault()}else if(/^[1-7]$/.test(e.key)){const i=+e.key-1;if(i<GM.unl){GM.wep=i;renderWeps()}}});
+document.addEventListener("keydown",e=>{if(view!=="game")return;if(KM[e.key]){keys[KM[e.key]]=true;e.preventDefault()}else if(/^[1-7]$/.test(e.key)){const i=+e.key-1;if(i<GM.unl){if(WEAPONS[i].place)placeObj(i);else if(GM.ammo[i]>0){GM.wep=i;renderWeps()}}}});
 document.addEventListener("keyup",e=>{if(KM[e.key])keys[KM[e.key]]=false});
 
 /* ================= drawing: top-down with raised walls ================= */
@@ -366,9 +379,9 @@ function draw(){
   for(const f of G.fx){const k=f.t/f.max;if(f.k==="boom"){c.globalAlpha=1-k;c.fillStyle="#FFB347";c.beginPath();c.arc(f.x*T,f.y*T,f.R*T*(.4+.6*k),0,7);c.fill();c.fillStyle="#FFF1B8";c.beginPath();c.arc(f.x*T,f.y*T,f.R*T*.5*(1-k),0,7);c.fill();c.globalAlpha=1}
     else{c.globalAlpha=1-k;c.fillStyle=f.col;c.fillRect(f.x*T-3,f.y*T-T*.3-3,6,6);c.globalAlpha=1}}
   // where a barrel or barricade would go
-  const W=WEAPONS[G.wep];if(W.place){const tx=Math.floor(p.x+Math.cos(p.face)*1.05),ty=Math.floor(p.y+Math.sin(p.face)*1.05);c.strokeStyle=blocked(tx,ty)?"rgba(224,86,63,.8)":"rgba(229,196,67,.8)";c.setLineDash([4,4]);c.lineWidth=2;c.strokeRect(tx*T+3,ty*T+3,T-6,T-6);c.setLineDash([])}
+  if(WEAPONS.some((W,i)=>W.place&&i<G.unl&&G.ammo[i]>0)){const s=placeSpot();if(s){c.strokeStyle="rgba(229,196,67,.55)";c.setLineDash([4,4]);c.lineWidth=2;c.strokeRect(s.x*T+3,s.y*T+3,T-6,T-6);c.setLineDash([])}}
   c.restore();
-  if(joy&&joy.on){c.strokeStyle="rgba(255,255,255,.35)";c.lineWidth=2;c.beginPath();c.arc(joy.ox,joy.oy,55,0,7);c.stroke();c.fillStyle="rgba(255,255,255,.35)";c.beginPath();c.arc(joy.ox+joy.dx*55,joy.oy+joy.dy*55,22,0,7);c.fill()}
+  if(joy&&joy.on){c.strokeStyle="rgba(255,255,255,.35)";c.lineWidth=2;c.beginPath();c.arc(joy.ox,joy.oy,55,0,7);c.stroke();c.fillStyle="rgba(255,255,255,.35)";c.beginPath();c.arc(joy.x,joy.y,22,0,7);c.fill()}
 }
 
 /* ================= loop, pause, end ================= */
