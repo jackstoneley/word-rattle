@@ -1,11 +1,11 @@
 /* Stoneley Games offline support for the website: keeps the home page and every game on the phone
    so they open with no connection. tools/build.py rewrites VERSION whenever a game changes. */
-const VERSION = "f03735d8b2";
+const VERSION = "cb1b4ff498";
 const CACHE = "stoneley-games-" + VERSION;
 const CORE = [
   "./", "./index.html", "./shell.js", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-maskable.png", "./apple-touch-icon.png",
-  "./games/word-rattle/index.html", "./games/link-up/index.html", "./games/cross-sums/index.html", "./games/gem-bastion/index.html", "./games/topple/index.html", "./games/mudlark/index.html"
+  "./games/word-rattle/index.html", "./games/link-up/index.html", "./games/cross-sums/index.html", "./games/gem-bastion/index.html", "./games/topple/index.html", "./games/mudlark/index.html", "./games/boxed-in/index.html"
 ];
 
 self.addEventListener("install", e => {

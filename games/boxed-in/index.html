@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1B1D1A">
+<title>Boxed In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Archivo+Black&display=swap">
+<style>
+/* Layout: menu (arenas, how to play) or game (full-screen canvas, HUD on top, weapon bar bottom right). */
+:root{
+  --bg:#1B1D1A; --panel:#262924; --panel2:#30342D; --line:#454B40; --fg:#F1F3EC; --muted:#A9B0A0;
+  --accent:#E5C443; --accent-ink:#2A2203; --hp:#6BD06B; --red:#E0563F;
+  --display:"Archivo Black",system-ui,sans-serif; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--body)}
+body{overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.muted{color:var(--muted)}
+#menu{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.sg-home{align-self:flex-start;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none}
+.head{display:flex;align-items:center;gap:14px}
+.logo{width:46px;height:46px;flex:none;position:relative}
+.logo i{position:absolute;inset:8px 6px 0;background:#5C7A9E;border-radius:4px}
+.logo b{position:absolute;left:9px;top:0;width:28px;height:24px;background:#F1D3B3;border-radius:4px;box-shadow:inset 0 -5px 0 rgba(0,0,0,.12)}
+.logo b::before,.logo b::after{content:"";position:absolute;top:9px;width:4px;height:5px;background:#222;border-radius:1px}
+.logo b::before{left:7px}.logo b::after{right:7px}
+h1{font-family:var(--display);font-size:2rem;margin:0;line-height:1;letter-spacing:.01em}
+.head p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.arena{display:flex;gap:12px;align-items:center;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px;width:100%}
+.arena canvas{width:92px;height:64px;border-radius:8px;flex:none;background:#11130F}
+.arena .t{flex:1;min-width:0}
+.arena b{display:block;font-family:var(--display);font-weight:400;font-size:1.05rem}
+.arena small{color:var(--muted);display:block;line-height:1.35}
+.arena:disabled{opacity:.45}
+.howto{font-size:.92rem;line-height:1.5}
+.howto summary{font-family:var(--display);font-size:1.05rem;cursor:pointer}
+.howto ul{padding-left:18px;margin:8px 0 0}
+#game{position:fixed;inset:0;background:#11130F;touch-action:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:absolute;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));pointer-events:none}
+.hud .ib{pointer-events:auto;width:42px;height:42px;border:0;border-radius:12px;background:rgba(20,22,18,.75);font-weight:800;flex:none}
+.hp{flex:1;max-width:150px;height:14px;border-radius:99px;background:rgba(0,0,0,.5);overflow:hidden;border:1px solid rgba(255,255,255,.2)}
+.hp i{display:block;height:100%;background:var(--hp);transition:width .15s}
+.hud .s{background:rgba(20,22,18,.75);border-radius:10px;padding:4px 9px;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.hud .s small{color:var(--muted);font-weight:400}
+.combo{position:absolute;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-family:var(--display);font-size:1.3rem;color:var(--accent);text-shadow:0 2px 0 rgba(0,0,0,.6);pointer-events:none;transition:opacity .2s}
+.banner{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);font-family:var(--display);font-size:1.6rem;text-align:center;text-shadow:0 3px 0 rgba(0,0,0,.6);pointer-events:none;transition:opacity .4s;white-space:nowrap}
+.banner small{display:block;font-family:var(--body);font-weight:700;font-size:.95rem;color:var(--accent)}
+.weps{position:absolute;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(4,52px);gap:6px;direction:rtl}
+.weps button{direction:ltr;height:52px;border:2px solid rgba(255,255,255,.25);background:rgba(20,22,18,.78);border-radius:12px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:.62rem;font-weight:700;touch-action:none}
+.weps button .ic{font-size:1.15rem;line-height:1}
+.weps button.on{border-color:var(--accent);background:rgba(229,196,67,.25)}
+.weps button.place{background:rgba(229,196,67,.85);color:var(--accent-ink);border-color:#fff}
+.ov{position:fixed;inset:0;background:rgba(8,10,6,.72);display:grid;place-items:center;z-index:10;padding:16px}
+.ovc{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;width:min(360px,100%);display:flex;flex-direction:column;gap:12px;text-align:center}
+.ovc h3{font-family:var(--display);font-size:1.6rem;margin:0;font-weight:400}
+.ovc p{margin:0;color:var(--muted);line-height:1.45}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--bg);border-radius:10px;padding:8px 4px}
+.stats b{display:block;font-family:var(--display);font-weight:400;font-size:1.1rem}
+.stats span{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.acts{display:flex;flex-direction:column;gap:8px}
+</style>
+</head>
+<body>
+<section id="menu">
+  <div class="wrap">
+    <a class="sg-home" href="../../index.html">← All games</a>
+    <header class="head"><div class="logo" aria-hidden="true"><i></i><b></b></div><div><h1>Boxed In</h1><p>Hold out against the zombie boxes. Your gun aims itself.</p></div></header>
+    <div class="card"><h2>Arenas</h2><div id="arenas" style="display:flex;flex-direction:column;gap:8px"></div></div>
+    <details class="card howto">
+      <summary>How to play</summary>
+      <ul>
+        <li>Put your thumb anywhere on the left of the screen and drag to walk.</li>
+        <li>Your gun aims at the nearest zombie you can see and fires by itself. Keep moving and keep them in front of you.</li>
+        <li>Your score unlocks new weapons as you go: uzi, shotgun, barrels, grenades, barricades, then rockets. Tap one at the bottom right to switch.</li>
+        <li><b>Barrels</b> and <b>barricades</b> are placed, not fired: pick one and tap <b>Place</b>. Shoot a barrel to blow it up. Zombies have to smash through barricades.</li>
+        <li>Quick kills in a row build a <b>combo</b> that multiplies your score.</li>
+        <li>Red devils appear from wave 4 and throw fireballs. Crates bring health and ammo. Watch out: your own explosions hurt you too. Stay out of trouble for a few seconds and you slowly heal.</li>
+        <li>Survive wave 8 in an arena to open the next one.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+<section id="game" hidden>
+  <canvas id="cv"></canvas>
+  <div class="hud">
+    <button class="ib" id="pauseBtn" aria-label="Pause">II</button>
+    <div class="hp"><i id="hpBar" style="width:100%"></i></div>
+    <div class="s"><small>Wave</small> <span id="hWave">1</span></div>
+    <div class="s" id="hScore">0</div>
+  </div>
+  <div class="combo" id="combo" style="opacity:0"></div>
+  <div class="banner" id="banner" style="opacity:0"></div>
+  <div class="weps" id="weps"></div>
+</section>
+<div class="ov" id="ov" hidden><div class="ovc" id="ovc"></div></div>
+
+<script>
+"use strict";
+/* ================= arenas: # wall, . floor, S zombie door, P start ================= */
+const MAPS=[
+  {n:"The Yard",d:"An open yard with a few sheds. A good place to learn.",m:[
+"##########SS##########",
+"#....................#",
+"#....................#",
+"#...###........###...#",
+"#...#............#...#",
+"#....................#",
+"S..........P.........S",
+"S....................S",
+"#....................#",
+"#...#............#...#",
+"#...###........###...#",
+"#....................#",
+"#....................#",
+"##########SS##########"]},
+  {n:"The Warehouse",d:"Rows of shelves make long corridors. Great for barrels.",m:[
+"####SS##########SS####",
+"#....................#",
+"#.#####.######.#####.#",
+"#....................#",
+"#.#####.######.#####.#",
+"S..........P.........S",
+"S....................S",
+"#.#####.######.#####.#",
+"#....................#",
+"#.#####.######.#####.#",
+"#....................#",
+"####SS##########SS####"]},
+  {n:"The Crossroads",d:"Four streets meet. They come from every side.",m:[
+"#########SS#########",
+"#########..#########",
+"####...........#####",
+"####.##....##..#####",
+"####.##....##......S",
+"S.........P........S",
+"S..................#",
+"####.##....##..#####",
+"####.##....##..#####",
+"####...........#####",
+"#########..#########",
+"#########SS#########"]}
+];
+const WEAPONS=[
+  {k:"pistol",n:"Pistol",ic:"🔫",at:0,dmg:15,rate:3,range:7,spread:.04,ammo:Infinity},
+  {k:"uzi",n:"Uzi",ic:"⁂",at:1500,dmg:9,rate:10,range:7,spread:.09,ammo:200,refill:120},
+  {k:"shotgun",n:"Shotgun",ic:"⋙",at:4000,dmg:13,rate:1.2,range:5,spread:.32,pellets:7,ammo:40,refill:25},
+  {k:"barrel",n:"Barrel",ic:"🛢",at:7000,place:"barrel",ammo:6,refill:4},
+  {k:"grenade",n:"Grenade",ic:"●",at:11000,rate:.9,range:6.5,throw:true,ammo:10,refill:6},
+  {k:"wall",n:"Barricade",ic:"▦",at:16000,place:"wall",ammo:8,refill:5},
+  {k:"rocket",n:"Rockets",ic:"➤",at:24000,rate:1.1,range:10,rocket:true,ammo:12,refill:8}
+];
+const $=id=>document.getElementById(id);
+const loadJSON=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const saveJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const getBest=()=>loadJSON("bi.best",{});
+
+/* ================= menu ================= */
+let view="menu";
+function show(v){view=v;$("menu").hidden=v!=="menu";$("game").hidden=v!=="game";if(v==="game")resize()}
+function renderMenu(){
+  const best=getBest(),box=$("arenas");box.innerHTML="";
+  MAPS.forEach((M,i)=>{const b=best[i],open=i===0||(best[i-1]&&best[i-1].wave>8),el=document.createElement("button");el.className="arena";el.disabled=!open;
+    const cv2=document.createElement("canvas");cv2.width=184;cv2.height=128;miniMap(cv2,M);
+    const t=document.createElement("div");t.className="t";
+    t.innerHTML=`<b>${M.n}</b><small>${open?M.d:"Survive wave 8 in "+MAPS[i-1].n+" to open."}</small><small>${b?`Best: wave ${b.wave} · ${b.score.toLocaleString("en-GB")} points`:open?"Not played yet":""}</small>`;
+    el.append(cv2,t);el.onclick=()=>startGame(i);box.append(el)});
+}
+function miniMap(c,M){const x=c.getContext("2d"),h=M.m.length,w=M.m[0].length,s=Math.min(c.width/w,c.height/h);
+  x.fillStyle="#11130F";x.fillRect(0,0,c.width,c.height);const ox=(c.width-w*s)/2,oy=(c.height-h*s)/2;
+  for(let y=0;y<h;y++)for(let X=0;X<w;X++){const ch=M.m[y][X];x.fillStyle=ch==="#"?"#5A5F52":ch==="S"?"#7A2C22":"#2C3128";x.fillRect(ox+X*s,oy+y*s,s-.5,s-.5)}}
+
+/* ================= game state ================= */
+let GM=null;
+function startGame(mi){
+  show("game");
+  // on a tall screen the arena is turned on its side so it fills the phone
+  const M=MAPS[mi],rows=VH>VW*1.1?M.m[0].split("").map((_,x)=>M.m.map(r=>r[x]).join("")):M.m,H=rows.length,W=rows[0].length,grid=[],doors=[];let px=1,py=1;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=rows[y][x];grid.push(c==="#"?1:0);if(c==="S")doors.push([x,y]);if(c==="P"){px=x;py=y}}
+  GM={mi,rows,W,H,grid,doors,obj:new Map(),p:{x:px+.5,y:py+.5,hp:100,face:0,cd:0,hurt:0,walk:0},en:[],shots:[],proj:[],fx:[],items:[],
+    wave:0,toSpawn:[],spawnT:0,breakT:2.5,score:0,kills:0,chain:0,chainT:0,wep:0,ammo:WEAPONS.map(w=>w.k==="pistol"?Infinity:0),unl:1,itemT:8,t:0,over:false,flow:null,flowT:0};
+  GM.ammo[0]=Infinity;paused=false;joy=null;renderWeps();banner("Wave 1","Get ready");
+}
+const solid=(x,y)=>{const G=GM;if(x<0||y<0||x>=G.W||y>=G.H)return true;return G.grid[y*G.W+x]===1};
+const objAt=(x,y)=>GM.obj.get(y*GM.W+x);
+const blocked=(x,y)=>solid(x,y)||!!objAt(x,y);
+function moveCircle(e,dx,dy,r){
+  const tryAxis=(nx,ny)=>{const x0=Math.floor(nx-r),x1=Math.floor(nx+r),y0=Math.floor(ny-r),y1=Math.floor(ny+r);
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(blocked(x,y)){const cx=Math.max(x,Math.min(nx,x+1)),cy=Math.max(y,Math.min(ny,y+1));if((nx-cx)**2+(ny-cy)**2<r*r)return{x,y}}return null};
+  let hit=null,h=tryAxis(e.x+dx,e.y);if(!h)e.x+=dx;else hit=h;h=tryAxis(e.x,e.y+dy);if(!h)e.y+=dy;else hit=hit||h;return hit;
+}
+// Distance from every floor tile to the player; placed objects don't count as walls here, so zombies go through them.
+function buildFlow(){const G=GM,d=new Int16Array(G.W*G.H).fill(-1),q=[],s=Math.floor(G.p.y)*G.W+Math.floor(G.p.x);d[s]=0;q.push(s);
+  for(let h=0;h<q.length;h++){const i=q[h],x=i%G.W,y=(i/G.W)|0;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(solid(nx,ny))continue;const j=ny*G.W+nx;if(d[j]>=0)continue;d[j]=d[i]+1;q.push(j)}}
+  G.flow=d}
+function los(ax,ay,bx,by){const d=Math.hypot(bx-ax,by-ay),n=Math.ceil(d/.2);for(let i=1;i<n;i++){const t=i/n,x=Math.floor(ax+(bx-ax)*t),y=Math.floor(ay+(by-ay)*t);if(solid(x,y)||(objAt(x,y)&&objAt(x,y).type==="wall"))return false}return true}
+
+/* ================= waves ================= */
+function nextWave(){const G=GM;G.wave++;const w=G.wave,z=6+Math.round(w*3.2),dv=w>=4?Math.floor((w-2)/2):0,big=w>=6?Math.floor((w-4)/3):0;
+  const list=[];for(let i=0;i<z;i++)list.push("z");for(let i=0;i<dv;i++)list.splice(Math.floor(Math.random()*list.length),0,"d");for(let i=0;i<big;i++)list.splice(Math.floor(Math.random()*list.length),0,"b");
+  G.toSpawn=list;G.spawnT=.5;$("hWave").textContent=w;if(w>1)banner("Wave "+w,dv&&w===4?"Devils are coming":"");}
+const TYPES={z:{hp:30,spd:1.5,r:.34,col:"#7FA86A",pts:100,dmg:10},d:{hp:55,spd:1.9,r:.34,col:"#C8402F",pts:300,dmg:8,ranged:true},b:{hp:220,spd:1.1,r:.46,col:"#58704C",pts:600,dmg:20}};
+function spawnOne(type){const G=GM,doors=G.doors.slice().sort((a,b)=>Math.hypot(b[0]-G.p.x,b[1]-G.p.y)-Math.hypot(a[0]-G.p.x,a[1]-G.p.y)),dr=doors[Math.floor(Math.random()*Math.min(4,doors.length))],T=TYPES[type],w=G.wave;
+  G.en.push({type,x:dr[0]+.5,y:dr[1]+.5,hp:T.hp*(1+.09*(w-1)),mhp:T.hp*(1+.09*(w-1)),spd:T.spd*Math.min(1.5,1+.025*(w-1)),r:T.r,atk:0,shoot:1.5+Math.random()*2,hurt:0,face:0,walk:Math.random()*6})}
+
+/* ================= combat ================= */
+function addScore(type){const G=GM;G.chain=G.chainT>0?G.chain+1:1;G.chainT=2.6;const mult=Math.min(10,1+Math.floor((G.chain-1)/3));G.score+=TYPES[type].pts*mult;G.kills++;
+  while(G.unl<WEAPONS.length&&G.score>=WEAPONS[G.unl].at){const W=WEAPONS[G.unl];G.ammo[G.unl]=W.ammo;G.unl++;banner("New weapon",W.n);renderWeps()}
+  showCombo(mult)}
+function hurtEnemy(e,d){if(e.hp<=0)return;e.hp-=d;e.hurt=.12;if(e.hp<=0){addScore(e.type);for(let i=0;i<6;i++)GM.fx.push({k:"bit",x:e.x,y:e.y,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6,t:0,max:.5,col:TYPES[e.type].col})}}
+function hurtPlayer(d){const p=GM.p;if(GM.over)return;p.hp-=d;p.hurt=.25;p.calm=0;try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}if(p.hp<=0){p.hp=0;gameOver()}}
+function explode(x,y,R,dmg){const G=GM;G.fx.push({k:"boom",x,y,R,t:0,max:.45});try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
+  for(const e of G.en){const d=Math.hypot(e.x-x,e.y-y);if(d<R+e.r)hurtEnemy(e,dmg*(1-.5*d/(R+e.r)))}
+  const pd=Math.hypot(G.p.x-x,G.p.y-y);if(pd<R)hurtPlayer(dmg*.2*(1-pd/R));
+  for(const [i,o] of [...G.obj]){const ox=i%G.W+.5,oy=((i/G.W)|0)+.5,d=Math.hypot(ox-x,oy-y);if(d>R+.4)continue;
+    if(o.type==="barrel"&&!o.lit){o.lit=.12}else if(o.type==="wall"){o.hp-=dmg*.5;if(o.hp<=0)G.obj.delete(i)}}}
+// A ray from the player: stops at the first wall, barrel (which then blows up) or enemy.
+function fireRay(ang,W){const G=GM,p=G.p,dx=Math.cos(ang),dy=Math.sin(ang);let x=p.x,y=p.y,end=W.range;
+  for(let s=0;s<W.range;s+=.1){x=p.x+dx*s;y=p.y+dy*s;const tx=Math.floor(x),ty=Math.floor(y);
+    if(solid(tx,ty)){end=s;break}const o=objAt(tx,ty);if(o){if(o.type==="barrel"&&!o.lit)o.lit=.05;if(o.type==="wall"&&s>.8){end=s;break}if(o.type==="barrel"){end=s;break}}
+    let hitE=null;for(const e of G.en){if(e.hp>0&&(e.x-x)**2+(e.y-y)**2<e.r*e.r){hitE=e;break}}
+    if(hitE){hurtEnemy(hitE,W.dmg);end=s;break}}
+  G.shots.push({x1:p.x+dx*.45,y1:p.y+dy*.45,x2:p.x+dx*end,y2:p.y+dy*end,t:0})}
+function pickTarget(range){const G=GM,p=G.p;let best=null,bd=range;for(const e of G.en){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd&&los(p.x,p.y,e.x,e.y)){bd=d;best=e}}return best}
+function placeObj(){const G=GM,W=WEAPONS[G.wep];if(!W.place||G.ammo[G.wep]<=0)return;const p=G.p,tx=Math.floor(p.x+Math.cos(p.face)*1.05),ty=Math.floor(p.y+Math.sin(p.face)*1.05);
+  if(blocked(tx,ty)||G.en.some(e=>Math.floor(e.x)===tx&&Math.floor(e.y)===ty)||(Math.floor(p.x)===tx&&Math.floor(p.y)===ty)){banner("","No room there");return}
+  G.obj.set(ty*G.W+tx,W.place==="barrel"?{type:"barrel"}:{type:"wall",hp:260,mhp:260});G.ammo[G.wep]--;renderWeps()}
+
+/* ================= update ================= */
+function update(dt){
+  const G=GM,p=G.p;if(G.over)return;G.t+=dt;
+  // flow field every few frames
+  G.flowT-=dt;if(G.flowT<=0||!G.flow){buildFlow();G.flowT=.25}
+  // player
+  let mx=0,my=0;if(joy&&joy.on){mx=joy.dx;my=joy.dy}if(keys.l)mx-=1;if(keys.r)mx+=1;if(keys.u)my-=1;if(keys.d)my+=1;
+  const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml}
+  if(ml>.05){moveCircle(p,mx*4.2*dt,my*4.2*dt,.33);p.walk+=dt*10}
+  const W=WEAPONS[G.wep];p.cd-=dt;p.hurt=Math.max(0,p.hurt-dt);p.calm=(p.calm||0)+dt;if(p.calm>3&&p.hp<100)p.hp=Math.min(100,p.hp+2*dt);
+  const tgt=pickTarget(W.place?8:W.range||7);
+  if(tgt)p.face=Math.atan2(tgt.y-p.y,tgt.x-p.x);else if(ml>.05)p.face=Math.atan2(my,mx);
+  if(!W.place&&tgt&&p.cd<=0&&G.ammo[G.wep]>0){p.cd=1/W.rate;
+    if(W.throw){const d=Math.hypot(tgt.x-p.x,tgt.y-p.y);G.proj.push({k:"gren",x:p.x,y:p.y,sx:p.x,sy:p.y,tx:tgt.x,ty:tgt.y,t:0,dur:Math.max(.35,d/9)})}
+    else if(W.rocket)G.proj.push({k:"rocket",x:p.x,y:p.y,vx:Math.cos(p.face)*11,vy:Math.sin(p.face)*11,t:0});
+    else for(let i=0;i<(W.pellets||1);i++)fireRay(p.face+(Math.random()-.5)*2*W.spread,W);
+    if(G.ammo[G.wep]!==Infinity){G.ammo[G.wep]--;if(G.ammo[G.wep]<=0){G.wep=0;banner("","Out of ammo: back to the pistol")}renderWeps()}}
+  // enemies
+  for(const e of G.en){if(e.hp<=0)continue;const T=TYPES[e.type];e.hurt=Math.max(0,e.hurt-dt);e.walk+=dt*8;
+    const dx=p.x-e.x,dy=p.y-e.y,dist=Math.hypot(dx,dy);let vx=0,vy=0;
+    const see=dist<9&&los(e.x,e.y,p.x,p.y);
+    if(T.ranged&&see&&dist<6){e.shoot-=dt;if(e.shoot<=0){e.shoot=2.2+Math.random();const a=Math.atan2(dy,dx);G.proj.push({k:"fire",x:e.x,y:e.y,vx:Math.cos(a)*5.5,vy:Math.sin(a)*5.5,t:0})}
+      if(dist<3.5){vx=-dx/dist;vy=-dy/dist}}
+    else if(see&&dist<2.2){vx=dx/dist;vy=dy/dist}
+    else{const tx=Math.floor(e.x),ty=Math.floor(e.y),here=G.flow[ty*G.W+tx];let best=null,bv=here<0?1e9:here;
+      for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){const v=G.flow[(ty+oy)*G.W+tx+ox];if(v>=0&&v<bv){bv=v;best=[tx+ox+.5,ty+oy+.5]}}
+      if(best){const a=best[0]-e.x,b=best[1]-e.y,l=Math.hypot(a,b)||1;vx=a/l;vy=b/l}else if(dist>0){vx=dx/dist;vy=dy/dist}}
+    // keep apart from each other
+    for(const o of G.en){if(o===e||o.hp<=0)continue;const ax=e.x-o.x,ay=e.y-o.y,d2=ax*ax+ay*ay,rr=(e.r+o.r)*.95;if(d2<rr*rr&&d2>1e-6){const d=Math.sqrt(d2);vx+=ax/d*.8;vy+=ay/d*.8}}
+    const vl=Math.hypot(vx,vy);if(vl>0){e.face=Math.atan2(vy,vx);const hit=moveCircle(e,vx/vl*e.spd*dt,vy/vl*e.spd*dt,e.r*.9);
+      if(hit){const o=objAt(hit.x,hit.y);if(o){e.atk-=dt;if(e.atk<=0){e.atk=.6;if(o.type==="wall"){o.hp-=T.dmg;if(o.hp<=0)G.obj.delete(hit.y*G.W+hit.x)}else if(!o.lit)o.lit=.4}}}}
+    if(dist<e.r+.36){e.atk-=dt;if(e.atk<=0){e.atk=.9;hurtPlayer(T.dmg*(1+.03*(G.wave-1)))}}}
+  G.en=G.en.filter(e=>e.hp>0);
+  // projectiles
+  for(const q of G.proj){q.t+=dt;
+    if(q.k==="gren"){const k=Math.min(1,q.t/q.dur);q.x=q.sx+(q.tx-q.sx)*k;q.y=q.sy+(q.ty-q.sy)*k;q.z=Math.sin(k*Math.PI)*1.2;if(k>=1){explode(q.x,q.y,2.1,110);q.dead=1}}
+    else{q.x+=q.vx*dt;q.y+=q.vy*dt;const tx=Math.floor(q.x),ty=Math.floor(q.y),o=objAt(tx,ty);
+      if(q.k==="rocket"){if(solid(tx,ty)||o||G.en.some(e=>(e.x-q.x)**2+(e.y-q.y)**2<e.r*e.r)||q.t>1.2){explode(q.x-q.vx*.02,q.y-q.vy*.02,1.9,150);q.dead=1}}
+      else{if(solid(tx,ty)||q.t>3){q.dead=1}else if(o){if(o.type==="wall"){o.hp-=12;if(o.hp<=0)G.obj.delete(ty*G.W+tx)}else if(!o.lit)o.lit=.05;q.dead=1}
+        else if((p.x-q.x)**2+(p.y-q.y)**2<.16){hurtPlayer(9*(1+.03*(G.wave-1)));q.dead=1}}}}
+  G.proj=G.proj.filter(q=>!q.dead);
+  // barrels with a lit fuse
+  for(const [i,o] of [...G.obj]){if(o.lit){o.lit-=dt;if(o.lit<=0){G.obj.delete(i);explode(i%G.W+.5,((i/G.W)|0)+.5,2.4,130)}}}
+  // crates
+  G.itemT-=dt;if(G.itemT<=0&&G.items.length<3){G.itemT=11+Math.random()*6;for(let k=0;k<40;k++){const x=1+Math.floor(Math.random()*(G.W-2)),y=1+Math.floor(Math.random()*(G.H-2));
+      if(blocked(x,y)||G.flow[y*G.W+x]<0||Math.hypot(x+.5-p.x,y+.5-p.y)<3)continue;G.items.push({x:x+.5,y:y+.5,k:p.hp<60&&Math.random()<.6?"hp":"ammo",t:0});break}}
+  for(const it of G.items){it.t+=dt;if(Math.hypot(it.x-p.x,it.y-p.y)<.6){it.got=1;
+    if(it.k==="hp"){p.hp=Math.min(100,p.hp+40);banner("","+40 health")}else{for(let i=1;i<G.unl;i++)G.ammo[i]+=WEAPONS[i].refill;banner("","Ammo for every weapon");renderWeps()}}}
+  G.items=G.items.filter(it=>!it.got);
+  // spawning and waves
+  if(G.toSpawn.length){G.spawnT-=dt;if(G.spawnT<=0){spawnOne(G.toSpawn.shift());G.spawnT=Math.max(.25,1.1-.04*G.wave)*(.6+Math.random()*.8)}}
+  else if(!G.en.length){G.breakT-=dt;if(G.breakT<=0){G.breakT=4;nextWave()}}
+  G.chainT=Math.max(0,G.chainT-dt);if(G.chainT<=0&&G.chain){G.chain=0;showCombo(1)}
+  for(const s of G.shots)s.t+=dt;G.shots=G.shots.filter(s=>s.t<.07);
+  for(const f of G.fx){f.t+=dt;if(f.k==="bit"){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.9;f.vy*=.9}}G.fx=G.fx.filter(f=>f.t<f.max);
+  $("hpBar").style.width=p.hp+"%";$("hpBar").style.background=p.hp>50?"var(--hp)":p.hp>25?"#E5C443":"var(--red)";$("hScore").textContent=G.score.toLocaleString("en-GB");
+}
+
+/* ================= HUD bits ================= */
+let bannerT=null;function banner(t,s){const b=$("banner");b.innerHTML=(t?t:"")+(s?`<small>${s}</small>`:"");b.style.opacity=1;clearTimeout(bannerT);bannerT=setTimeout(()=>b.style.opacity=0,1700)}
+function showCombo(m){const c=$("combo");if(m>1){c.textContent="Combo ×"+m;c.style.opacity=1}else c.style.opacity=0}
+function renderWeps(){const G=GM,box=$("weps");box.innerHTML="";
+  for(let i=0;i<G.unl;i++){const W=WEAPONS[i],b=document.createElement("button");b.className=i===G.wep?"on":"";
+    b.innerHTML=`<span class="ic">${W.ic}</span><span>${W.ammo===Infinity?W.n:G.ammo[i]}</span>`;b.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();if(G.ammo[i]>0||i===0){G.wep=i;renderWeps()}});box.append(b)}
+  const W=WEAPONS[G.wep];if(W.place){const b=document.createElement("button");b.className="place";b.style.gridColumn="span 2";b.innerHTML=`<span class="ic">▼</span><span>Place</span>`;
+    b.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();placeObj()});box.prepend(b)}}
+
+/* ================= input: a floating thumb stick on the left ================= */
+let joy=null;const keys={};
+$("game").addEventListener("pointerdown",e=>{if(e.target!==$("cv")||joy&&joy.on)return;if(e.clientX>window.innerWidth*.62&&e.clientY>window.innerHeight*.55)return;
+  joy={on:true,id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY,dx:0,dy:0};try{$("cv").setPointerCapture(e.pointerId)}catch(_){}});
+$("game").addEventListener("pointermove",e=>{if(!joy||!joy.on||e.pointerId!==joy.id)return;let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),R=55;
+  if(l>R){joy.ox+=dx*(1-R/l);joy.oy+=dy*(1-R/l);dx=e.clientX-joy.ox;dy=e.clientY-joy.oy}joy.x=e.clientX;joy.y=e.clientY;joy.dx=dx/R;joy.dy=dy/R});
+const joyEnd=e=>{if(joy&&e.pointerId===joy.id)joy.on=false};$("game").addEventListener("pointerup",joyEnd);$("game").addEventListener("pointercancel",joyEnd);
+$("game").addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
+const KM={ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r",ArrowUp:"u",w:"u",ArrowDown:"d",s:"d"};
+document.addEventListener("keydown",e=>{if(view!=="game")return;if(KM[e.key]){keys[KM[e.key]]=true;e.preventDefault()}else if(e.key===" "){placeObj();e.preventDefault()}else if(/^[1-7]$/.test(e.key)){const i=+e.key-1;if(i<GM.unl){GM.wep=i;renderWeps()}}});
+document.addEventListener("keyup",e=>{if(KM[e.key])keys[KM[e.key]]=false});
+
+/* ================= drawing: top-down with raised walls ================= */
+const cv=$("cv"),ctx=cv.getContext("2d");let VW=0,VH=0,dpr=1,T=36;
+function resize(){const r=$("game").getBoundingClientRect();dpr=Math.min(2.5,window.devicePixelRatio||1);VW=r.width;VH=r.height;cv.width=Math.round(VW*dpr);cv.height=Math.round(VH*dpr);T=Math.max(28,Math.min(48,Math.min(VW/12,VH/17)))}
+window.addEventListener("resize",()=>{if(view==="game")resize()});
+const WALLH=.42;
+function boxGuy(c,x,y,face,body,head,s,walk,hurt,extra){
+  // a box person: square body, square head, two stubby legs; drawn facing its aim
+  const bob=Math.sin(walk)*.04*s;c.save();c.translate(x,y);
+  c.fillStyle="rgba(0,0,0,.28)";c.beginPath();c.ellipse(0,s*.32,s*.42,s*.16,0,0,7);c.fill();
+  c.translate(0,-s*.25+bob);
+  const lx=Math.cos(face),ly=Math.sin(face);
+  c.fillStyle="#2B2D28";c.fillRect(-s*.22+Math.sin(walk)*s*.06,s*.2,s*.16,s*.2);c.fillRect(s*.06-Math.sin(walk)*s*.06,s*.2,s*.16,s*.2);
+  c.fillStyle=hurt?"#fff":body;c.fillRect(-s*.32,-s*.15,s*.64,s*.45);c.fillStyle="rgba(0,0,0,.18)";c.fillRect(-s*.32,s*.18,s*.64,s*.12);
+  if(extra)extra(c,s,lx,ly);
+  c.fillStyle=hurt?"#fff":head;c.fillRect(-s*.3,-s*.62,s*.6,s*.5);c.fillStyle="rgba(0,0,0,.15)";c.fillRect(-s*.3,-s*.2,s*.6,s*.08);
+  // eyes look the way it faces
+  c.fillStyle="#1A1A1A";const ex=lx*s*.08,ey=Math.max(-.05,ly)*s*.06;c.fillRect(-s*.16+ex,-s*.46+ey,s*.08,s*.1);c.fillRect(s*.08+ex,-s*.46+ey,s*.08,s*.1);
+  c.restore()}
+function draw(){
+  const G=GM,c=ctx,p=G.p;c.setTransform(dpr,0,0,dpr,0,0);c.fillStyle="#11130F";c.fillRect(0,0,VW,VH);
+  let cx=p.x*T-VW/2,cy=p.y*T-VH*.45;cx=Math.max(-T,Math.min(G.W*T-VW+T,cx));cy=Math.max(-T*1.5,Math.min(G.H*T-VH+T*2.5,cy));
+  if(G.W*T<VW)cx=(G.W*T-VW)/2;if(G.H*T<VH-T*3)cy=(G.H*T-VH)/2-T*.3;
+  c.save();c.translate(-cx,-cy);
+  // floor
+  for(let y=0;y<G.H;y++)for(let x=0;x<G.W;x++){if(solid(x,y))continue;c.fillStyle=(x+y)%2?"#3A4034":"#363C31";c.fillRect(x*T,y*T,T,T);
+    if(G.rows[y][x]==="S"){c.fillStyle="#5A231C";c.fillRect(x*T+2,y*T+2,T-4,T-4)}}
+  // items on the floor
+  for(const it of G.items){const bob=Math.sin(it.t*4)*2;c.fillStyle=it.k==="hp"?"#E9EDE4":"#C49A4A";c.fillRect(it.x*T-T*.28,it.y*T-T*.28+bob,T*.56,T*.5);
+    c.fillStyle=it.k==="hp"?"#D33B2C":"#6B4F1F";if(it.k==="hp"){c.fillRect(it.x*T-T*.05,it.y*T-T*.2+bob,T*.1,T*.34);c.fillRect(it.x*T-T*.17,it.y*T-T*.08+bob,T*.34,T*.1)}else c.fillRect(it.x*T-T*.28,it.y*T-T*.06+bob,T*.56,T*.08)}
+  // walls, objects and people, row by row so nearer things cover further ones
+  const people=[...G.en.map(e=>({e,y:e.y})),{e:p,y:p.y,me:true}].sort((a,b)=>a.y-b.y);let pi=0;
+  for(let y=0;y<G.H;y++){
+    for(let x=0;x<G.W;x++){if(solid(x,y)){const top=y*T-WALLH*T;c.fillStyle="#5A5F52";c.fillRect(x*T,top,T,T);if(!solid(x,y+1)){c.fillStyle="#40443A";c.fillRect(x*T,top+T,T,WALLH*T)}c.fillStyle="rgba(255,255,255,.05)";c.fillRect(x*T,top,T,3)}
+      const o=objAt(x,y);if(o){const X=x*T,Y=y*T;if(o.type==="barrel"){const fl=o.lit&&Math.sin(G.t*40)>0;c.fillStyle=fl?"#FFE08A":"#B8452E";c.fillRect(X+T*.18,Y-T*.25,T*.64,T*.95);c.fillStyle="#7E2A1A";c.fillRect(X+T*.18,Y+T*.1,T*.64,T*.08);c.fillStyle="#D9653F";c.fillRect(X+T*.18,Y-T*.25,T*.64,T*.16)}
+        else{const k=o.hp/o.mhp;c.fillStyle="#8A6A3E";c.fillRect(X+1,Y-T*.35,T-2,T*1.3);c.fillStyle="#6E5230";c.fillRect(X+1,Y+T*.6,T-2,T*.35);c.strokeStyle="#5A4227";c.lineWidth=2;c.beginPath();c.moveTo(X+3,Y-T*.3);c.lineTo(X+T-3,Y+T*.55);c.stroke();if(k<1){c.fillStyle="rgba(0,0,0,.5)";c.fillRect(X+3,Y-T*.5,T-6,4);c.fillStyle="#E5C443";c.fillRect(X+3,Y-T*.5,(T-6)*k,4)}}}}
+    while(pi<people.length&&people[pi].y<y+1){const q=people[pi++],e=q.e;
+      if(q.me)boxGuy(c,e.x*T,e.y*T,e.face,"#5C7A9E","#F1D3B3",T,e.walk,e.hurt>0&&Math.sin(G.t*50)>0,(c,s,lx,ly)=>{c.fillStyle="#222";c.save();c.rotate(Math.atan2(ly,lx));c.fillRect(s*.1,-s*.04,s*.42,s*.09);c.restore()});
+      else{const Ty=TYPES[e.type],s=T*(e.r/.34);boxGuy(c,e.x*T,e.y*T,e.face,Ty.col,e.type==="d"?"#E0675A":e.type==="b"?"#7D9670":"#A4C48F",s,e.walk,e.hurt>0,
+        e.type==="d"?(c,s)=>{c.fillStyle="#F2E4C8";c.beginPath();c.moveTo(-s*.28,-s*.6);c.lineTo(-s*.2,-s*.8);c.lineTo(-s*.12,-s*.6);c.moveTo(s*.12,-s*.6);c.lineTo(s*.2,-s*.8);c.lineTo(s*.28,-s*.6);c.fill()}
+        :(c,s,lx,ly)=>{c.fillStyle=Ty.col;c.save();c.rotate(Math.atan2(ly,lx));c.fillRect(s*.1,-s*.2,s*.38,s*.1);c.fillRect(s*.1,s*.1,s*.38,s*.1);c.restore()});
+        if(e.hp<e.mhp){c.fillStyle="rgba(0,0,0,.6)";c.fillRect(e.x*T-s*.32,e.y*T-s*1.05,s*.64,4);c.fillStyle="#E0563F";c.fillRect(e.x*T-s*.32,e.y*T-s*1.05,s*.64*e.hp/e.mhp,4)}}}}
+  // shots, projectiles, effects
+  c.strokeStyle="rgba(255,236,150,.9)";c.lineWidth=2;for(const s of G.shots){c.beginPath();c.moveTo(s.x1*T,s.y1*T-T*.22);c.lineTo(s.x2*T,s.y2*T-T*.22);c.stroke()}
+  for(const q of G.proj){if(q.k==="fire"){c.fillStyle="#FF8A3D";c.beginPath();c.arc(q.x*T,q.y*T-T*.25,T*.14,0,7);c.fill();c.fillStyle="#FFE08A";c.beginPath();c.arc(q.x*T,q.y*T-T*.25,T*.07,0,7);c.fill()}
+    else if(q.k==="gren"){c.fillStyle="#2F3A2A";c.beginPath();c.arc(q.x*T,(q.y-(q.z||0))*T,T*.12,0,7);c.fill()}
+    else{c.save();c.translate(q.x*T,q.y*T-T*.22);c.rotate(Math.atan2(q.vy,q.vx));c.fillStyle="#C9CED6";c.fillRect(-T*.2,-T*.06,T*.36,T*.12);c.fillStyle="#FF8A3D";c.fillRect(-T*.34,-T*.04,T*.14,T*.08);c.restore()}}
+  for(const f of G.fx){const k=f.t/f.max;if(f.k==="boom"){c.globalAlpha=1-k;c.fillStyle="#FFB347";c.beginPath();c.arc(f.x*T,f.y*T,f.R*T*(.4+.6*k),0,7);c.fill();c.fillStyle="#FFF1B8";c.beginPath();c.arc(f.x*T,f.y*T,f.R*T*.5*(1-k),0,7);c.fill();c.globalAlpha=1}
+    else{c.globalAlpha=1-k;c.fillStyle=f.col;c.fillRect(f.x*T-3,f.y*T-T*.3-3,6,6);c.globalAlpha=1}}
+  // where a barrel or barricade would go
+  const W=WEAPONS[G.wep];if(W.place){const tx=Math.floor(p.x+Math.cos(p.face)*1.05),ty=Math.floor(p.y+Math.sin(p.face)*1.05);c.strokeStyle=blocked(tx,ty)?"rgba(224,86,63,.8)":"rgba(229,196,67,.8)";c.setLineDash([4,4]);c.lineWidth=2;c.strokeRect(tx*T+3,ty*T+3,T-6,T-6);c.setLineDash([])}
+  c.restore();
+  if(joy&&joy.on){c.strokeStyle="rgba(255,255,255,.35)";c.lineWidth=2;c.beginPath();c.arc(joy.ox,joy.oy,55,0,7);c.stroke();c.fillStyle="rgba(255,255,255,.35)";c.beginPath();c.arc(joy.ox+joy.dx*55,joy.oy+joy.dy*55,22,0,7);c.fill()}
+}
+
+/* ================= loop, pause, end ================= */
+let paused=false,lastT=0;
+function frame(ts){requestAnimationFrame(frame);const dt=Math.min(.05,lastT?(ts-lastT)/1000:0);lastT=ts;if(view!=="game"||!GM)return;
+  if(!paused&&!GM.over){let t=dt;while(t>0){const h=Math.min(1/60,t);update(h);t-=h}}draw()}
+requestAnimationFrame(frame);
+function pause(){if(!GM||GM.over)return;paused=true;$("ovc").innerHTML=`<h3>Paused</h3><p>${MAPS[GM.mi].n} · wave ${GM.wave} · ${GM.score.toLocaleString("en-GB")} points</p><div class="acts"><button class="btn pri" id="pR">Resume</button><button class="btn" id="pQ">Give up</button></div>`;$("ov").hidden=false;
+  $("pR").onclick=()=>{paused=false;$("ov").hidden=true};$("pQ").onclick=()=>{$("ov").hidden=true;gameOver()}}
+$("pauseBtn").onclick=pause;
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&view==="game")pause()});
+function gameOver(){const G=GM;if(G.over)return;G.over=true;paused=false;joy=null;
+  const best=getBest(),b=best[G.mi],rec=!b||G.score>b.score;best[G.mi]={wave:Math.max(G.wave,b?b.wave:0),score:Math.max(G.score,b?b.score:0),kills:Math.max(G.kills,b?b.kills:0)};saveJSON("bi.best",best);
+  const opened=G.mi<MAPS.length-1&&G.wave>8&&!(b&&b.wave>8);
+  setTimeout(()=>{$("ovc").innerHTML=`<h3>Boxed in</h3><p>${MAPS[G.mi].n}: you reached wave ${G.wave}.${rec?" New best score!":""}${opened?" "+MAPS[G.mi+1].n+" is now open.":""}</p>
+    <div class="stats"><div><b>${G.wave}</b><span>Wave</span></div><div><b>${G.kills}</b><span>Kills</span></div><div><b>${G.score.toLocaleString("en-GB")}</b><span>Points</span></div></div>
+    <div class="acts"><button class="btn pri" id="eA">Play again</button><button class="btn" id="eM">Back to arenas</button></div>`;$("ov").hidden=false;
+    $("eA").onclick=()=>{$("ov").hidden=true;startGame(G.mi)};$("eM").onclick=()=>{$("ov").hidden=true;GM=null;renderMenu();show("menu")}},700);
+}
+window.SG_BACK=()=>{if(view!=="game")return false;if(!$("ov").hidden){if(paused){paused=false;$("ov").hidden=true}else{$("ov").hidden=true;GM=null;renderMenu();show("menu")}return true}pause();return true};
+renderMenu();
+</script>
+<script src="../../shell.js"></script>
+</body>
+</html>

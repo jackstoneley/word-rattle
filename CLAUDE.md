@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus six self-contained HTML games, published two ways:
+A home page plus seven self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -10,6 +10,7 @@ A home page plus six self-contained HTML games, published two ways:
 | Gem Tower Defence | `games/gem-bastion` (Gem Bastion) | `gembastion.` |
 | Topple | `games/topple` | `tp.` |
 | Mudlark | `games/mudlark` | `ml.` |
+| Boxed In | `games/boxed-in` | `bi.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -103,6 +104,13 @@ goals, flight physics and earnings sit between `/*CORE-START*/` and `/*CORE-END*
 Node script can fly a simple pilot through a whole career to check the balance (about four weeks of game days to reach
 the seaside at 3,000 m). Saved game: `ml.save` (`day`, `cash`, `upg` levels, `goals` reached, `best`, `done` day).
 Upgrade lists may grow at the end; never reorder them, since saves hold level numbers.
+
+### Boxed In (`games/boxed-in`)
+
+A top-down zombie survival game (after Boxhead), single player with auto-aim: the gun fires at the nearest enemy in
+line of sight, the player only moves (a floating thumb stick on the left). Arenas are strings in `MAPS` and are turned
+on their side on tall screens. Weapons unlock by score within a run (`WEAPONS[].at`). Saved data: `bi.best`, the best
+wave, score and kills per arena index; an arena opens when the one before it has a best wave above 8, so append arenas.
 
 ### Adding a new game
 

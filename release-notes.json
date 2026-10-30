@@ -78,6 +78,17 @@
         "Catch floating bone treats, earn more for distance, height and speed, and hit goals for bonuses.",
         "Spend treats on a taller slope, slicker mud, sleds, wings and boosters, all the way to a jet pack."
       ]
+    },
+    {
+      "id": 8,
+      "type": "new-game",
+      "headline": "New game: Boxed In",
+      "details": [
+        "Hold out against waves of zombies and fireball-throwing devils.",
+        "Drag on the left to walk. Your gun aims and fires by itself.",
+        "Score unlocks an uzi, shotgun, barrels, grenades, barricades and rockets.",
+        "Three arenas: survive wave 8 to open the next one."
+      ]
     }
   ]
 }
