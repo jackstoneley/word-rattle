@@ -60,7 +60,7 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
 .bar .ttl b{display:block;font-family:var(--display);font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar .ttl span{font-size:.8rem;color:var(--muted)}
 .ib{width:42px;height:42px;border:1px solid var(--line);background:var(--panel);border-radius:12px;display:grid;place-items:center;font-size:1.1rem;font-weight:700;padding:0;flex:none}
-.pings{text-align:right}
+.pings{text-align:right;min-width:96px}
 .pings .dots{display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;max-width:150px}
 .pings .dots i{width:11px;height:11px;border-radius:50%;border:2px solid var(--accent);display:block}
 .pings .dots i.used{border-color:#22424D}
@@ -69,9 +69,7 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
 .stage{flex:1;min-height:0;position:relative;touch-action:none;background:#000;border-radius:14px}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(8,20,26,.9);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-weight:700;font-size:.9rem;pointer-events:none;transition:opacity .25s;white-space:nowrap}
-.ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
-.ctrl .side{display:flex;flex-direction:column;gap:8px;width:96px}
-.ctrl .side .btn{padding:9px 8px;font-size:.9rem}
+.ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;padding:0 4px}
 .pingBtn{width:96px;height:96px;border-radius:50%;border:2px solid var(--accent);background:radial-gradient(circle,#123843,#071419);color:var(--accent);font-family:var(--display);font-weight:800;font-size:1.1rem;box-shadow:0 0 18px rgba(95,227,255,.25)}
 .pingBtn:active{background:#164552}
 .pingBtn:disabled{opacity:.35;box-shadow:none}
@@ -120,12 +118,12 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
     <div class="bar">
       <button class="ib" id="backBtn" aria-label="Back to levels">←</button>
       <div class="ttl"><b id="pTitle">Level 1</b><span id="pSub">0 bumps</span></div>
+      <button class="ib" id="restartBtn" aria-label="Restart level">↻</button>
       <div class="pings"><div class="dots" id="pDots"></div><span id="pLeft">pings</span></div>
     </div>
     <div class="stage" id="stage"><canvas id="cv"></canvas><div class="toast" id="toast" style="opacity:0"></div></div>
     <div class="hintline" id="hintLine">Tap the board to ping. Swipe to move.</div>
     <div class="ctrl">
-      <div class="side"><button class="btn" id="restartBtn">Restart</button></div>
       <div class="pad" aria-label="Move">
         <button class="u" data-d="3" aria-label="Up">▲</button><button class="l" data-d="2" aria-label="Left">◀</button>
         <button class="r" data-d="0" aria-label="Right">▶</button><button class="d" data-d="1" aria-label="Down">▼</button>
