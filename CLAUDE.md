@@ -9,7 +9,7 @@ A home page plus seven self-contained HTML games, published two ways:
 | Kakuro | `games/cross-sums` (Cross Sums) | `kk.` |
 | Gem Tower Defence | `games/gem-bastion` (Gem Bastion) | `gembastion.` |
 | Topple | `games/topple` | `tp.` |
-| Mudlark | `games/mudlark` | `ml.` |
+| Buddy Breakout | `games/mudlark` (Mudlark) | `ml.` |
 | Boxed In | `games/boxed-in` | `bi.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
@@ -97,12 +97,13 @@ run it to make and check levels. **Append** levels only: progress (`tp.levels`) 
 puzzle (`tp.daily`, keyed by day number from 30 October 2026) is generated on the phone from the date, so changing
 `generate` or `dailyLevel` changes every future daily board: don't, without a plan.
 
-### Mudlark (`games/mudlark`)
+### Buddy Breakout (`games/mudlark`, first called Mudlark)
 
-A launch-and-upgrade game (after Learn to Fly): a white labradoodle slides down a mud slope and flies. Upgrades,
+A launch-and-upgrade game (after Learn to Fly): Buddy, the owners' white labradoodle, slides down a mud slope and flies
+to a group of lady dogs in a dog park at 3,000 m (landing from `MEET` on reaches them; flying past them makes him panic). Upgrades,
 goals, flight physics and earnings sit between `/*CORE-START*/` and `/*CORE-END*/` with no page dependencies, so a
 Node script can fly a simple pilot through a whole career to check the balance (about four weeks of game days to reach
-the seaside at 3,000 m). Saved game: `ml.save` (`day`, `cash`, `upg` levels, `goals` reached, `best`, `done` day).
+the lady dogs at 3,000 m). Saved game: `ml.save` (`day`, `cash`, `upg` levels, `goals` reached, `best`, `done` day).
 Upgrade lists may grow at the end; never reorder them, since saves hold level numbers.
 
 ### Boxed In (`games/boxed-in`)

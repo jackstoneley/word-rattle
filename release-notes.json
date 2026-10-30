@@ -89,6 +89,16 @@
         "Score unlocks an uzi, shotgun, barrels, grenades, barricades and rockets.",
         "Three arenas: survive wave 8 to open the next one."
       ]
+    },
+    {
+      "id": 9,
+      "type": "features",
+      "headline": "Mudlark is now Buddy Breakout",
+      "details": [
+        "The doodle is Buddy now, and he's heading for a group of lady dogs in the dog park, 3 km away.",
+        "Land next to them to finish. Fly straight past and Buddy panics.",
+        "Your days, treats and kit are all kept."
+      ]
     }
   ]
 }

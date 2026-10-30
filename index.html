@@ -94,7 +94,7 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .art.tp .t i{height:9px;background:#8FA3C4;border-radius:2px;box-shadow:0 3px 0 #5E7396}
 .art.tp .t i.g{background:#0E1626;box-shadow:0 3px 0 #0E1626,inset 0 0 0 1.5px #F2A541}
 .art.tp .b{position:absolute;left:50%;bottom:34px;width:18px;height:36px;margin-left:-22px;border-radius:3px;background:linear-gradient(90deg,#D9822F 70%,#C26F25);box-shadow:inset 0 5px 0 #F7B95A;transform:rotate(18deg);transform-origin:bottom right}
-/* Mudlark art: a white doodle sliding down a mud slope under a blue sky */
+/* Buddy Breakout art: Buddy, a white labradoodle, sliding down a mud slope under a blue sky */
 .art.ml{background:linear-gradient(#8FD0F5 62%,#7DBA5A 62%);overflow:hidden}
 .art.ml .s{position:absolute;left:-10px;bottom:24px;width:90px;height:60px;background:#6B4423;clip-path:polygon(0 0,100% 100%,0 100%)}
 .art.ml .d{position:absolute;left:30px;top:28px;width:30px;height:18px;border-radius:50%;background:#fff;box-shadow:-8px -3px 0 -2px #fff,8px -5px 0 0 #fff,12px -8px 0 2px #fff,2px 5px 0 -3px #6B4423;transform:rotate(30deg)}
@@ -171,7 +171,7 @@ textarea{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--li
 
   <a class="game" href="games/mudlark/index.html">
     <div class="art ml" aria-hidden="true"><div class="s"></div><div class="d"></div></div>
-    <div class="info"><span class="kind">Launch and upgrade</span><h2>Mudlark</h2><span class="stat" id="stML">Slide, fly, upgrade, reach the sea.</span><span class="go">Play</span></div>
+    <div class="info"><span class="kind">Launch and upgrade</span><h2>Buddy Breakout</h2><span class="stat" id="stML">Get Buddy to the lady dogs.</span><span class="go">Play</span></div>
   </a>
 
   <a class="game" href="games/boxed-in/index.html">
@@ -221,7 +221,7 @@ function renderStats(){
   const bi=load("bi.best",null);
   if(bi&&Object.keys(bi).length){const top=Object.values(bi).reduce((a,b)=>b.wave>a.wave?b:a);setHTML("stBI",["Best: wave ",{b:String(top.wave)}," · ",{b:top.score.toLocaleString("en-GB")}," points"])}
   const ml=load("ml.save",null);
-  if(ml&&ml.best&&ml.best.dist)setHTML("stML",ml.done?["Reached the seaside on day ",{b:String(ml.done)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}]:["Day ",{b:String(ml.day)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}," of 3,000 m"]);
+  if(ml&&ml.best&&ml.best.dist)setHTML("stML",ml.done?["Reached the lady dogs on day ",{b:String(ml.done)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}]:["Day ",{b:String(ml.day)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}," of 3,000 m"]);
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
   {const cleared=Object.values(gb.cleared||{}).filter(Boolean).length;
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}

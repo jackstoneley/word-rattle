@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#5B3A1E">
-<title>Mudlark</title>
+<title>Buddy Breakout</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
 <style>
@@ -97,10 +97,10 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
 <section id="menu">
   <div class="wrap">
     <a class="sg-home" href="../../index.html">← All games</a>
-    <div class="hero"><canvas id="heroCv" width="640" height="360"></canvas><div class="t"><h1>Mudlark</h1><p>One muddy doodle. One big slope. The seaside is 3 km away.</p></div></div>
+    <div class="hero"><canvas id="heroCv" width="640" height="360"></canvas><div class="t"><h1>Buddy Breakout</h1><p>Buddy has broken out. The lady dogs are 3 km away, past one very muddy slope.</p></div></div>
     <div class="card">
       <div class="row spread"><span class="label" id="dayLbl">Day 1</span><span class="treats"><span class="bone"></span><b id="cash">0</b></span></div>
-      <div class="row spread"><span class="big" id="bestTxt">No flights yet</span><span class="muted" id="seaTxt">3,000 m to the seaside</span></div>
+      <div class="row spread"><span class="big" id="bestTxt">No flights yet</span><span class="muted" id="seaTxt">3,000 m to the lady dogs</span></div>
       <div class="prog"><i id="progBar" style="width:0"></i></div>
       <button class="btn pri" id="goBtn">To the slope</button>
     </div>
@@ -109,11 +109,11 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
     <details class="card howto">
       <summary>How to play</summary>
       <ul>
-        <li>Press <b>Slide</b> and the doodle slides down the mud and flies off the lip.</li>
+        <li>Press <b>Slide</b> and Buddy slides down the mud and flies off the lip.</li>
         <li>In the air, hold <b>▲</b> to lift the nose and <b>▼</b> to drop it. With wings, a nose just a little above the way you're going glides furthest. Too high and you stall.</li>
         <li>With a booster, hold <b>Boost</b> to fly where the nose points until the fuel runs out.</li>
         <li>Catch the floating bone treats. Every flight pays treats for distance, height, speed and treats caught, plus bonuses for goals.</li>
-        <li>Spend treats in the kit shop between flights. Reach the seaside, 3 km from the slope, to finish. You can keep flying after that for a longer best.</li>
+        <li>Spend treats in the kit shop between flights. The lady dogs are waiting in the dog park, 3 km from the slope: land next to them to finish. Overshoot and Buddy panics. You can keep flying after that for a longer best.</li>
       </ul>
       <button class="btn" id="resetBtn" style="margin-top:10px">Start over from day 1</button>
     </details>
@@ -135,7 +135,7 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
 <script>
 "use strict";
 /*CORE-START*/
-const G=9.8, LIP=6, GOAL=3000, DEG=Math.PI/180;
+const G=9.8, LIP=6, GOAL=3000, MEET=GOAL-25, DEG=Math.PI/180; // the lady dogs sit just past GOAL; landing beyond MEET reaches them
 // Upgrades: each level's value and price in treats (level 0 is free).
 const UPG={
   slope:{n:"Taller slope",d:"A higher start means more speed at the lip.",v:[14,22,32,45,62,85],c:[0,35,110,450,1800,5000],lv:["Garden bank","Muddy hill","Big hill","Quarry edge","Tip of the moor","Mountain run"]},
@@ -181,9 +181,9 @@ function fly(st,dt,input,boost,treats){
     const rate=1.3+.35*u.glider;st.th+=input*rate*dt;st.th+=(gam-st.th)*(input?0:1.4)*dt*(gl<.3?2:1);
     st.maxH=Math.max(st.maxH,st.y);st.maxV=Math.max(st.maxV,v);
     if(treats)for(const tr of treats){if(st.got[tr.id])continue;if(Math.abs(tr.x-st.x)<3.5&&Math.abs(tr.y-st.y)<3.5){st.got[tr.id]=1;st.treats+=tr.v}}
-    if(st.y<=0){st.y=0;st.phase="ground";st.vx=Math.max(0,st.vx*(st.vy<-25?.45:.75));st.vy=0;if(st.x>=GOAL)st.phase="done"}
+    if(st.y<=0){st.y=0;st.phase="ground";st.vx=Math.max(0,st.vx*(st.vy<-25?.45:.75));st.vy=0}
     return}
-  if(st.phase==="ground"){st.th*=.9;st.vx=Math.max(0,st.vx-7*dt);st.x+=st.vx*dt;if(st.vx<=.3||st.x>=GOAL)st.phase="done"}
+  if(st.phase==="ground"){st.th*=.9;st.vx=Math.max(0,st.vx-7*dt);st.x+=st.vx*dt;if(st.vx<=.3)st.phase="done"}
 }
 // Treats float along the course; their spots change each day.
 function treatsFor(day,rng){const out=[];let x=40;for(let i=0;x<GOAL+800;i++){x+=30+rng()*90;const h=4+rng()*Math.min(600,12+x*.25);out.push({id:i,x,y:h,v:Math.round(3+h/12)})}return out}
@@ -206,9 +206,9 @@ function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1
 let view="menu";
 function show(v){view=v;$("menu").hidden=v!=="menu";$("fly").hidden=v!=="fly";if(v==="fly")resize()}
 function renderMenu(){
-  $("dayLbl").textContent=SAVE.done?`Day ${SAVE.day} · reached the seaside on day ${SAVE.done}`:`Day ${SAVE.day}`;$("cash").textContent=fmt(SAVE.cash);
+  $("dayLbl").textContent=SAVE.done?`Day ${SAVE.day} · reached the lady dogs on day ${SAVE.done}`:`Day ${SAVE.day}`;$("cash").textContent=fmt(SAVE.cash);
   $("bestTxt").textContent=SAVE.best.dist?`Best ${fmt(SAVE.best.dist)} m`:"No flights yet";
-  $("seaTxt").textContent=SAVE.best.dist>=GOAL?"Seaside reached ✓":`${fmt(GOAL-SAVE.best.dist)} m to the seaside`;
+  $("seaTxt").textContent=SAVE.done?"Lady dogs reached ✓":`${fmt(Math.max(0,GOAL-SAVE.best.dist))} m to the lady dogs`;
   $("progBar").style.width=Math.min(100,SAVE.best.dist/GOAL*100)+"%";
   const sh=$("shop");sh.innerHTML="";
   for(const [k,U] of Object.entries(UPG)){const l=SAVE.upg[k],max=l>=U.v.length-1,c=max?0:U.c[l+1],locked=U.need&&!SAVE.upg[U.need];
@@ -251,13 +251,14 @@ function finishFlight(){
   const st=ST,e=earnings(st),val={dist:st.x,height:st.maxH,speed:st.maxV*3.6,air:st.air},gl=[],rec={};
   for(const k in GOALS){while(SAVE.goals[k]<GOALS[k].t.length&&val[k]>=GOALS[k].t[SAVE.goals[k]]){gl.push([`Goal: ${GOALS[k].n} ${fmt(GOALS[k].t[SAVE.goals[k]])} ${GOALS[k].u}`,goalPay(SAVE.goals[k])]);SAVE.goals[k]++}
     if(val[k]>SAVE.best[k]){rec[k]=SAVE.best[k]>0;SAVE.best[k]=val[k]}}
-  const total=e.total+gl.reduce((a,g)=>a+g[1],0),firstSea=st.x>=GOAL&&!SAVE.done;
+  const total=e.total+gl.reduce((a,g)=>a+g[1],0),firstSea=st.x>=MEET&&!SAVE.done;
   SAVE.cash+=total;if(firstSea)SAVE.done=SAVE.day;const flewDay=SAVE.day;SAVE.day++;save();
   const stat=(k,lab,txt)=>`<div class="${rec[k]?"rec":""}"><b>${txt}</b><span>${lab}${rec[k]?" ★":""}</span></div>`;
   const body=`<div class="stats">${stat("dist","Distance",fmt(st.x)+" m")}${stat("height","Height",fmt(st.maxH)+" m")}${stat("speed","Top km/h",fmt(st.maxV*3.6))}${stat("air","Air time",st.air.toFixed(1)+" s")}</div>
     <div class="lines">${e.parts.filter(p=>p[1]).map(p=>`<span>${p[0]}</span><span>${fmt(p[1])}</span>`).join("")}${gl.map(g=>`<span class="gl">${g[0]}</span><span class="gl">+${fmt(g[1])}</span>`).join("")}<span class="tot">Treats earned</span><span class="tot">${fmt(total)}</span></div>`;
-  const head=firstSea?`<h3>The seaside!</h3><p>Day ${flewDay}: the doodle made it all the way to the sea. Splash! Keep flying to set a longer best.</p>`
-    :st.x>=GOAL?`<h3>Splash!</h3><p>Into the sea at ${fmt(st.x)} m.</p>`:`<h3>Day ${flewDay}</h3><p>${fmt(GOAL-st.x)} m short of the seaside.</p>`;
+  const past=!!st.panicked,head=st.x<MEET?`<h3>Day ${flewDay}</h3><p>${fmt(GOAL-st.x)} m short of the lady dogs.</p>`
+    :past?`<h3>${firstSea?"Made it… sort of":"Way too far"}</h3><p>${firstSea?`Day ${flewDay}: Buddy reached the lady dogs, then shot straight past them, panicked and landed ${fmt(st.x-GOAL)} m further on. Awkward.`:`Buddy panicked past the lady dogs again and landed ${fmt(st.x-GOAL)} m beyond them.`}</p>`
+    :`<h3>${firstSea?"Buddy made it!":"Smooth landing"}</h3><p>${firstSea?`Day ${flewDay}: Buddy landed right next to the lady dogs. Very smooth. Keep flying to set a longer best.`:"Right next to the lady dogs. Buddy is very pleased with himself."}</p>`;
   $("ovc").innerHTML=`${head}${body}<div class="acts"><button class="btn pri" id="oShop">Kit shop</button><button class="btn" id="oAgain">Fly again</button></div>`;$("ov").hidden=false;
   $("oShop").onclick=()=>{$("ov").hidden=true;ST=null;renderMenu();drawHero();show("menu")};
   $("oAgain").onclick=()=>{$("ov").hidden=true;startFlight()};
@@ -268,8 +269,24 @@ const cv=$("cv"),ctx=cv.getContext("2d");let W=0,H=0,dpr=1;const GROUND_PAD=120;
 function resize(){const r=$("fly").getBoundingClientRect();dpr=Math.min(2.5,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}
 window.addEventListener("resize",()=>{if(view==="fly")resize()});
 const CLOUDS=Array.from({length:120},(_,i)=>{const r=mulberry(i*31+7);return{x:-300+i*45+r()*40,y:40+Math.pow(r(),1.6)*1400,s:.8+r()*1.6}});
-// The doodle: white and curly, drawn in metres facing right; legs tuck in flight.
-function drawDog(c,u,pose,t,mud,boosting){
+// The lady dogs, sitting in metres and facing left towards the slope. mood: 0 calm, 1 Buddy is coming, 2 he flew past.
+const LADIES=[{fur:"#E1B36A",ear:"#C9954B",bow:"#FF6FA8",x:0},{fur:"#2B2B2B",ear:"#1C1C1C",bow:"#FF9FCB",x:1.35,curly:1},{fur:"#7A4B2A",ear:"#5E3820",bow:null,x:2.7,long:1},{fur:"#F1E2C6",ear:"#D9C4A0",bow:"#B57CF2",x:4.05}];
+function drawLady(c,L,t,mood){
+  c.save();c.scale(-1,1);c.lineWidth=.035;c.strokeStyle="rgba(50,35,20,.55)";const wag=Math.sin(t*(mood===1?14:5)+L.x)*.25;
+  c.fillStyle=L.fur;c.save();c.translate(-.32,.35);c.rotate(.8+wag);c.beginPath();c.roundRect(-.04,0,.09,.38,.045);c.fill();c.restore();
+  c.beginPath();c.arc(-.12,.32,.3,0,7);c.fill();c.stroke();c.beginPath();c.ellipse(.15,.55,.2,.36,-.2,0,7);c.fill();c.stroke();
+  c.beginPath();c.roundRect(.12,0,.11,.42,.05);c.fill();c.stroke();
+  const hy=mood===1?1.05:1.0;c.beginPath();c.arc(.3,hy,.25,0,7);c.fill();c.stroke();
+  if(L.curly)for(let i=0;i<7;i++){const a=i/7*Math.PI*2;c.beginPath();c.arc(.3+Math.cos(a)*.21,hy+Math.sin(a)*.21,.08,0,7);c.fill()}
+  c.beginPath();c.ellipse(.52,hy-.1,.15,.1,-.1,0,7);c.fill();c.stroke();
+  c.fillStyle="#1E1712";c.beginPath();c.ellipse(.65,hy-.07,.045,.04,0,0,7);c.fill();
+  if(mood===2){c.beginPath();c.arc(.4,hy+.06,.05,0,7);c.fill()}else{c.beginPath();c.arc(.4,hy+.06,.032,0,7);c.fill();c.strokeStyle="#1E1712";c.lineWidth=.025;c.beginPath();c.moveTo(.37,hy+.09);c.lineTo(.33,hy+.14);c.moveTo(.41,hy+.1);c.lineTo(.41,hy+.15);c.stroke()}
+  c.fillStyle=L.ear;c.beginPath();c.ellipse(.16,hy-(L.long?.12:.02),.09,L.long?.22:.14,.25,0,7);c.fill();
+  if(L.bow){c.fillStyle=L.bow;c.beginPath();c.moveTo(.22,hy+.24);c.lineTo(.08,hy+.33);c.lineTo(.1,hy+.15);c.closePath();c.moveTo(.22,hy+.24);c.lineTo(.36,hy+.33);c.lineTo(.34,hy+.15);c.closePath();c.fill();c.beginPath();c.arc(.22,hy+.24,.04,0,7);c.fill()}
+  c.restore();
+}
+// Buddy: white and curly, drawn in metres facing right; legs tuck in flight.
+function drawDog(c,u,pose,t,mud,boosting,panic){
   const fluff="#FFFFFF",shade="#E9E4DC",line="rgba(70,55,40,.55)";
   c.lineWidth=.035;c.strokeStyle=line;
   // booster on the back
@@ -288,7 +305,7 @@ function drawDog(c,u,pose,t,mud,boosting){
   // legs
   c.fillStyle=fluff;const leg=(x,y,a)=>{c.save();c.translate(x,y);c.rotate(a);c.beginPath();c.roundRect(-.07,-.32,.15,.34,.07);c.fill();c.stroke();
     if(mud>0){c.fillStyle=`rgba(110,70,35,${Math.min(.9,mud)})`;c.beginPath();c.roundRect(-.07,-.32,.15,.13,.07);c.fill();c.fillStyle=fluff}c.restore()};
-  const tuck=pose==="fly"?1:0,wob=pose==="slide"?Math.sin(t*14)*.05:0;
+  const tuck=pose==="fly"&&!panic?1:0,wob=panic?Math.sin(t*30)*.7:pose==="slide"?Math.sin(t*14)*.05:0;
   leg(.38,.32,-.2-tuck*1.1+wob);leg(.28,.3,.1-tuck*1.2);leg(-.35,.32,.25+tuck*1.0-wob);leg(-.45,.3,.4+tuck*1.0);
   // sled under the tummy
   if(u.sled){c.save();c.translate(0,.08);const col=["","#C9CED6","#E8483B","#B07A44","#2F6FD0"][u.sled];c.fillStyle=col;c.beginPath();
@@ -306,8 +323,11 @@ function drawDog(c,u,pose,t,mud,boosting){
   for(let i=0;i<7;i++){const a=i/7*Math.PI*2;c.beginPath();c.arc(.62+Math.cos(a)*.21,.8+Math.sin(a)*.21,.08,0,7);c.fill()}
   c.beginPath();c.ellipse(.86,.7,.17,.12,-.15,0,7);c.fill();c.stroke();
   c.fillStyle="#1E1712";c.beginPath();c.ellipse(1.01,.73,.055,.045,0,0,7);c.fill();
-  c.beginPath();c.arc(.74,.86,.04,0,7);c.fill();c.fillStyle="#fff";c.beginPath();c.arc(.75,.875,.013,0,7);c.fill();
-  c.strokeStyle="rgba(60,40,30,.6)";c.beginPath();c.arc(.9,.64,.06,.3,1.8);c.stroke();c.strokeStyle=line;
+  if(panic){c.fillStyle="#fff";c.beginPath();c.arc(.74,.88,.1,0,7);c.fill();c.stroke();c.fillStyle="#1E1712";c.beginPath();c.arc(.76+Math.sin(t*25)*.02,.88,.035,0,7);c.fill();
+    c.fillStyle="#5A2A1E";c.beginPath();c.ellipse(.9,.6,.07,.05,0,0,7);c.fill();
+    c.fillStyle="#7EC8F2";for(const [x,y,ph] of [[.45,1.12,0],[.95,1.05,1.7]]){const k=(t*2+ph)%1;c.beginPath();c.ellipse(x,y-k*.15,.035,.055,0,0,7);c.fill()}c.fillStyle="#1E1712"}
+  else{c.beginPath();c.arc(.74,.86,.04,0,7);c.fill();c.fillStyle="#fff";c.beginPath();c.arc(.75,.875,.013,0,7);c.fill();
+  c.strokeStyle="rgba(60,40,30,.6)";c.beginPath();c.arc(.9,.64,.06,.3,1.8);c.stroke()}c.strokeStyle=line;
   // floppy curly ear
   const flap=pose==="fly"?Math.sin(t*10)*.06+.08:0;c.fillStyle="#F3ECE2";
   for(const [x,y,r] of [[.5,.82+flap,.09],[.45,.7+flap,.085],[.47,.59+flap,.075]]){c.beginPath();c.arc(x,y,r,0,7);c.fill();c.stroke()}
@@ -322,15 +342,22 @@ function scene(c,w,h,st,camx,camy,S,t,showTreats){
     c.beginPath();c.arc(x,y,s*.6,0,7);c.arc(x+s*.6,y+s*.1,s*.45,0,7);c.arc(x-s*.6,y+s*.12,s*.42,0,7);c.fill()}
   // far hills, parallax
   const gy=Y(0);if(gy<h+400){c.fillStyle="#9FC98A";c.beginPath();c.moveTo(0,h);for(let sx=0;sx<=w+20;sx+=10){const q=sx+camx*Math.min(S,20)*.2;c.lineTo(sx,gy-38-26*Math.sin(q*.009)-14*Math.sin(q*.023+1))}c.lineTo(w,h);c.fill()}
-  // the field, beach and sea
+  // the field and the dog park
   if(gy<h){c.fillStyle="#7DBA5A";c.fillRect(0,gy,w,h-gy);c.fillStyle="#6AA84B";c.fillRect(0,gy,w,Math.max(2,S*.25));
-    const bx=X(GOAL-120),sx2=X(GOAL);if(bx<w){c.fillStyle="#EBD9A6";c.fillRect(Math.max(0,bx),gy,Math.min(w,sx2)-Math.max(0,bx),h-gy)}
-    if(sx2<w){c.fillStyle="#3C9BD6";c.fillRect(Math.max(0,sx2),gy+2,w,h-gy);c.fillStyle="rgba(255,255,255,.7)";for(let i=0;i<w;i+=26){const wx=Math.max(sx2,0)+i+((t*30)%26);c.fillRect(wx,gy+4+Math.sin(i+t*3)*2,12,2)}}
+    // the dog park: a picnic blanket and a little fence around the lady dogs
+    const px0=X(GOAL-30),px1=X(GOAL+60);if(px1>0&&px0<w){c.fillStyle="#8BC56A";c.fillRect(Math.max(0,px0),gy,Math.min(w,px1)-Math.max(0,px0),h-gy);
+      c.strokeStyle="#FFF8EE";c.lineWidth=2;for(let fx=GOAL-30;fx<=GOAL+60;fx+=Math.max(1,Math.ceil(12/S))){const x=X(fx);if(x<-5||x>w+5)continue;c.beginPath();c.moveTo(x,gy);c.lineTo(x,gy-10);c.stroke()}
+      c.beginPath();c.moveTo(Math.max(0,px0),gy-7);c.lineTo(Math.min(w,px1),gy-7);c.stroke()}
     // distance posts
     const steps=[10,25,50,100,250,500,1000];let step=steps.find(s=>s*S>=70)||1000;
     c.font="700 12px system-ui,sans-serif";c.textAlign="center";
-    for(let m=Math.max(step,Math.ceil((camx-w*.35/S)/step)*step);X(m)<w+40;m+=step){if(m>GOAL)break;const x=X(m);c.fillStyle="#8B5A2B";c.fillRect(x-1.5,gy-16,3,16);c.fillStyle="#FFF8EE";c.fillRect(x-20,gy-30,40,15);c.fillStyle="#3A2817";c.fillText(m+" m",x,gy-19)}
-    if(X(GOAL)>-60&&X(GOAL)<w+60){const x=X(GOAL);c.fillStyle="#8B5A2B";c.fillRect(x-2,gy-40,4,40);c.fillStyle="#FFB347";c.fillRect(x-36,gy-58,72,20);c.fillStyle="#3A2000";c.fillText("Seaside",x,gy-44)}}
+    for(let m=Math.max(step,Math.ceil((camx-w*.35/S)/step)*step);X(m)<w+40;m+=step){if(Math.abs(m-GOAL)<step*.6)continue;const x=X(m);c.fillStyle="#8B5A2B";c.fillRect(x-1.5,gy-16,3,16);c.fillStyle="#FFF8EE";c.fillRect(x-20,gy-30,40,15);c.fillStyle="#3A2817";c.fillText(m+" m",x,gy-19)}
+    if(X(GOAL)>-60&&X(GOAL)<w+60){const x=X(GOAL);c.fillStyle="#8B5A2B";c.fillRect(x-2,gy-40,4,40);c.fillStyle="#FFB347";c.fillRect(x-40,gy-58,80,20);c.fillStyle="#3A2000";c.fillText("Dog park",x,gy-44)}
+    // the lady dogs, drawn at a fixed size so they stay visible when the camera zooms out
+    const lx=X(GOAL+3);if(lx>-260&&lx<w+200){const ds=ladySize(S),mood=st&&st.panicked?2:st&&st.x>GOAL-150?1:0;
+      c.fillStyle="#E87A9A";c.fillRect(lx-ds*.6,gy-2,ds*6,5);
+      LADIES.forEach((L,i)=>{c.save();c.translate(lx+L.x*ds*1.05,gy);c.scale(ds,-ds);drawLady(c,L,t,mood);c.restore();
+        if(mood){const k=((t*.7+i*.37)%1);c.globalAlpha=1-k;c.fillStyle=mood===2?"#3A2817":"#FF5C8A";c.font=`800 ${Math.round(ds*.5)}px system-ui,sans-serif`;c.textAlign="center";c.fillText(mood===2?"?":"♥",lx+L.x*ds*1.05-ds*.2,gy-ds*1.4-k*ds*1.2);c.globalAlpha=1}})}}
   // the mud slope
   if(st){const sp=st.sp;if(X(0)>-50){c.fillStyle="#6B4423";c.beginPath();c.moveTo(X(sp.pts[0][0]-30),Y(-1));c.lineTo(X(sp.pts[0][0]-30),Y(sp.top));
       for(const p of sp.pts)c.lineTo(X(p[0]),Y(p[1]));c.lineTo(X(1.5),Y(LIP));c.lineTo(X(2.5),Y(0));c.lineTo(X(2.5),Y(-1));c.closePath();c.fill();
@@ -347,26 +374,36 @@ function scene(c,w,h,st,camx,camy,S,t,showTreats){
 }
 function draw(t){
   const c=ctx;c.setTransform(dpr,0,0,dpr,0,0);const st=ST;
-  // camera: frame the slope before launch, then follow the doodle and zoom out as it climbs
+  // camera: frame the slope before launch, then follow Buddy and zoom out as it climbs
   let ts,tx,ty;
   if(st.phase==="slide"){ts=Math.min(26,(H-GROUND_PAD-150)/(st.sp.top+4),W*.9/(st.sp.len+14));tx=-st.sp.len*.5+5-W*.15/ts;ty=0}
   else{const room=(H-GROUND_PAD)*.55;ts=Math.max(.9,Math.min(26,room/(st.y+8)));tx=st.x;ty=Math.max(0,st.y-(H-GROUND_PAD)*.5/ts)}
   if(!cam.s)cam={x:tx,y:ty,s:ts};const k=1-Math.pow(.02,dtFrame);cam.s+=(ts-cam.s)*k;cam.x+=(tx-cam.x)*Math.min(1,k*2);cam.y+=(ty-cam.y)*Math.min(1,k*1.5);
-  if(st.phase!=="slide")cam.x=st.x;
+  if(st.phase!=="slide"){cam.x=st.x;
+    // at the dog park the camera holds still so Buddy flies across the screen, past the lady dogs
+    const hold=GOAL+3+.25*W/cam.s;if(st.x>hold)cam.x=Math.max(hold,st.x-.53*W/cam.s)}
   const S=cam.s,{X,Y}=scene(c,W,H,st,cam.x,cam.y,S,t,true);
   // mud spray
   for(const p of parts){c.fillStyle=`rgba(90,58,30,${Math.max(0,1-p.t/p.max)})`;c.beginPath();c.arc(X(p.x),Y(p.y),Math.max(1.5,p.r*S),0,7);c.fill()}
   c.save();c.translate(X(st.x),Y(st.y));const ds=Math.max(S,26);c.scale(ds,-ds);c.rotate(st.th);
-  drawDog(c,st.u,st.phase==="air"?"fly":st.phase==="slide"?"slide":"land",t,mudLevel(st),st.boost);c.restore();
+  drawDog(c,st.u,st.phase==="air"?"fly":st.phase==="slide"?"slide":"land",t,mudLevel(st),st.boost,panicking(st));c.restore();
+  if(panicking(st)){let bx=X(st.x)+ds*.6;const by=Y(st.y)-ds*1.9,msg=["Eek!","Too far!","Abort!","Not cool!"][(st.panicked*7+Math.floor(st.x/400))%4];
+    c.font="800 17px system-ui,sans-serif";const w2=c.measureText(msg).width+20,flip=bx+w2>W-8;if(flip)bx-=w2+ds*1.2;c.fillStyle="#fff";c.strokeStyle="#3A2817";c.lineWidth=2;c.beginPath();c.roundRect(bx,by-16,w2,30,12);c.fill();c.stroke();
+    c.beginPath();if(flip){c.moveTo(bx+w2-20,by+13);c.lineTo(bx+w2-2,by+24);c.lineTo(bx+w2-10,by+13)}else{c.moveTo(bx+10,by+13);c.lineTo(bx+2,by+24);c.lineTo(bx+20,by+13)}c.fill();c.fillStyle="#3A2817";c.textAlign="left";c.textBaseline="middle";c.fillText(msg,bx+10,by);c.textBaseline="alphabetic"}
   for(const p of pops){c.globalAlpha=Math.max(0,1-p.t/1.1);c.font="800 16px system-ui,sans-serif";c.textAlign="center";c.fillStyle="#FFF8EE";c.strokeStyle="rgba(42,28,16,.8)";c.lineWidth=3;
     const x=X(p.x),y=Y(p.y)-p.t*40;c.strokeText(p.s,x,y);c.fillText(p.s,x,y);c.globalAlpha=1}
 }
+// Past the lady dogs while still in the air, Buddy panics: wide eyes, sweat, flailing legs and a wobble.
+const panicking=st=>st.panic>0;
+const ladySize=S=>Math.max(S,24)*1.25,ladiesEnd=S=>GOAL+3+5*ladySize(S)*1.05/S;
 const mudLevel=st=>st.phase==="slide"?Math.min(1,st.s/st.sp.len):1;
 let lastT=0,dtFrame=0,acc=0;
 function frame(ts){
   requestAnimationFrame(frame);dtFrame=Math.min(.05,lastT?(ts-lastT)/1000:0);lastT=ts;
   if(view!=="fly"||!ST)return;const t=ts/1000;
-  if(started&&ST.phase!=="done"){acc+=dtFrame*(FAST?4:1.5);const inp=(input.up?1:0)-(input.down?1:0);let n=0;const gotBefore=ST.treats;
+  if(ST.phase==="air"&&cam.s&&ST.x>ladiesEnd(cam.s)&&ST.y>1.5&&!ST.panicked){ST.panicked=1;ST.panic=1;try{navigator.vibrate&&navigator.vibrate([20,40,20,40,20])}catch(e){}}
+  if(ST.panic>0&&ST.phase!=="air")ST.panic=Math.max(0,ST.panic-dtFrame*.6);
+  if(started&&ST.phase!=="done"){acc+=dtFrame*(FAST?4:1.5);const inp=(input.up?1:0)-(input.down?1:0)+(ST.panic>0&&ST.phase==="air"&&ST.x<GOAL+120?Math.sin(t*11)*.9:0);let n=0;const gotBefore=ST.treats;
     while(acc>=1/120&&n<60){acc-=1/120;n++;const was=ST.phase;fly(ST,1/120,inp,input.boost,TREATS);
       if(was==="air"&&ST.phase!=="air"){for(let i=0;i<14;i++)parts.push({x:ST.x,y:.2,vx:(Math.random()-.3)*8,vy:Math.random()*6,r:.15+Math.random()*.2,t:0,max:.9});try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}}}
     if(ST.treats>gotBefore){pops.push({x:ST.x,y:ST.y+1.5,s:"+"+(ST.treats-gotBefore),t:0});try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}}
@@ -380,7 +417,7 @@ function frame(ts){
   if(ST.phase==="done"){endT+=dtFrame;if(endT>.9&&$("ov").hidden&&endT<5){endT=9;finishFlight()}}
 }
 requestAnimationFrame(frame);
-// the menu picture: the doodle in its current kit at the top of the slope
+// the menu picture: Buddy in his current kit at the top of the slope
 function drawHero(){const hc=$("heroCv"),c=hc.getContext("2d"),st=newFlight(SAVE.upg);c.setTransform(1,0,0,1,0,0);
   const S=Math.min(10,150/(st.sp.top+6),300/(st.sp.len+10));const {X,Y}=scene(c,640,360+GROUND_PAD-50,st,-st.sp.len*.5-(.15*640)/S+20/S,0,S,0,false);
   const p=slopeAt(st.sp,st.sp.len*.18);c.save();c.translate(X(p.x),Y(p.y));c.scale(34,-34);c.rotate(p.ang);drawDog(c,st.u,"slide",0,.3,false);c.restore()}
