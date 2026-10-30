@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1B2433">
+<title>Buddy's Big Slide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: menu (daily, challenge levels, your tracks) or the editor (full-screen drawing canvas, a bar on top, tools below). */
+:root{
+  --bg:#1B2433; --panel:#243044; --panel2:#2E3B52; --line:#41506B; --fg:#F5F1E8; --muted:#B5BED0;
+  --accent:#FF6B4A; --accent-ink:#2A0E06; --ok:#8FE0A0; --gold:#FFC94A; --paper:#FBF7EE;
+  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--body)}
+body{overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.sm{padding:7px 12px;font-size:.9rem;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:default}
+.muted{color:var(--muted)}
+#menu{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.sg-home{align-self:flex-start;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none}
+.hero{border-radius:18px;overflow:hidden;position:relative;background:var(--paper);aspect-ratio:16/9}
+.hero canvas{width:100%;height:100%;display:block}
+.hero .t{position:absolute;left:14px;top:12px;max-width:60%}
+h1{font-family:var(--display);font-weight:800;font-size:2.1rem;margin:0;line-height:1;color:#1B2433}
+.hero .t p{margin:6px 0 0;color:#4A5468;font-weight:700;font-size:.9rem}
+h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stars{color:var(--gold);letter-spacing:.08em;font-size:1.05rem}
+.stars i{font-style:normal;color:var(--line)}
+.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.lv{aspect-ratio:1;border:1px solid var(--line);background:var(--panel2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0}
+.lv b{font-family:var(--display);font-size:1.25rem;line-height:1}
+.lv span{font-size:.7rem;color:var(--gold);letter-spacing:.05em}
+.lv span i{font-style:normal;color:var(--line)}
+.lv.done{border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+.lv:disabled{opacity:.35}
+.trk{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 12px}
+.trk .tt{flex:1;min-width:0;text-align:left;background:none;border:0;padding:4px 0}
+.trk .tt b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trk .tt small{color:var(--muted)}
+.howto{font-size:.92rem;line-height:1.5}
+.howto summary{font-family:var(--display);font-weight:700;font-size:1.05rem;cursor:pointer}
+.howto ul{padding-left:18px;margin:8px 0 0}
+.empty{color:var(--muted);font-size:.9rem;margin:0}
+/* editor */
+#ed{position:fixed;inset:0;background:var(--paper);touch-action:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.top{position:absolute;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:calc(8px + env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) 8px max(10px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(27,36,51,.94),rgba(27,36,51,.86))}
+.top .ttl{flex:1;min-width:0;line-height:1.15}
+.top .ttl b{display:block;font-family:var(--display);font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top .ttl small{color:var(--muted);font-variant-numeric:tabular-nums;font-size:.8rem}
+.top .ttl small.over{color:var(--accent)}
+.ib{width:44px;height:44px;border:0;border-radius:12px;background:rgba(255,255,255,.1);display:grid;place-items:center;padding:0;flex:none}
+.ib svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ib:disabled{opacity:.35}
+.tipbar{position:absolute;left:50%;transform:translateX(-50%);top:calc(68px + env(safe-area-inset-top,0px));width:min(92%,440px);background:rgba(27,36,51,.9);border-radius:12px;padding:9px 14px;font-size:.9rem;line-height:1.35;text-align:center;pointer-events:none;transition:opacity .4s}
+.bot{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:8px;padding:8px max(10px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(27,36,51,.86),rgba(27,36,51,.95))}
+.bot .r{display:flex;gap:8px;align-items:center}
+.bot .grow{flex:1}
+.kind{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:12px;padding:3px}
+.kind button{border:0;background:none;border-radius:9px;padding:6px 10px;font-weight:700;font-size:.85rem;display:flex;align-items:center;gap:6px}
+.kind button i{width:14px;height:4px;border-radius:2px;display:block}
+.kind button.on{background:rgba(255,255,255,.18)}
+.tool.on{background:var(--fg);color:var(--bg)}
+.play{height:52px;min-width:104px;border:0;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:800;font-size:1.15rem;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px}
+.play svg{width:20px;height:20px;fill:currentColor}
+.play.stop{background:var(--fg);color:var(--bg)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:rgba(27,36,51,.92);border-radius:99px;padding:8px 16px;font-size:.92rem;white-space:nowrap;pointer-events:none;transition:opacity .3s;z-index:5}
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(12,16,24,.66);display:grid;place-items:center;z-index:10;padding:16px;overflow-y:auto}
+.ovc{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;width:min(380px,100%);display:flex;flex-direction:column;gap:12px}
+.ovc h3{font-family:var(--display);font-size:1.6rem;margin:0;text-align:center}
+.ovc p{margin:0;color:var(--muted);line-height:1.45;text-align:center}
+.ovc .bigstars{text-align:center;font-size:2.2rem;color:var(--gold);letter-spacing:.12em}
+.ovc .bigstars i{font-style:normal;color:var(--line)}
+.lines{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:.95rem}
+.lines .y{color:var(--ok)}
+.lines .n{color:var(--muted)}
+.acts{display:flex;flex-direction:column;gap:8px}
+.ovc input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:1rem}
+.ovc label{font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+</style>
+</head>
+<body>
+<section id="menu">
+  <div class="wrap">
+    <a class="sg-home" href="../../index.html">← All games</a>
+    <div class="hero"><canvas id="heroCv" width="640" height="360"></canvas><div class="t"><h1>Buddy's Big Slide</h1><p>Draw the track. Buddy rides it.</p></div></div>
+    <div class="card">
+      <div class="row spread"><h2>Today's slide</h2><span class="label" id="dailyDate"></span></div>
+      <p class="empty" id="dailyTxt">The same slide for both of you. Fewest ink wins.</p>
+      <div class="row"><button class="btn pri" id="dailyBtn">Play today's slide</button><button class="btn" id="dailyShare" hidden>Share result</button></div>
+    </div>
+    <div class="card">
+      <div class="row spread"><h2>Challenges</h2><span class="stars" id="starTot"></span></div>
+      <div class="levels" id="levels"></div>
+    </div>
+    <div class="card">
+      <div class="row spread"><h2>Draw your own</h2><button class="btn sm pri" id="newBtn">New track</button></div>
+      <div id="mine" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div class="label" id="sharedLbl" hidden>Sent to you</div>
+      <div id="shared" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <details class="card howto">
+      <summary>How to play</summary>
+      <ul>
+        <li>Draw with your finger, then press <b>Play</b>. Buddy slides down whatever you draw. Press <b>Stop</b> to change things and try again.</li>
+        <li><b>Track</b> lines are what Buddy rides on. <b>Boost</b> lines (orange) speed him up the way you drew them. <b>Scenery</b> lines (green) are just for show.</li>
+        <li>Buddy lands on the top of a line. Draw lines left to right, and a loop in one go, anticlockwise.</li>
+        <li>Tools: pencil to draw freehand, ruler for straight lines, rubber to rub out, hand to move about. Pinch with two fingers to zoom.</li>
+        <li>Challenges: reach the flag for a star, catch every bone for another, and use no more ink than par for the third. You can't draw on flowerbeds, and thorns knock Buddy off.</li>
+        <li>Stuck? Tap <b>⋯</b> and Show the answer for a faint example track.</li>
+        <li>Your own tracks: tap Send to share one as a link. Whoever taps it gets your track to watch and change.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<section id="ed" hidden>
+  <canvas id="cv"></canvas>
+  <div class="top">
+    <button class="ib" id="backBtn" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="ttl"><b id="edTitle"></b><small id="edInk"></small></div>
+    <button class="ib" id="undoBtn" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a5 5 0 010 10h-3"/></svg></button>
+    <button class="ib" id="redoBtn" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a5 5 0 000 10h3"/></svg></button>
+    <button class="ib" id="moreBtn" aria-label="More"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></button>
+  </div>
+  <div class="tipbar" id="tip" hidden></div>
+  <div class="bot" id="bot">
+    <div class="r" id="kindRow">
+      <div class="kind" id="kinds">
+        <button data-k="0" class="on"><i style="background:#23324A;box-shadow:0 0 0 1px #F5F1E8"></i>Track</button>
+        <button data-k="1"><i style="background:#F26B1D"></i>Boost</button>
+        <button data-k="2"><i style="background:#4FA35A"></i>Scenery</button>
+      </div>
+    </div>
+    <div class="r">
+      <div class="r" id="toolRow">
+        <button class="ib tool on" data-t="pen" aria-label="Pencil"><svg viewBox="0 0 24 24"><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/></svg></button>
+        <button class="ib tool" data-t="line" aria-label="Straight line"><svg viewBox="0 0 24 24"><path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.8"/><circle cx="19" cy="5" r="1.8"/></svg></button>
+        <button class="ib tool" data-t="erase" aria-label="Rubber"><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4 15l9-9 6 6-7 7H8z"/><path d="M9 10l6 6"/></svg></button>
+        <button class="ib tool" data-t="pan" aria-label="Move about"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg></button>
+      </div>
+      <div class="grow"></div>
+      <button class="ib" id="speedBtn" hidden aria-label="Speed" style="width:auto;padding:0 12px;font-weight:700">1×</button>
+      <button class="play" id="playBtn"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg><span>Play</span></button>
+    </div>
+  </div>
+</section>
+<div class="toast" id="toast" hidden></div>
+<script type="application/json" id="levelData">[
+{"n":"First slide","tip":"Draw a line from Buddy down to the flag, then press Play.","s":[0,0],"b":[[282,166]],"f":[533,304],"h":[[0,-20,12,560,330]],"p":770},
+{"n":"Treat trail","tip":"Catch every bone on the way for a second star.","s":[0,0],"b":[[151,112],[332,129],[522,204]],"f":[660,232],"h":[[0,-20,12,120,110,220,150,320,140,420,175,560,230,680,245]],"p":870},
+{"n":"The pond","tip":"You can't draw over the pond. Make a ramp and jump it.","s":[0,0],"z":[[210,190,210,330]],"b":[[301,138]],"f":[623,353],"h":[[0,-20,12,100,110,140,145,165,160,185,165,200,162,212,157],[0,430,250,520,320,660,380]],"p":640},
+{"n":"Prickly bush","tip":"Thorns knock Buddy off his sledge. Steer round them.","s":[0,0],"x":[[260,175,38],[320,195,30]],"b":[[201,236],[420,275]],"f":[542,297],"h":[[0,-20,12,90,110,180,240,300,280,420,285,560,310]],"p":800},
+{"n":"Uphill","tip":"Orange lines push Buddy the way you draw them. Draw left to right.","s":[0,0],"b":[[200,38],[331,-26]],"f":[402,-79],"h":[[0,-20,12,120,60],[1,120,60,260,40,420,-80]],"p":570},
+{"n":"Switchback","tip":"Too steep to go straight down. Zigzag.","s":[0,0],"z":[[-80,100,200,320]],"b":[[171,84],[420,260]],"f":[118,419],"h":[[0,-20,12,300,150],[0,480,240,80,450]],"p":920},
+{"n":"Ski jump","tip":"The grey ramp is fixed. Draw somewhere to land.","s":[0,0],"g":[[0,-20,12,60,80,160,180,220,210,260,205]],"b":[[381,219]],"f":[781,536],"h":[[0,520,420,700,520,820,560]],"p":390},
+{"n":"Low branches","tip":"Keep low under the branches, but stay out of the flowerbed.","s":[0,0],"z":[[120,262,420,300]],"x":[[150,60,30],[230,90,30],[310,120,30],[390,150,30],[470,180,30]],"b":[[262,170],[442,212]],"f":[582,237],"h":[[0,-20,12,80,110,200,165,340,200,480,230,600,250]],"p":790},
+{"n":"Loop the loop","tip":"Fast enough, Buddy goes right round a loop. Draw it in one go, left to right.","s":[0,0],"b":[[407,315],[560,474]],"f":[704,502],"h":[[0,-20,12,7,75,33,132,60,184,87,230,113,271,140,307,167,337,193,361,220,380,247,394,273,402,300,405,317,404,334,400,351,395,366,387,379,378,391,368,401,356,409,343,414,330,417,317,418,304,417,293,414,282,409,273,403,265,395,260,387,256,379,255,370,256,362,260,354,265,348,273,343,282,340,292,339,304,340,317,343,330,348,348,356,365,366,381,378,396,391,410,406,421,423,431,440,439,457,445,560,485,720,515]],"p":1510},
+{"n":"Puddle hop","tip":"Two puddles. Land between them and jump again.","s":[0,0],"z":[[150,170,150,300],[420,270,150,300]],"b":[[221,133],[500,278]],"f":[741,388],"h":[[0,-20,12,70,90,110,125,130,135,145,130],[0,301,242,335,272,365,292,390,298,412,290],[0,575,338,680,385,800,410]],"p":670},
+{"n":"Long drop","tip":"Buddy starts in the air. Catch him with a gentle curve.","s":[0,0],"z":[[-120,30,240,300]],"x":[[150,600,40],[260,620,40]],"b":[[61,427],[300,485]],"f":[401,489],"h":[[0,-20,340,-5,370,15,400,60,440,120,470,200,490,300,495,420,500]],"p":580},
+{"n":"Gaps","tip":"Only a little ink here. Bridge the gaps in the grey track.","s":[0,0],"g":[[0,-20,12,120,100,220,140],[0,330,190,450,230],[0,560,280,700,310,820,320]],"b":[[303,167],[520,251]],"f":[784,307],"h":[[0,220,140,330,190],[0,450,230,560,280]],"p":280,"lim":260},
+{"n":"Up the stairs","tip":"Boost up, jump, boost up again.","s":[0,0],"x":[[190,-15,30]],"b":[[250,18],[481,-138]],"f":[641,-167],"h":[[0,-20,12,60,50],[1,60,50,200,60,300,0,340,-40],[1,430,-80,560,-90,660,-170]],"p":770},
+{"n":"There and back","tip":"The flag is behind Buddy. Send him out and bring him back.","s":[0,0],"z":[[-160,95,300,100]],"x":[[-60,250,40],[40,280,30]],"b":[[135,56],[558,280]],"f":[-62,448],"h":[[0,-20,12,200,90,330,180],[0,640,230,600,270,540,300,130,420,-120,470]],"p":1380},
+{"n":"Grand tour","tip":"Everything at once. Take it in stages.","s":[0,0],"z":[[330,230,190,400]],"x":[[700,270,36],[760,300,30]],"b":[[160,116],[421,148],[823,353]],"f":[912,294],"h":[[0,-20,12,120,100,220,170,280,190,315,185,330,175],[0,540,330,640,380],[1,640,380,760,390,880,340,920,300]],"p":950}
+]</script>
+<div class="ov" id="ov" hidden><div class="ovc" id="ovc"></div></div>
+<script>
+"use strict";
+/*CORE-START*/
+/* Rules and physics. No page dependencies, so tools/big-slide-check.js can run every level's hint in Node.
+   Only + - * / and Math.sqrt are used in the physics, so a track rides the same on every phone.
+   World units: 1 unit is 1 CSS pixel at zoom 1; y points down. A line is {t, p:[x0,y0,x1,y1,...]}:
+   t 0 track, 1 boost (speeds Buddy up in the direction it was drawn), 2 scenery (Buddy passes through). */
+const R = 10, GRAV = 520, BOOST = 600, TICK = 1 / 120, REACH = 24, FIN = 36, CELL = 64, MAXT = 90;
+const len2 = (x, y) => Math.sqrt(x * x + y * y);
+
+/* Which side of a line is solid: the side facing up for a line drawn left to right (so loops work, and Buddy can
+   jump up through a line from underneath). A line drawn right to left is solid on its other side, so it faces up too. */
+function sideOf(p) { return p[p.length - 2] >= p[0] ? 1 : -1; }
+const asLine = a => Array.isArray(a) ? { t: a[0], p: a.slice(1) } : a; // levels store lines as [t, x0, y0, x1, y1, ...]
+function segsOf(lines, locked) {
+  const out = [];
+  let id = 0;
+  for (let L of lines || []) {
+    L = asLine(L); id++;
+    if (L.t === 2) continue;
+    const p = L.p, sd = L.s || sideOf(p);
+    for (let i = 0; i + 3 < p.length; i += 2) {
+      const x1 = p[i], y1 = p[i + 1], x2 = p[i + 2], y2 = p[i + 3], l = len2(x2 - x1, y2 - y1);
+      if (l < 0.5) continue;
+      const dx = (x2 - x1) / l, dy = (y2 - y1) / l;
+      out.push({ x1, y1, x2, y2, dx, dy, nx: sd * dy, ny: -sd * dx, l, t: L.t, k: !!locked, id: (locked ? -id : id), i });
+    }
+  }
+  return out;
+}
+function inkOf(lines) {
+  let s = 0;
+  for (let L of lines || []) { L = asLine(L); if (L.t !== 2) for (let i = 0; i + 3 < L.p.length; i += 2) s += len2(L.p[i + 2] - L.p[i], L.p[i + 3] - L.p[i + 1]); }
+  return Math.round(s);
+}
+const cellKey = (cx, cy) => (cx + 32768) * 65536 + (cy + 32768);
+function makeWorld(lines, lvl) {
+  lvl = lvl || {};
+  const segs = segsOf(lvl.g, true).concat(segsOf(lines)), grid = new Map(), pad = R + 2, ends = new Map();
+  // an end shared with another segment is a joint: the neighbouring segment's side handles it, so Buddy rides smoothly over
+  const ek = (x, y) => Math.round(x) + "," + Math.round(y);
+  for (const s of segs) for (const k of [ek(s.x1, s.y1), ek(s.x2, s.y2)]) ends.set(k, (ends.get(k) || 0) + 1);
+  for (const s of segs) { s.j1 = ends.get(ek(s.x1, s.y1)) > 1; s.j2 = ends.get(ek(s.x2, s.y2)) > 1; }
+  // places where a line crosses itself, so Buddy can ride through a loop's crossing
+  const byId = new Map();
+  for (const s of segs) { let a = byId.get(s.id); if (!a) byId.set(s.id, a = []); a.push(s); }
+  for (const a of byId.values()) if (a.length > 6) for (let m = 0; m < a.length; m++) for (let n = m + 2; n < a.length; n++) {
+    const u = a[m], v = a[n];
+    if (!crosses(u, v)) continue;
+    const den = u.dx * v.dy - u.dy * v.dx, t = ((v.x1 - u.x1) * v.dy - (v.y1 - u.y1) * v.dx) / den;
+    const x = u.x1 + u.dx * t, y = u.y1 + u.dy * t;
+    (u.xs = u.xs || []).push({ x, y, j: v.i }); (v.xs = v.xs || []).push({ x, y, j: u.i });
+  }
+  let bottom = (lvl.s ? lvl.s[1] : 0);
+  for (const s of segs) {
+    bottom = Math.max(bottom, s.y1, s.y2);
+    const x0 = Math.floor((Math.min(s.x1, s.x2) - pad) / CELL), x1 = Math.floor((Math.max(s.x1, s.x2) + pad) / CELL);
+    const y0 = Math.floor((Math.min(s.y1, s.y2) - pad) / CELL), y1 = Math.floor((Math.max(s.y1, s.y2) + pad) / CELL);
+    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) {
+      // keep only cells the segment really passes near
+      const mx = cx * CELL + CELL / 2, my = cy * CELL + CELL / 2, h = CELL / 2 + pad;
+      if (distSeg(mx, my, s) > h * 1.5) continue;
+      const k = cellKey(cx, cy); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(s);
+    }
+  }
+  if (lvl.f) bottom = Math.max(bottom, lvl.f[1]);
+  return { segs, grid, lvl, bottom: bottom + 1500 };
+}
+function distSeg(x, y, s) {
+  let t = (x - s.x1) * s.dx + (y - s.y1) * s.dy; t = t < 0 ? 0 : t > s.l ? s.l : t;
+  return len2(x - s.x1 - s.dx * t, y - s.y1 - s.dy * t);
+}
+
+function newRun(W) {
+  const s = (W.lvl && W.lvl.s) || [0, 0];
+  return { x: s[0], y: s[1], vx: 40, vy: 0, ux: 0, uy: -1, w: 0, face: 1, t: 0, air: 1, ground: false,
+    got: ((W.lvl && W.lvl.b) || []).map(() => false), crash: null, crashT: 0, buddy: null, still: 0, end: null, trail: [] };
+}
+/* Push body B out of every line it overlaps; returns the summed contact normal, the hardest impact and the boost. */
+/* Do two segments cross in the middle (not just touch at an end)? */
+function crosses(a, b) {
+  const d1 = (b.x1 - a.x1) * a.dy - (b.y1 - a.y1) * a.dx, d2 = (b.x2 - a.x1) * a.dy - (b.y2 - a.y1) * a.dx;
+  const d3 = (a.x1 - b.x1) * b.dy - (a.y1 - b.y1) * b.dx, d4 = (a.x2 - b.x1) * b.dy - (a.y2 - b.y1) * b.dx;
+  return d1 * d2 < 0 && d3 * d4 < 0;
+}
+function collide(B, W, dt, ox, oy) {
+  const list = W.grid.get(cellKey(Math.floor(B.x / CELL), Math.floor(B.y / CELL)));
+  let nx = 0, ny = 0, hits = 0, impact = 0, best = 1e9, boost = null;
+  const on = [];
+  if (!list) { B.on = on; return null; }
+  for (const s of list) {
+    // only from the solid side, and only if Buddy was on that side a moment ago (not coming up through it)
+    const sd = (B.x - s.x1) * s.nx + (B.y - s.y1) * s.ny;
+    if (sd <= 0 || sd >= R + 0.75 || (ox - s.x1) * s.nx + (oy - s.y1) * s.ny < R - 1) continue;
+    // where a line crosses itself (a loop), Buddy rides straight through the crossing
+    if (s.xs && B.on && s.xs.some(c => len2(B.x - c.x, B.y - c.y) < 3 * R && B.on.some(r => r.id === s.id && r.i - c.j <= 6 && c.j - r.i <= 6))) continue;
+    let t = (B.x - s.x1) * s.dx + (B.y - s.y1) * s.dy, cx = s.nx, cy = s.ny, d = sd;
+    if (t < 0 || t > s.l) {
+      // past an end: a joint is left to the neighbouring segment; a loose end is round
+      if (t < 0 ? s.j1 : s.j2) continue;
+      const ex = B.x - (t < 0 ? s.x1 : s.x2), ey = B.y - (t < 0 ? s.y1 : s.y2);
+      d = len2(ex, ey); if (d >= R + 0.75 || d < 1e-6) continue;
+      cx = ex / d; cy = ey / d;
+    }
+    if (d < R) { B.x += cx * (R - d); B.y += cy * (R - d); }
+    const vn = B.vx * cx + B.vy * cy;
+    if (vn < 0) {
+      // a glancing touch (a smooth bend) keeps Buddy's speed; a hard landing loses the part going into the line
+      const v0 = len2(B.vx, B.vy);
+      B.vx -= cx * vn; B.vy -= cy * vn; if (-vn > impact) impact = -vn;
+      if (-vn < 0.25 * v0) { const v1 = len2(B.vx, B.vy); if (v1 > 1e-6) { B.vx *= v0 / v1; B.vy *= v0 / v1; } }
+    }
+    nx += cx; ny += cy; hits++; on.push(s);
+    if (s.t === 1 && d < best) { best = d; boost = s; }
+  }
+  B.on = on;
+  if (!hits) return null;
+  if (boost) { B.vx += boost.dx * BOOST * dt; B.vy += boost.dy * BOOST * dt; }
+  const n = len2(nx, ny) || 1;
+  return { nx: nx / n, ny: ny / n, impact };
+}
+function crash(S, why) {
+  if (S.crash) return;
+  S.crash = why; S.crashT = S.t;
+  S.buddy = { x: S.x + S.ux * 8, y: S.y + S.uy * 8, vx: S.vx * 0.9 - S.ux * 60, vy: S.vy * 0.9 - 120, ux: S.ux, uy: S.uy, w: S.vx >= 0 ? 7 : -7 };
+}
+function rotate(B, a) {
+  const ux = B.ux - B.uy * a, uy = B.uy + B.ux * a, n = len2(ux, uy) || 1;
+  B.ux = ux / n; B.uy = uy / n;
+}
+/* One fixed tick (TICK seconds). mode "free" never finishes; challenges end at the flag, on a crash, a fall or a stop. */
+function tick(S, W) {
+  if (S.end) return;
+  const sp = len2(S.vx, S.vy), n = Math.max(1, Math.ceil(sp * TICK / 4)), dt = TICK / n, L = W.lvl || {};
+  for (let i = 0; i < n; i++) {
+    S.vy += GRAV * dt;
+    const drag = 1 - 0.02 * dt; S.vx *= drag; S.vy *= drag;
+    const ox = S.x, oy = S.y; S.x += S.vx * dt; S.y += S.vy * dt;
+    const c = collide(S, W, dt, ox, oy);
+    if (c) {
+      if (!S.crash && !S.ground && S.air > 0.1) {
+        const dot = S.ux * c.nx + S.uy * c.ny;
+        if (dot < -0.2) crash(S, "flip"); else if (c.impact > 650 && dot < 0.3) crash(S, "bonk");
+      }
+      const k = Math.min(1, 25 * dt);
+      let ux = S.ux + (c.nx - S.ux) * k, uy = S.uy + (c.ny - S.uy) * k; const m = len2(ux, uy) || 1; ux /= m; uy /= m;
+      let w = (S.ux * uy - S.uy * ux) / dt; w = w > 14 ? 14 : w < -14 ? -14 : w;
+      S.w = S.w * 0.85 + w * 0.15; S.ux = ux; S.uy = uy;
+      const f = 1 - 0.1 * dt; S.vx *= f; S.vy *= f;
+      S.ground = true; S.air = 0;
+    } else {
+      if (S.ground) S.w = S.w > 3 ? 3 : S.w < -3 ? -3 : S.w;
+      S.ground = false; S.air += dt; rotate(S, S.w * dt); S.w *= 1 - 1.2 * dt;
+      // in the air the sledge slowly lines up with the way Buddy is flying, so a landing along his path is smooth
+      const v = len2(S.vx, S.vy);
+      if (v > 40) {
+        const k = Math.min(1, 2.5 * dt), tx = S.face * S.vy / v, ty = -S.face * S.vx / v;
+        const ux = S.ux + (tx - S.ux) * k, uy = S.uy + (ty - S.uy) * k, m = len2(ux, uy) || 1; S.ux = ux / m; S.uy = uy / m;
+      }
+    }
+  }
+  S.t += TICK;
+  const fx = -S.uy, fy = S.ux, along = S.vx * fx + S.vy * fy;
+  if (along > 15) S.face = 1; else if (along < -15) S.face = -1;
+  if (S.buddy) {
+    const B = S.buddy, m = Math.max(1, Math.ceil(len2(B.vx, B.vy) * TICK / 4)), d = TICK / m;
+    for (let i = 0; i < m; i++) {
+      const ox = B.x, oy = B.y; B.vy += GRAV * d; B.x += B.vx * d; B.y += B.vy * d;
+      const c = collide(B, W, d, ox, oy);
+      if (c) { B.vx *= 1 - 3 * d; B.vy *= 1 - 3 * d; B.w *= 1 - 4 * d; }
+      rotate(B, B.w * d);
+    }
+  }
+  if (!S.crash) {
+    for (const th of L.x || []) if (len2(S.x - th[0], S.y - th[1]) < th[2] + R * 0.6) crash(S, "thorns");
+    (L.b || []).forEach((b, i) => { if (!S.got[i] && len2(S.x - b[0], S.y - b[1]) < REACH) S.got[i] = true; });
+  }
+  if ((S.t * 120 | 0) % 6 === 0 && S.trail.length < 20000) S.trail.push(Math.round(S.x), Math.round(S.y));
+  S.still = sp < 10 ? S.still + TICK : 0;
+  if (L.f && !S.crash && len2(S.x - L.f[0], S.y - L.f[1]) < FIN) S.end = { ok: true };
+  else if (S.crash && S.t - S.crashT > 1.8) S.end = { ok: false, why: S.crash };
+  else if (S.y > W.bottom) S.end = { ok: false, why: "fell" };
+  else if (S.still > 2.5) S.end = { ok: false, why: "stopped" };
+  else if (S.t > MAXT) S.end = { ok: false, why: "time" };
+}
+/* Whole run without drawing, for checks: {ok, got, t, why}. */
+function simulate(lvl, lines) {
+  const W = makeWorld(lines, lvl), S = newRun(W);
+  while (!S.end) tick(S, W);
+  return { ok: S.end.ok, why: S.end.why, got: S.got.filter(Boolean).length, all: S.got.every(Boolean), t: S.t, S };
+}
+/* Stars for a finished challenge run: reaching the flag, every treat, ink at or under par. */
+function starsFor(lvl, res, ink) {
+  if (!res.ok) return 0;
+  return 1 + (res.all ? 1 : 0) + (ink <= lvl.p ? 1 : 0);
+}
+/* Does segment (x1,y1)-(x2,y2) touch rectangle [x,y,w,h]? (no-draw zones) */
+function segHitsRect(x1, y1, x2, y2, r) {
+  let t0 = 0, t1 = 1; const dx = x2 - x1, dy = y2 - y1;
+  const P = [-dx, dx, -dy, dy], Q = [x1 - r[0], r[0] + r[2] - x1, y1 - r[1], r[1] + r[3] - y1];
+  for (let i = 0; i < 4; i++) {
+    if (P[i] === 0) { if (Q[i] < 0) return false; continue; }
+    const t = Q[i] / P[i];
+    if (P[i] < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+  }
+  return true;
+}
+/* Daily challenge: made on the phone from the day number (day 1 is 30 October 2026), the same for everyone.
+   A random downhill route through the treats, a bush or two beside it and maybe a flowerbed under it. The route itself
+   is ridden first, so every daily can be finished; par is a little over the route's ink. Changing this changes every
+   future daily, so don't without a plan. */
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function dailyLevel(day, weekend) {
+  for (let tries = 0; tries < 60; tries++) {
+    const r = rng(day * 7919 + tries * 104729 + 17), ri = (a, b) => a + Math.floor(r() * (b - a + 1));
+    const n = weekend ? ri(4, 5) : ri(2, 3), pts = [];
+    let x = 0, y = 0;
+    for (let i = 0; i <= n; i++) {
+      x += ri(130, 210); y += i > 0 && r() < 0.25 ? -ri(0, 25) : ri(50, 150);
+      pts.push([x, y]);
+    }
+    const h = [-20, 12];
+    for (const [px, py] of pts) h.push(px, py + 12);
+    h.push(x + 90, y + 12 + ri(10, 40));
+    const lines = [[0, ...h]], b = pts.slice(0, n).map(p => [p[0], p[1]]), f = pts[n];
+    const segs = [];
+    for (let i = 0; i + 3 < h.length; i += 2) segs.push([h[i], h[i + 1], h[i + 2], h[i + 3]]);
+    const lvl = { n: "Daily slide", s: [0, 0], f, b, x: [], z: [] };
+    // bushes above the route between two treats, a flowerbed under it
+    const bushes = ri(1, weekend ? 3 : 2);
+    for (let k = 0; k < bushes; k++) {
+      const i = ri(0, pts.length - 2), a = i ? pts[i - 1] : [0, 0], c = pts[i], mx = (a[0] + c[0]) / 2, my = (a[1] + c[1]) / 2;
+      lvl.x.push([Math.round(mx + ri(-20, 20)), Math.round(my - ri(36, 52)), ri(20, 30)]);
+    }
+    if (r() < 0.6) {
+      const i = ri(1, pts.length - 1), a = pts[i - 1], c = pts[i];
+      const zx = Math.round(a[0] + 10), zw = Math.round(c[0] - a[0] - 20), zy = Math.round(Math.max(a[1], c[1]) + ri(28, 50));
+      if (zw > 40) lvl.z.push([zx, zy, zw, ri(120, 260)]);
+    }
+    if (lvl.z.some(z => segs.some(q => segHitsRect(q[0], q[1], q[2], q[3], z)))) continue;
+    const res = simulate(lvl, lines);
+    if (!res.ok || !res.all) continue;
+    lvl.h = lines; lvl.p = Math.ceil(inkOf(lines) * 1.1 / 10) * 10;
+    if (!lvl.z.length) delete lvl.z;
+    return lvl;
+  }
+  return null;
+}
+/*CORE-END*/
+
+const LEVELS = JSON.parse(document.getElementById("levelData").textContent);
+const $ = id => document.getElementById(id);
+const load = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const APP = !!(window.SG_APP || window.WR_APP);
+const NATIVE = APP && window.Capacitor ? (typeof Capacitor.registerPlugin === "function" ? Capacitor.registerPlugin("WordRattle") : (Capacitor.Plugins || {}).WordRattle) || null : null;
+const SITE_URL = "https://jackstoneley.github.io/word-rattle/";
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const starStr = n => "★".repeat(n) + "☆".repeat(3 - n);
+const starHTML = (box, n) => { box.textContent = "★".repeat(n); const i = el("i", null, "★".repeat(3 - n)); box.append(i); };
+
+/* Saved data (all under "slide."):
+   slide.levels {n: {stars, ink, at}}  slide.daily {day: {stars, ink, at}}  slide.work {"L3"|"D12": lines in progress}
+   slide.tracks / slide.shared [{id, t, a, at, s:[x,y], l: lines}]  slide.name (for sending)
+   A line is {t: 0 track | 1 boost | 2 scenery, s: solid side, p: [x0,y0,x1,y1,...]}. */
+let LV = load("slide.levels", {}), DAILY = load("slide.daily", {}), WORK = load("slide.work", {});
+let MINE = load("slide.tracks", []), SHARED = load("slide.shared", []);
+
+/* ---------- days ---------- */
+const DAY0 = Date.UTC(2026, 9, 30);
+const todayNum = () => { const d = new Date(); return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - DAY0) / 864e5) + 1; };
+const dayDate = n => new Date(DAY0 + (n - 1) * 864e5);
+const isWeekend = n => { const w = dayDate(n).getUTCDay(); return w === 0 || w === 6; };
+const fmtDay = n => dayDate(n).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+const DAILY_CACHE = {};
+const dailyFor = n => DAILY_CACHE[n] || (DAILY_CACHE[n] = dailyLevel(n, isWeekend(n)));
+
+/* ---------- drawing Buddy, bones, flags, bushes ---------- */
+function drawRider(c, x, y, ux, uy, face, z, sled, dog) {
+  const fx = -uy, fy = ux, k = Math.min(1.8, Math.max(1, 0.8 / z));   // drawn bigger when zoomed out, still sitting on the line
+  c.save(); c.translate(x, y); c.transform(fx * face * z, fy * face * z, -ux * z, -uy * z, 0, 0);
+  c.translate(0, R); c.scale(k, k); c.translate(0, -R);
+  if (sled) {
+    c.fillStyle = "#E8452C"; c.strokeStyle = "#8E2414"; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(-17, 5); c.lineTo(12, 5); c.quadraticCurveTo(19, 5, 18, -2); c.lineTo(15, -2); c.quadraticCurveTo(15, 2, 11, 2); c.lineTo(-17, 2); c.closePath(); c.fill(); c.stroke();
+    c.strokeStyle = "#5B6577"; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-15, 9.2); c.lineTo(13, 9.2); c.quadraticCurveTo(19, 9.2, 19, 4); c.stroke();
+    c.beginPath(); c.moveTo(-10, 5); c.lineTo(-10, 9); c.moveTo(6, 5); c.lineTo(6, 9); c.stroke();
+  }
+  if (dog) {
+    c.fillStyle = "#FFFFFF"; c.strokeStyle = "#9A9384"; c.lineWidth = 1;
+    const puff = (px, py, r) => { c.beginPath(); c.arc(px, py, r, 0, 7); c.fill(); c.stroke(); };
+    puff(-14, -6, 3.6);                                            // tail
+    for (const [px, py, r] of [[-9, -3, 5], [-3, -5, 5.5], [3, -4, 5], [-6, -8, 4], [1, -9, 4]]) puff(px, py, r);
+    c.fillStyle = "#FFFFFF"; for (const [px, py, r] of [[-9, -3, 4], [-3, -5, 4.5], [3, -4, 4], [-6, -8, 3], [1, -9, 3]]) { c.beginPath(); c.arc(px, py, r, 0, 7); c.fill(); }
+    puff(9, -11, 6); puff(6, -16, 3); puff(11, -16.5, 2.8);           // head and curly top
+    c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(9, -11, 5, 0, 7); c.fill();
+    c.fillStyle = "#F2EDE3"; c.beginPath(); c.ellipse(5.5, -8.5, 2.6, 4.6, 0.35, 0, 7); c.fill(); c.stroke();   // ear
+    puff(14, -9.5, 2.6); c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(14, -9.5, 2, 0, 7); c.fill();          // muzzle
+    c.fillStyle = "#1E1712"; c.beginPath(); c.arc(16.3, -10.2, 1.3, 0, 7); c.fill();                           // nose
+    c.beginPath(); c.arc(11.2, -12.6, 0.95, 0, 7); c.fill();                                                    // eye
+  }
+  c.restore();
+}
+function drawBone(c, x, y, z) {
+  c.save(); c.translate(x, y); c.scale(z, z); c.rotate(-0.35);
+  c.fillStyle = "#F4E3C3"; c.strokeStyle = "#B08A55"; c.lineWidth = 1.4;
+  c.beginPath(); c.rect(-8, -2.6, 16, 5.2);
+  for (const [px, py] of [[-9, -3], [-9, 3], [9, -3], [9, 3]]) { c.moveTo(px + 3.6, py); c.arc(px, py, 3.6, 0, 7); }
+  c.stroke(); c.fill(); c.restore();
+}
+function drawFlag(c, x, y, z) {
+  c.save(); c.translate(x, y); c.scale(z, z);
+  c.strokeStyle = "rgba(60,140,80,.55)"; c.lineWidth = 2; c.setLineDash([5, 5]); c.beginPath(); c.arc(0, 0, FIN, 0, 7); c.stroke(); c.setLineDash([]);
+  c.strokeStyle = "#3B3226"; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-6, 22); c.lineTo(-6, -30); c.stroke();
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { c.fillStyle = (i + j) % 2 ? "#1B2433" : "#FFFFFF"; c.fillRect(-5 + i * 6, -30 + j * 5, 6, 5); }
+  c.strokeStyle = "#1B2433"; c.lineWidth = 1; c.strokeRect(-5, -30, 24, 15);
+  c.restore();
+}
+function drawBush(c, x, y, r, z) {
+  c.save(); c.translate(x, y); c.scale(z, z);
+  c.fillStyle = "#2F6B3A"; c.strokeStyle = "#1D4626"; c.lineWidth = 1.5; c.beginPath();
+  const n = Math.max(10, Math.round(r * 0.6));
+  for (let i = 0; i <= n * 2; i++) { const a = i / (n * 2) * Math.PI * 2, rr = i % 2 ? r * 0.82 : r * 1.06; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  c.fill(); c.stroke();
+  c.fillStyle = "#3F8A4B"; c.beginPath(); c.arc(-r * 0.2, -r * 0.2, r * 0.5, 0, 7); c.fill();
+  c.fillStyle = "#D6334A"; for (const [px, py] of [[0.3, -0.35], [-0.45, 0.2], [0.15, 0.45], [0.5, 0.15]]) { c.beginPath(); c.arc(px * r, py * r, 2.4, 0, 7); c.fill(); }
+  c.restore();
+}
+
+/* ---------- the editor's state ---------- */
+const cv = $("cv"), ctx = cv.getContext("2d");
+let VW = 0, VH = 0, DPR = 1;
+let MODE = null;            // {kind:"level", n} | {kind:"daily", day} | {kind:"free", list:"mine"|"shared", id}
+let LVL = null;             // the level (challenges) or {s:[x,y]} for your own tracks
+let LINES = [], UNDO = [], REDO = [];
+let TOOL = "pen", KIND = 0, CAM = { x: 0, y: 0, z: 1 }, EDCAM = null;
+let RUN = null, WORLD = null, SPEED = 1, LASTTRAIL = null, SHOWHINT = false, INK = 0;
+let view = "menu";
+
+function resize() {
+  DPR = Math.min(2.5, window.devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
+  cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
+}
+const topH = () => $("ed").querySelector(".top").offsetHeight, botH = () => $("bot").offsetHeight;
+const toScreen = (x, y) => [(x - CAM.x) * CAM.z + VW / 2, (y - CAM.y) * CAM.z + VH / 2];
+const toWorld = (sx, sy) => [(sx - VW / 2) / CAM.z + CAM.x, (sy - VH / 2) / CAM.z + CAM.y];
+const challenge = () => MODE && MODE.kind !== "free";
+
+function fitView() {
+  const xs = [], ys = [], add = (x, y) => { xs.push(x); ys.push(y); };
+  add(LVL.s[0], LVL.s[1]);
+  if (LVL.f) add(LVL.f[0], LVL.f[1]);
+  for (const b of LVL.b || []) add(b[0], b[1]);
+  for (const t of LVL.x || []) { add(t[0] - t[2], t[1] - t[2]); add(t[0] + t[2], t[1] + t[2]); }
+  for (const z of LVL.z || []) { add(z[0], z[1]); add(z[0] + z[2], Math.min(z[1] + z[3], z[1] + 160)); }
+  for (const L of (LVL.g || []).map(asLine).concat(LINES)) for (let i = 0; i < L.p.length; i += 2) add(L.p[i], L.p[i + 1]);
+  if (xs.length < 3) { add(LVL.s[0] - 150, LVL.s[1] - 100); add(LVL.s[0] + 350, LVL.s[1] + 300); }
+  const x0 = Math.min(...xs) - 50, x1 = Math.max(...xs) + 50, y0 = Math.min(...ys) - 60, y1 = Math.max(...ys) + 60;
+  const th = topH(), bh = botH(), aw = VW, ah = Math.max(100, VH - th - bh);
+  CAM.z = Math.max(0.25, Math.min(1.6, aw / (x1 - x0), ah / (y1 - y0)));
+  CAM.x = (x0 + x1) / 2; CAM.y = (y0 + y1) / 2 - ((th + VH - bh) / 2 - VH / 2) / CAM.z;
+}
+
+/* ---------- rendering ---------- */
+function render(now) {
+  const c = ctx, z = CAM.z;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.fillStyle = "#FBF7EE"; c.fillRect(0, 0, VW, VH);
+  // dot grid
+  let step = 50; while (step * z < 22) step *= 2;
+  const [wx0, wy0] = toWorld(0, 0), [wx1, wy1] = toWorld(VW, VH);
+  c.fillStyle = "rgba(70,90,130,.22)";
+  for (let gx = Math.floor(wx0 / step) * step; gx <= wx1; gx += step) for (let gy = Math.floor(wy0 / step) * step; gy <= wy1; gy += step) {
+    const [sx, sy] = toScreen(gx, gy); c.fillRect(sx - 1, sy - 1, 2, 2);
+  }
+  const L = LVL || {};
+  for (const r of L.z || []) {
+    const [sx, sy] = toScreen(r[0], r[1]), w = r[2] * z, h = r[3] * z;
+    c.fillStyle = "rgba(122,86,52,.16)"; c.fillRect(sx, sy, w, h);
+    c.strokeStyle = "rgba(122,86,52,.5)"; c.lineWidth = 1.5; c.setLineDash([6, 5]); c.strokeRect(sx, sy, w, h); c.setLineDash([]);
+    const fs = 34 * z; let k = 0;
+    for (let fx = r[0] + 17; fx < r[0] + r[2]; fx += 34) for (let fy = r[1] + 17; fy < r[1] + r[3]; fy += 34) {
+      const [px, py] = toScreen(fx + ((k * 7) % 11) - 5, fy + ((k * 5) % 9) - 4); k++;
+      if (px < -20 || py < -20 || px > VW + 20 || py > VH + 20) continue;
+      c.fillStyle = ["#E86A92", "#F2B33D", "#B07CE0"][k % 3];
+      for (let a = 0; a < 5; a++) { c.beginPath(); c.arc(px + Math.cos(a * 1.257) * fs * 0.1, py + Math.sin(a * 1.257) * fs * 0.1, fs * 0.08, 0, 7); c.fill(); }
+      c.fillStyle = "#FFF3B0"; c.beginPath(); c.arc(px, py, fs * 0.06, 0, 7); c.fill();
+    }
+  }
+  if (SHOWHINT && L.h) drawLines(L.h.map(asLine), "hint");
+  if (LASTTRAIL && !RUN) {
+    c.strokeStyle = "rgba(255,107,74,.35)"; c.lineWidth = 2; c.setLineDash([3, 6]); c.beginPath();
+    for (let i = 0; i < LASTTRAIL.length; i += 2) { const [sx, sy] = toScreen(LASTTRAIL[i], LASTTRAIL[i + 1]); i ? c.lineTo(sx, sy) : c.moveTo(sx, sy); }
+    c.stroke(); c.setLineDash([]);
+  }
+  drawLines((L.g || []).map(asLine), "locked");
+  drawLines(LINES, "mine");
+  if (DRAG && DRAG.preview) drawLines([DRAG.preview], "mine");
+  for (const t of L.x || []) { const [sx, sy] = toScreen(t[0], t[1]); drawBush(c, sx, sy, t[2], z); }
+  const bob = Math.sin((now || 0) / 300) * 2.5;
+  (L.b || []).forEach((b, i) => { if (RUN && RUN.got[i]) return; const [sx, sy] = toScreen(b[0], b[1] + bob); drawBone(c, sx, sy, Math.max(z, 0.75) * 1.1); });
+  if (L.f) { const [sx, sy] = toScreen(L.f[0], L.f[1]); drawFlag(c, sx, sy, z); }
+  if (RUN) {
+    const S = RUN, [sx, sy] = toScreen(S.x, S.y);
+    drawRider(c, sx, sy, S.ux, S.uy, S.face, z, true, !S.buddy);
+    if (S.buddy) { const B = S.buddy, [bx, by] = toScreen(B.x, B.y); drawRider(c, bx, by, B.ux, B.uy, S.face, z, false, true); }
+  } else {
+    const [sx, sy] = toScreen(L.s[0], L.s[1]);
+    drawRider(c, sx, sy, 0, -1, 1, z, true, true);
+    if (MODE && MODE.kind === "free") { c.strokeStyle = "rgba(255,107,74,.6)"; c.lineWidth = 1.5; c.setLineDash([4, 4]); c.beginPath(); c.arc(sx, sy, 24, 0, 7); c.stroke(); c.setLineDash([]); }
+  }
+  if (DRAG && DRAG.kind === "erase" && DRAG.at) { c.strokeStyle = "rgba(27,36,51,.5)"; c.lineWidth = 1.5; c.beginPath(); c.arc(DRAG.at[0], DRAG.at[1], ERASE_R, 0, 7); c.stroke(); }
+}
+const LINE_COL = ["#23324A", "#F26B1D", "#4FA35A"];
+function drawLines(lines, how) {
+  const c = ctx, z = CAM.z;
+  c.lineCap = "round"; c.lineJoin = "round";
+  for (const L of lines) {
+    if (L.p.length < 4) continue;
+    c.beginPath();
+    for (let i = 0; i < L.p.length; i += 2) { const [sx, sy] = toScreen(L.p[i], L.p[i + 1]); i ? c.lineTo(sx, sy) : c.moveTo(sx, sy); }
+    if (how === "hint") { c.strokeStyle = L.t === 1 ? "rgba(242,107,29,.35)" : "rgba(35,50,74,.22)"; c.lineWidth = 6; c.setLineDash([10, 8]); c.stroke(); c.setLineDash([]); continue; }
+    if (how === "locked") { c.strokeStyle = L.t === 1 ? "#C4561A" : "#6B7588"; c.lineWidth = Math.max(4, 7 * z); c.stroke(); c.strokeStyle = L.t === 1 ? "#F58A4B" : "#97A0B0"; c.lineWidth = Math.max(1.5, 2.5 * z); c.stroke(); }
+    else { c.strokeStyle = LINE_COL[L.t] || LINE_COL[0]; c.lineWidth = Math.max(2.5, 3.2 * z); c.stroke(); }
+    if (L.t === 1) {   // chevrons along boost lines, pointing the way they push
+      c.strokeStyle = "#FFF4E6"; c.lineWidth = 1.6;
+      let carry = 0;
+      for (let i = 0; i + 3 < L.p.length; i += 2) {
+        const [ax, ay] = toScreen(L.p[i], L.p[i + 1]), [bx, by] = toScreen(L.p[i + 2], L.p[i + 3]), dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy);
+        if (l < 0.1) continue;
+        const ux = dx / l, uy = dy / l;
+        for (let d = 14 - carry; d < l; d += 28) {
+          const px = ax + ux * d, py = ay + uy * d;
+          c.beginPath(); c.moveTo(px - ux * 4 - uy * 3.5, py - uy * 4 + ux * 3.5); c.lineTo(px, py); c.lineTo(px - ux * 4 + uy * 3.5, py - uy * 4 - ux * 3.5); c.stroke();
+        }
+        carry = (carry + l) % 28;
+      }
+    }
+  }
+}
+
+/* ---------- touch: draw, rub out, move, pinch ---------- */
+const PTRS = new Map();
+let DRAG = null, PINCH = null;
+const ERASE_R = 16, SNAP_R = 14;
+function snapPoint(wx, wy) {
+  let best = null, bd = SNAP_R / CAM.z;
+  for (const L of LINES.concat((LVL.g || []).map(asLine))) for (const k of [0, L.p.length - 2]) {
+    const d = Math.hypot(L.p[k] - wx, L.p[k + 1] - wy); if (d < bd) { bd = d; best = [L.p[k], L.p[k + 1]]; }
+  }
+  return best || [Math.round(wx), Math.round(wy)];
+}
+const inZone = (x1, y1, x2, y2) => (LVL.z || []).some(r => segHitsRect(x1, y1, x2, y2, r));
+function snapshot() { UNDO.push(JSON.stringify(LINES)); if (UNDO.length > 80) UNDO.shift(); REDO = []; }
+function changed() { INK = inkOf(LINES); saveWork(); updateBar(); }
+function inkLeft() { return LVL.lim ? LVL.lim - INK : Infinity; }
+let zoneWarned = 0, inkWarned = 0;
+function warnZone() { if (Date.now() - zoneWarned > 2500) { toast("You can't draw on the flowerbed"); zoneWarned = Date.now(); } }
+function warnInk() { if (Date.now() - inkWarned > 2500) { toast("Out of ink: rub something out"); inkWarned = Date.now(); } }
+
+function beginStroke(sx, sy) {
+  const [wx, wy] = toWorld(sx, sy);
+  if (MODE.kind === "free" && Math.hypot(sx - toScreen(LVL.s[0], LVL.s[1])[0], sy - toScreen(LVL.s[0], LVL.s[1])[1]) < 26) { DRAG = { kind: "start", snap: false }; snapshotStart(); return; }
+  if (TOOL === "pan") { DRAG = { kind: "pan", sx, sy, cx: CAM.x, cy: CAM.y }; return; }
+  if (TOOL === "erase") { DRAG = { kind: "erase", before: JSON.stringify(LINES), at: [sx, sy] }; eraseAt(wx, wy); return; }
+  const p = snapPoint(wx, wy);
+  if (inZone(p[0], p[1], p[0], p[1])) { warnZone(); DRAG = { kind: "blocked" }; return; }
+  if (TOOL === "line") { DRAG = { kind: "line", a: p, preview: { t: KIND, p: [p[0], p[1], p[0], p[1]] } }; return; }
+  DRAG = { kind: "pen", preview: { t: KIND, p: [p[0], p[1]] }, done: [] };
+}
+function moveStroke(sx, sy) {
+  if (!DRAG) return;
+  const [wx, wy] = toWorld(sx, sy);
+  if (DRAG.kind === "start") { LVL.s = [Math.round(wx), Math.round(wy)]; return; }
+  if (DRAG.kind === "pan") { CAM.x = DRAG.cx - (sx - DRAG.sx) / CAM.z; CAM.y = DRAG.cy - (sy - DRAG.sy) / CAM.z; return; }
+  if (DRAG.kind === "erase") { DRAG.at = [sx, sy]; eraseAt(wx, wy); return; }
+  if (DRAG.kind === "line") { const p = DRAG.preview.p; p[2] = Math.round(wx); p[3] = Math.round(wy); return; }
+  if (DRAG.kind === "pen") {
+    const pr = DRAG.preview, p = pr.p;
+    if (p.length === 0) {                       // waiting to come out of a flowerbed
+      if (!inZone(wx, wy, wx, wy)) p.push(Math.round(wx), Math.round(wy));
+      return;
+    }
+    const lx = p[p.length - 2], ly = p[p.length - 1], d = Math.hypot(wx - lx, wy - ly);
+    if (d < Math.max(4, 9 / CAM.z)) return;
+    const nx = Math.round(wx), ny = Math.round(wy);
+    if (inZone(lx, ly, nx, ny)) { warnZone(); if (p.length >= 4) DRAG.done.push(pr); DRAG.preview = { t: KIND, p: [] }; return; }
+    const used = INK + inkOf(DRAG.done) + inkOf([pr]);
+    if (used + d > (LVL.lim || Infinity)) { warnInk(); return; }
+    p.push(nx, ny);
+  }
+}
+function endStroke(sx, sy) {
+  if (!DRAG) return;
+  const D = DRAG; DRAG = null;
+  if (D.kind === "start") { saveWork(); return; }
+  if (D.kind === "erase") { if (JSON.stringify(LINES) !== D.before) { UNDO.push(D.before); if (UNDO.length > 80) UNDO.shift(); REDO = []; changed(); } return; }
+  let add = [];
+  if (D.kind === "line") {
+    const p = D.preview.p, e = snapPoint(p[2], p[3]); p[2] = e[0]; p[3] = e[1];
+    if (Math.hypot(p[2] - p[0], p[3] - p[1]) < 4) return;
+    if (inZone(p[0], p[1], p[2], p[3])) { warnZone(); return; }
+    if (INK + inkOf([D.preview]) > (LVL.lim || Infinity)) { warnInk(); return; }
+    add = [D.preview];
+  } else if (D.kind === "pen") {
+    add = D.done.concat(D.preview.p.length >= 4 ? [D.preview] : []);
+    // finish on a nearby line end so tracks join smoothly
+    for (const L of add.slice(-1)) { const n = L.p.length, e = snapPoint(L.p[n - 2], L.p[n - 1]); if (!inZone(L.p[n - 4], L.p[n - 3], e[0], e[1])) { L.p[n - 2] = e[0]; L.p[n - 1] = e[1]; } }
+  }
+  add = add.filter(L => L.p.length >= 4);
+  if (!add.length) return;
+  snapshot();
+  for (const L of add) LINES.push({ t: L.t, s: sideOf(L.p), p: L.p });
+  changed();
+}
+function eraseAt(wx, wy) {
+  const r = ERASE_R / CAM.z, out = []; let hit = false;
+  for (const L of LINES) {
+    let run = [L.p[0], L.p[1]];
+    const keep = [];
+    for (let i = 0; i + 3 < L.p.length; i += 2) {
+      const s = { x1: L.p[i], y1: L.p[i + 1], x2: L.p[i + 2], y2: L.p[i + 3] }, l = Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
+      s.dx = l ? (s.x2 - s.x1) / l : 0; s.dy = l ? (s.y2 - s.y1) / l : 0; s.l = l;
+      if (distSeg(wx, wy, s) < r) { hit = true; if (run.length >= 4) keep.push(run); run = [s.x2, s.y2]; }
+      else run.push(s.x2, s.y2);
+    }
+    if (run.length >= 4) keep.push(run);
+    for (const p of keep) out.push({ t: L.t, s: L.s, p });
+  }
+  if (hit) { LINES = out; INK = inkOf(LINES); updateBar(); }
+}
+let startBefore = null;
+function snapshotStart() { startBefore = LVL.s.slice(); }
+
+cv.addEventListener("pointerdown", e => {
+  if (RUN) return;
+  hideTip();
+  cv.setPointerCapture(e.pointerId);
+  PTRS.set(e.pointerId, [e.clientX, e.clientY]);
+  if (PTRS.size === 2) {
+    if (DRAG && DRAG.kind === "erase" && JSON.stringify(LINES) !== DRAG.before) { UNDO.push(DRAG.before); REDO = []; changed(); }
+    DRAG = null;
+    const [a, b] = [...PTRS.values()];
+    PINCH = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), mx: (a[0] + b[0]) / 2, my: (a[1] + b[1]) / 2, z: CAM.z, cx: CAM.x, cy: CAM.y };
+  } else if (PTRS.size === 1) beginStroke(e.clientX, e.clientY);
+});
+cv.addEventListener("pointermove", e => {
+  if (!PTRS.has(e.pointerId)) return;
+  PTRS.set(e.pointerId, [e.clientX, e.clientY]);
+  if (PINCH && PTRS.size >= 2) {
+    const [a, b] = [...PTRS.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]), mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    const nz = Math.max(0.2, Math.min(4, PINCH.z * d / PINCH.d));
+    // keep the world point under the first midpoint under the fingers
+    const wx = (PINCH.mx - VW / 2) / PINCH.z + PINCH.cx, wy = (PINCH.my - VH / 2) / PINCH.z + PINCH.cy;
+    CAM.z = nz; CAM.x = wx - (mx - VW / 2) / nz; CAM.y = wy - (my - VH / 2) / nz;
+  } else moveStroke(e.clientX, e.clientY);
+});
+const ptrUp = e => {
+  if (!PTRS.has(e.pointerId)) return;
+  PTRS.delete(e.pointerId);
+  if (PINCH) { if (PTRS.size === 0) PINCH = null; return; }
+  endStroke(e.clientX, e.clientY);
+};
+cv.addEventListener("pointerup", ptrUp);
+cv.addEventListener("pointercancel", e => { PTRS.delete(e.pointerId); if (DRAG && DRAG.kind === "erase") endStroke(); else DRAG = null; if (!PTRS.size) PINCH = null; });
+cv.addEventListener("wheel", e => {
+  e.preventDefault();
+  const [wx, wy] = toWorld(e.clientX, e.clientY), nz = Math.max(0.2, Math.min(4, CAM.z * Math.exp(-e.deltaY * 0.0015)));
+  CAM.z = nz; CAM.x = wx - (e.clientX - VW / 2) / nz; CAM.y = wy - (e.clientY - VH / 2) / nz;
+}, { passive: false });
+
+/* ---------- toolbar ---------- */
+document.querySelectorAll(".tool").forEach(b => b.onclick = () => { TOOL = b.dataset.t; document.querySelectorAll(".tool").forEach(x => x.classList.toggle("on", x === b)); });
+document.querySelectorAll("#kinds button").forEach(b => b.onclick = () => {
+  KIND = +b.dataset.k; document.querySelectorAll("#kinds button").forEach(x => x.classList.toggle("on", x === b));
+  if (TOOL === "erase" || TOOL === "pan") document.querySelector('.tool[data-t="pen"]').click();
+});
+$("undoBtn").onclick = () => { if (!UNDO.length) return; REDO.push(JSON.stringify(LINES)); LINES = JSON.parse(UNDO.pop()); changed(); };
+$("redoBtn").onclick = () => { if (!REDO.length) return; UNDO.push(JSON.stringify(LINES)); LINES = JSON.parse(REDO.pop()); changed(); };
+$("playBtn").onclick = () => RUN ? stopRun() : startRun();
+$("speedBtn").onclick = () => { SPEED = SPEED === 1 ? 0.5 : SPEED === 0.5 ? 2 : 1; $("speedBtn").textContent = SPEED === 0.5 ? "½×" : SPEED + "×"; };
+$("backBtn").onclick = () => leaveEditor();
+$("moreBtn").onclick = () => moreMenu();
+
+function updateBar() {
+  $("undoBtn").disabled = !UNDO.length; $("redoBtn").disabled = !REDO.length;
+  const ink = $("edInk");
+  if (challenge()) {
+    ink.textContent = LVL.lim ? `Ink ${INK} of ${LVL.lim} · par ${LVL.p}` : `Ink ${INK} · par ${LVL.p}`;
+    ink.classList.toggle("over", INK > LVL.p);
+  } else { ink.textContent = `Ink ${INK}`; ink.classList.remove("over"); }
+}
+let toastT = 0;
+function toast(msg, ms) { const t = $("toast"); t.textContent = msg; t.hidden = false; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => { t.style.opacity = 0; setTimeout(() => t.hidden = true, 300); }, ms || 2000); }
+function showTip(text) { const t = $("tip"); t.textContent = text; t.hidden = !text; t.style.opacity = 1; }
+function hideTip() { const t = $("tip"); if (t.hidden) return; t.style.opacity = 0; setTimeout(() => t.hidden = true, 400); }
+
+/* ---------- playing a run ---------- */
+let lastFrame = 0, acc = 0, endShown = false;
+function startRun() {
+  hideTip();
+  EDCAM = { ...CAM };
+  WORLD = makeWorld(LINES, LVL); RUN = newRun(WORLD); acc = 0; endShown = false;
+  CAM.z = Math.max(0.55, Math.min(1.3, CAM.z));
+  setPlaying(true);
+}
+function stopRun() {
+  if (RUN) LASTTRAIL = RUN.trail;
+  RUN = null; WORLD = null;
+  if (EDCAM) CAM = EDCAM;
+  setPlaying(false);
+}
+function setPlaying(on) {
+  $("playBtn").classList.toggle("stop", on);
+  $("playBtn").querySelector("span").textContent = on ? "Stop" : "Play";
+  $("playBtn").querySelector("svg").innerHTML = on ? '<rect x="6" y="6" width="12" height="12" rx="2"/>' : '<path d="M7 4l13 8-13 8z"/>';
+  $("toolRow").hidden = on; $("kindRow").style.visibility = on ? "hidden" : ""; $("speedBtn").hidden = !on;
+  $("undoBtn").hidden = on; $("redoBtn").hidden = on; $("moreBtn").hidden = on;
+}
+const WHY = { flip: "Buddy landed upside down.", bonk: "Buddy hit the ground too hard.", thorns: "Ouch! Thorns.", fell: "Buddy fell off the world.", stopped: "Buddy came to a stop.", time: "That took too long." };
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - (lastFrame || now)) / 1000); lastFrame = now;
+  if (view !== "ed") return;
+  if (RUN && !RUN.end) {
+    acc += dt * SPEED; let n = 0;
+    while (acc >= TICK && n < 40 && !RUN.end) { tick(RUN, WORLD); acc -= TICK; n++; }
+    if (!challenge() && RUN.end && RUN.end.why === "time") RUN.end = null, RUN.t = 0;   // your own tracks can run as long as you like
+  }
+  if (RUN) {
+    const S = RUN, k = Math.min(1, dt * 5);
+    const avail = VH - topH() - botH(), cyOff = ((topH() + VH - botH()) / 2 - VH / 2) / CAM.z;
+    CAM.x += (S.x + S.vx * 0.25 - CAM.x) * k; CAM.y += (S.y + S.vy * 0.15 - cyOff - CAM.y) * k;
+    if (avail < 0) CAM.y = S.y;
+    if (RUN.end && !endShown) { endShown = true; setTimeout(() => runEnded(RUN), RUN.end.ok ? 500 : 250); }
+  }
+  render(now);
+}
+function runEnded(S) {
+  if (!S || S !== RUN) return;
+  if (!challenge()) { toast(S.end.ok ? "Nice ride!" : WHY[S.end.why] || "Run over"); setTimeout(() => { if (RUN === S) stopRun(); }, 1400); return; }
+  const got = S.got.filter(Boolean).length, res = { ok: S.end.ok, all: S.got.every(Boolean) }, stars = starsFor(LVL, res, INK);
+  let best = null, isNew = false;
+  if (stars) {
+    const store = MODE.kind === "level" ? LV : DAILY, key = MODE.kind === "level" ? MODE.n : MODE.day, old = store[key];
+    isNew = !old || stars > old.stars || (stars === old.stars && INK < old.ink);
+    if (isNew) { store[key] = { stars, ink: INK, at: Date.now() }; save(MODE.kind === "level" ? "slide.levels" : "slide.daily", store); }
+    best = store[key];
+  }
+  const box = $("ovc"); box.textContent = "";
+  box.append(el("h3", null, S.end.ok ? (stars === 3 ? "Perfect slide!" : "Made it!") : "Not this time"));
+  const bs = el("div", "bigstars"); starHTML(bs, stars); box.append(bs);
+  if (!S.end.ok) box.append(el("p", null, WHY[S.end.why] || ""));
+  const ln = el("div", "lines");
+  const line = (ok, text) => { ln.append(el("span", ok ? "y" : "n", ok ? "✓" : "○"), el("span", null, text)); };
+  line(S.end.ok, "Reach the flag");
+  line(S.end.ok && res.all, `Catch every bone (${got} of ${S.got.length})`);
+  line(S.end.ok && INK <= LVL.p, `Ink at or under par: ${INK} of ${LVL.p}`);
+  box.append(ln);
+  if (best && !isNew) box.append(el("p", null, `Your best: ${starStr(best.stars)} with ${best.ink} ink`));
+  const acts = el("div", "acts");
+  const again = el("button", "btn" + (stars === 3 ? "" : " pri"), "Change the track"); again.onclick = () => { closeOv(); stopRun(); }; acts.append(again);
+  if (MODE.kind === "level" && stars && LEVELS[MODE.n]) { const nx = el("button", "btn" + (stars === 3 ? " pri" : ""), "Next level"); nx.onclick = () => { closeOv(); stopRun(); openLevel(MODE.n + 1); }; acts.append(nx); }
+  if (MODE.kind === "daily" && stars) { const sh = el("button", "btn" + (stars === 3 ? " pri" : ""), "Share result"); sh.onclick = () => shareDaily(MODE.day); acts.append(sh); }
+  const menu = el("button", "btn", "Back to the menu"); menu.onclick = () => { closeOv(); stopRun(); leaveEditor(); }; acts.append(menu);
+  box.append(acts);
+  openOv("result");
+}
+
+/* ---------- opening and leaving the editor ---------- */
+const workKey = () => MODE.kind === "level" ? "L" + MODE.n : MODE.kind === "daily" ? "D" + MODE.day : null;
+function saveWork() {
+  if (!MODE) return;
+  if (MODE.kind === "free") {
+    const list = MODE.list === "mine" ? MINE : SHARED, tr = list.find(t => t.id === MODE.id);
+    if (tr) { tr.l = LINES; tr.s = LVL.s; tr.at = Date.now(); save(MODE.list === "mine" ? "slide.tracks" : "slide.shared", list); }
+    return;
+  }
+  WORK[workKey()] = LINES;
+  // keep only this week's dailies in progress
+  const today = todayNum();
+  for (const k of Object.keys(WORK)) if (k[0] === "D" && +k.slice(1) < today - 7) delete WORK[k];
+  save("slide.work", WORK);
+}
+function openEditor(mode, lvl, lines, title, tip) {
+  MODE = mode; LVL = lvl; LINES = (lines || []).map(L => ({ t: L.t, s: L.s || sideOf(L.p), p: L.p.slice() }));
+  UNDO = []; REDO = []; RUN = null; LASTTRAIL = null; SHOWHINT = false; INK = inkOf(LINES);
+  $("edTitle").textContent = title;
+  show("ed"); resize(); setPlaying(false); updateBar(); fitView();
+  showTip(tip || "");
+  $("kinds").querySelector('[data-k="2"]').hidden = challenge();
+  if (challenge() && KIND === 2) $("kinds").querySelector('[data-k="0"]').click();
+}
+function openLevel(n) {
+  const L = LEVELS[n - 1]; if (!L) return;
+  openEditor({ kind: "level", n }, JSON.parse(JSON.stringify(L)), WORK["L" + n], `${n}. ${L.n}`, L.tip);
+}
+function openDaily(day) {
+  const L = dailyFor(day); if (!L) return;
+  openEditor({ kind: "daily", day }, JSON.parse(JSON.stringify(L)), WORK["D" + day], `Daily slide · ${fmtDay(day)}`, isWeekend(day) ? "Weekend slide: extra bones. Fewest ink wins." : "Catch the bones and reach the flag with as little ink as you can.");
+}
+function openTrack(list, id) {
+  const tr = (list === "mine" ? MINE : SHARED).find(t => t.id === id); if (!tr) return;
+  openEditor({ kind: "free", list, id }, { s: (tr.s || [0, 0]).slice() }, tr.l, tr.t || "My track", list === "shared" && tr.a ? `From ${tr.a}. Press Play to watch it.` : "");
+}
+function leaveEditor() {
+  if (RUN) stopRun();
+  saveWork(); MODE = null; show("menu"); renderMenu();
+}
+function show(v) { view = v; $("menu").hidden = v !== "menu"; $("ed").hidden = v !== "ed"; }
+
+/* ---------- overlay and the ⋯ menu ---------- */
+let OV = null;
+function openOv(kind) { OV = kind; $("ov").hidden = false; }
+function closeOv() { OV = null; $("ov").hidden = true; }
+$("ov").addEventListener("click", e => { if (e.target === $("ov") && OV !== "result") closeOv(); });
+function moreMenu() {
+  const box = $("ovc"); box.textContent = "";
+  box.append(el("h3", null, $("edTitle").textContent));
+  const acts = el("div", "acts"), btn = (label, fn, cls) => { const b = el("button", "btn" + (cls ? " " + cls : ""), label); b.onclick = fn; acts.append(b); return b; };
+  btn("Fit to screen", () => { closeOv(); fitView(); });
+  if (challenge() && LVL.h) btn(SHOWHINT ? "Hide the answer" : "Show the answer", () => { SHOWHINT = !SHOWHINT; closeOv(); if (SHOWHINT) toast("The dashed track is one way through"); });
+  if (MODE.kind === "free") {
+    btn("Send to someone", () => { closeOv(); sendTrack(MODE.list, MODE.id); }, "pri");
+    btn("Rename", async () => { const tr = curTrack(), t = await askText("Name this track", tr.t || ""); if (t) { tr.t = t; $("edTitle").textContent = t; saveWork(); } });
+    btn("Copy into my tracks", () => { const tr = curTrack(), cp = newTrackObj((tr.t || "Track") + " (copy)", LVL.s, LINES); MINE.unshift(cp); save("slide.tracks", MINE); closeOv(); MODE = { kind: "free", list: "mine", id: cp.id }; $("edTitle").textContent = cp.t; toast("Copied into your tracks"); }).hidden = MODE.list === "mine";
+  }
+  let armed = false;
+  const clr = btn("Rub out all my lines", () => {
+    if (!armed) { armed = true; clr.textContent = "Tap again to rub out everything"; return; }
+    if (LINES.length) { snapshot(); LINES = []; changed(); } closeOv();
+  });
+  if (MODE.kind === "free") {
+    let armDel = false;
+    const del = btn("Delete this track", () => {
+      if (!armDel) { armDel = true; del.textContent = "Tap again to delete it"; return; }
+      const list = MODE.list === "mine" ? MINE : SHARED, i = list.findIndex(t => t.id === MODE.id);
+      if (i >= 0) list.splice(i, 1); save(MODE.list === "mine" ? "slide.tracks" : "slide.shared", list);
+      closeOv(); MODE = null; show("menu"); renderMenu();
+    });
+  }
+  btn("Close", closeOv);
+  box.append(acts); openOv("more");
+}
+function askText(title, value) {
+  return new Promise(res => {
+    const box = $("ovc"); box.textContent = "";
+    box.append(el("h3", null, title));
+    const inp = el("input"); inp.value = value || ""; inp.maxLength = 40; box.append(inp);
+    const acts = el("div", "acts"), ok = el("button", "btn pri", "OK"), no = el("button", "btn", "Cancel");
+    ok.onclick = () => { closeOv(); res(inp.value.trim()); }; no.onclick = () => { closeOv(); res(null); };
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") ok.onclick(); });
+    acts.append(ok, no); box.append(acts); openOv("ask"); setTimeout(() => inp.focus(), 50);
+  });
+}
+
+/* ---------- your own tracks ---------- */
+const curTrack = () => (MODE.list === "mine" ? MINE : SHARED).find(t => t.id === MODE.id) || {};
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function newTrackObj(title, s, lines) { return { id: newId(), t: title, at: Date.now(), s: s.slice(), l: JSON.parse(JSON.stringify(lines)) }; }
+$("newBtn").onclick = () => {
+  const n = MINE.length + 1, tr = newTrackObj(`Track ${n}`, [0, 0], [{ t: 0, s: 1, p: [-30, 12, 40, 30, 110, 60] }]);
+  MINE.unshift(tr); save("slide.tracks", MINE); openTrack("mine", tr.id);
+  showTip("Draw a track for Buddy, then press Play. Drag Buddy to move where he starts.");
+};
+
+/* A track travels as a link: SITE_URL + "#sl." + "z" + base64url(deflate(JSON)) or "j" + base64url(JSON), where the JSON is
+   [1, title, author, startX, startY, [[type, side, x0, y0, dx1, dy1, ...], ...]] with whole-number steps. Keep it readable forever. */
+const b64u = bytes => { let s = ""; for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+const unb64u = s => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+async function trackCode(tr) {
+  const lines = (tr.l || []).map(L => { const p = L.p.map(Math.round), o = [L.t, L.s || sideOf(p), p[0], p[1]]; for (let i = 2; i < p.length; i++) o.push(p[i] - p[i - 2]); return o; });
+  const json = JSON.stringify([1, tr.t || "", tr.a || load("slide.name", ""), Math.round(tr.s[0]), Math.round(tr.s[1]), lines]), raw = new TextEncoder().encode(json);
+  try { if (window.CompressionStream) return "sl.z" + b64u(await pipe(raw, new CompressionStream("deflate-raw"))); } catch (e) {}
+  return "sl.j" + b64u(raw);
+}
+async function readTrackCode(code) {
+  const m = /^sl\.([zj])([A-Za-z0-9_-]+)$/.exec(code); if (!m) return null;
+  try {
+    let bytes = unb64u(m[2]);
+    if (m[1] === "z") bytes = await pipe(bytes, new DecompressionStream("deflate-raw"));
+    const d = JSON.parse(new TextDecoder().decode(bytes));
+    if (!Array.isArray(d) || d[0] !== 1 || !Array.isArray(d[5])) return null;
+    const lines = d[5].slice(0, 5000).map(o => { const p = [+o[2] || 0, +o[3] || 0]; for (let i = 4; i < o.length; i++) p.push(p[p.length - 2] + (+o[i] || 0)); return { t: [0, 1, 2].includes(o[0]) ? o[0] : 0, s: o[1] === -1 ? -1 : 1, p }; }).filter(L => L.p.length >= 4);
+    return { id: newId(), t: String(d[1] || "A track").slice(0, 40), a: String(d[2] || "").slice(0, 30), at: Date.now(), s: [+d[3] || 0, +d[4] || 0], l: lines, code };
+  } catch (e) { return null; }
+}
+async function shareText(text, okMsg) {
+  try { if (NATIVE) { await NATIVE.share({ text }); return; } } catch (e) {}
+  try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+  try { await (NATIVE ? NATIVE.copy({ text }) : navigator.clipboard.writeText(text)); toast(okMsg || "Copied. Paste it into a message"); } catch (e) { window.prompt("Copy this", text); }
+}
+async function sendTrack(list, id) {
+  const tr = (list === "mine" ? MINE : SHARED).find(t => t.id === id); if (!tr) return;
+  if (list === "mine" && !load("slide.name", "")) { const n = await askText("Your name (so they know who it's from)", ""); if (n === null) return; save("slide.name", n); }
+  const code = await trackCode(tr);
+  const who = list === "mine" ? load("slide.name", "") : tr.a;
+  shareText(`${who ? who + " drew" : "Here's"} a track for Buddy: "${tr.t}". Tap the link to watch it in Stoneley Games:\n${SITE_URL}#${code}`, "Link copied. Paste it into a message");
+}
+async function receive(code) {
+  const tr = await readTrackCode(code);
+  if (!tr) { if (view === "menu") toast("That track link didn't work. Was all of it copied?"); return false; }
+  const dup = SHARED.find(t => t.code === code);
+  if (dup) { openTrack("shared", dup.id); return true; }
+  SHARED.unshift(tr); save("slide.shared", SHARED);
+  if (RUN) stopRun(); if (MODE) saveWork(); closeOv();
+  openTrack("shared", tr.id);
+  return true;
+}
+window.SG_HANDLES_LINKS = true;
+function handleLink(url) {
+  url = String(url || ""); const i = url.indexOf("#"), h = decodeURIComponent(i >= 0 ? url.slice(i + 1) : url);
+  if (!h) return;
+  if (/^sl\./.test(h)) receive(h);
+  else location.href = (/^lu\./.test(h) ? "../link-up/" : "../word-rattle/") + "index.html#" + h;
+}
+window.addEventListener("hashchange", () => { const h = location.hash; if (h.length > 1) { history.replaceState(null, "", location.pathname + location.search); handleLink(h); } });
+if (NATIVE) NATIVE.addListener("appUrl", e => { if (e && e.url) handleLink(e.url); });
+
+/* ---------- the daily result to share ---------- */
+function shareDaily(day) {
+  const r = DAILY[day]; if (!r) return;
+  shareText(`Buddy's Big Slide · daily ${fmtDay(day)}\n${starStr(r.stars)} with ${r.ink} ink (par ${dailyFor(day).p})\nPlay: ${SITE_URL}games/big-slide/`, "Result copied. Paste it into a message");
+}
+
+/* ---------- menu ---------- */
+function renderMenu() {
+  const today = todayNum(), dl = dailyFor(today), dr = DAILY[today];
+  $("dailyDate").textContent = fmtDay(today) + (isWeekend(today) ? " · weekend" : "");
+  $("dailyTxt").textContent = dr ? `Done: ${starStr(dr.stars)} with ${dr.ink} ink (par ${dl.p}). Try for less, or share it.` : `${dl.b.length} bones to catch. The same slide for both of you: fewest ink wins.`;
+  $("dailyBtn").textContent = dr ? "Play it again" : WORK["D" + today] ? "Carry on" : "Play today's slide";
+  $("dailyShare").hidden = !dr;
+  const box = $("levels"); box.textContent = "";
+  let tot = 0;
+  LEVELS.forEach((L, i) => {
+    const n = i + 1, r = LV[n], open = n === 1 || (LV[n - 1] && LV[n - 1].stars) || r;
+    const b = el("button", "lv" + (r ? " done" : "")); b.disabled = !open; b.setAttribute("aria-label", `Level ${n}, ${L.n}${r ? `, ${r.stars} stars` : ""}`);
+    b.append(el("b", null, String(n))); const s = el("span"); starHTML(s, r ? r.stars : 0); b.append(s);
+    b.onclick = () => openLevel(n); box.append(b); tot += r ? r.stars : 0;
+  });
+  $("starTot").textContent = `★ ${tot} of ${LEVELS.length * 3}`;
+  const row = (tr, list) => {
+    const d = el("div", "trk"), tt = el("button", "tt");
+    tt.append(el("b", null, tr.t || "Track"), el("small", null, (list === "shared" && tr.a ? `From ${tr.a} · ` : "") + new Date(tr.at).toLocaleDateString(undefined, { day: "numeric", month: "short" })));
+    tt.onclick = () => openTrack(list, tr.id);
+    const send = el("button", "btn sm", "Send"); send.onclick = () => sendTrack(list, tr.id);
+    d.append(tt, send); return d;
+  };
+  const mine = $("mine"); mine.textContent = "";
+  if (!MINE.length) mine.append(el("p", "empty", "Nothing yet. Tap New track and draw Buddy a ride."));
+  MINE.forEach(t => mine.append(row(t, "mine")));
+  const sh = $("shared"); sh.textContent = ""; $("sharedLbl").hidden = !SHARED.length;
+  SHARED.forEach(t => sh.append(row(t, "shared")));
+}
+$("dailyBtn").onclick = () => openDaily(todayNum());
+$("dailyShare").onclick = () => shareDaily(todayNum());
+
+/* ---------- the picture at the top of the menu ---------- */
+function drawHero() {
+  const c = $("heroCv").getContext("2d"), W = 640, H = 360;
+  c.fillStyle = "#FBF7EE"; c.fillRect(0, 0, W, H);
+  c.fillStyle = "rgba(70,90,130,.2)"; for (let x = 20; x < W; x += 40) for (let y = 20; y < H; y += 40) c.fillRect(x - 1.5, y - 1.5, 3, 3);
+  c.lineCap = "round"; c.lineJoin = "round"; c.strokeStyle = "#23324A"; c.lineWidth = 6;
+  c.beginPath(); c.moveTo(-10, 200); c.bezierCurveTo(160, 230, 250, 340, 420, 300); c.bezierCurveTo(520, 276, 560, 220, 650, 170); c.stroke();
+  c.strokeStyle = "#F26B1D"; c.beginPath(); c.moveTo(470, 270); c.bezierCurveTo(520, 250, 560, 215, 600, 192); c.stroke();
+  drawBone(c, 330, 250, 2); drawBone(c, 560, 150, 2); drawFlag(c, 610, 120, 1.6);
+  drawRider(c, 236, 262, -0.42, -0.91, 1, 2.6, true, true);
+}
+
+/* ---------- start ---------- */
+window.addEventListener("resize", () => { if (view === "ed") { resize(); } });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible") { lastFrame = 0; if (MODE) saveWork(); } else if (view === "menu") renderMenu(); });
+window.addEventListener("pagehide", () => { if (MODE) saveWork(); });
+/* Stoneley Games shell: the phone's back button. Returning false goes back to the games list. */
+window.SG_BACK = () => {
+  if (OV) { if (OV === "result") { closeOv(); stopRun(); } else closeOv(); return true; }
+  if (view === "ed") { if (RUN) stopRun(); else leaveEditor(); return true; }
+  return false;
+};
+drawHero(); renderMenu(); requestAnimationFrame(frame);
+if (location.hash.length > 1) { const h = location.hash; history.replaceState(null, "", location.pathname + location.search); handleLink(h); }
+</script>
+<script src="../../shell.js"></script>
+</body>
+</html>

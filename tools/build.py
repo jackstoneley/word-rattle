@@ -7,7 +7,7 @@ What it does:
   1. Word Rattle: games/word-rattle/src/template.html + words.txt + common.txt
      -> games/word-rattle/index.html (the word list is embedded so the game works offline).
   2. sw.js: stamps a VERSION from a hash of every page, so phones pick up changes.
-  3. Checks the JavaScript in every page parses (needs `node` on the PATH; skipped if missing).
+  3. Checks Link Up puzzles, Big Slide levels and release notes, and that the JavaScript in every page parses (needs `node` on the PATH; skipped if missing).
 """
 import hashlib, pathlib, re, shutil, subprocess, sys, tempfile
 
@@ -45,6 +45,18 @@ def check_link_up():
                 sys.exit(f"link-up: {block} puzzle {i} is malformed")
         counts.append(f"{len(puzzles)} {block}")
     print(f"link-up: {', '.join(counts)} ok")
+
+
+def check_big_slide():
+    """Every Big Slide level's answer finishes with every bone within par; daily slides can be made (needs node)."""
+    node = shutil.which("node")
+    if not node:
+        print("node not found: skipped the Big Slide check")
+        return
+    r = subprocess.run([node, str(ROOT / "tools" / "big-slide-check.js")], capture_output=True, text=True)
+    print((r.stdout + r.stderr).strip())
+    if r.returncode:
+        sys.exit(1)
 
 
 def check_release_notes():
@@ -96,6 +108,7 @@ def check_scripts():
 if __name__ == "__main__":
     build_word_rattle()
     check_link_up()
+    check_big_slide()
     check_release_notes()
     stamp_service_worker()
     check_scripts()

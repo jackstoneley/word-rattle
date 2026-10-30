@@ -613,7 +613,7 @@ function handleLink(url) {
   url = String(url || ""); const i = url.indexOf("#"); const h = i >= 0 ? url.slice(i + 1) : url;
   if (!h) return false;
   if (receiveBoard(decodeURIComponent(h))) return true;
-  location.href = "../word-rattle/index.html#" + h; return true;
+  location.href = (/^sl\./.test(h) ? "../big-slide/" : "../word-rattle/") + "index.html#" + h; return true;
 }
 window.addEventListener("hashchange", () => { const h = location.hash; if (h.length > 1) { history.replaceState(null, "", location.pathname + location.search); handleLink(h); } });
 if (NATIVE) NATIVE.addListener("appUrl", e => { if (e && e.url && view !== "make") handleLink(e.url); });

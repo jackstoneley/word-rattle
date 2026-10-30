@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus seven self-contained HTML games, published two ways:
+A home page plus eight self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -11,6 +11,7 @@ A home page plus seven self-contained HTML games, published two ways:
 | Topple | `games/topple` | `tp.` |
 | Buddy Breakout | `games/mudlark` (Mudlark) | `ml.` |
 | Boxed In | `games/boxed-in` | `bi.` |
+| Buddy's Big Slide | `games/big-slide` | `slide.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -32,6 +33,7 @@ manifest.webmanifest, *.png  Website install metadata and icons
 games/<id>/index.html      One self-contained game per folder (all CSS/JS inline)
 games/word-rattle/src/     Word Rattle source: template.html + words.txt + common.txt -> built index.html
 tools/build.py             Build step. Run after ANY change, before committing
+tools/big-slide-check.js   Rides every Big Slide level's answer (run by build.py)
 release-notes.json         What's new in each release; shown in the app's update banner
 android-app/               Capacitor project: config, native plugin, build scripts, icons, signing key
 .github/workflows/android.yml  Builds the APK and replaces the "latest" release
@@ -86,7 +88,7 @@ group, unless it is a deliberate red herring that the other groups rule out. `to
 - **Boards people make** (`lu.mine`, received ones in `lu.shared`, their games in `lu.cgames` keyed by board id).
   There is no server: a board travels as a link, `SITE_URL#lu.` + base64url(JSON `[1, title, author,
   [[group, [4 words]] x4]]`, yellow first). The hub and `shell.js` send `#lu.…` links to Link Up and every other
-  link to Word Rattle; Word Rattle forwards any `lu.` code it gets. Keep that link format readable forever.
+  link to Word Rattle (apart from `#sl.…` Big Slide tracks); Word Rattle forwards any `lu.` or `sl.` code it gets. Keep that link format readable forever.
 
 ### Topple (`games/topple`)
 
@@ -112,6 +114,23 @@ A top-down zombie survival game (after Boxhead), single player with auto-aim: th
 line of sight, the player only moves (a floating thumb stick on the left). Arenas are strings in `MAPS` and are turned
 on their side on tall screens. Weapons unlock by score within a run (`WEAPONS[].at`). Saved data: `bi.best`, the best
 wave, score and kills per arena index; an arena opens when the one before it has a best wave above 8, so append arenas.
+
+### Buddy's Big Slide (`games/big-slide`)
+
+A draw-a-track game (in the spirit of Line Rider): the player draws lines, presses Play, and Buddy rides his sledge down
+them. Physics, the daily generator and star rules sit between `/*CORE-START*/` and `/*CORE-END*/` with no page
+dependencies (only + - * / and `Math.sqrt`, so a track rides the same on every phone). Lines are `{t, s, p}`: type
+0 track / 1 boost / 2 scenery, solid side `s` (the side facing up; loops work when drawn anticlockwise in one go), points.
+Challenge levels live in the `<script type="application/json" id="levelData">` block: `n` name, `tip`, `s` start, `f`
+flag, `b` bones, `g` fixed grey lines, `z` flowerbeds (no drawing), `x` thorn bushes, `h` an answer, `p` par ink,
+optional `lim` ink limit. `tools/big-slide-check.js` (run by build.py) rides every answer, so a new level needs an
+answer that reaches the flag with every bone within par. **Append** levels only: progress (`slide.levels`) is keyed by
+level number. The daily slide (`slide.daily`, day 1 is 30 October 2026) is generated from the date by `dailyLevel`:
+changing it, or the physics, changes every future daily. Other saved data: `slide.work` (drawings in progress),
+`slide.tracks` and `slide.shared` (own and received tracks), `slide.name`. Tracks travel as links,
+`SITE_URL#sl.` + `z` base64url(deflate-raw JSON) or `j` base64url(JSON), JSON `[1, title, author, startX, startY,
+[[type, side, x0, y0, dx1, dy1, ...], ...]]`; the hub, `shell.js`, Word Rattle and Link Up send `#sl.…` links here.
+Keep that format readable forever.
 
 ### Adding a new game
 

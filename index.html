@@ -13,8 +13,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Figtree:wght@400;500;600;700;800&display=swap">
 <script>
-/* Links: "#lu.…" is a Link Up board; every other link (sync links, seeds, live codes) belongs to Word Rattle. */
-const gameForLink = h => (/^#?lu\./.test(h) ? "games/link-up/" : "games/word-rattle/") + "index.html";
+/* Links: "#lu.…" is a Link Up board, "#sl.…" a Big Slide track; every other link (sync links, seeds, live codes) belongs to Word Rattle. */
+const gameForLink = h => (/^#?lu\./.test(h) ? "games/link-up/" : /^#?sl\./.test(h) ? "games/big-slide/" : "games/word-rattle/") + "index.html";
 if (location.hash.length > 1) location.replace(gameForLink(location.hash) + location.hash);
 </script>
 <style>
@@ -106,6 +106,9 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .art.bi .h::before,.art.bi .h::after{content:"";position:absolute;top:8px;width:4px;height:5px;background:#222}
 .art.bi .h::before{left:7px}.art.bi .h::after{right:7px}
 .art.bi .z{position:absolute;right:14px;bottom:14px;width:18px;height:18px;background:#7FA86A;border-radius:2px}
+/* Buddy's Big Slide art: a drawn line on squared paper with Buddy's red sledge */
+.art.bs{background:#FBF7EE;background-image:radial-gradient(rgba(70,90,130,.28) 1px,transparent 1.5px);background-size:12px 12px;overflow:hidden}
+.art.bs svg{width:96px;height:100%}
 /* Gem Tower Defence art: a faceted gem on dusk purple */
 .art.gb{background:#231F31}
 .art.gb .gem{width:48px;height:48px;clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%);
@@ -179,6 +182,11 @@ textarea{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--li
     <div class="info"><span class="kind">Zombie survival</span><h2>Boxed In</h2><span class="stat" id="stBI">Your gun aims itself. Keep moving.</span><span class="go">Play</span></div>
   </a>
 
+  <a class="game" href="games/big-slide/index.html">
+    <div class="art bs" aria-hidden="true"><svg viewBox="0 0 96 112"><path d="M-4 40C26 46 36 84 62 82S86 62 100 52" fill="none" stroke="#23324A" stroke-width="3.5" stroke-linecap="round"/><g transform="translate(38 66) rotate(34)"><rect x="-11" y="3" width="21" height="3.5" rx="1.5" fill="#E8452C"/><circle cx="-5" cy="-1" r="4.5" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="1" cy="-2" r="4.5" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="7" cy="-6" r="4" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="10.5" cy="-6.5" r="1" fill="#1E1712"/></g><g transform="translate(76 34)"><path d="M0 22V0" stroke="#3B3226" stroke-width="1.6"/><path d="M0 0h12v8H0z" fill="#1B2433"/><path d="M0 0h4v4H0zM8 0h4v4H8zM4 4h4v4H4z" fill="#fff"/></g></svg></div>
+    <div class="info"><span class="kind">Draw and ride · daily</span><h2>Buddy's Big Slide</h2><span class="stat" id="stBS">Draw a track and watch Buddy ride it.</span><span class="go">Play</span></div>
+  </a>
+
   <h3>Your data</h3>
   <div class="panel">
     <p>Each game saves on this phone. A backup code holds every game, so you can keep a copy or move to a new phone.</p>
@@ -222,13 +230,15 @@ function renderStats(){
   if(bi&&Object.keys(bi).length){const top=Object.values(bi).reduce((a,b)=>b.wave>a.wave?b:a);setHTML("stBI",["Best: wave ",{b:String(top.wave)}," · ",{b:top.score.toLocaleString("en-GB")}," points"])}
   const ml=load("ml.save",null);
   if(ml&&ml.best&&ml.best.dist)setHTML("stML",ml.done?["Reached the lady dogs on day ",{b:String(ml.done)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}]:["Day ",{b:String(ml.day)}," · best ",{b:Math.round(ml.best.dist).toLocaleString("en-GB")+" m"}," of 3,000 m"]);
+  const bsl=load("slide.levels",{}),bsd=load("slide.daily",{}),bsn=Object.keys(bsl).length,bsS=Object.values(bsl).reduce((a,r)=>a+(r&&r.stars||0),0),bsToday=Object.values(bsd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now())),bsT=load("slide.tracks",[]).length;
+  if(bsn||Object.keys(bsd).length||bsT)setHTML("stBS",[{b:String(bsn)}," of 15 challenges · ",{b:String(bsS)}," stars",bsToday?" · today's slide done":bsT?` · ${bsT} track${bsT===1?"":"s"} drawn`:""]);
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
   {const cleared=Object.values(gb.cleared||{}).filter(Boolean).length;
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}
 }
 
 /* ---------- backup and restore (every game's saved data) ---------- */
-const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi."];
+const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi.","slide."];
 function b64u(str){const bytes=new TextEncoder().encode(str);let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const bin=atob(s);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
 function backupCode(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PREFIXES.some(p=>k.startsWith(p)))data[k]=localStorage.getItem(k)}return "SGB1."+b64u(JSON.stringify({v:1,at:Date.now(),data}))}

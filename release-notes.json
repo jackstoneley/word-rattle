@@ -110,6 +110,17 @@
         "The thumb stick works anywhere on the screen and responds straight away",
         "Barrels and barricades drop with one tap, behind you as you run, and your gun keeps firing"
       ]
+    },
+    {
+      "id": 11,
+      "type": "new-game",
+      "headline": "New game: Buddy's Big Slide",
+      "details": [
+        "Draw a track with your finger, press Play, and Buddy rides his sledge down it.",
+        "15 challenges: reach the flag, catch the bones, and use as little ink as you can for three stars.",
+        "A new daily slide every day, the same for both of you. Fewest ink wins.",
+        "Draw your own tracks with loops, jumps and orange boost lines, and send them to each other as a link."
+      ]
     }
   ]
 }
