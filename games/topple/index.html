@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#15233B">
+<title>Topple</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: menu (daily card, level grid) or play (top bar / board canvas / controls). */
+:root{
+  --bg:#15233B; --bg2:#1C2D4A; --panel:#22365A; --line:#33507E; --fg:#F2F5FB; --muted:#A9B8D3;
+  --accent:#F2A541; --accent-ink:#2B1A02; --ok:#7FD69B; --star:#FFD25E;
+  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--body)}
+body{overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+#app{height:100%;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(16px,env(safe-area-inset-left,0px))}
+.screen{flex:1;min-height:0}
+/* menu */
+#menu{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 0 32px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.sg-home{align-self:flex-start;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none}
+.head{display:flex;align-items:center;gap:14px}
+.logo{width:44px;height:44px;position:relative;flex:none}
+.logo i{position:absolute;left:10px;top:2px;width:22px;height:40px;border-radius:5px;background:linear-gradient(90deg,#E58A2E,#F2A541);box-shadow:inset -5px 0 0 rgba(0,0,0,.18);transform:rotate(-24deg)}
+h1{font-family:var(--display);font-weight:800;font-size:2rem;margin:0;line-height:1}
+.head p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.daily{background:linear-gradient(135deg,#2C4677,#22365A)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--bg2);border-radius:12px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.levels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.lv{aspect-ratio:1;border:1px solid var(--line);background:var(--bg2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0}
+.lv b{font-family:var(--display);font-size:1.25rem}
+.lv .st{font-size:.62rem;letter-spacing:.05em;color:var(--star);min-height:.8em;line-height:1}
+.lv.done{background:#26406B}
+.lv.next{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.lv:disabled{opacity:.35}
+.howto{font-size:.9rem;line-height:1.5}
+.howto summary{font-family:var(--display);font-weight:700;font-size:1.05rem;cursor:pointer}
+.howto ul{padding-left:18px;margin:8px 0 0}
+.howto li{margin-bottom:6px}
+.sw{display:inline-block;width:.95em;height:.95em;border-radius:3px;vertical-align:-.12em;margin-right:2px}
+/* play */
+#play{display:flex;flex-direction:column;gap:8px;padding:8px 0;max-width:560px;width:100%;margin:0 auto}
+.bar{display:flex;align-items:center;gap:10px;flex:none}
+.bar .ttl{flex:1;min-width:0}
+.bar .ttl b{display:block;font-family:var(--display);font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ttl span{font-size:.8rem;color:var(--muted)}
+.ib{width:42px;height:42px;border:1px solid var(--line);background:var(--panel);border-radius:12px;display:grid;place-items:center;font-size:1.1rem;font-weight:700;padding:0;flex:none}
+.moves{text-align:right;font-variant-numeric:tabular-nums}
+.moves b{font-family:var(--display);font-size:1.5rem;display:block;line-height:1}
+.moves span{font-size:.75rem;color:var(--muted)}
+.stage{flex:1;min-height:0;position:relative;touch-action:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(10,16,30,.85);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-weight:700;font-size:.9rem;pointer-events:none;transition:opacity .25s;white-space:nowrap}
+.ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.ctrl .side{display:flex;flex-direction:column;gap:8px;width:96px}
+.ctrl .side .btn{padding:9px 8px;font-size:.9rem}
+.pad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,44px);gap:4px}
+.pad button{border:1px solid var(--line);background:var(--panel);border-radius:12px;font-size:1.2rem;padding:0}
+.pad button:active{background:var(--line)}
+.pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .r{grid-column:3;grid-row:2}.pad .d{grid-column:2;grid-row:3}
+.hintline{font-size:.82rem;color:var(--muted);text-align:center;min-height:1.2em;flex:none}
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(6,10,20,.7);display:grid;place-items:center;z-index:10;padding:16px}
+.ovc{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;width:min(360px,100%);display:flex;flex-direction:column;gap:12px;text-align:center}
+.ovc h3{font-family:var(--display);font-size:1.7rem;margin:0}
+.ovc p{margin:0;color:var(--muted);line-height:1.45}
+.stars{font-size:2rem;letter-spacing:.15em;color:var(--star)}
+.stars .off{color:#3B4F75}
+.ovc .acts{display:flex;flex-direction:column;gap:8px}
+@media (max-height:640px){.pad{grid-template-rows:repeat(3,38px)}.pad{grid-template-columns:repeat(3,46px)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="menu" class="screen">
+    <div class="wrap">
+      <a class="sg-home" href="../../index.html">← All games</a>
+      <header class="head"><div class="logo" aria-hidden="true"><i></i></div><div><h1>Topple</h1><p>Tip the block end over end. Drop it in the hole.</p></div></header>
+      <div class="card daily" id="dailyCard"></div>
+      <div class="card">
+        <div class="row spread"><h2>Levels</h2><span class="muted" id="lvNote"></span></div>
+        <div class="levels" id="levelGrid"></div>
+      </div>
+      <details class="card howto">
+        <summary>How to play</summary>
+        <ul>
+          <li>Swipe on the board, or use the arrows, to tip the block over. It rolls end over end, so it is sometimes standing up and sometimes lying down.</li>
+          <li>Get the block <b>standing up</b> on the dark hole to finish the level.</li>
+          <li>Don't let any part of it hang over the edge. If it falls, it pops back to where it was.</li>
+          <li><span class="sw" style="background:#E8893A"></span><b>Orange tiles</b> are fragile: they hold the block lying down, but not standing up.</li>
+          <li><span class="sw" style="background:#9AA8C2;border-radius:50%"></span><b>Round switches</b> work when any part of the block touches them. <b>✕ switches</b> only work when the block stands on them. Each one opens or closes the matching bridge.</li>
+          <li>Each level has a <b>par</b>: the fewest moves it can be done in. Match it for three stars.</li>
+          <li><b>Undo</b> takes back a move. <b>Hint</b> shows the best next move, but the level then gives at most two stars.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <section id="play" class="screen" hidden>
+    <div class="bar">
+      <button class="ib" id="backBtn" aria-label="Back to levels">←</button>
+      <div class="ttl"><b id="pTitle">Level 1</b><span id="pSub">Par 10</span></div>
+      <div class="moves"><b id="pMoves">0</b><span>moves</span></div>
+    </div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="toast" id="toast" style="opacity:0"></div></div>
+    <div class="hintline" id="hintLine">Swipe on the board to tip the block.</div>
+    <div class="ctrl">
+      <div class="side"><button class="btn" id="undoBtn">Undo</button><button class="btn" id="restartBtn">Restart</button></div>
+      <div class="pad" aria-label="Move">
+        <button class="u" data-d="U" aria-label="Up">▲</button><button class="l" data-d="L" aria-label="Left">◀</button>
+        <button class="r" data-d="R" aria-label="Right">▶</button><button class="d" data-d="D" aria-label="Down">▼</button>
+      </div>
+      <div class="side"><button class="btn" id="hintBtn">Hint</button></div>
+    </div>
+  </section>
+</div>
+<div class="ov" id="ov" hidden><div class="ovc" id="ovc"></div></div>
+
+<!-- Levels: m = rows of tiles (. empty, o floor, G hole, f fragile, s round switch, h ✕ switch, b bridge closed, B bridge open),
+     s = start [x,y] standing up, w = switches [x,y,[[bridge x,bridge y,mode]...]] with mode t (toggle), 1 (open), 0 (close), p = par.
+     Append only: progress is saved by level number. -->
+<script type="application/json" id="levels">[
+{"m":["ooo.......","oooooo....","ooooooooo.",".ooooooooo",".....ooGoo","......ooo."],"s":[1,1],"w":[],"p":7},
+{"m":[".o..oo..","ooooooo.",".o...ooG",".oo...oo","oo....o."],"s":[1,4],"w":[],"p":7},
+{"m":["..oo.","Goo..","ooooo","ooo..","..o.."],"s":[2,2],"w":[],"p":7},
+{"m":[".ooo.",".oooo","ooGo.",".o..."],"s":[1,3],"w":[],"p":9},
+{"m":[".o.oo.oo","oooooooo","oooo.Goo",".....ooo","......oo"],"s":[1,1],"w":[],"p":11},
+{"m":["ooG.....","ooooooo.","o.o.oooo","o....o..","oo.o.o..",".ooooooo","oooooo.."],"s":[1,4],"w":[],"p":13},
+{"m":["ooo.....oo",".ooooooooo","oo.oo..oGo","...o...ooo",".......o.."],"s":[1,1],"w":[],"p":14},
+{"m":["....oGo.","...oooo.","oo.o.ooo","oooo..o.","ooooo...",".ooo....",".o.o...."],"s":[1,2],"w":[],"p":15},
+{"m":["....oo....",".o.ooo....","ooooooo...",".ooo.oooGo"],"s":[1,1],"w":[],"p":16},
+{"m":[".o........","oG........",".o...oo..o","oo..oooooo","ooooo..ooo",".ooooooooo"],"s":[1,3],"w":[],"p":18},
+{"m":[".o.oo.G.","oo.ooofo",".ooooooo","oooo..o."],"s":[1,1],"w":[],"p":15},
+{"m":["...o.o...","oofoofooo","oo...oGoo","ooo..o..o","ooooo...o","foo.o....","....o...."],"s":[2,3],"w":[],"p":16},
+{"m":["oo..ooo",".ofoooo","ooGfoo.",".o..o.."],"s":[1,0],"w":[],"p":16},
+{"m":[".......oo","..o...ooo","oooo..ooo",".oooo.o.o",".o...oo.o",".fGoooooo",".ooooooof"],"s":[1,4],"w":[],"p":20},
+{"m":[".oo......o","..fo.oofoG","oooo...oo.","o.ooooooo."],"s":[1,2],"w":[],"p":21},
+{"m":["....oooooo","...obo.oof","oooooofooo",".o.oo.oo..",".o.os.....",".o.oo.....","...oGo....",".....o...."],"s":[1,5],"w":[[4,4,[[4,1,"t"]]]],"p":18},
+{"m":["...o.....",".soooo...","ooooboooo","ofoo..oo.","o.o....o.","....Gfoo.","....o.o.."],"s":[0,3],"w":[[1,1,[[4,2,"t"]]]],"p":19},
+{"m":["ooo.......","ooo.......","oso.oo....",".booooo..G","...ooo...o","....oo...o","....oooofo"],"s":[2,0],"w":[[1,2,[[1,3,"t"]]]],"p":20},
+{"m":["...oo.....","G.oofooo..","oo...ooob.","fo..o.oooo",".ooosoooo."],"s":[2,1],"w":[[4,4,[[8,2,"t"]]]],"p":21},
+{"m":[".........oo",".....o...o.",".....ooooG.","..oooobofoo","oooo...oo..",".oos......."],"s":[1,4],"w":[[3,5,[[6,3,"t"]]]],"p":26},
+{"m":["..o...ooo","..oooobfo","o.o...oho","Gfoooooo."],"s":[2,0],"w":[[7,2,[[6,1,"1"]]]],"p":23},
+{"m":[".boooooooo..",".fo....ooooo",".o......ooo.",".o.......oo.",".soo...o..o.","ooooooooofo.","ooG..o....o."],"s":[1,5],"w":[[1,4,[[1,0,"t"]]]],"p":23},
+{"m":[".o..ffooo..","oooooo.ooo.","o...oo.os..",".......oooo",".........fo","........Gob"],"s":[0,1],"w":[[8,2,[[10,5,"t"]]]],"p":24},
+{"m":["...ofoo.","...ooofo","oohoofo.",".oo.o...",".oo.o...",".oo.o...","oooob...","..ooG..."],"s":[0,6],"w":[[2,2,[[4,6,"t"]]]],"p":26},
+{"m":[".o........o.",".oo......obo",".of...oGsofo","..o.....oooo","..oo...oo.oo","ooo.oo.....f","..o..o..o..o","..ofoooooooo"],"s":[2,1],"w":[[8,2,[[10,1,"1"]]]],"p":28},
+{"m":["...ooso..","..bbooo..",".ooso.f..","ooo...o..",".oo...oo.","..o..oo..","..o...oGo","......ffo","......fo."],"s":[2,5],"w":[[5,0,[[2,1,"1"]]],[3,2,[[3,1,"t"]]]],"p":29},
+{"m":["...o.oooo...",".Goboofh....",".o....oo....","......o.o...","..oooooooooo",".ofo.oo.o.f.","oo....oobos.","........ofo.",".........oo."],"s":[1,5],"w":[[7,1,[[3,1,"t"]]],[10,6,[[8,6,"t"]]]],"p":31},
+{"m":["...hbo......","...fos......","..oooo......","...o.o......","...o.o......","ofoo.fo...bo",".o.o.oo...fo","...oGooooooo","..........o."],"s":[0,5],"w":[[3,0,[[10,5,"t"]]],[5,1,[[4,0,"t"]]]],"p":32},
+{"m":[".hfoob..","oooooo..","oG..oof.",".b...oo.","oohooooo","o......."],"s":[0,4],"w":[[1,0,[[1,3,"t"]]],[2,4,[[5,0,"1"]]]],"p":37},
+{"m":["........ooo.",".........oo.","...o.....oo.",".osf.....ooo",".obbo.....oo","ooso......oo",".o.ooGoooooo"],"s":[0,5],"w":[[2,3,[[3,4,"t"]]],[2,5,[[2,4,"t"]]]],"p":45}
+]</script>
+<script>
+"use strict";
+/*CORE-START*/
+const DIRS={L:[-1,0],R:[1,0],U:[0,-1],D:[0,1]};
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+// A level, ready to play: grid of tile codes, bridge bit numbers, switches by cell.
+function load(L){
+  const H=L.m.length,W=Math.max(...L.m.map(r=>r.length)),g=[],bridge={},sw={};let mask=0,nb=0;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=L.m[y][x]||".";g.push(c);if(c==="b"||c==="B"){bridge[y*W+x]=nb;if(c==="B")mask|=1<<nb;nb++}}
+  for(const [x,y,t] of L.w||[]){const hard=g[y*W+x]==="h";sw[y*W+x]={hard,t:t.map(([bx,by,m])=>[bridge[by*W+bx],m])}}
+  return{W,H,g,bridge,sw,mask0:mask,start:{x:L.s[0],y:L.s[1],o:"U"}};
+}
+// o: U standing on one cell, X lying across x..x+1, Y lying across y..y+1.
+const cellsOf=b=>b.o==="U"?[[b.x,b.y]]:b.o==="X"?[[b.x,b.y],[b.x+1,b.y]]:[[b.x,b.y],[b.x,b.y+1]];
+function roll(b,d){const {x,y,o}=b;
+  if(o==="U")return d==="R"?{x:x+1,y,o:"X"}:d==="L"?{x:x-2,y,o:"X"}:d==="D"?{x,y:y+1,o:"Y"}:{x,y:y-2,o:"Y"};
+  if(o==="X")return d==="R"?{x:x+2,y,o:"U"}:d==="L"?{x:x-1,y,o:"U"}:d==="D"?{x,y:y+1,o:"X"}:{x,y:y-1,o:"X"};
+  return d==="R"?{x:x+1,y,o:"Y"}:d==="L"?{x:x-1,y,o:"Y"}:d==="D"?{x,y:y+2,o:"U"}:{x,y:y-1,o:"U"}}
+const tileAt=(P,x,y)=>x<0||y<0||x>=P.W||y>=P.H?".":P.g[y*P.W+x];
+// The result of one move: {b,mask} when the block lands safely, {fall:reason} when it doesn't, plus won.
+function step(P,st,d){
+  const b=roll(st.b,d),cs=cellsOf(b);let mask=st.mask;
+  for(const [x,y] of cs){const c=tileAt(P,x,y);
+    if(c===".")return{fall:"edge",b};
+    if((c==="b"||c==="B")&&!(mask&(1<<P.bridge[y*P.W+x])))return{fall:"edge",b};
+    if(c==="f"&&b.o==="U")return{fall:"crack",b}}
+  for(const [x,y] of cs){const s=P.sw[y*P.W+x];if(!s||(s.hard&&b.o!=="U"))continue;
+    for(const [i,m] of s.t)mask=m==="t"?mask^(1<<i):m==="1"?mask|(1<<i):mask&~(1<<i)}
+  return{b,mask,won:b.o==="U"&&tileAt(P,b.x,b.y)==="G"};
+}
+const keyOf=st=>((st.mask*64+st.b.y)*64+st.b.x)*3+"UXY".indexOf(st.b.o);
+// Shortest solution from a state, as a string of moves; null when there is none.
+function solve(P,st0){
+  const seen=new Map([[keyOf(st0),null]]),q=[st0];
+  for(let h=0;h<q.length;h++){const st=q[h];
+    for(const d of "LRUD"){const r=step(P,st,d);if(r.fall)continue;const ns={b:r.b,mask:r.mask},k=keyOf(ns);if(seen.has(k))continue;
+      seen.set(k,[keyOf(st),d,st]);if(r.won){let out="",cur=k;while(seen.get(cur)){const [pk,dd]=seen.get(cur);out=dd+out;cur=pk}return out}
+      q.push(ns)}}
+  return null;
+}
+const startState=P=>({b:P.start,mask:P.mask0});
+const parOf=L=>{const s=solve(load(L),startState(load(L)));return s?s.length:-1};
+// Level maker: walk the block around to lay a floor, put the hole at the farthest standing spot, then strip tiles,
+// add fragile tiles and switch bridges, keeping only changes that leave it solvable and no shorter.
+function generate(rng,o){
+  const W=o.w,H=o.h,R=n=>Math.floor(rng()*n);
+  const g=new Array(W*H).fill("."),sx=1+R(2),sy=1+R(H-2);let b={x:sx,y:sy,o:"U"},last=null;
+  const mark=bb=>cellsOf(bb).forEach(([x,y])=>g[y*W+x]="o");mark(b);
+  for(let i=0;i<o.walk;i++){const ds=Object.keys(DIRS),d=last&&rng()<.45?last:ds[R(4)],nb=roll(b,d);
+    if(cellsOf(nb).every(([x,y])=>x>=0&&y>=0&&x<W&&y<H)){b=nb;last=d;mark(b)}}
+  const toL=(gg,w)=>({m:Array.from({length:H},(_,y)=>gg.slice(y*W,y*W+W).join("")),s:[sx,sy],w:w||[]});
+  // farthest standing spot becomes the hole
+  {const P=load(toL(g)),st0=startState(P),dist=new Map([[keyOf(st0),0]]),q=[st0];let best=null,bd=0;
+    for(let h=0;h<q.length;h++){const st=q[h],dd=dist.get(keyOf(st));
+      if(st.b.o==="U"&&dd>bd&&!(st.b.x===sx&&st.b.y===sy)){bd=dd;best=st.b}
+      for(const d of "LRUD"){const r=step(P,st,d);if(r.fall)continue;const ns={b:r.b,mask:r.mask},k=keyOf(ns);if(dist.has(k))continue;dist.set(k,dd+1);q.push(ns)}}
+    if(!best)return null;g[best.y*W+best.x]="G"}
+  let w=[],par=parOf(toL(g,w));if(par<1)return null;
+  const tryChange=(fn,undo,need)=>{fn();const p=parOf(toL(g,w));if(p>=need(par)){par=p;return true}undo();return false};
+  const floor=()=>g.map((c,i)=>c==="o"?i:-1).filter(i=>i>=0&&i!==sy*W+sx);
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=R(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+  for(const i of shuffle(floor()))tryChange(()=>g[i]=".",()=>g[i]="o",p=>p);
+  for(const i of shuffle(floor()).slice(0,Math.round(o.fragile*floor().length)))tryChange(()=>g[i]="f",()=>g[i]="o",p=>p);
+  for(let k=0;k<o.bridges;k++){
+    // a bridge is a floor tile on the best route that the level can't be done without
+    const P=load(toL(g,w)),sol=solve(P,startState(P));if(!sol)break;let st=startState(P);const route=[];
+    for(const d of sol){const r=step(P,st,d);st={b:r.b,mask:r.mask};cellsOf(r.b).forEach(([x,y])=>route.push(y*W+x))}
+    const cand=shuffle([...new Set(route)].filter(i=>g[i]==="o"&&i!==sy*W+sx));let placed=false;
+    for(const i of cand.slice(0,8)){g[i]="b";if(parOf(toL(g,w))!==-1){g[i]="o";continue}
+      const spots=shuffle(floor().filter(j=>j!==i)).slice(0,10);
+      for(const j of spots){const hard=o.hard&&rng()<.5;g[j]=hard?"h":"s";const sw=[j%W,Math.floor(j/W),[[i%W,Math.floor(i/W),rng()<.7?"t":"1"]]];w.push(sw);
+        const p=parOf(toL(g,w));if(p>par){par=p;placed=true;break}w.pop();g[j]="o"}
+      if(placed)break;g[i]="o"}
+  }
+  // scatter a few spare tiles back so the shape is less of a thin trail
+  for(let k=0;k<o.extra;k++){const i=R(W*H),x=i%W,y=Math.floor(i/W);if(g[i]!==".")continue;
+    if(![[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>{const c=tileAt({W,H,g},x+dx,y+dy);return c!=="."}))continue;
+    tryChange(()=>g[i]="o",()=>g[i]=".",p=>p)}
+  // trim empty border rows and columns
+  const L=toL(g,w);let x0=W,x1=0,y0=H,y1=0;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(g[y*W+x]!=="."){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)}
+  const out={m:L.m.slice(y0,y1+1).map(r=>r.slice(x0,x1+1)),s:[sx-x0,sy-y0],w:w.map(([x,y,t])=>[x-x0,y-y0,t.map(([bx,by,m])=>[bx-x0,by-y0,m])])};
+  out.p=parOf(out);return out.p>0?out:null;
+}
+/*CORE-END*/
+
+/* ================= storage ================= */
+const $=id=>document.getElementById(id);
+const loadJSON=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const saveJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const LEVELS=JSON.parse($("levels").textContent);
+const getLv=()=>loadJSON("tp.levels",{});
+const getDaily=()=>loadJSON("tp.daily",{});
+const starsFor=(moves,par,hinted)=>Math.min(hinted?2:3,moves<=par?3:moves<=Math.ceil(par*1.4)?2:1);
+const starTxt=n=>"★".repeat(n)+"☆".repeat(3-n);
+
+/* ================= daily puzzle: made on the phone from the date, the same for everyone ================= */
+const DAY_MS=864e5, EPOCH=Date.UTC(2026,9,30);
+const dayNum=(d=new Date())=>Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-EPOCH)/DAY_MS);
+const DAILY=new Map();
+function dailyLevel(day){
+  if(DAILY.has(day))return DAILY.get(day);
+  const rng=mulberry(hashStr("topple-daily|"+day)),wd=new Date(EPOCH+day*DAY_MS).getUTCDay(),hard=wd===0||wd===6;
+  let best=null;
+  for(let k=0;k<14;k++){const L=generate(rng,{w:hard?12:11,h:hard?9:8,walk:hard?60:44,fragile:.12,bridges:hard?2:1,hard:true,extra:10});
+    if(L&&(!best||L.p>best.p))best=L;if(best&&best.p>=(hard?30:22))break}
+  DAILY.set(day,best);return best;
+}
+
+/* ================= menu ================= */
+let view="menu";
+function show(v){view=v;$("menu").hidden=v!=="menu";$("play").hidden=v!=="play";if(v==="play")requestAnimationFrame(resize)}
+function renderMenu(){
+  const done=getLv(),dd=getDaily(),today=dayNum(),td=dd[today];
+  const dc=$("dailyCard");dc.innerHTML="";
+  const date=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
+  dc.innerHTML=`<div class="row spread"><span class="label">Daily puzzle · ${date}</span><span class="label">#${today+1}</span></div>
+    <h2>${td?"Done today: "+td.best+" moves "+starTxt(td.stars):"A new board every day"}</h2>
+    <p class="muted" style="margin:0">${td?"Come back tomorrow for the next one, or try to match par.":"Same puzzle for everyone today. Weekends are bigger."}</p>
+    <div class="row"><button class="btn pri" id="dailyBtn">${td?"Play again":"Play today's puzzle"}</button>${streak()>1?`<span class="muted">${streak()} day streak</span>`:""}</div>`;
+  $("dailyBtn").onclick=()=>{$("dailyBtn").textContent="Making today's board…";setTimeout(()=>startLevel({daily:today}),30)};
+  const grid=$("levelGrid");grid.innerHTML="";let next=LEVELS.findIndex((_,i)=>!done[i+1]);if(next<0)next=LEVELS.length;
+  const nDone=LEVELS.filter((_,i)=>done[i+1]).length,stars=LEVELS.reduce((a,_,i)=>a+(done[i+1]?done[i+1].stars:0),0);
+  $("lvNote").textContent=`${nDone} of ${LEVELS.length} · ${stars} ★`;
+  LEVELS.forEach((L,i)=>{const r=done[i+1],b=document.createElement("button");b.className="lv"+(r?" done":"")+(i===next?" next":"");
+    b.disabled=i>next+2;b.innerHTML=`<b>${i+1}</b><span class="st">${r?starTxt(r.stars):""}</span>`;b.onclick=()=>startLevel({n:i+1});grid.append(b)});
+}
+function streak(){const d=getDaily();let t=dayNum();if(!d[t])t--;let n=0;while(d[t]){n++;t--}return n}
+
+/* ================= play ================= */
+let P=null,LV=null,ST=null,hist=[],moves=0,hinted=false,anim=null,queue=[],hintDir=null,flash=0;
+function startLevel(src){
+  LV=src;const L=src.daily!=null?dailyLevel(src.daily):LEVELS[src.n-1];if(!L){toast("Couldn't make today's board");return}
+  LV.L=L;P=load(L);clearTimeout(toastT);$("toast").style.opacity=0;ST=startState(P);hist=[];moves=0;hinted=false;anim=null;queue=[];hintDir=null;
+  $("pTitle").textContent=src.daily!=null?"Daily puzzle":"Level "+src.n;$("pSub").textContent="Par "+L.p;
+  $("hintLine").textContent="Swipe on the board to tip the block.";
+  show("play");updateMoves();
+}
+function updateMoves(){$("pMoves").textContent=moves;$("undoBtn").disabled=!hist.length}
+function tryMove(d){
+  if(view!=="play"||!$("ov").hidden)return;
+  if(anim){if(queue.length<2)queue.push(d);return}
+  const r=step(P,ST,d);hintDir=null;
+  anim={from:ST.b,to:r.b,d,t:0,dur:.17,falls:r.fall,res:r};
+  try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}
+}
+function finishAnim(){
+  const a=anim;anim=null;
+  if(a.falls){anim={fall:true,b:a.to,t:0,dur:.55,reason:a.falls};return}
+  hist.push(ST);ST={b:a.res.b,mask:a.res.mask};moves++;updateMoves();
+  if(a.res.won){anim={sink:true,b:ST.b,t:0,dur:.5};queue=[];return}
+  if(queue.length)tryMove(queue.shift());
+}
+function afterFall(reason){anim=null;queue=[];toast(reason==="crack"?"The tile cracked. Try again":"Off the edge. Try again");try{navigator.vibrate&&navigator.vibrate([30,40,30])}catch(e){}}
+function won(){
+  const st=starsFor(moves,LV.L.p,hinted);let first=false,rec;
+  if(LV.daily!=null){const d=getDaily(),o=d[LV.daily];first=!o;rec={best:o?Math.min(o.best,moves):moves,stars:Math.max(o?o.stars:0,st),at:Date.now()};d[LV.daily]=rec;saveJSON("tp.daily",d)}
+  else{const d=getLv(),o=d[LV.n];first=!o;rec={best:o?Math.min(o.best,moves):moves,stars:Math.max(o?o.stars:0,st)};d[LV.n]=rec;saveJSON("tp.levels",d)}
+  try{navigator.vibrate&&navigator.vibrate([15,50,15,50,40])}catch(e){}
+  const hasNext=LV.daily==null&&LV.n<LEVELS.length;
+  const msg=moves<=LV.L.p?(hinted?"Par, with a hint.":"Par! You found the shortest way."):`Par is ${LV.L.p}. ${rec.best<moves?"Your best is "+rec.best+".":"Can you find a shorter way?"}`;
+  $("ovc").innerHTML=`<h3>${LV.daily!=null?"Daily done":"Level "+LV.n+" done"}</h3><div class="stars">${"★".repeat(st)}<span class="off">${"★".repeat(3-st)}</span></div>
+    <p>${moves} moves. ${msg}</p><div class="acts">${hasNext?'<button class="btn pri" id="oNext">Next level</button>':""}<button class="btn${hasNext?"":" pri"}" id="oAgain">Play again</button><button class="btn" id="oMenu">Back to levels</button></div>`;
+  $("ov").hidden=false;
+  if(hasNext)$("oNext").onclick=()=>{$("ov").hidden=true;startLevel({n:LV.n+1})};
+  $("oAgain").onclick=()=>{$("ov").hidden=true;startLevel(LV.daily!=null?{daily:LV.daily}:{n:LV.n})};
+  $("oMenu").onclick=()=>{$("ov").hidden=true;toMenu()};
+}
+function toMenu(){anim=null;queue=[];renderMenu();show("menu")}
+$("undoBtn").onclick=()=>{if(anim||!hist.length)return;ST=hist.pop();moves--;hintDir=null;updateMoves()};
+$("restartBtn").onclick=()=>{if(anim)return;startLevel(LV.daily!=null?{daily:LV.daily}:{n:LV.n})};
+$("hintBtn").onclick=()=>{if(anim)return;const s=solve(P,ST);if(!s){toast("No way through from here. Undo or restart");return}
+  hinted=true;hintDir=s[0];flash=0;$("hintLine").textContent=`Hint: ${({L:"left",R:"right",U:"up",D:"down"})[s[0]]}. ${s.length} move${s.length>1?"s":""} from the finish.`};
+$("backBtn").onclick=toMenu;
+document.querySelectorAll(".pad button").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();tryMove(b.dataset.d)}));
+document.addEventListener("keydown",e=>{const m={ArrowLeft:"L",ArrowRight:"R",ArrowUp:"U",ArrowDown:"D"}[e.key];if(m&&view==="play"){e.preventDefault();tryMove(m)}});
+let sw=null;
+$("stage").addEventListener("pointerdown",e=>{sw={x:e.clientX,y:e.clientY,id:e.pointerId,done:false}});
+$("stage").addEventListener("pointermove",e=>{if(!sw||sw.done||e.pointerId!==sw.id)return;const dx=e.clientX-sw.x,dy=e.clientY-sw.y;
+  if(Math.hypot(dx,dy)>26){sw.done=true;tryMove(Math.abs(dx)>Math.abs(dy)?(dx>0?"R":"L"):(dy>0?"D":"U"))}});
+$("stage").addEventListener("pointerup",()=>{sw=null});
+$("stage").addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
+let toastT=null;
+function toast(t){const el=$("toast");el.textContent=t;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,1600)}
+
+/* ================= drawing: a tilted top-down view ================= */
+const cv=$("cv"),ctx=cv.getContext("2d");let S=40,OX=0,OY=0,dpr=1;
+const KY=.64,KZ=.74; // screen y per world y and per world z (as a share of a tile)
+const pr=(x,y,z)=>[OX+x*S,OY+(y*KY-z*KZ)*S];
+const VIEWV=[0,KZ,KY]; // direction towards the viewer: faces facing it are drawn
+function resize(){
+  if(!P)return;const r=$("stage").getBoundingClientRect();dpr=Math.min(2.5,window.devicePixelRatio||1);
+  cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);
+  S=Math.min(r.width/(P.W+.6),r.height/((P.H)*KY+2.4*KZ+.4));S=Math.min(S,64);
+  OX=(r.width-P.W*S)/2;OY=(r.height-(P.H*KY*S))/2+KZ*S*.9;
+}
+new ResizeObserver(resize).observe($("stage"));
+const TILE={o:["#8FA3C4","#5E7396"],f:["#F0964A","#B9612A"],G:["#0E1626","#0E1626"],s:["#8FA3C4","#5E7396"],h:["#8FA3C4","#5E7396"],b:["#6FB7A8","#3F8073"],B:["#6FB7A8","#3F8073"]};
+function poly(pts,fill,stroke){ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
+function drawTile(x,y,c,on,now){
+  const open=(c==="b"||c==="B")?on:true;if(!open){const [a,b2]=[pr(x+.08,y+.08,0),pr(x+.92,y+.92,0)];ctx.setLineDash([3,4]);ctx.strokeStyle="rgba(111,183,168,.45)";ctx.lineWidth=1.5;ctx.strokeRect(a[0],a[1],b2[0]-a[0],b2[1]-a[1]);ctx.setLineDash([]);return}
+  const [top,side]=TILE[c]||TILE.o,g=.05,th=.22;
+  if(tileAt(P,x,y+1)==="."||!bridgeOpen(x,y+1))poly([pr(x+g,y+1-g,0),pr(x+1-g,y+1-g,0),pr(x+1-g,y+1-g,-th),pr(x+g,y+1-g,-th)],side);
+  poly([pr(x+g,y+g,0),pr(x+1-g,y+g,0),pr(x+1-g,y+1-g,0),pr(x+g,y+1-g,0)],top);
+  const [cx,cy]=pr(x+.5,y+.5,0);
+  if(c==="G"){ctx.strokeStyle="rgba(242,165,65,.55)";ctx.lineWidth=2;const [a,b2]=[pr(x+g,y+g,0),pr(x+1-g,y+1-g,0)];ctx.strokeRect(a[0],a[1],b2[0]-a[0],b2[1]-a[1]);
+    ctx.fillStyle=`rgba(242,165,65,${.12+.08*Math.sin(now*3)})`;ctx.fillRect(a[0],a[1],b2[0]-a[0],b2[1]-a[1])}
+  if(c==="s"){ctx.fillStyle="#DDE6F5";ctx.beginPath();ctx.ellipse(cx,cy,S*.22,S*.22*KY,0,0,7);ctx.fill();ctx.fillStyle="#6FB7A8";ctx.beginPath();ctx.ellipse(cx,cy,S*.13,S*.13*KY,0,0,7);ctx.fill()}
+  if(c==="h"){ctx.strokeStyle="#DDE6F5";ctx.lineWidth=Math.max(2,S*.08);ctx.lineCap="round";const q=S*.2;ctx.beginPath();ctx.moveTo(cx-q,cy-q*KY);ctx.lineTo(cx+q,cy+q*KY);ctx.moveTo(cx+q,cy-q*KY);ctx.lineTo(cx-q,cy+q*KY);ctx.stroke()}
+  if(c==="f"){ctx.strokeStyle="rgba(90,40,10,.35)";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(cx-S*.2,cy-S*.1);ctx.lineTo(cx,cy+S*.02);ctx.lineTo(cx+S*.18,cy-S*.08);ctx.stroke()}
+}
+const bridgeOpen=(x,y)=>{const c=tileAt(P,x,y);if(c!=="b"&&c!=="B")return true;return !!(ST.mask&(1<<P.bridge[y*P.W+x]))};
+// The block as 8 corners; a roll turns them a quarter turn about the edge it tips over.
+function boxCorners(b){const w=b.o==="X"?2:1,d=b.o==="Y"?2:1,h=b.o==="U"?2:1,x=b.x,y=b.y;
+  return[[x,y,0],[x+w,y,0],[x+w,y+d,0],[x,y+d,0],[x,y,h],[x+w,y,h],[x+w,y+d,h],[x,y+d,h]]}
+const FACES=[[0,3,2,1],[4,5,6,7],[0,1,5,4],[2,3,7,6],[1,2,6,5],[3,0,4,7]];
+function rotPts(pts,axis,px,pz,ang){const c=Math.cos(ang),s=Math.sin(ang);
+  return pts.map(([x,y,z])=>{if(axis==="y"){const dx=x-px,dz=z-pz;return[px+dx*c-dz*s,y,pz+dx*s+dz*c]}const dy=y-px,dz=z-pz;return[x,px+dy*c-dz*s,pz+dy*s+dz*c]})}
+function drawBox(pts,alpha){
+  ctx.globalAlpha=alpha;
+  const shades={top:"#F7B95A",front:"#D9822F",side:"#C26F25",back:"#B8661F"};
+  for(const f of FACES){const P3=f.map(i=>pts[i]);
+    const u=P3[1].map((v,k)=>v-P3[0][k]),v=P3[3].map((v2,k)=>v2-P3[0][k]),n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+    const dot=n[0]*VIEWV[0]+n[1]*VIEWV[1]+n[2]*VIEWV[2];if(dot<=1e-6)continue;
+    const len=Math.hypot(...n)||1,nz=n[2]/len,ny=n[1]/len;
+    poly(P3.map(p=>pr(...p)),nz>.7?shades.top:ny>.7?shades.front:shades.side,"rgba(60,30,5,.35)")}
+  ctx.globalAlpha=1;
+}
+function blockPts(now){
+  if(!anim||anim.sink||anim.fall){const b=anim?anim.b:ST.b;let pts=boxCorners(b);
+    if(anim&&anim.sink){const k=Math.min(1,anim.t/anim.dur);pts=pts.map(([x,y,z])=>[x,y,z-2.2*k*k])}
+    if(anim&&anim.fall){const k=Math.min(1,anim.t/anim.dur);pts=pts.map(([x,y,z])=>[x,y,z-3*k*k])}
+    return pts}
+  const a=anim,k=Math.min(1,a.t/a.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,from=a.from,pts=boxCorners(from);
+  const w=from.o==="X"?2:1,d=from.o==="Y"?2:1,ang=e*Math.PI/2;
+  if(a.d==="R")return rotPts(pts,"y",from.x+w,0,-ang);
+  if(a.d==="L")return rotPts(pts,"y",from.x,0,ang);
+  if(a.d==="D")return rotPts(pts,"x",from.y+d,0,-ang);
+  return rotPts(pts,"x",from.y,0,ang);
+}
+let lastT=0;
+function frame(ts){
+  requestAnimationFrame(frame);const dt=Math.min(.05,lastT?(ts-lastT)/1000:0);lastT=ts;
+  if(view!=="play"||!P)return;
+  if(anim){anim.t+=dt;if(anim.t>=anim.dur){if(anim.sink){anim=null;won()}else if(anim.fall)afterFall(anim.reason);else finishAnim()}}
+  const now=ts/1000;ctx.setTransform(dpr,0,0,dpr,0,0);const r=cv.width/dpr,h=cv.height/dpr;ctx.clearRect(0,0,r,h);
+  const pts=blockPts(now),rowMax=Math.max(...pts.map(p=>p[1]));
+  let drawn=false;
+  for(let y=0;y<P.H;y++){
+    if(!drawn&&(anim&&(anim.fall||anim.sink))&&y>Math.floor(rowMax-.01)){drawBox(pts,anim.fall?1-Math.min(1,anim.t/anim.dur)*.6:1);drawn=true}
+    for(let x=0;x<P.W;x++){const c=P.g[y*P.W+x];if(c===".")continue;drawTile(x,y,c,bridgeOpen(x,y),now)}}
+  if(!drawn)drawBox(pts,anim&&anim.fall?1-Math.min(1,anim.t/anim.dur)*.6:1);
+  if(hintDir&&!anim){const [cx,cy]=pr(...[pts.reduce((a,p)=>a+p[0],0)/8,pts.reduce((a,p)=>a+p[1],0)/8,2.2]);const [dx,dy]=DIRS[hintDir];
+    ctx.save();ctx.translate(cx+dx*S*.9,cy+dy*S*.9*KY);ctx.rotate(Math.atan2(dy*KY,dx));ctx.globalAlpha=.6+.4*Math.sin(now*6);ctx.fillStyle="#FFD25E";
+    ctx.beginPath();ctx.moveTo(S*.35,0);ctx.lineTo(-S*.15,-S*.25);ctx.lineTo(-S*.15,S*.25);ctx.closePath();ctx.fill();ctx.restore()}
+}
+requestAnimationFrame(frame);
+
+/* back button: leave a level for the list; from the list, back to the games */
+window.SG_BACK=()=>{if(!$("ov").hidden){$("ov").hidden=true;toMenu();return true}if(view==="play"){toMenu();return true}return false};
+renderMenu();
+</script>
+<script src="../../shell.js"></script>
+</body>
+</html>

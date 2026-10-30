@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus four self-contained HTML games, published two ways:
+A home page plus five self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -8,6 +8,7 @@ A home page plus four self-contained HTML games, published two ways:
 | Link Up | `games/link-up` | `lu.` |
 | Kakuro | `games/cross-sums` (Cross Sums) | `kk.` |
 | Gem Tower Defence | `games/gem-bastion` (Gem Bastion) | `gembastion.` |
+| Topple | `games/topple` | `tp.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -84,6 +85,15 @@ group, unless it is a deliberate red herring that the other groups rule out. `to
   There is no server: a board travels as a link, `SITE_URL#lu.` + base64url(JSON `[1, title, author,
   [[group, [4 words]] x4]]`, yellow first). The hub and `shell.js` send `#lu.…` links to Link Up and every other
   link to Word Rattle; Word Rattle forwards any `lu.` code it gets. Keep that link format readable forever.
+
+### Topple (`games/topple`)
+
+A block-rolling puzzle (after Bloxorz). Levels live in the `<script type="application/json" id="levels">` block:
+`m` rows of tile codes, `s` start, `w` switches, `p` par (fewest moves, found by the solver). The code between
+`/*CORE-START*/` and `/*CORE-END*/` (rules, solver, level generator) has no page dependencies, so a Node script can
+run it to make and check levels. **Append** levels only: progress (`tp.levels`) is keyed by level number. The daily
+puzzle (`tp.daily`, keyed by day number from 30 October 2026) is generated on the phone from the date, so changing
+`generate` or `dailyLevel` changes every future daily board: don't, without a plan.
 
 ### Adding a new game
 

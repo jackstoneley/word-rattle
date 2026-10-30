@@ -56,6 +56,17 @@
         "Send the board to each other as usual: you both get the same new letters if you find the same words in the same order.",
         "Comparing a swap game shows points and word counts. Each board ends up different, so there's no word-by-word list."
       ]
+    },
+    {
+      "id": 6,
+      "type": "new-game",
+      "headline": "New game: Topple",
+      "details": [
+        "Tip a long block end over end and drop it standing up into the hole.",
+        "30 levels, from gentle to fiendish, with fragile tiles, switches and bridges.",
+        "A new daily puzzle every day, the same for both of you. Weekends are bigger.",
+        "Swipe or use the arrows. Undo and Hint are there when you're stuck."
+      ]
     }
   ]
 }

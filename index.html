@@ -88,6 +88,12 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .art.cs .g{display:grid;grid-template-columns:repeat(3,22px);grid-template-rows:repeat(3,22px);gap:2px;background:#1C3A43;padding:2px;border-radius:5px}
 .art.cs .g i{background:#fff;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:12px;color:#13272D}
 .art.cs .g i.b{background:#1C3A43;background-image:linear-gradient(to top right,transparent calc(50% - .5px),#2A4E58 50%,transparent calc(50% + .5px))}
+/* Topple art: an orange block tipping over on slate tiles */
+.art.tp{background:#15233B}
+.art.tp .t{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,20px);gap:3px}
+.art.tp .t i{height:9px;background:#8FA3C4;border-radius:2px;box-shadow:0 3px 0 #5E7396}
+.art.tp .t i.g{background:#0E1626;box-shadow:0 3px 0 #0E1626,inset 0 0 0 1.5px #F2A541}
+.art.tp .b{position:absolute;left:50%;bottom:34px;width:18px;height:36px;margin-left:-22px;border-radius:3px;background:linear-gradient(90deg,#D9822F 70%,#C26F25);box-shadow:inset 0 5px 0 #F7B95A;transform:rotate(18deg);transform-origin:bottom right}
 /* Gem Tower Defence art: a faceted gem on dusk purple */
 .art.gb{background:#231F31}
 .art.gb .gem{width:48px;height:48px;clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%);
@@ -146,6 +152,11 @@ textarea{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--li
     <div class="info"><span class="kind">Strategy</span><h2>Gem Tower Defence</h2><span class="stat" id="stGB">Forge gems, merge them, hold the path.</span><span class="go">Play</span></div>
   </a>
 
+  <a class="game" href="games/topple/index.html">
+    <div class="art tp" aria-hidden="true"><div class="t"><i></i><i></i><i class="g"></i></div><div class="b"></div></div>
+    <div class="info"><span class="kind">Block puzzle · daily</span><h2>Topple</h2><span class="stat" id="stTP">Tip the block into the hole.</span><span class="go">Play</span></div>
+  </a>
+
   <h3>Your data</h3>
   <div class="panel">
     <p>Each game saves on this phone. A backup code holds every game, so you can keep a copy or move to a new phone.</p>
@@ -183,13 +194,15 @@ function renderStats(){
   const kk=load("kk.stats",null);
   if(kk&&kk.levels){const solved=Object.values(kk.levels).filter(l=>l&&l.solves).length,inProg=Object.keys(load("kk.saves",{})).length;
     if(solved||inProg)setHTML("stCS",[{b:String(solved)}," of 200 solved",inProg?` · ${inProg} in progress`:""])}
+  const tpl=load("tp.levels",{}),tpd=load("tp.daily",{}),tpn=Object.keys(tpl).length,tpS=Object.values(tpl).reduce((a,r)=>a+(r&&r.stars||0),0),tpToday=Object.values(tpd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now()));
+  if(tpn||Object.keys(tpd).length)setHTML("stTP",[{b:String(tpn)}," of 30 levels · ",{b:String(tpS)}," stars",tpToday?" · today's puzzle done":""]);
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
   {const cleared=Object.values(gb.cleared||{}).filter(Boolean).length;
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}
 }
 
 /* ---------- backup and restore (every game's saved data) ---------- */
-const PREFIXES=["wr.","lu.","kk.","gembastion."];
+const PREFIXES=["wr.","lu.","kk.","gembastion.","tp."];
 function b64u(str){const bytes=new TextEncoder().encode(str);let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const bin=atob(s);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
 function backupCode(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PREFIXES.some(p=>k.startsWith(p)))data[k]=localStorage.getItem(k)}return "SGB1."+b64u(JSON.stringify({v:1,at:Date.now(),data}))}
