@@ -137,6 +137,15 @@
         "A new daily slide every day, the same for both of you. Fewest ink wins.",
         "Draw your own tracks with loops, jumps and orange boost lines, and send them to each other as a link."
       ]
+    },
+    {
+      "id": 14,
+      "type": "features",
+      "headline": "Topple: 30 new levels",
+      "details": [
+        "Levels 31 to 60 are here, so there are now 60 in all.",
+        "They get harder as you go: up to three switches and bridges to sort out, with par up to 50 moves."
+      ]
     }
   ]
 }
