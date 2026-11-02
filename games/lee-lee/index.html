@@ -1,0 +1,1584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFF4E6">
+<title>Lee Lee's Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Screens: title (5 save slots) / newgame / play (bar, ticket rail, canvas, hint) / manage (end-of-day office). */
+:root{
+  --bg:#FFF4E6; --panel:#FFFFFF; --panel2:#FFF9F1; --line:#EBD8C2; --ink:#3A2A22; --muted:#8C7563;
+  --accent:#E8664A; --accent-ink:#fff; --good:#3E9B6B; --bad:#D2483A; --gold:#E9A93A;
+  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Figtree",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)}
+body{overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+#app{height:100%;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.screen{flex:1;min-height:0}
+.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 32px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.sg-home{align-self:flex-start;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none}
+h1{font-family:var(--display);font-weight:800;font-size:2rem;margin:0;line-height:1}
+h2{font-family:var(--display);font-weight:700;font-size:1.2rem;margin:0}
+h3{font-family:var(--display);font-weight:700;font-size:1.05rem;margin:0}
+p{margin:0;line-height:1.45}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:9px 14px;font-weight:700;min-height:40px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.good{background:var(--good);border-color:var(--good);color:#fff}
+.btn.sm{padding:6px 10px;min-height:34px;font-size:.88rem;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:default}
+.label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.stars{color:var(--gold);letter-spacing:.08em;font-size:1.05rem;white-space:nowrap}
+.meter{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--gold);border-radius:99px}
+.money{font-variant-numeric:tabular-nums;font-weight:800}
+.neg{color:var(--bad)}.pos{color:var(--good)}
+/* title */
+.hero{display:flex;align-items:center;gap:14px}
+.hero canvas{width:84px;height:96px;flex:none;background:#FFE3D2;border-radius:18px}
+.slot{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.slot .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:24px;flex:none;background:#FFE9D9}
+.slot.pub .ic{background:#E6DCCF}
+.slot .info{flex:1;min-width:0}
+.slot .info b{display:block;font-family:var(--display);font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .info span{font-size:.84rem;color:var(--muted)}
+.slot.empty{border-style:dashed;background:transparent}
+.howto{font-size:.92rem;line-height:1.5}
+.howto summary{font-family:var(--display);font-weight:700;font-size:1.05rem;cursor:pointer}
+.howto ul{padding-left:18px;margin:8px 0 0}
+.howto li{margin-bottom:6px}
+/* new game */
+.venues{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.venue{border:2px solid var(--line);background:var(--panel);border-radius:16px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:6px}
+.venue .big{font-size:34px;line-height:1}
+.venue b{font-family:var(--display);font-size:1.05rem}
+.venue span{font-size:.82rem;color:var(--muted);line-height:1.35}
+.venue.on{border-color:var(--accent);background:#FFF0E8}
+input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;font-weight:600;-webkit-user-select:text;user-select:text}
+/* play */
+#play{display:flex;flex-direction:column;gap:6px;padding:6px 8px;max-width:620px;width:100%;margin:0 auto}
+.bar{display:flex;align-items:center;gap:8px;flex:none}
+.ib{width:40px;height:40px;border:1px solid var(--line);background:var(--panel);border-radius:12px;display:grid;place-items:center;font-size:1.05rem;font-weight:800;padding:0;flex:none}
+.bar .ttl{flex:1;min-width:0}
+.bar .ttl b{display:block;font-family:var(--display);font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ttl span{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.cashbox{text-align:right;font-variant-numeric:tabular-nums}
+.cashbox b{display:block;font-size:1.05rem}
+.cashbox span{font-size:.75rem;color:var(--muted)}
+.rail{display:flex;gap:6px;overflow-x:auto;flex:none;min-height:40px;scrollbar-width:none;align-items:center}
+.rail::-webkit-scrollbar{display:none}
+.tk{flex:none;display:flex;align-items:center;gap:4px;background:#FFFDF8;border:2px solid var(--good);border-radius:10px;padding:3px 7px;font-size:.8rem;font-weight:800;height:36px;box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.tk .e{font-size:18px;line-height:1}
+.tk .e.go{opacity:.45}
+.tk.mid{border-color:var(--gold)}.tk.low{border-color:var(--bad);background:#FFF0EE}
+.rail .none{font-size:.82rem;color:var(--muted);padding-left:4px}
+.stage{flex:1;min-height:0;position:relative;touch-action:none;border-radius:14px;overflow:hidden;background:#E9D9C6}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.toast{position:absolute;left:50%;top:30%;transform:translateX(-50%);background:rgba(58,42,34,.92);color:#fff;border-radius:99px;padding:7px 14px;font-weight:700;font-size:.88rem;pointer-events:none;transition:opacity .25s;max-width:92%;text-align:center}
+.hint{flex:none;font-size:.86rem;min-height:1.3em;text-align:center;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hint b{color:var(--ink)}
+/* mini-games */
+.mg{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(255,250,243,.97);border:2px solid var(--line);border-radius:18px;padding:10px 12px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.18);touch-action:none}
+.mg .top{display:flex;width:100%;align-items:center;justify-content:space-between}
+.mg .top b{font-family:var(--display);font-size:1.1rem}
+.mg .x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:800;padding:0}
+.mg .area{width:100%;height:150px;position:relative;display:grid;place-items:center;border-radius:14px;background:#F6EADB;overflow:hidden}
+.mg .food{font-size:74px;line-height:1;transition:transform .08s}
+.mg .cuts{position:absolute;inset:0;pointer-events:none}
+.mg .cuts i{position:absolute;top:22%;bottom:22%;width:3px;background:rgba(58,42,34,.5);border-radius:2px}
+.mg .ring{position:absolute;width:128px;height:128px;border-radius:50%;border:10px solid #E4CDB3}
+.mg .spoon{position:absolute;font-size:34px;left:50%;top:50%}
+.mg .glass{position:relative;width:70px;height:120px;border:4px solid #9FB4BE;border-top:none;border-radius:0 0 14px 14px;background:rgba(255,255,255,.6);overflow:hidden}
+.mg .fill{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(#FFF6DA 0 8px,#E9A93A 8px)}
+.mg .fill.coffee{background:linear-gradient(#F3E2C8 0 10px,#8A5A3B 10px)}
+.mg .band{position:absolute;left:-4px;right:-4px;border-top:2px dashed var(--good);border-bottom:2px dashed var(--good);background:rgba(62,155,107,.12)}
+.mg .say{font-weight:800;font-size:.95rem;min-height:1.3em}
+.mg .bar2{width:100%;height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.mg .bar2 i{display:block;height:100%;width:0;background:var(--accent)}
+/* overlays */
+.ov{position:fixed;inset:0;background:rgba(40,25,15,.5);display:grid;place-items:center;z-index:20;padding:16px}
+.ovc{background:var(--panel);border-radius:20px;padding:18px;width:min(380px,100%);max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.ovc h3{font-size:1.45rem;text-align:center}
+.ovc .acts{display:flex;flex-direction:column;gap:8px}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.pick button{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:700;font-size:.82rem}
+.pick button span{font-size:30px;line-height:1}
+.lines{display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums}
+.lines div{display:flex;justify-content:space-between;gap:10px}
+.lines .tot{border-top:1px solid var(--line);padding-top:6px;font-weight:800}
+/* manage */
+#manage{display:flex;flex-direction:column}
+.mhead{flex:none;padding:10px 16px 0;max-width:560px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:6px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:7px 13px;font-weight:700;font-size:.88rem}
+.tabs button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+#mbody{flex:1;min-height:0}
+.mfoot{flex:none;padding:10px 16px max(10px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--bg)}
+.mfoot .btn{width:100%;max-width:528px;display:block;margin:0 auto;min-height:48px;font-size:1.05rem}
+.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:none}
+.item .ic{font-size:26px;width:34px;text-align:center;flex:none}
+.item .grow>b{display:block}
+.item .grow>span{font-size:.82rem;color:var(--muted);line-height:1.35;display:block}
+.qty{display:flex;align-items:center;gap:4px}
+.qty b{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:.72rem;font-weight:800;border-radius:99px;padding:2px 8px;background:#FFE9D9;color:#A2452D}
+.pill.g{background:#DDF1E5;color:#23704A}
+.mor{width:70px;height:6px;border-radius:99px;background:var(--line);overflow:hidden;display:inline-block;vertical-align:middle}
+.mor i{display:block;height:100%}
+select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;background:#fff;font-weight:600;max-width:100%}
+.news{background:#FFF0E8;border:1px solid #F5C9B6;border-radius:12px;padding:10px 12px;font-size:.9rem;line-height:1.4}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="title" class="screen scroll">
+    <div class="wrap">
+      <a class="sg-home" href="../../index.html">← All games</a>
+      <header class="hero"><canvas id="heroCv" width="168" height="192" aria-hidden="true"></canvas>
+        <div><h1>Lee Lee's Kitchen</h1><p class="muted">Take orders, cook, serve and clean up. Grow a little café or a busy pub into the best in town.</p></div></header>
+      <h2>Save slots</h2>
+      <div id="slots" style="display:flex;flex-direction:column;gap:10px"></div>
+      <details class="card howto">
+        <summary>How to play</summary>
+        <ul>
+          <li><b>Tap</b> anything and Lee Lee walks over and uses it. She carries one thing at a time.</li>
+          <li>Customers sit down. When a table shows a <b>notepad</b>, tap it to take their order. The order appears on the strip at the top.</li>
+          <li>Tap the station a dish starts at (usually the <b>fridge</b>). Then follow the glowing stations: chop, mix, cook. Food on the toaster, grill, hob, fryer and oven <b>burns</b> if you leave it too long.</li>
+          <li>Finished food is <b>plated up at the counter</b> (it needs a clean plate), then tap the table to serve it.</li>
+          <li>When people leave, tap the table to clear the dirty plates and take them to the <b>sink</b>. No clean plates, no food!</li>
+          <li>Customers who wait too long walk out without paying, and your reputation drops. Happy customers tip and bring more people.</li>
+          <li>In a pub, late nights bring <b>rowdy</b> customers (red face). Tap their table to calm them; the second time they're shown the door. Mop up any spills.</li>
+          <li>After each day you're in the office: buy stock for tomorrow, learn recipes, hire and promote staff, buy equipment, advertise, and one day move somewhere bigger.</li>
+          <li>The game saves at the end of each day. Leaving in the middle of a day starts that day again.</li>
+        </ul>
+      </details>
+      <div class="card">
+        <div class="row spread"><div class="grow"><b>Cooking mini-games</b><p class="small muted">Chop, stir and pour yourself. Turn off to let Lee Lee do them on her own (a little slower).</p></div>
+          <button class="btn sm" id="miniBtn"></button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="newgame" class="screen scroll" hidden>
+    <div class="wrap">
+      <button class="sg-home" id="ngBack" style="border:none;background:none;padding:0">← Back</button>
+      <h1>A new place</h1>
+      <p class="muted">What kind of place does Lee Lee open?</p>
+      <div class="venues">
+        <button class="venue" data-v="cafe"><span class="big">🧁</span><b>Café, bakery &amp; deli</b><span>Daytime. Tea, coffee, toast, salads, cakes and sandwiches. Calmer, with a lunchtime rush.</span></button>
+        <button class="venue" data-v="pub"><span class="big">🍺</span><b>Restaurant &amp; pub</b><span>Evenings. Pour pints, fry chips, cook pub dinners. Late nights get busy and a bit rowdy.</span></button>
+      </div>
+      <div class="card">
+        <label class="label" for="ngName">Name of the place</label>
+        <input type="text" id="ngName" maxlength="28" autocomplete="off">
+        <p class="small muted">You can change it later in the office.</p>
+      </div>
+      <button class="btn pri" id="ngGo" style="min-height:50px;font-size:1.05rem">Open the doors</button>
+    </div>
+  </section>
+
+  <section id="play" class="screen" hidden>
+    <div class="bar">
+      <button class="ib" id="pauseBtn" aria-label="Pause">❚❚</button>
+      <div class="ttl"><b id="pName">Café</b><span id="pClock">Day 1 · 9:00</span></div>
+      <div class="cashbox"><b id="pCash">£0</b><span id="pServed">0 served</span></div>
+    </div>
+    <div class="rail" id="rail"></div>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="toast" id="toast" style="opacity:0"></div>
+      <div class="mg" id="mg" hidden></div>
+    </div>
+    <div class="hint" id="hint"></div>
+  </section>
+
+  <section id="manage" class="screen" hidden>
+    <div class="mhead">
+      <div class="row spread"><div class="grow"><b id="mName" style="font-family:var(--display);font-size:1.25rem">Office</b><div class="small muted" id="mSub"></div></div>
+        <div class="cashbox"><b id="mCash">£0</b><span id="mStars"></span></div></div>
+      <div class="tabs" id="tabs"></div>
+    </div>
+    <div id="mbody" class="scroll"><div class="wrap" id="mwrap"></div></div>
+    <div class="mfoot"><button class="btn pri" id="openBtn">Open for day 2</button></div>
+  </section>
+</div>
+<div class="ov" id="ov" hidden><div class="ovc" id="ovc"></div></div>
+
+<script>
+"use strict";
+/*CORE-START*/
+/* Game data and the economy. No page dependencies. */
+const DAY_LEN = 210;              // seconds of opening hours per day
+const PASS_MAX = 5, DW_CAP = 10, DW_TIME = 11;
+const STAR_AT = [0, 60, 250, 700, 1600, 3200];
+const VENUES = {
+  cafe: { n: "Café, bakery & deli", short: "Café", open: 9, close: 15, peaks: [[.22, .1], [.58, .12]], icon: "🧁",
+    start: ["fridge", "kettle", "toaster", "board", "sink"], menu: ["tea", "toast", "salad"],
+    stations: ["fridge", "board", "bowl", "kettle", "coffee", "toaster", "grill", "hob", "oven", "sink", "dishwasher"],
+    names: ["The Copper Kettle", "Lee Lee's Café", "Crumbs & Co.", "The Little Bakehouse", "Sunny Side Deli"],
+    places: ["Corner café", "High Street café", "The Old Bakery", "Riverside café & deli"],
+    drinks: "Barista", floor: "Cleaner" },
+  pub: { n: "Restaurant & pub", short: "Pub", open: 17, close: 24, peaks: [[.2, .1], [.66, .14]], icon: "🍺",
+    start: ["fridge", "tap", "fryer", "board", "sink"], menu: ["lager", "chips", "ploughmans"],
+    stations: ["fridge", "board", "bowl", "tap", "fryer", "grill", "hob", "oven", "sink", "dishwasher"],
+    names: ["The Red Lion", "The Rose & Crown", "The Fox & Hound", "The Golden Pint", "Lee Lee's Bar & Kitchen"],
+    places: ["Back-street local", "Market Square pub", "The Coaching Inn", "Riverside gastropub"],
+    drinks: "Bartender", floor: "Bouncer" }
+};
+const PREMISES = [
+  { tables: 4, slots: 8, staff: 2, rent: 12, cost: 0, st: 0, demand: 1 },
+  { tables: 6, slots: 10, staff: 4, rent: 35, cost: 3000, st: 2, demand: 1.3 },
+  { tables: 8, slots: 12, staff: 6, rent: 80, cost: 10000, st: 3, demand: 1.65 },
+  { tables: 9, slots: 13, staff: 8, rent: 160, cost: 28000, st: 4, demand: 2 }
+];
+const INGS = {
+  tea: { n: "Tea", e: "🍵", c: .15 }, coffee: { n: "Coffee beans", e: "☕", c: .3 }, bread: { n: "Bread", e: "🍞", c: .35 },
+  dairy: { n: "Milk & cheese", e: "🧀", c: .45, f: 1 }, veg: { n: "Vegetables", e: "🥬", c: .5, f: 1 }, fruit: { n: "Fruit", e: "🍓", c: .6, f: 1 },
+  eggs: { n: "Eggs", e: "🥚", c: .35, f: 1 }, flour: { n: "Flour & sugar", e: "🌾", c: .25 }, meat: { n: "Meat", e: "🥩", c: 1.4, f: 1 },
+  fish: { n: "Fish", e: "🐟", c: 1.6, f: 1 }, potato: { n: "Potatoes", e: "🥔", c: .25 }, beer: { n: "Beer", e: "🍺", c: 1.1 },
+  wine: { n: "Wine", e: "🍷", c: 1.4 }, spirits: { n: "Spirits", e: "🥃", c: 1.8 }
+};
+// k: get (quick), act (hands-on: a mini-game), pas (cooks on its own; b = seconds before it burns)
+const STATIONS = {
+  fridge: { n: "Fridge", e: "🧊", k: "get", d: .6, c: 250, col: "#DCEAF0" },
+  board: { n: "Chopping board", e: "🔪", k: "act", g: "chop", d: 2.2, c: 80, col: "#EAC896" },
+  bowl: { n: "Mixing bowl", e: "🥣", k: "act", g: "mix", d: 2.6, c: 120, col: "#F3D8CB" },
+  kettle: { n: "Kettle", e: "🫖", k: "pas", d: 5, c: 60, col: "#E3E7EA" },
+  coffee: { n: "Coffee machine", e: "☕", k: "act", g: "pour", d: 2.4, c: 450, col: "#D9C3AE" },
+  tap: { n: "Beer taps", e: "🍺", k: "act", g: "pour", d: 2.4, c: 400, col: "#D8B98C" },
+  toaster: { n: "Toaster", e: "🍞", k: "pas", d: 6, b: 8, c: 90, col: "#E6D3C0" },
+  grill: { n: "Grill", e: "♨️", k: "pas", d: 9, b: 9, c: 300, col: "#B9B2AA" },
+  hob: { n: "Hob", e: "🍳", k: "pas", d: 11, b: 10, c: 250, col: "#C8C4C0" },
+  oven: { n: "Oven", e: "🔥", k: "pas", d: 16, b: 12, c: 500, col: "#C9B6A6" },
+  fryer: { n: "Fryer", e: "🍟", k: "pas", d: 8, b: 8, c: 350, col: "#E2CF9C" },
+  sink: { n: "Sink", e: "🚰", k: "sink", c: 150, col: "#CFE3EC" },
+  dishwasher: { n: "Dishwasher", e: "🧼", k: "dw", c: 900, col: "#D6E6EE" }
+};
+// s: steps ("plate" = plate up at the counter), i: ingredients, p: price, c: cost to learn, st: stars needed, d: a drink
+const RECIPES = {
+  tea: { v: "cafe", n: "Pot of tea", e: "🍵", p: 2.8, s: ["kettle", "plate"], i: { tea: 1 }, c: 0, st: 0, d: 1 },
+  toast: { v: "cafe", n: "Buttered toast", e: "🍞", p: 3.5, s: ["fridge", "toaster", "plate"], i: { bread: 1 }, c: 0, st: 0 },
+  salad: { v: "cafe", n: "Garden salad", e: "🥗", p: 5, s: ["fridge", "board", "plate"], i: { veg: 1 }, c: 0, st: 0 },
+  latte: { v: "cafe", n: "Latte", e: "☕", p: 3.5, s: ["fridge", "coffee", "plate"], i: { coffee: 1, dairy: 1 }, c: 180, st: 0, d: 1 },
+  toastie: { v: "cafe", n: "Cheese toastie", e: "🥪", p: 6, s: ["fridge", "board", "toaster", "plate"], i: { bread: 1, dairy: 1 }, c: 220, st: 0 },
+  soup: { v: "cafe", n: "Soup of the day", e: "🍲", p: 6.5, s: ["fridge", "board", "hob", "plate"], i: { veg: 2 }, c: 350, st: 1 },
+  muffin: { v: "cafe", n: "Blueberry muffin", e: "🧁", p: 4, s: ["fridge", "bowl", "oven", "plate"], i: { flour: 1, fruit: 1 }, c: 400, st: 1 },
+  eggs: { v: "cafe", n: "Eggs on toast", e: "🍳", p: 6, s: ["fridge", "hob", "toaster", "plate"], i: { eggs: 1, bread: 1 }, c: 500, st: 1 },
+  pancakes: { v: "cafe", n: "Pancake stack", e: "🥞", p: 7, s: ["fridge", "bowl", "hob", "plate"], i: { flour: 1, eggs: 1 }, c: 650, st: 2 },
+  croissant: { v: "cafe", n: "Croissant", e: "🥐", p: 4, s: ["fridge", "bowl", "oven", "plate"], i: { flour: 1, dairy: 1 }, c: 700, st: 2 },
+  wrap: { v: "cafe", n: "Deli wrap", e: "🌯", p: 8.5, s: ["fridge", "board", "grill", "plate"], i: { bread: 1, meat: 1 }, c: 950, st: 2 },
+  quiche: { v: "cafe", n: "Quiche", e: "🥧", p: 9, s: ["fridge", "bowl", "board", "oven", "plate"], i: { flour: 1, eggs: 1, veg: 1 }, c: 1500, st: 3 },
+  sponge: { v: "cafe", n: "Victoria sponge", e: "🍰", p: 6, s: ["fridge", "bowl", "oven", "board", "plate"], i: { flour: 1, eggs: 1, fruit: 1 }, c: 1900, st: 3 },
+  english: { v: "cafe", n: "Full English", e: "🥓", p: 12, s: ["fridge", "grill", "hob", "plate"], i: { meat: 1, eggs: 1, bread: 1 }, c: 3200, st: 4 },
+  hightea: { v: "cafe", n: "Afternoon tea", e: "🫖", p: 16, s: ["fridge", "board", "oven", "kettle", "plate"], i: { tea: 1, flour: 1, fruit: 1 }, c: 5500, st: 5 },
+
+  lager: { v: "pub", n: "Pint of lager", e: "🍺", p: 4.5, s: ["tap", "plate"], i: { beer: 1 }, c: 0, st: 0, d: 1 },
+  chips: { v: "pub", n: "Bowl of chips", e: "🍟", p: 3.5, s: ["fridge", "fryer", "plate"], i: { potato: 1 }, c: 0, st: 0 },
+  ploughmans: { v: "pub", n: "Ploughman's", e: "🧀", p: 7, s: ["fridge", "board", "plate"], i: { bread: 1, dairy: 1 }, c: 0, st: 0 },
+  wine: { v: "pub", n: "Glass of wine", e: "🍷", p: 5.5, s: ["fridge", "plate"], i: { wine: 1 }, c: 200, st: 0, d: 1 },
+  burger: { v: "pub", n: "Burger", e: "🍔", p: 10, s: ["fridge", "board", "grill", "plate"], i: { meat: 1, bread: 1 }, c: 450, st: 1 },
+  fishchips: { v: "pub", n: "Fish & chips", e: "🐟", p: 12, s: ["fridge", "board", "fryer", "plate"], i: { fish: 1, potato: 1 }, c: 700, st: 1 },
+  bangers: { v: "pub", n: "Bangers & mash", e: "🌭", p: 11, s: ["fridge", "hob", "board", "plate"], i: { meat: 1, potato: 1 }, c: 900, st: 2 },
+  cocktail: { v: "pub", n: "Cocktail", e: "🍹", p: 8, s: ["fridge", "bowl", "plate"], i: { spirits: 1 }, c: 800, st: 2, d: 1 },
+  pudding: { v: "pub", n: "Sticky toffee pudding", e: "🍮", p: 6.5, s: ["fridge", "bowl", "oven", "plate"], i: { flour: 1, dairy: 1 }, c: 1000, st: 2 },
+  pie: { v: "pub", n: "Steak pie", e: "🥧", p: 13, s: ["fridge", "bowl", "oven", "plate"], i: { meat: 1, flour: 1 }, c: 1500, st: 3 },
+  roast: { v: "pub", n: "Sunday roast", e: "🍗", p: 16, s: ["fridge", "board", "oven", "plate"], i: { meat: 1, veg: 1, potato: 1 }, c: 2400, st: 3 },
+  curry: { v: "pub", n: "Curry night", e: "🍛", p: 13, s: ["fridge", "board", "hob", "plate"], i: { meat: 1, veg: 1 }, c: 3000, st: 4 },
+  steak: { v: "pub", n: "Steak dinner", e: "🥩", p: 19, s: ["fridge", "grill", "board", "plate"], i: { meat: 2 }, c: 4500, st: 4 },
+  fizz: { v: "pub", n: "Bottle of fizz", e: "🍾", p: 28, s: ["fridge", "plate"], i: { wine: 3 }, c: 5000, st: 5, d: 1 }
+};
+const ROLES = {
+  waiter: { n: "Waiter", w: 22, e: "🧾", job: "Takes orders, carries food from the counter to tables, clears tables." },
+  porter: { n: "Kitchen porter", w: 18, e: "🧽", job: "Washes up and clears tables." },
+  cook: { n: "Cook", w: 30, e: "👩‍🍳", job: "Cooks food orders and leaves them on the counter (drinks too, if there's no one for those)." },
+  drinks: { n: "Barista", w: 24, e: "☕", job: "Makes drink orders and leaves them on the counter." },
+  floor: { n: "Cleaner", w: 20, e: "🧹", job: "Mops spills, clears tables, and calms down rowdy customers." }
+};
+const CAMPAIGNS = [
+  { id: "leaf", n: "Leaflets through doors", e: "📄", c: 35, days: 2, b: .2, st: 0 },
+  { id: "board", n: "Chalkboard on the pavement", e: "🪧", c: 70, days: 4, b: .15, st: 0 },
+  { id: "paper", n: "Advert in the local paper", e: "📰", c: 150, days: 4, b: .35, st: 1 },
+  { id: "social", n: "Social media push", e: "📱", c: 280, days: 5, b: .45, st: 2 },
+  { id: "radio", n: "Local radio advert", e: "📻", c: 700, days: 6, b: .7, st: 3 },
+  { id: "tv", n: "Regional TV spot", e: "📺", c: 2200, days: 7, b: 1.1, st: 4 },
+  { id: "critic", n: "Invite a food critic", e: "🧐", c: 300, days: 1, b: 0, st: 2, critic: 1,
+    job: "A critic visits tomorrow. Make them happy for a big reputation boost; let them down and it hurts." }
+];
+const DECOR = [
+  { n: "Fresh coat of paint", c: 150 }, { n: "Potted plants", c: 400 }, { n: "Fairy lights", c: 1000 },
+  { n: "Comfy chairs", c: 2200 }, { n: "Local art on the walls", c: 5000 }, { n: "A log fire", c: 10000 }
+];
+const SHOES = [{ n: "Comfy trainers", c: 120 }, { n: "Running shoes", c: 400 }, { n: "Roller skates", c: 1200 }];
+const FIRST = ["Sam", "Priya", "Tom", "Aisha", "Jake", "Mei", "Ollie", "Zara", "Ben", "Nina", "Kofi", "Ruby", "Dan", "Leah", "Raj", "Ella", "Max", "Sofia", "Joe", "Hana", "Luca", "Grace", "Omar", "Ivy", "Finn", "Tia", "Ade", "Molly", "Kai", "Rosa"];
+
+function starsOf(rep) { let s = 0; while (s < 5 && rep >= STAR_AT[s + 1]) s++; return s; }
+function starsF(rep) { const s = starsOf(rep); return s >= 5 ? 5 : s + (rep - STAR_AT[s]) / (STAR_AT[s + 1] - STAR_AT[s]); }
+function roleName(save, r) { return r === "drinks" ? VENUES[save.venue].drinks : r === "floor" ? VENUES[save.venue].floor : ROLES[r].n; }
+function fairWage(role, lvl) { return Math.round(ROLES[role].w * (1 + .35 * (lvl - 1))); }
+function boost(save) { return Math.min(1.5, (save.camp || []).reduce((a, c) => a + ((CAMPAIGNS.find(x => x.id === c.id) || {}).b || 0), 0)); }
+function expectedGroups(save) {
+  const prem = PREMISES[save.prem];
+  let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * prem.demand * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1);
+  return Math.min(g, save.tables.length * 3.2 + 2);
+}
+function newSave(venue, name) {
+  const V = VENUES[venue], stock = {};
+  for (const r of V.menu) for (const k in RECIPES[r].i) stock[k] = 14;
+  return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
+    owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], plates: 6,
+    decor: 0, shoes: 0, prem: 0, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
+    stats: { served: 0, angry: 0, earned: 0, best: 0 } };
+}
+/*CORE-END*/
+
+const $ = id => document.getElementById(id);
+const APP = !!(window.SG_APP || window.WR_APP);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pickOne = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const money = v => (v < 0 ? "−£" : "£") + Math.abs(v).toLocaleString("en-GB", { minimumFractionDigits: Math.abs(v) < 100 && v % 1 ? 2 : 0, maximumFractionDigits: Math.abs(v) < 100 ? 2 : 0 });
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const starStr = n => "★".repeat(n) + "☆".repeat(5 - n);
+const load = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const SLOTS = 5;
+const slotKey = i => "ll.slot." + i;
+let opts = Object.assign({ mini: true }, load("ll.opts", {}));
+let S = null, slot = -1, view = "title";
+
+function migrate(s) {
+  if (!s || typeof s !== "object" || !VENUES[s.venue]) return null;
+  const d = newSave(s.venue, s.name);
+  for (const k in d) if (s[k] === undefined) s[k] = d[k];
+  return s;
+}
+function saveGame() { if (S && slot >= 0) { S.at = Date.now(); store(slotKey(slot), S); } }
+function show(id) { for (const s of ["title", "newgame", "play", "manage"]) $(s).hidden = s !== id; view = id; }
+
+/* ---------- drawing people ---------- */
+const SKINS = ["#F3CFAE", "#E6B48C", "#D19A6E", "#B57A50", "#8A5636", "#5E3A24", "#FADCC5"];
+const HAIRS = ["#2A1912", "#4A2E1C", "#8A5A2E", "#C9A15A", "#E3D3A8", "#1A1A1A", "#A0432A", "#8E8E8E"];
+const SHIRTS = ["#5B8DB8", "#6FAE7A", "#D9A441", "#B76A9C", "#7A6FC2", "#4FA3A0", "#E07B5F", "#8C8C8C", "#C24B4B", "#3F5F8F"];
+const LEE = { skin: "#C68A5E", hair: "#22140E", style: "bun", shirt: "#E8664A", apron: "#FFF7EE", legs: "#3A2A22", slim: 1, lee: 1 };
+function randomLook() {
+  return { skin: pickOne(SKINS), hair: pickOne(HAIRS), style: pickOne(["short", "short", "long", "bun", "curly", "bald"]), shirt: pickOne(SHIRTS), legs: pickOne(["#3B4252", "#2F3B54", "#5A4636", "#2A2A2A"]), slim: Math.random() < .5 };
+}
+const STAFF_LOOK = { waiter: { shirt: "#2F5D7C", apron: "#1F2328" }, porter: { shirt: "#6A8F3A", apron: "#DDE8C8" }, cook: { shirt: "#F4F1EA", apron: "#F4F1EA", hat: 1 }, drinks: { shirt: "#7A3E8F", apron: "#2A1F2E" }, floor: { shirt: "#2B2B2B" } };
+
+function rr(c, x, y, w, h, r) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
+function circ(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); }
+function drawPerson(c, x, y, L, s, o) {
+  o = o || {};
+  const w = s * (L.slim ? .3 : .38), bob = o.bob || 0;
+  c.fillStyle = "rgba(0,0,0,.16)"; c.beginPath(); c.ellipse(x, y, w * .8, s * .1, 0, 0, Math.PI * 2); c.fill();
+  if (o.ring) { c.strokeStyle = o.ring; c.lineWidth = Math.max(2, s * .06); c.beginPath(); c.ellipse(x, y, w * 1.05, s * .16, 0, 0, Math.PI * 2); c.stroke(); }
+  const by = y - s * (o.sit ? .12 : .2) + bob;
+  if (!o.sit) { c.fillStyle = L.legs || "#333"; c.fillRect(x - w * .34, by - s * .02, w * .26, s * .2 - bob); c.fillRect(x + w * .08, by - s * .02, w * .26, s * .2 - bob); }
+  c.fillStyle = L.shirt; rr(c, x - w / 2, by - s * .42, w, s * .44, w * .38); c.fill();
+  if (L.apron) { c.fillStyle = L.apron; rr(c, x - w * .32, by - s * .3, w * .64, s * .33, w * .16); c.fill(); }
+  c.fillStyle = L.skin; circ(c, x - w * .55, by - s * .14, s * .055); c.fill(); circ(c, x + w * .55, by - s * .14, s * .055); c.fill();
+  const hr = s * .17, hy = by - s * .57;
+  c.fillStyle = L.hair;
+  if (L.style === "long") { rr(c, x - hr * 1.08, hy - hr * .4, hr * 2.16, hr * 1.9, hr * .6); c.fill(); }
+  if (L.style === "curly") { for (let i = 0; i < 7; i++) { const a = Math.PI + i * Math.PI / 6; circ(c, x + Math.cos(a) * hr * .95, hy + Math.sin(a) * hr * .85, hr * .42); c.fill(); } }
+  c.fillStyle = L.skin; circ(c, x, hy, hr); c.fill();
+  if (L.style !== "bald") {
+    c.fillStyle = L.hair; c.beginPath(); c.arc(x, hy, hr * 1.04, Math.PI * 1.02, Math.PI * 1.98); c.closePath(); c.fill();
+    c.beginPath(); c.ellipse(x, hy - hr * .5, hr * 1.02, hr * .55, 0, 0, Math.PI * 2); c.fill();
+  }
+  if (L.style === "bun") { circ(c, x + (L.lee ? hr * .15 : 0), hy - hr * 1.15, hr * .5); c.fill(); }
+  if (L.lee) { c.fillStyle = "#E8664A"; rr(c, x - hr * .95, hy - hr * .62, hr * 1.9, hr * .26, hr * .1); c.fill(); }
+  if (L.hat) { c.fillStyle = "#fff"; c.strokeStyle = "#DDD"; c.lineWidth = 1; rr(c, x - hr * .8, hy - hr * 1.5, hr * 1.6, hr * .9, hr * .3); c.fill(); c.stroke(); circ(c, x, hy - hr * 1.55, hr * .65); c.fill(); }
+  c.fillStyle = "#22160F"; circ(c, x - hr * .38, hy + hr * .12, Math.max(1, hr * .12)); c.fill(); circ(c, x + hr * .38, hy + hr * .12, Math.max(1, hr * .12)); c.fill();
+  if (o.red) { c.fillStyle = "rgba(220,40,30,.55)"; circ(c, x - hr * .55, hy + hr * .45, hr * .25); c.fill(); circ(c, x + hr * .55, hy + hr * .45, hr * .25); c.fill(); }
+  if (L.lee) { c.fillStyle = "#F2C14E"; circ(c, x - hr * 1.0, hy + hr * .3, Math.max(1.2, hr * .13)); c.fill(); circ(c, x + hr * 1.0, hy + hr * .3, Math.max(1.2, hr * .13)); c.fill(); }
+}
+function drawHero() {
+  const c = $("heroCv").getContext("2d"); c.clearRect(0, 0, 168, 192);
+  drawPerson(c, 84, 180, LEE, 150);
+}
+
+/* ---------- title / slots ---------- */
+function renderTitle() {
+  drawHero();
+  $("miniBtn").textContent = opts.mini ? "On" : "Off";
+  const box = $("slots"); box.innerHTML = "";
+  for (let i = 0; i < SLOTS; i++) {
+    const s = migrate(load(slotKey(i), null)), el = document.createElement("div");
+    if (!s) {
+      el.className = "slot empty";
+      el.innerHTML = `<div class="ic">＋</div><div class="info"><b>Slot ${i + 1}</b><span>Empty</span></div><button class="btn pri sm" data-new="${i}">New game</button>`;
+    } else {
+      el.className = "slot " + s.venue;
+      el.innerHTML = `<div class="ic">${VENUES[s.venue].icon}</div><div class="info"><b>${esc(s.name)}</b><span>Day ${s.day} · <span class="stars" style="font-size:.85rem">${starStr(starsOf(s.rep))}</span> · ${money(Math.round(s.cash))}</span></div>
+        <button class="btn sm" data-del="${i}" aria-label="Delete">🗑</button><button class="btn pri sm" data-go="${i}">Play</button>`;
+    }
+    box.append(el);
+  }
+}
+$("slots").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.new) { newGameScreen(+b.dataset.new); return; }
+  if (b.dataset.go) { slot = +b.dataset.go; S = migrate(load(slotKey(slot), null)); if (S) openManage(S.last && !S.last.seen ? "day" : "day"); return; }
+  if (b.dataset.del) {
+    const i = +b.dataset.del, s = load(slotKey(i), null);
+    dialog(`<h3>Delete this save?</h3><p class="muted" style="text-align:center">${esc(s && s.name || "")}, day ${s && s.day}. This can't be undone.</p>
+      <div class="acts"><button class="btn" data-a="no">Keep it</button><button class="btn" style="color:var(--bad)" data-a="yes">Delete</button></div>`, a => {
+      if (a === "yes") { try { localStorage.removeItem(slotKey(i)); } catch (e) {} renderTitle(); }
+    });
+  }
+};
+$("miniBtn").onclick = () => { opts.mini = !opts.mini; store("ll.opts", opts); renderTitle(); };
+
+let ngVenue = "cafe", ngSlot = 0;
+function newGameScreen(i) {
+  ngSlot = i; ngVenue = "cafe";
+  $("ngName").value = "";
+  renderNG(); show("newgame");
+}
+function renderNG() {
+  document.querySelectorAll(".venue").forEach(b => b.classList.toggle("on", b.dataset.v === ngVenue));
+  $("ngName").placeholder = VENUES[ngVenue].names[0];
+}
+document.querySelectorAll(".venue").forEach(b => b.onclick = () => { ngVenue = b.dataset.v; renderNG(); });
+$("ngBack").onclick = () => { renderTitle(); show("title"); };
+$("ngGo").onclick = () => {
+  const name = $("ngName").value.trim() || VENUES[ngVenue].names[0];
+  slot = ngSlot; S = newSave(ngVenue, name); S.cands = makeCands(); saveGame();
+  startDay();
+};
+
+/* ---------- dialogs ---------- */
+let dlgCb = null;
+function dialog(html, cb) { $("ovc").innerHTML = html; $("ov").hidden = false; dlgCb = cb || null; }
+function closeDialog() { $("ov").hidden = true; dlgCb = null; }
+$("ovc").onclick = e => {
+  const b = e.target.closest("[data-a]"); if (!b) return;
+  const cb = dlgCb; closeDialog(); if (cb) cb(b.dataset.a);
+};
+
+/* ======================================================================
+   THE DAY: world layout (tile units; 9 wide, 14.6 tall)
+   ====================================================================== */
+const W = 9, H = 14.6, GAPX = 4.5, CY = 4.1;
+const TABLE_POS = [[1.6, 6.2], [4.5, 6.2], [7.4, 6.2], [1.6, 8.8], [4.5, 8.8], [7.4, 8.8], [1.6, 11.4], [4.5, 11.4], [7.4, 11.4]];
+const DOOR = [4.5, 14.5];
+function slotPos(i) {
+  if (i < 9) return { x: .55 + i * .9875, y: .6, sx: .55 + i * .9875, sy: 1.4 };
+  const k = i - 9, left = k % 2 === 0, y = 1.75 + Math.floor(k / 2) * 1.0;
+  return left ? { x: .55, y, sx: 1.35, sy: y } : { x: 8.45, y, sx: 7.65, sy: y };
+}
+const COUNTER = { bin: .55, plates: 1.55, pass: [2.55, 3.45, 5.55, 6.5, 7.45] };
+const zone = y => y < 3.95 ? 0 : 1;
+const PALETTE = {
+  cafe: [{ floor: "#F2E2CB", floor2: "#ECD8BC", wall: "#C96E54", kit: "#E7EEF0", kit2: "#DCE4E7", counter: "#B9875A", top: "#D9AC7B", table: "#C08A55", chair: "#8E5E36" },
+    { floor: "#EDE6D8", floor2: "#E3DACA", wall: "#5E8C7A", kit: "#EEF0EA", kit2: "#E2E5DD", counter: "#7C5A3E", top: "#A57C57", table: "#B98D60", chair: "#6E4A30" },
+    { floor: "#E8D7C0", floor2: "#DCC7AC", wall: "#8C5A44", kit: "#F0ECE6", kit2: "#E4DED5", counter: "#6B4A33", top: "#946A4A", table: "#9E6E45", chair: "#5E3E28" },
+    { floor: "#F4EDE3", floor2: "#EAE0D2", wall: "#3F6E8C", kit: "#F2F4F5", kit2: "#E5E9EB", counter: "#2F3B45", top: "#55657A", table: "#C9A27A", chair: "#3F4F5E" }],
+  pub: [{ floor: "#7A5236", floor2: "#6C472E", wall: "#2F4535", kit: "#4A5054", kit2: "#41474B", counter: "#4A2E1E", top: "#6E4630", table: "#8A5C38", chair: "#4E3220" },
+    { floor: "#82583A", floor2: "#744E33", wall: "#5A2630", kit: "#50565A", kit2: "#464C50", counter: "#3E2618", top: "#6A4128", table: "#94643E", chair: "#53351F" },
+    { floor: "#6E5440", floor2: "#624A38", wall: "#3C3A55", kit: "#55585C", kit2: "#4B4E52", counter: "#35241A", top: "#5E4330", table: "#7E5A3E", chair: "#46301F" },
+    { floor: "#8C6A4E", floor2: "#7E5E45", wall: "#24414A", kit: "#5A5F63", kit2: "#505559", counter: "#2A2420", top: "#4E4440", table: "#A07850", chair: "#3A2C22" }]
+};
+
+let G = null, lee = null, raf = 0, lastT = 0, paused = false, nextId = 1;
+
+function startDay() {
+  const V = VENUES[S.venue];
+  if (!S.cands || !S.cands.length) S.cands = makeCands();
+  G = { t: 0, len: DAY_LEN, open: true, ended: false, endT: 0,
+    rev: 0, tips: 0, served: 0, angry: 0, happy: 0, turned: 0, burnt: 0, spills: 0, thrown: 0, people: 0, repD: 0, critic: null, perfect: 0, binned: 0,
+    stock: Object.assign({}, S.stock), used: {},
+    tables: S.tables.map((seats, i) => ({ i, x: TABLE_POS[i][0], y: TABLE_POS[i][1], seats, group: null, dirty: 0, claim: null })),
+    stations: S.stations.map((t, i) => Object.assign({ i, t, item: null, user: null, claim: null, load: 0, run: 0 }, slotPos(i))),
+    pass: [], clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
+  // arrivals
+  const n = Math.max(3, Math.round(expectedGroups(S) * rnd(.9, 1.1)));
+  const big = Math.max(...S.tables), critic = (S.camp || []).some(c => c.id === "critic");
+  for (let i = 0; i < n; i++) {
+    let u;
+    if (Math.random() < .3) u = rnd(0, 1); else { const [mu, sd] = pickOne(V.peaks); u = mu + sd * (rnd(-1, 1) + rnd(-1, 1) + rnd(-1, 1)) / 1.5; }
+    u = clamp(u, .01, .9);
+    let size = Math.random() < .42 ? 1 : Math.random() < .7 ? 2 : Math.random() < .6 ? 3 : 4;
+    size = Math.min(size, big);
+    const late = S.venue === "pub" && u > .6;
+    G.arr.push({ t: u * DAY_LEN, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep), late });
+  }
+  G.arr.sort((a, b) => a.t - b.t);
+  if (critic) { const a = G.arr[Math.floor(G.arr.length * .4)]; if (a) { a.critic = 1; a.size = 1; a.rowdy = false; } }
+  // actors
+  lee = mkActor({ id: "lee", name: "Lee Lee", role: "lee", look: LEE, x: 4.5, y: 2.5, speed: 3.1 * (1 + .12 * S.shoes) });
+  G.actors.push(lee);
+  for (const st of S.staff) {
+    const look = Object.assign(randomLook(), STAFF_LOOK[st.role] || {}, st.look || {});
+    const home = staffHome(st.role);
+    const a = mkActor({ id: st.id, name: st.name, role: st.role, look, x: home[0], y: home[1], speed: 2.3 * (.85 + .1 * st.lvl) * (.85 + st.morale * .003), skill: (.8 + .12 * st.lvl) * (.85 + st.morale * .003) });
+    G.actors.push(a);
+  }
+  paused = false; closeDialog(); closeMini();
+  $("pName").textContent = S.name;
+  show("play"); resize();
+  toastMsg(S.venue === "pub" ? "Doors open! The first customers are on their way." : "Doors open! Kettle's on.", 2.4);
+  lastT = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
+}
+function staffHome(role) { return role === "waiter" ? [5.6, 5.2] : role === "floor" ? [2.5, 13.2] : role === "porter" ? [3, 2.6] : role === "drinks" ? [6, 2.6] : [4, 2.6]; }
+function mkActor(o) { return Object.assign({ path: [], then: null, work: null, hand: null, wait: 0, watch: null, skill: 1, bob: 0, moving: false }, o); }
+
+/* ---------- movement & work ---------- */
+function route(a, x, y) {
+  const p = [];
+  if (zone(a.y) !== zone(y)) { if (zone(a.y) === 0) p.push([GAPX, 3.45], [GAPX, 4.9]); else p.push([GAPX, 4.9], [GAPX, 3.45]); }
+  p.push([x, y]); return p;
+}
+function goTo(a, x, y, then) { a.path = route(a, x, y); a.then = then || null; }
+function work(a, dur, done, cancel, label) { a.work = { t: 0, dur, done, cancel, label }; }
+function interrupt(a) { if (a.work && a.work.cancel) a.work.cancel(); a.work = null; a.path = []; a.then = null; }
+function standFor(o, a) {
+  if (o.k === "st") return [o.s.sx, o.s.sy];
+  if (o.k === "counter") return [o.x, zone(a.y) === 0 ? 3.42 : 4.85];
+  if (o.k === "table") return [o.t.x + .5, o.t.y + 1.05];
+  if (o.k === "mess") return [o.m.x, o.m.y + .3];
+  return [o.x, o.y];
+}
+function actorStep(a, dt) {
+  a.moving = false;
+  if (a.path.length) {
+    const [tx, ty] = a.path[0], dx = tx - a.x, dy = ty - a.y, d = Math.hypot(dx, dy), step = a.speed * dt;
+    if (d <= step) { a.x = tx; a.y = ty; a.path.shift(); } else { a.x += dx / d * step; a.y += dy / d * step; }
+    a.moving = true; a.bob = Math.sin(G.t * 16) * .6;
+    if (!a.path.length) { const f = a.then; a.then = null; if (f) f(); }
+    return;
+  }
+  a.bob = 0;
+  if (a.work) {
+    a.work.t += dt * (a.role === "lee" ? 1 : a.skill);
+    if (a.work.t >= a.work.dur) { const w = a.work; a.work = null; w.done && w.done(); }
+  }
+}
+
+/* ---------- orders, stock, dishes ---------- */
+function onMenu() { return S.owned.filter(r => !S.off.includes(r)); }
+function hasStation(t) { return G.stations.some(s => s.t === t); }
+function canMake(r) { return RECIPES[r].s.every(t => t === "plate" || hasStation(t)); }
+function openTickets(r) { const out = []; for (const g of G.groups) if (g.state === "wait" || g.state === "eat") for (const k of g.tickets) if (!k.done && (!r || k.r === r)) out.push({ g, k }); return out; }
+function allDishes() {
+  const out = [];
+  for (const a of G.actors) if (a.hand && a.hand.k === "dish") out.push(a.hand);
+  for (const s of G.stations) if (s.item) out.push(s.item);
+  for (const d of G.pass) out.push(d);
+  return out.filter(d => !d.burnt);
+}
+function need(r) { return openTickets(r).length - allDishes().filter(d => d.r === r).length; }
+function reserved(ing) { let n = 0; for (const r of S.owned) { const q = RECIPES[r].i[ing]; if (q) n += Math.max(0, need(r)) * q; } return n; }
+function stockOk(r, extra) { for (const [k, q] of Object.entries(RECIPES[r].i)) if ((G.stock[k] || 0) - (extra ? reserved(k) : 0) < q) return false; return true; }
+function startable(t) { const seen = {}; const out = []; for (const { k } of openTickets()) { const R = RECIPES[k.r]; if (R.s[0] === t && !seen[k.r] && need(k.r) > 0) { seen[k.r] = 1; out.push(k.r); } } return out; }
+function useStock(r) { for (const [k, q] of Object.entries(RECIPES[r].i)) { G.stock[k] -= q; G.used[k] = (G.used[k] || 0) + q; } }
+function chooseOrder(g, taken) {
+  const late = g.late, menu = onMenu().filter(r => canMake(r));
+  const opts = [];
+  for (const r of menu) {
+    const R = RECIPES[r];
+    let ok = true; for (const [k, q] of Object.entries(R.i)) if ((G.stock[k] || 0) - reserved(k) - (taken[k] || 0) < q) ok = false;
+    if (!ok) continue;
+    let w = 1;
+    if (R.d) w *= late ? 3 : .8;
+    if (S.disc && S.disc.r === r) w *= 1 + S.disc.pct * 6;
+    if (g.critic) w *= 1 + R.p / 5;
+    opts.push([r, w]);
+  }
+  if (!opts.length) return null;
+  let tot = opts.reduce((a, o) => a + o[1], 0), x = Math.random() * tot;
+  for (const [r, w] of opts) { x -= w; if (x <= 0) return r; }
+  return opts[opts.length - 1][0];
+}
+function takeOrder(g) {
+  if (g.state !== "order") return;
+  const taken = {}, tickets = [];
+  const extra = .12 + .07 * starsOf(S.rep);
+  for (let i = 0; i < g.size; i++) {
+    const n = Math.random() < extra ? 2 : 1;
+    for (let j = 0; j < n; j++) {
+      const r = chooseOrder(g, taken); if (!r) continue;
+      if (j === 1 && tickets.some(t => t.r === r && t.p === i)) continue;
+      for (const [k, q] of Object.entries(RECIPES[r].i)) taken[k] = (taken[k] || 0) + q;
+      tickets.push({ r, done: false, p: i });
+    }
+  }
+  if (!tickets.length) {
+    fx(g.table.x, g.table.y - 1, "Nothing we fancy is left 😞", "#D2483A");
+    G.turned += g.size; G.repD -= 2 * g.size; groupLeave(g, false); return;
+  }
+  g.tickets = tickets; g.state = "wait"; g.pat = Math.max(g.pat, .85);
+}
+function serve(g, tk, dish) {
+  tk.done = true; g.servedN++; g.pat = Math.min(1, g.pat + .12);
+  if (dish.perfect) g.bonus += .6;
+  fx(g.table.x, g.table.y - .9, RECIPES[dish.r].e + " ✓", "#3E9B6B");
+  if (g.tickets.every(k => k.done)) { g.state = "eat"; g.timer = rnd(7, 10); }
+}
+
+/* ---------- customers ---------- */
+function spawnGroup(a) {
+  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
+    claim: null, calmClaim: null, shout: 0, rt: rnd(6, 12), calmed: 0, people: [] };
+  for (let i = 0; i < a.size; i++) g.people.push({ x: DOOR[0] + (i - (a.size - 1) / 2) * .4, y: DOOR[1], look: randomLook(), tx: 0, ty: 0 });
+  G.groups.push(g); G.queue.push(g); G.people += a.size;
+}
+function seatOffsets(seats) { return seats >= 4 ? [[-.8, 0], [.8, 0], [0, -.72], [0, .72]] : [[-.8, 0], [.8, 0]]; }
+function trySeat() {
+  for (let qi = 0; qi < G.queue.length; qi++) {
+    const g = G.queue[qi];
+    const free = G.tables.filter(t => !t.group && !t.dirty && t.seats >= g.size).sort((a, b) => a.seats - b.seats);
+    if (!free.length) continue;
+    const t = free[0]; t.group = g; g.table = t; g.state = "walk"; g.pat = Math.max(g.pat, .9);
+    const offs = seatOffsets(t.seats);
+    g.people.forEach((p, i) => { p.tx = t.x + offs[i][0]; p.ty = t.y + offs[i][1]; });
+    G.queue.splice(qi, 1); qi--;
+  }
+  G.queue.forEach((g, qi) => g.people.forEach((p, i) => { p.tx = 1.2 + qi * 1.3 + i * .32; p.ty = 13.4 + (i % 2) * .15; }));
+}
+function patMul(g) {
+  let m = 1 - .06 * S.decor;
+  if (g.table && G.messes.some(ms => Math.hypot(ms.x - g.table.x, ms.y - g.table.y) < 2.2)) m *= 1.25;
+  return m;
+}
+function groupLeave(g, happy) {
+  const t = g.table;
+  if (t) { t.dirty += g.servedN; t.group = null; }
+  g.table = null; g.state = "leave"; g.shout = 0;
+  const qi = G.queue.indexOf(g); if (qi >= 0) G.queue.splice(qi, 1);
+  g.people.forEach((p, i) => { p.tx = DOOR[0] + (i - 1) * .3; p.ty = DOOR[1] + .4; });
+}
+function payAndLeave(g) {
+  let total = 0;
+  for (const k of g.tickets) { const R = RECIPES[k.r]; total += R.p * (S.disc && S.disc.r === k.r ? 1 - S.disc.pct : 1); }
+  const tip = Math.round((total * (.04 + .22 * g.pat) * (1 + .06 * S.decor) + g.bonus) * 10) / 10;
+  G.rev += total; G.tips += tip; G.served += g.size;
+  const happy = g.pat > .45;
+  if (happy) G.happy += g.size;
+  G.repD += happy ? 3 * g.size : g.size;
+  if (g.critic) { G.critic = happy ? "loved" : "meh"; G.repD += happy ? 150 : 10; fx(g.table.x, g.table.y - 1.4, happy ? "The critic loved it! ⭐" : "The critic shrugs…", happy ? "#3E9B6B" : "#8C7563"); }
+  fx(g.table.x, g.table.y - .6, "+" + money(total + tip), "#B07A10");
+  if (Math.random() < (S.venue === "cafe" ? .07 : .1)) addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.6, 1.2));
+  groupLeave(g, true);
+}
+function angryLeave(g, why) {
+  G.angry += g.size; G.repD -= 5 * g.size;
+  if (g.critic) { G.critic = "angry"; G.repD -= 90; }
+  const x = g.table ? g.table.x : g.people[0].x, y = g.table ? g.table.y : g.people[0].y;
+  fx(x, y - 1, why || "Too slow! 😠", "#D2483A");
+  groupLeave(g, false);
+}
+function addMess(x, y) { x = clamp(x, .6, 8.4); y = clamp(y, 5.2, 13.6); G.messes.push({ id: nextId++, x, y, claim: null }); }
+function shout(g) {
+  g.shout = 6; fx(g.table.x, g.table.y - 1.2, pickOne(["Oi! Another round!", "WAHEY!", "🎵 Sweet Caroline 🎵", "Who spilt my pint?!"]), "#C24B4B");
+  for (const o of G.groups) if (o !== g && o.table && Math.hypot(o.table.x - g.table.x, o.table.y - g.table.y) < 3.6) o.pat = Math.max(.02, o.pat - .1);
+  if (Math.random() < .4) addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.6, 1));
+}
+function calm(g) {
+  if (!g.table || g.shout <= 0) return;
+  if (g.calmed >= 1) { G.thrown += g.size; fx(g.table.x, g.table.y - 1, "Out you go! 👋", "#3A2A22"); groupLeave(g, false); return; }
+  g.calmed++; g.shout = 0; g.rt = rnd(14, 22); fx(g.table.x, g.table.y - 1, "Sorry, sorry…", "#3A2A22");
+}
+function groupsStep(dt) {
+  while (G.open && G.arr.length && G.arr[0].t <= G.t) spawnGroup(G.arr.shift());
+  trySeat();
+  for (const g of G.groups.slice()) {
+    let moving = false;
+    for (const p of g.people) { const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy), st = 1.7 * dt; if (d > st) { p.x += dx / d * st; p.y += dy / d * st; moving = true; } else { p.x = p.tx; p.y = p.ty; } }
+    const pm = patMul(g);
+    switch (g.state) {
+      case "queue": g.pat -= dt / 55 * pm; if (g.pat <= 0) angryLeave(g, "No tables! 😠"); break;
+      case "walk": if (!moving) { g.state = "think"; g.timer = rnd(2, 3.5); } break;
+      case "think": g.timer -= dt; if (g.timer <= 0) g.state = "order"; break;
+      case "order": g.pat -= dt / 60 * pm; if (g.pat <= 0) angryLeave(g, "Nobody took our order! 😠"); break;
+      case "wait": { const left = g.tickets.filter(k => !k.done).length; g.pat -= dt / (85 + 10 * left) * pm; if (g.pat <= 0) angryLeave(g); break; }
+      case "eat": g.timer -= dt; if (g.timer <= 0) payAndLeave(g); break;
+      case "leave": if (!moving) G.groups.splice(G.groups.indexOf(g), 1); break;
+    }
+    if (g.rowdy && g.table && (g.state === "order" || g.state === "wait" || g.state === "eat")) {
+      if (g.shout > 0) { g.shout -= dt; if (g.shout <= 0) g.rt = rnd(5, 9); }
+      else { g.rt -= dt; if (g.rt <= 0) shout(g); }
+    }
+  }
+}
+
+/* ---------- stations ---------- */
+function speedOf(t) { return 1 + .2 * (S.lvl[t] || 0); }
+function doStep(a, s) {
+  const def = STATIONS[s.t], d = a.hand;
+  if (def.k === "get") { s.user = a; work(a, def.d, () => { s.user = null; d.s++; }, () => { s.user = null; }); }
+  else if (def.k === "act") {
+    s.user = a;
+    if (a === lee && opts.mini) openMini(def.g, d, s);
+    else work(a, def.d * (a === lee ? 1.35 : 1) / speedOf(s.t), () => { s.user = null; d.s++; }, () => { s.user = null; }, "prep");
+  } else if (def.k === "pas") {
+    s.item = d; d.t = 0; d.dur = def.d / speedOf(s.t); d.burnAt = def.b ? d.dur + def.b * (1 + .3 * (S.lvl[s.t] || 0)) : Infinity; d.ready = false;
+    a.hand = null;
+  }
+}
+function startDish(a, r, s) {
+  if (!stockOk(r)) { if (a === lee) toastMsg("Out of " + Object.keys(RECIPES[r].i).filter(k => (G.stock[k] || 0) < RECIPES[r].i[k]).map(k => INGS[k].n.toLowerCase()).join(" and ") + "! Buy more tonight."); return false; }
+  useStock(r);
+  a.hand = { k: "dish", r, s: 0, id: nextId++ };
+  doStep(a, s); return true;
+}
+function stationsStep(dt) {
+  for (const s of G.stations) {
+    if (s.item) {
+      const d = s.item; d.t += dt;
+      if (!d.ready && d.t >= d.dur) { d.ready = true; d.s++; }
+      if (!d.burnt && d.t >= d.burnAt) { d.burnt = true; G.burnt++; fx(s.x, s.y + .5, "Burnt! 💨", "#3A2A22"); }
+    }
+    if (s.t === "dishwasher" && s.run > 0) { s.run -= dt * speedOf("dishwasher"); if (s.run <= 0) { s.run = 0; G.clean += s.load; s.load = 0; } }
+  }
+}
+function startWash(a) {
+  const s = G.stations.find(x => x.t === "sink"); if (!s || G.sink <= 0) { G.washer = G.washer === a ? null : G.washer; return; }
+  G.washer = a;
+  work(a, 1.05 / speedOf("sink"), () => { G.sink--; G.clean++; if (G.sink > 0) startWash(a); else G.washer = null; }, () => { if (G.washer === a) G.washer = null; }, "wash");
+}
+function loadDishwasher(a, s) {
+  if (!a.hand || a.hand.k !== "dirty") return false;
+  if (s.run > 0 || s.load >= DW_CAP) return false;
+  const n = Math.min(a.hand.n, DW_CAP - s.load); s.load += n; a.hand.n -= n; if (!a.hand.n) a.hand = null;
+  s.run = DW_TIME; return true;
+}
+
+/* ---------- Lee Lee: what a tap does ---------- */
+function leeTap(o) {
+  if (mg) { toastMsg("Finish this first, or tap ✕"); return; }
+  interrupt(lee);
+  const [x, y] = standFor(o, lee);
+  goTo(lee, x, y, () => leeArrive(o));
+}
+function leeArrive(o) {
+  const L = lee, h = L.hand;
+  if (o.k === "st") return leeStation(o.s);
+  if (o.k === "mess") {
+    if (!G.messes.includes(o.m)) return;
+    work(L, 1.3, () => { const i = G.messes.indexOf(o.m); if (i >= 0) G.messes.splice(i, 1); }, null, "mop"); return;
+  }
+  if (o.k === "counter") return leeCounter(o);
+  if (o.k === "table") return leeTable(o.t);
+}
+function leeStation(s) {
+  const L = lee, h = L.hand, def = STATIONS[s.t];
+  if (def.k === "sink") {
+    if (h && h.k === "dirty") { G.sink += h.n; L.hand = null; }
+    else if (h) { toastMsg("The sink is for washing plates"); return; }
+    if (G.sink > 0) { if (G.washer && G.washer !== L) { toastMsg(G.washer.name + " is washing up"); return; } startWash(L); }
+    else toastMsg("Nothing to wash");
+    return;
+  }
+  if (def.k === "dw") {
+    if (h && h.k === "dirty") { if (!loadDishwasher(L, s)) toastMsg(s.run > 0 ? "The dishwasher is running" : "It's full"); }
+    else toastMsg(s.run > 0 ? "Washing… " + Math.ceil(s.run) + "s" : "Bring dirty plates to load it");
+    return;
+  }
+  if (s.item) {
+    if (h && h.k === "dish" && !h.burnt && RECIPES[h.r].s[h.s] === s.t && (s.item.ready || s.item.burnt)) {
+      // swap: take the finished one off, put the new one on
+      const done = s.item; s.item = null; for (const a of G.actors) if (a.watch === s) a.watch = null;
+      doStep(L, s); L.hand = done; return;
+    }
+    if (h) { toastMsg("The " + def.n.toLowerCase() + " is busy. Put what you're holding on the counter"); return; }
+    if (s.item.ready || s.item.burnt) { L.hand = s.item; s.item = null; for (const a of G.actors) if (a.watch === s) a.watch = null; }
+    else toastMsg("Still cooking…");
+    return;
+  }
+  if (s.user && s.user !== L) { toastMsg(s.user.name + " is using this"); return; }
+  if (!h) {
+    const opts2 = startable(s.t);
+    if (!opts2.length) {
+      const any = openTickets().filter(x => need(x.k.r) > 0);
+      if (!any.length) toastMsg(G.groups.some(g => g.state === "order") ? "Take an order first: tap a table with a 📝" : "No orders to make right now");
+      else toastMsg(RECIPES[any[0].k.r].n + " starts at the " + STATIONS[RECIPES[any[0].k.r].s[0]].n.toLowerCase());
+      return;
+    }
+    if (opts2.length === 1) startDish(L, opts2[0], s);
+    else chooser(opts2, r => { if (L.x === s.sx && L.y === s.sy && !L.hand && !s.item && (!s.user || s.user === L)) startDish(L, r, s); });
+    return;
+  }
+  if (h.k !== "dish") { toastMsg("Take the dirty plates to the sink"); return; }
+  if (h.burnt) { toastMsg("That's burnt. Throw it in the bin 🗑"); return; }
+  const R = RECIPES[h.r], next = R.s[h.s];
+  if (h.s >= R.s.length) { toastMsg("That's ready to serve"); return; }
+  if (next !== s.t) { toastMsg(next === "plate" ? "Plate it up at the counter" : R.n + " needs the " + STATIONS[next].n.toLowerCase() + " next"); return; }
+  doStep(L, s);
+}
+function leeCounter(o) {
+  const L = lee, h = L.hand;
+  if (o.what === "bin") {
+    if (!h) { toastMsg("Nothing to throw away"); return; }
+    if (h.k === "dirty") { toastMsg("Dirty plates go to the sink"); return; }
+    if (h.s >= RECIPES[h.r].s.length) G.clean++;
+    if (!h.burnt) G.binned++;
+    L.hand = null; return;
+  }
+  if (h && h.k === "dish" && !h.burnt) {
+    const R = RECIPES[h.r];
+    if (R.s[h.s] === "plate") {
+      if (G.clean <= 0) { toastMsg("No clean plates! Wash some at the sink."); return; }
+      work(L, .35, () => { if (G.clean > 0) { G.clean--; h.s++; } }, null, "plate"); return;
+    }
+    if (o.what === "pass" || o.what === "plates") { if (G.pass.length >= PASS_MAX) { toastMsg("The counter is full"); return; } G.pass.push(h); L.hand = null; return; }
+    return;
+  }
+  if (h && h.burnt) { toastMsg("That's burnt. The bin is at the end of the counter"); return; }
+  if (h && h.k === "dirty") { toastMsg("Dirty plates go to the sink"); return; }
+  if (!h) {
+    if (!G.pass.length) { toastMsg(o.what === "plates" ? G.clean + " clean plates" : "Nothing on the counter"); return; }
+    const i = o.what === "pass" && o.i < G.pass.length ? o.i : 0;
+    L.hand = G.pass.splice(i, 1)[0]; L.hand.claim = null;
+  }
+}
+function leeTable(t) {
+  const L = lee, h = L.hand, g = t.group;
+  if (g && g.rowdy && g.shout > 0) { work(L, .9, () => calm(g), null, "calm"); return; }
+  if (g && g.state === "order") { work(L, .8, () => takeOrder(g), null, "order"); return; }
+  if (h && h.k === "dish") {
+    if (h.burnt) { toastMsg("You can't serve burnt food!"); return; }
+    if (h.s < RECIPES[h.r].s.length) { toastMsg("Finish the dish first"); return; }
+    if (!g || g.state !== "wait") { toastMsg("Nobody here is waiting for food"); return; }
+    const tk = g.tickets.find(k => !k.done && k.r === h.r);
+    if (!tk) { toastMsg("Table " + (t.i + 1) + " didn't order " + RECIPES[h.r].n.toLowerCase()); return; }
+    serve(g, tk, h); L.hand = null; return;
+  }
+  if (t.dirty > 0) {
+    if (h && h.k === "dirty") { h.n += t.dirty; t.dirty = 0; return; }
+    if (h) { toastMsg("Your hands are full"); return; }
+    L.hand = { k: "dirty", n: t.dirty }; t.dirty = 0; t.claim = null; return;
+  }
+  if (g && g.state === "wait") toastMsg("Waiting for " + g.tickets.filter(k => !k.done).map(k => RECIPES[k.r].e).join(" "));
+  else if (g && (g.state === "think" || g.state === "walk")) toastMsg("Still reading the menu");
+  else if (g && g.state === "eat") toastMsg("Enjoying their food");
+}
+
+/* ---------- staff: what they do when they're free ---------- */
+function staffThink(a, dt) {
+  if (a.path.length || a.work) return;
+  if (a.wait > 0) { a.wait -= dt; return; }
+  if (a.watch) { const s = a.watch; if (s.item && s.item.id === a.watchId) { if (s.item.ready || s.item.burnt) { a.hand = s.item; s.item = null; a.watch = null; } return; } a.watch = null; }
+  const h = a.hand;
+  if (h && h.k === "dirty") return staffDirty(a);
+  if (h && h.k === "dish") return staffDish(a);
+  const role = a.role;
+  const did = role === "waiter" ? tryOrder(a) || tryDeliver(a) || tryClear(a)
+    : role === "porter" ? tryWash(a) || tryClear(a)
+    : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null)
+    : role === "drinks" ? tryCook(a, true)
+    : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) : false;
+  if (!did) { const hm = staffHome(role); if (Math.hypot(a.x - hm[0], a.y - hm[1]) > .3) goTo(a, hm[0] + rnd(-.4, .4), hm[1]); a.wait = .4; }
+}
+function tryOrder(a) {
+  const g = G.groups.find(g => g.state === "order" && !g.claim); if (!g) return false;
+  g.claim = a; const [x, y] = standFor({ k: "table", t: g.table }, a);
+  goTo(a, x, y, () => { g.claim = null; if (g.state === "order") work(a, .9, () => takeOrder(g)); });
+  return true;
+}
+function tryDeliver(a) {
+  const d = G.pass.find(d => !d.claim && d.s >= RECIPES[d.r].s.length && openTickets(d.r).length); if (!d) return false;
+  d.claim = a;
+  goTo(a, COUNTER.pass[Math.min(G.pass.indexOf(d), 4)], 4.85, () => { d.claim = null; const i = G.pass.indexOf(d); if (i >= 0 && !a.hand) { a.hand = G.pass.splice(i, 1)[0]; } });
+  return true;
+}
+function tryClear(a) {
+  const t = G.tables.find(t => t.dirty > 0 && !t.claim); if (!t) return false;
+  t.claim = a; const [x, y] = standFor({ k: "table", t }, a);
+  goTo(a, x, y, () => { t.claim = null; if (t.dirty > 0 && !a.hand) { a.hand = { k: "dirty", n: t.dirty }; t.dirty = 0; } });
+  return true;
+}
+function staffDirty(a) {
+  const dw = G.stations.find(s => s.t === "dishwasher" && s.run <= 0 && s.load < DW_CAP && !s.claim);
+  const s = dw || G.stations.find(s => s.t === "sink");
+  if (!s) { a.wait = 1; return; }
+  if (dw) dw.claim = a;
+  goTo(a, s.sx, s.sy, () => {
+    if (dw) { dw.claim = null; if (loadDishwasher(a, dw)) return; }
+    if (a.hand && a.hand.k === "dirty") { G.sink += a.hand.n; a.hand = null; }
+    if (a.role === "porter" && !G.washer) startWash(a);
+  });
+}
+function tryWash(a) {
+  if (G.sink <= 0 || G.washer) return false;
+  const s = G.stations.find(s => s.t === "sink"); if (!s) return false;
+  G.washer = a;
+  goTo(a, s.sx, s.sy, () => { if (G.washer === a) G.washer = null; if (!G.washer) startWash(a); });
+  return true;
+}
+function tryMop(a) {
+  const m = G.messes.find(m => !m.claim); if (!m) return false;
+  m.claim = a;
+  goTo(a, m.x, m.y + .3, () => work(a, 1.3, () => { const i = G.messes.indexOf(m); if (i >= 0) G.messes.splice(i, 1); }));
+  return true;
+}
+function tryCalm(a) {
+  const g = G.groups.find(g => g.rowdy && g.shout > 0 && g.table && !g.calmClaim); if (!g) return false;
+  g.calmClaim = a; const [x, y] = standFor({ k: "table", t: g.table }, a);
+  goTo(a, x, y, () => { g.calmClaim = null; work(a, .8, () => calm(g)); });
+  return true;
+}
+function tryCook(a, drinks) {
+  // drinks: true = only drinks, false = only food, null = anything
+  const list = openTickets();
+  for (const { k } of list) {
+    const R = RECIPES[k.r];
+    if (drinks === true && !R.d) continue;
+    if (drinks === false && R.d) continue;
+    if (need(k.r) <= 0 || !stockOk(k.r) || !canMake(k.r)) continue;
+    useStock(k.r);
+    a.hand = { k: "dish", r: k.r, s: 0, id: nextId++ };
+    staffDish(a); return true;
+  }
+  return false;
+}
+function staffDish(a) {
+  const d = a.hand, R = RECIPES[d.r];
+  if (d.burnt) { goTo(a, COUNTER.bin, 3.42, () => { a.hand = null; }); return; }
+  if (d.s >= R.s.length) {
+    if (a.role === "waiter") {
+      const o = openTickets(d.r).find(x => x.g.table);
+      if (o) { const [x, y] = standFor({ k: "table", t: o.g.table }, a); goTo(a, x, y, () => { const tk = o.g.table && o.g.state === "wait" && o.g.tickets.find(k => !k.done && k.r === d.r); if (tk && a.hand === d) { serve(o.g, tk, d); a.hand = null; } }); return; }
+    }
+    if (G.pass.length >= PASS_MAX) { a.wait = .6; return; }
+    goTo(a, COUNTER.pass[Math.min(G.pass.length, 4)], zone(a.y) === 0 ? 3.42 : 4.85, () => { if (G.pass.length < PASS_MAX && a.hand === d) { G.pass.push(d); a.hand = null; } });
+    return;
+  }
+  const next = R.s[d.s];
+  if (next === "plate") {
+    goTo(a, COUNTER.plates, 3.42, () => { if (G.clean > 0) work(a, .35, () => { if (G.clean > 0) { G.clean--; d.s++; } }); else a.wait = 1; });
+    return;
+  }
+  const free = G.stations.filter(s => s.t === next && !s.item && !s.user && (!s.claim || s.claim === a)).sort((p, q) => Math.hypot(p.sx - a.x, p.sy - a.y) - Math.hypot(q.sx - a.x, q.sy - a.y));
+  if (!free.length) { a.wait = .5; return; }
+  const s = free[0]; s.claim = a;
+  goTo(a, s.sx, s.sy, () => {
+    s.claim = null;
+    if (s.item || (s.user && s.user !== a) || a.hand !== d) return;
+    doStep(a, s);
+    if (STATIONS[s.t].k === "pas") { a.watch = s; a.watchId = d.id; }
+  });
+}
+
+/* ---------- mini-games ---------- */
+let mg = null;
+function openMini(type, dish, s) {
+  const R = RECIPES[dish.r], ing = Object.keys(R.i)[0], food = INGS[ing].e;
+  mg = { type, dish, s, prog: 0, fill: 0, holding: false, ang: null, turn: 0 };
+  const el = $("mg"); el.hidden = false;
+  const head = `<div class="top"><b>${{ chop: "Chop!", mix: "Stir!", pour: s.t === "tap" ? "Pour the pint" : "Make the coffee" }[type]}</b><button class="x" id="mgX" aria-label="Stop">✕</button></div>`;
+  if (type === "chop") {
+    el.innerHTML = head + `<div class="area" id="mgA"><div class="food" id="mgF">${food}</div><div class="cuts" id="mgC"></div></div><div class="say" id="mgS">Tap the board to chop · 0/6</div>`;
+  } else if (type === "mix") {
+    el.innerHTML = head + `<div class="area" id="mgA"><div class="ring"></div><div class="food" style="font-size:54px">${food}</div><div class="spoon" id="mgSp">🥄</div></div><div class="bar2"><i id="mgB"></i></div><div class="say" id="mgS">Stir round in circles</div>`;
+  } else {
+    const coffee = s.t === "coffee";
+    el.innerHTML = head + `<div class="area" id="mgA"><div class="glass"><div class="band" style="bottom:${82}%;height:${14}%"></div><div class="fill${coffee ? " coffee" : ""}" id="mgFill"></div></div></div><div class="say" id="mgS">Hold to pour, let go in the green</div>`;
+  }
+  $("mgX").onclick = () => { if (mg) { mg.s.user = null; closeMini(); } };
+  const A = $("mgA");
+  A.onpointerdown = e => {
+    e.preventDefault();
+    if (!mg) return;
+    if (mg.type === "chop") { mg.prog++; const f = $("mgF"); f.style.transform = `scale(.9) rotate(${rnd(-8, 8)}deg)`; setTimeout(() => f && (f.style.transform = ""), 80);
+      const c = document.createElement("i"); c.style.left = (24 + mg.prog * 9) + "%"; $("mgC").append(c);
+      $("mgS").textContent = "Chop! · " + mg.prog + "/6"; if (mg.prog >= 6) finishMini(); }
+    else if (mg.type === "mix") { A.setPointerCapture(e.pointerId); mg.ang = angleIn(A, e); mg.turn += .35; mixUpd(); }
+    else { A.setPointerCapture(e.pointerId); mg.holding = true; }
+  };
+  A.onpointermove = e => { if (mg && mg.type === "mix" && mg.ang !== null) { const a = angleIn(A, e); let d = a - mg.ang; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; mg.turn += Math.abs(d); mg.ang = a; mixUpd(e, A); } };
+  A.onpointerup = A.onpointercancel = () => { if (!mg) return; if (mg.type === "mix") mg.ang = null; if (mg.type === "pour" && mg.holding) { mg.holding = false; pourRelease(); } };
+}
+function angleIn(A, e) { const r = A.getBoundingClientRect(); return Math.atan2(e.clientY - r.top - r.height / 2, e.clientX - r.left - r.width / 2); }
+function mixUpd(e, A) {
+  const need = Math.PI * 5, p = Math.min(1, mg.turn / need);
+  $("mgB").style.width = p * 100 + "%";
+  const sp = $("mgSp"), a = mg.turn * 1.2; sp.style.transform = `translate(${Math.cos(a) * 48 - 17}px,${Math.sin(a) * 48 - 17}px)`;
+  if (p >= 1) finishMini();
+}
+function pourRelease() {
+  const f = mg.fill;
+  if (f < .82) { $("mgS").textContent = "Keep going: hold again"; return; }
+  if (f <= .96) { mg.dish.perfect = true; G.perfect++; $("mgS").textContent = "Perfect!"; }
+  else $("mgS").textContent = "A bit full, but fine";
+  finishMini();
+}
+function mgStep(dt) {
+  if (!mg || mg.type !== "pour") return;
+  if (mg.holding) {
+    mg.fill += dt * .5;
+    if (mg.fill >= 1) { mg.fill = 0; mg.holding = false; G.spills++; $("mgS").textContent = "Overflowed! Start again"; fx(lee.x, lee.y - 1, "Spilt! 💦", "#5B8DB8"); }
+  }
+  const el = $("mgFill"); if (el) el.style.height = Math.min(100, mg.fill * 100) + "%";
+}
+function finishMini() {
+  const m = mg; if (!m) return;
+  mg = null;
+  setTimeout(() => { if (!mg) $("mg").hidden = true; }, 260);
+  m.s.user = null; m.dish.s++;
+}
+function closeMini() { mg = null; $("mg").hidden = true; }
+
+function chooser(list, cb) {
+  dialog(`<h3>Which one?</h3><div class="pick">${list.map(r => `<button data-a="${r}"><span>${RECIPES[r].e}</span>${esc(RECIPES[r].n)}</button>`).join("")}</div><button class="btn" data-a="">Cancel</button>`, a => { if (a) cb(a); });
+}
+
+/* ---------- main loop ---------- */
+function loop(now) {
+  raf = requestAnimationFrame(loop);
+  const dt = Math.min(.05, (now - lastT) / 1000); lastT = now;
+  if (!G || view !== "play") return;
+  if (!paused && $("ov").hidden) step(dt);
+  else if (!paused && !$("ov").hidden) step(dt * .35); // the chooser slows time instead of stopping it
+  draw(); uiTick(dt);
+}
+function step(dt) {
+  if (G.ended) return;
+  G.t += dt;
+  if (G.open && G.t >= G.len) { G.open = false; toastMsg("Closing time! Finish serving everyone.", 2.5); for (const g of G.queue.slice()) { fx(g.people[0].x, g.people[0].y - 1, "Closed? Aww.", "#8C7563"); groupLeave(g, false); } }
+  groupsStep(dt); stationsStep(dt); mgStep(dt);
+  for (const a of G.actors) { actorStep(a, dt); if (a !== lee) staffThink(a, dt); }
+  for (const f of G.fx) f.t += dt; G.fx = G.fx.filter(f => f.t < 1.8);
+  if (!G.open && !G.groups.length) { G.endT += dt; if (G.endT > 1.2) endDay(); }
+}
+function fx(x, y, text, col) { G.fx.push({ x, y, text, col, t: 0 }); }
+
+/* ---------- drawing ---------- */
+const cv = $("cv"), ctx = cv.getContext("2d");
+let T = 30, OX = 0, OY = 0, DPR = 1;
+function resize() {
+  const r = $("stage").getBoundingClientRect(); DPR = Math.min(2.5, window.devicePixelRatio || 1);
+  cv.width = Math.round(r.width * DPR); cv.height = Math.round(r.height * DPR);
+  T = Math.min(r.width / W, r.height / H); OX = (r.width - W * T) / 2; OY = (r.height - H * T) / 2;
+}
+window.addEventListener("resize", () => { if (view === "play") resize(); });
+const PX = x => OX + x * T, PY = y => OY + y * T;
+const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+function emoji(e, x, y, size) { ctx.font = `${Math.round(size)}px ${EMOJI}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e, x, y); }
+function text(t, x, y, size, col, weight) { ctx.font = `${weight || 700} ${Math.round(size)}px Figtree,system-ui,sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = col; ctx.fillText(t, x, y); }
+function ringProg(x, y, r, p, col) { ctx.strokeStyle = "rgba(0,0,0,.18)"; ctx.lineWidth = r * .28; circ(ctx, x, y, r); ctx.stroke(); ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(p, 0, 1)); ctx.stroke(); }
+function nextNeed() { const h = lee.hand; if (!h || h.k !== "dish" || h.burnt) return null; const R = RECIPES[h.r]; return h.s < R.s.length ? R.s[h.s] : "serve"; }
+function draw() {
+  const c = ctx, P = PALETTE[S.venue][S.prem] || PALETTE[S.venue][0];
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const r = $("stage").getBoundingClientRect();
+  c.fillStyle = S.venue === "pub" ? "#2A1E16" : "#E9D9C6"; c.fillRect(0, 0, r.width, r.height);
+  // dining floor
+  c.fillStyle = P.floor; c.fillRect(PX(0), PY(4.4), W * T, (H - 4.4) * T);
+  c.fillStyle = P.floor2;
+  for (let y = 4.4; y < H; y += .7) for (let x = ((y - 4.4) / .7) % 2 ? .7 : 0; x < W; x += 1.4) c.fillRect(PX(x), PY(y), .7 * T, .7 * T);
+  // kitchen floor
+  c.fillStyle = P.kit; c.fillRect(PX(0), PY(0), W * T, 4.4 * T);
+  c.fillStyle = P.kit2; for (let y = 0; y < 4.4; y += .55) for (let x = ((y / .55) % 2) ? .55 : 0; x < W; x += 1.1) c.fillRect(PX(x), PY(y), .55 * T, .55 * T);
+  // walls & door
+  c.fillStyle = P.wall; c.fillRect(PX(0), PY(0), W * T, .12 * T); c.fillRect(PX(0), PY(0), .08 * T, H * T); c.fillRect(PX(W) - .08 * T, PY(0), .08 * T, H * T);
+  c.fillRect(PX(0), PY(H) - .12 * T, (DOOR[0] - .7) * T, .12 * T); c.fillRect(PX(DOOR[0] + .7), PY(H) - .12 * T, (W - DOOR[0] - .7) * T, .12 * T);
+  c.fillStyle = "#C9A15A"; c.fillRect(PX(DOOR[0] - .7), PY(H) - .08 * T, 1.4 * T, .08 * T);
+  // counter
+  for (const [a, b] of [[0, 3.92], [5.08, 9]]) {
+    c.fillStyle = P.counter; rr(c, PX(a), PY(3.75), (b - a) * T, .7 * T, .12 * T); c.fill();
+    c.fillStyle = P.top; rr(c, PX(a + .04), PY(3.78), (b - a - .08) * T, .5 * T, .1 * T); c.fill();
+  }
+  emoji("🛎️", PX(8.45), PY(CY), T * .4);
+  const need = nextNeed(), pulse = .55 + .45 * Math.sin(G.t * 6);
+  // bin, plates, pass
+  emoji("🗑️", PX(COUNTER.bin), PY(CY), T * .55);
+  const nPl = Math.min(G.clean, 8);
+  for (let i = 0; i < nPl; i++) { c.fillStyle = "#FFFFFF"; c.strokeStyle = "#BFB5A8"; c.lineWidth = 1; c.beginPath(); c.ellipse(PX(COUNTER.plates), PY(CY + .12) - i * T * .045, T * .3, T * .13, 0, 0, Math.PI * 2); c.fill(); c.stroke(); }
+  text(String(G.clean), PX(COUNTER.plates + .32), PY(CY - .2), T * .3, G.clean ? "#3A2A22" : "#D2483A", 800);
+  if (need === "plate") { c.strokeStyle = `rgba(232,102,74,${pulse})`; c.lineWidth = 3; rr(c, PX(COUNTER.plates - .45), PY(3.72), .9 * T, .76 * T, 8); c.stroke(); }
+  G.pass.forEach((d, i) => { if (i >= 5) return; const done = d.s >= RECIPES[d.r].s.length;
+    if (done) { c.fillStyle = "#fff"; c.beginPath(); c.ellipse(PX(COUNTER.pass[i]), PY(CY + .12), T * .3, T * .12, 0, 0, Math.PI * 2); c.fill(); }
+    c.globalAlpha = d.burnt ? .4 : done ? 1 : .7; emoji(d.burnt ? "💨" : RECIPES[d.r].e, PX(COUNTER.pass[i]), PY(CY - .02), T * (done ? .5 : .4)); c.globalAlpha = 1; });
+  // stations
+  for (const s of G.stations) {
+    const def = STATIONS[s.t], x = PX(s.x), y = PY(s.y), w = T * .9;
+    c.fillStyle = "rgba(0,0,0,.12)"; rr(c, x - w / 2, y - w / 2 + 3, w, w, 8); c.fill();
+    c.fillStyle = def.col; rr(c, x - w / 2, y - w / 2, w, w, 8); c.fill();
+    if (need && need === s.t) { c.strokeStyle = `rgba(232,102,74,${pulse})`; c.lineWidth = 3.5; rr(c, x - w / 2 - 2, y - w / 2 - 2, w + 4, w + 4, 10); c.stroke(); }
+    emoji(def.e, x, y - T * .06, T * .5);
+    text(def.n.split(" ")[0], x, y + T * .32, T * .2, "rgba(40,28,20,.75)", 700);
+    if (s.item) {
+      const d = s.item;
+      emoji(RECIPES[d.r].e, x + T * .26, y - T * .26, T * .32);
+      if (d.burnt) { c.fillStyle = "rgba(30,20,15,.6)"; rr(c, x - w / 2, y - w / 2, w, w, 8); c.fill(); emoji("💨", x, y - T * .5 - Math.sin(G.t * 3) * 3, T * .4); }
+      else if (!d.ready) ringProg(x, y, T * .36, d.t / d.dur, "#3E9B6B");
+      else {
+        const left = d.burnAt - d.t, warn = left < 3.5;
+        c.strokeStyle = warn ? `rgba(210,72,58,${pulse})` : "#3E9B6B"; c.lineWidth = 4; rr(c, x - w / 2 - 2, y - w / 2 - 2, w + 4, w + 4, 10); c.stroke();
+        emoji(warn ? "⚠️" : "✅", x - T * .28, y - T * .3, T * .28);
+      }
+    }
+    if (s.t === "sink" && G.sink > 0) text("🍽 " + G.sink, x, y - T * .62, T * .24, "#3A2A22", 800);
+    if (s.t === "dishwasher") { if (s.run > 0) ringProg(x, y, T * .36, 1 - s.run / DW_TIME, "#5B8DB8"); else if (s.load) text(s.load, x, y - T * .6, T * .24, "#3A2A22", 800); }
+  }
+  // messes
+  for (const m of G.messes) { c.fillStyle = S.venue === "pub" ? "rgba(214,170,60,.75)" : "rgba(150,110,70,.55)"; c.beginPath(); c.ellipse(PX(m.x), PY(m.y), T * .42, T * .22, 0, 0, Math.PI * 2); c.fill(); c.beginPath(); c.ellipse(PX(m.x + .3), PY(m.y - .1), T * .16, T * .1, 0, 0, Math.PI * 2); c.fill(); }
+  // sorted scene: tables, people, actors
+  const items = [];
+  for (const t of G.tables) items.push({ y: t.y, f: () => drawTable(t, P) });
+  for (const g of G.groups) for (const p of g.people) { const seated = g.table && (g.state !== "walk" && g.state !== "leave") && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T, { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
+  for (const a of G.actors) items.push({ y: a.y, f: () => drawActor(a) });
+  items.sort((p, q) => p.y - q.y).forEach(i => i.f());
+  // bubbles
+  for (const g of G.groups) drawBubble(g);
+  for (const g of G.queue) { const p = g.people[0]; ringProg(PX(p.x), PY(p.y - 1.25), T * .14, g.pat, patCol(g.pat)); }
+  // fx
+  for (const f of G.fx) { c.globalAlpha = 1 - f.t / 1.8; text(f.text, PX(f.x), PY(f.y) - f.t * T * .6, T * .32, f.col, 800); c.globalAlpha = 1; }
+  // night (pub)
+  if (S.venue === "pub") { const a = clamp((G.t / G.len - .45) * .45, 0, .2); if (a > 0) { c.fillStyle = `rgba(20,10,50,${a})`; c.fillRect(PX(0), PY(4.4), W * T, (H - 4.4) * T); } }
+}
+const patCol = p => p > .55 ? "#3E9B6B" : p > .28 ? "#E9A93A" : "#D2483A";
+function drawTable(t, P) {
+  const c = ctx, x = PX(t.x), y = PY(t.y);
+  c.fillStyle = P.chair;
+  for (const [dx, dy] of seatOffsets(t.seats)) { rr(c, PX(t.x + dx * 1.02) - T * .2, PY(t.y + dy * 1.02) - T * .14 + T * .12, T * .4, T * .36, 5); c.fill(); }
+  c.fillStyle = "rgba(0,0,0,.15)"; c.beginPath(); c.ellipse(x, y + T * .18, T * .58, T * .34, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = P.table; c.beginPath(); c.ellipse(x, y, T * .58, T * .38, 0, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = "rgba(255,255,255,.18)"; c.lineWidth = 2; c.beginPath(); c.ellipse(x, y - 1, T * .48, T * .28, 0, 0, Math.PI * 2); c.stroke();
+  text(String(t.i + 1), x - T * .42, y - T * .34, T * .2, "rgba(255,255,255,.75)", 800);
+  const g = t.group;
+  if (g) { let k = 0; for (const tk of g.tickets) if (tk.done) { emoji(RECIPES[tk.r].e, x + (k % 3 - 1) * T * .3, y + (k > 2 ? T * .1 : -T * .05), T * .3); k++; } }
+  for (let i = 0; i < Math.min(t.dirty, 4); i++) { c.fillStyle = "#F4EFE6"; c.strokeStyle = "#A99C8A"; c.lineWidth = 1; c.beginPath(); c.ellipse(x + (i - 1.5) * T * .22, y, T * .14, T * .08, 0, 0, Math.PI * 2); c.fill(); c.stroke(); c.fillStyle = "#B48A5A"; circ(c, x + (i - 1.5) * T * .22, y, T * .04); c.fill(); }
+  if (t.dirty && !g) emoji("🧽", x + T * .55, y - T * .45, T * .28);
+}
+function drawBubble(g) {
+  if (!g.table || g.state === "leave" || g.state === "walk") return;
+  const c = ctx, x = PX(g.table.x), y = PY(g.table.y - 1.25);
+  let content = null;
+  if (g.state === "order") content = ["📝"];
+  else if (g.state === "wait") content = g.tickets.filter(k => !k.done).map(k => RECIPES[k.r].e).slice(0, 4);
+  if (g.rowdy && g.shout > 0) content = ["😡"];
+  if (!content) { if (g.critic) emoji("🧐", x, y + T * .2, T * .32); return; }
+  const w = Math.max(.8, content.length * .42 + .3) * T, h = T * .62;
+  c.fillStyle = g.rowdy && g.shout > 0 ? "#FFE1DC" : "#FFFFFF"; c.strokeStyle = patCol(g.pat); c.lineWidth = 3;
+  rr(c, x - w / 2, y - h / 2, w, h, h / 2); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(x - 5, y + h / 2 - 1); c.lineTo(x, y + h / 2 + 7); c.lineTo(x + 5, y + h / 2 - 1); c.fillStyle = c.fillStyle; c.fill();
+  content.forEach((e, i) => emoji(e, x - w / 2 + T * .36 + i * T * .42, y + 1, T * .34));
+  if (g.critic) emoji("🧐", x + w / 2 + T * .1, y - h / 2, T * .3);
+  // patience bar under bubble
+  c.fillStyle = "rgba(0,0,0,.15)"; rr(c, x - w / 2 + 6, y + h / 2 + 3, w - 12, 4, 2); c.fill();
+  c.fillStyle = patCol(g.pat); rr(c, x - w / 2 + 6, y + h / 2 + 3, (w - 12) * clamp(g.pat, 0, 1), 4, 2); c.fill();
+}
+function drawActor(a) {
+  const c = ctx, x = PX(a.x), y = PY(a.y);
+  drawPerson(c, x, y, a.look, T * 1.02, { bob: a.moving ? Math.abs(a.bob) * -1.5 : 0, ring: a === lee ? "#E8664A" : null });
+  const hy = y - T * 1.12;
+  if (a.hand) {
+    if (a.hand.k === "dirty") { emoji("🍽️", x, hy, T * .36); if (a.hand.n > 1) text("×" + a.hand.n, x + T * .32, hy - T * .12, T * .2, "#3A2A22", 800); }
+    else { const d = a.hand, R = RECIPES[d.r], done = d.s >= R.s.length;
+      if (done && !d.burnt) { c.fillStyle = "#fff"; c.beginPath(); c.ellipse(x, hy + T * .1, T * .26, T * .1, 0, 0, Math.PI * 2); c.fill(); }
+      c.globalAlpha = d.burnt ? .5 : 1; emoji(d.burnt ? "💨" : R.e, x, hy, T * (done ? .4 : .32)); c.globalAlpha = 1;
+      if (!done && !d.burnt) for (let i = 0; i < R.s.length; i++) { c.fillStyle = i < d.s ? "#3E9B6B" : "rgba(0,0,0,.25)"; circ(c, x - (R.s.length - 1) * T * .06 + i * T * .12, hy + T * .26, T * .035); c.fill(); } }
+  }
+  if (a.work && a.work.dur > .4) { c.fillStyle = "rgba(0,0,0,.2)"; rr(c, x - T * .3, y + T * .1, T * .6, 5, 3); c.fill(); c.fillStyle = "#E8664A"; rr(c, x - T * .3, y + T * .1, T * .6 * clamp(a.work.t / a.work.dur, 0, 1), 5, 3); c.fill(); }
+  if (a !== lee) text(a.name, x, y + T * .28, T * .2, S.venue === "pub" ? "#F5E9DA" : "#3A2A22", 700);
+}
+
+/* ---------- tapping the canvas ---------- */
+cv.addEventListener("pointerdown", e => {
+  if (!G || paused || G.ended) return;
+  const r = cv.getBoundingClientRect(), wx = (e.clientX - r.left - OX) / T, wy = (e.clientY - r.top - OY) / T;
+  const o = hitTest(wx, wy);
+  if (o) leeTap(o);
+  else if (wx > 0 && wx < W && wy > 1.2 && wy < H) { if (mg) return toastMsg("Finish this first, or tap ✕"); interrupt(lee); const ty = wy > 3.6 && wy < 4.6 ? (zone(lee.y) ? 4.85 : 3.42) : wy; goTo(lee, clamp(wx, .4, 8.6), clamp(ty, 1.3, 14)); }
+});
+function hitTest(wx, wy) {
+  let best = null, bd = 1e9;
+  const con = (o, x, y, r) => { const d = Math.hypot(wx - x, wy - y); if (d < r && d < bd) { bd = d; best = o; } };
+  for (const s of G.stations) con({ k: "st", s }, s.x, s.y, .62);
+  con({ k: "counter", what: "bin", x: COUNTER.bin }, COUNTER.bin, CY, .55);
+  con({ k: "counter", what: "plates", x: COUNTER.plates }, COUNTER.plates, CY, .55);
+  COUNTER.pass.forEach((x, i) => con({ k: "counter", what: "pass", i, x }, x, CY, .55));
+  for (const t of G.tables) con({ k: "table", t }, t.x, t.y, 1.15);
+  for (const m of G.messes) { const d = Math.hypot(wx - m.x, wy - m.y) - .35; if (d < .5 && d < bd) { bd = d; best = { k: "mess", m }; } }
+  return best;
+}
+
+/* ---------- HUD ---------- */
+let uiT = 0, toastT = 0;
+function toastMsg(m, secs) { const t = $("toast"); t.textContent = m; t.style.opacity = 1; toastT = secs || 1.8; }
+function clock() { const V = VENUES[S.venue], h = V.open + (V.close - V.open) * Math.min(1, G.t / G.len), hh = Math.floor(h), mm = Math.floor((h - hh) * 4) * 15; return String(hh % 24).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
+function uiTick(dt) {
+  if (toastT > 0) { toastT -= dt; if (toastT <= 0) $("toast").style.opacity = 0; }
+  uiT -= dt; if (uiT > 0) return; uiT = .2;
+  $("pClock").textContent = `Day ${S.day} · ${G.open ? clock() : "Closing up"}`;
+  $("pCash").textContent = money(G.rev + G.tips);
+  $("pServed").textContent = `${G.served} served${G.angry ? " · " + G.angry + " walked out" : ""}`;
+  // tickets
+  const by = new Map();
+  for (const g of G.groups) if (g.table && g.state === "wait") by.set(g, g.tickets.filter(k => !k.done));
+  const made = {}; for (const d of allDishes()) made[d.r] = (made[d.r] || 0) + 1;
+  let html = "";
+  [...by.entries()].sort((a, b) => a[0].pat - b[0].pat).forEach(([g, ks]) => {
+    if (!ks.length) return;
+    html += `<div class="tk ${g.pat < .28 ? "low" : g.pat < .55 ? "mid" : ""}">${g.table.i + 1}${ks.map(k => { const go = made[k.r] > 0; if (go) made[k.r]--; return `<span class="e${go ? " go" : ""}">${RECIPES[k.r].e}</span>`; }).join("")}</div>`;
+  });
+  const waitingOrder = G.groups.filter(g => g.state === "order").length;
+  if (waitingOrder) html = `<div class="tk mid">📝 ${waitingOrder}</div>` + html;
+  $("rail").innerHTML = html || `<span class="none">${G.open ? "No orders yet" : "Last orders done"}</span>`;
+  // hint
+  const h = lee.hand;
+  let hint = "";
+  if (mg) hint = "";
+  else if (h && h.k === "dirty") hint = `Carrying <b>${h.n} dirty plate${h.n > 1 ? "s" : ""}</b>: take to the ${hasStation("dishwasher") ? "sink or dishwasher" : "sink"}`;
+  else if (h && h.burnt) hint = `<b>Burnt ${esc(RECIPES[h.r].n.toLowerCase())}</b>: bin it 🗑`;
+  else if (h) { const R = RECIPES[h.r], n = R.s[h.s]; hint = `<b>${esc(R.n)}</b>: ` + (h.s >= R.s.length ? "serve it to the table (or leave it on the counter)" : n === "plate" ? "plate it up at the counter" : "next, the " + STATIONS[n].n.toLowerCase()); }
+  else if (lee.work && lee.work.label === "wash") hint = "Washing up…";
+  else hint = G.clean <= 1 && G.sink + G.tables.reduce((a, t) => a + t.dirty, 0) > 0 ? "<b>Running out of plates!</b> Clear tables and wash up" : "Tap something and Lee Lee goes to it";
+  $("hint").innerHTML = hint;
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden && view === "play" && G && !G.ended) pauseMenu(); });
+$("pauseBtn").onclick = () => pauseMenu();
+function pauseMenu() {
+  if (paused) return;
+  paused = true;
+  dialog(`<h3>Paused</h3><p class="muted" style="text-align:center">Day ${S.day} at ${esc(S.name)}</p>
+    <div class="acts"><button class="btn pri" data-a="go">Carry on</button><button class="btn" data-a="mini">Cooking mini-games: ${opts.mini ? "on" : "off"}</button>
+    <button class="btn" data-a="quit">Leave (this day starts again next time)</button></div>`, a => {
+    if (a === "mini") { opts.mini = !opts.mini; store("ll.opts", opts); paused = false; pauseMenu(); return; }
+    if (a === "quit") { paused = false; G = null; closeMini(); renderTitle(); show("title"); return; }
+    paused = false; lastT = performance.now();
+  });
+}
+
+/* ---------- end of the day ---------- */
+function endDay() {
+  if (G.ended) return; G.ended = true; closeMini();
+  const wages = S.staff.reduce((a, s) => a + s.wage, 0), rent = PREMISES[S.prem].rent;
+  let fee = S.cash < 0 ? 4 : 0;
+  // leftover messes and dirty plates count against you
+  const messes = G.messes.length; G.repD -= messes * 2;
+  const income = Math.round((G.rev + G.tips) * 100) / 100;
+  const net = income - wages - rent - fee;
+  const repBefore = S.rep, starsBefore = starsOf(S.rep);
+  S.rep = Math.max(0, S.rep + G.repD);
+  S.cash = Math.round((S.cash + net) * 100) / 100;
+  // stock: what's left, fresh food half goes off
+  const spoiled = {};
+  for (const k in G.stock) { let v = G.stock[k]; if (INGS[k].f && v > 0) { const lost = Math.floor(v / 2); if (lost) spoiled[k] = lost; v -= lost; } G.stock[k] = v; }
+  S.stock = G.stock; S.bt = {};
+  // staff morale
+  const news = [];
+  const busy = G.people / Math.max(1, S.staff.length + 1);
+  for (const st of S.staff.slice()) {
+    st.days = (st.days || 0) + 1;
+    const fair = fairWage(st.role, st.lvl);
+    st.morale += st.wage >= fair * 1.15 ? 3 : st.wage >= fair ? 1 : -4;
+    if (busy > 12) st.morale -= 2;
+    if (G.angry > G.served) st.morale -= 2;
+    st.morale = clamp(st.morale, 0, 100);
+    if (st.morale < 15) { S.staff.splice(S.staff.indexOf(st), 1); news.push(`${st.name} has quit: they felt underpaid and overworked.`); }
+    else if (st.morale < 30) news.push(`${st.name} is unhappy. A pay rise would help.`);
+  }
+  // campaigns and specials
+  S.camp = (S.camp || []).map(c => ({ id: c.id, days: c.days - 1 })).filter(c => c.days > 0);
+  const disc = S.disc; S.disc = null;
+  S.cands = makeCands();
+  const starsNow = starsOf(S.rep);
+  if (starsNow > starsBefore) news.unshift(`Your reputation grew to ${starsNow} star${starsNow > 1 ? "s" : ""}! More customers will come, and new recipes can be learned.`);
+  if (starsNow < starsBefore) news.unshift(`Your reputation slipped to ${starsNow} star${starsNow === 1 ? "" : "s"}.`);
+  if (G.critic === "loved") news.unshift("The food critic loved it! A glowing review is in the paper.");
+  if (G.critic === "angry") news.unshift("The food critic walked out. Ouch, a bad review.");
+  if (S.cash < 0) news.push("You're overdrawn. The bank charges £4 a night until you're back in the black.");
+  const last = { day: S.day, rev: G.rev, tips: G.tips, wages, rent, fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
+    messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc };
+  S.last = last;
+  S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
+  S.stats.served += G.served; S.stats.angry += G.angry; S.stats.earned += income; S.stats.best = Math.max(S.stats.best, Math.round(net));
+  S.day++;
+  saveGame();
+  const g = G; G = null;
+  const rating = g.people ? g.happy / g.people : 0, dayStars = rating > .85 ? 3 : rating > .6 ? 2 : rating > .3 ? 1 : 0;
+  show("manage"); renderManage("day");
+  dialog(`<h3>Day ${last.day} done!</h3><div class="stars" style="text-align:center;font-size:2rem">${"★".repeat(dayStars)}${"☆".repeat(3 - dayStars)}</div>
+    <div class="lines"><div><span>Customers served</span><b>${last.served} of ${last.people}</b></div>
+    ${last.angry ? `<div><span>Walked out</span><b class="neg">${last.angry}</b></div>` : ""}
+    ${last.turned ? `<div><span>Nothing they wanted in stock</span><b class="neg">${last.turned}</b></div>` : ""}
+    ${last.burnt ? `<div><span>Burnt dishes</span><b class="neg">${last.burnt}</b></div>` : ""}
+    ${last.perfect ? `<div><span>Perfect pours</span><b class="pos">${last.perfect}</b></div>` : ""}
+    <div><span>Takings + tips</span><b>${money(last.rev + last.tips)}</b></div>
+    <div><span>Rent${wages ? " + wages" : ""}</span><b>−${money(rent + wages + fee)}</b></div>
+    <div class="tot"><span>Profit</span><b class="${net >= 0 ? "pos" : "neg"}">${money(net)}</b></div>
+    <div><span>Reputation</span><b class="${last.repD >= 0 ? "pos" : "neg"}">${last.repD >= 0 ? "+" : ""}${last.repD}</b></div></div>
+    <div class="acts"><button class="btn pri" data-a="ok">To the office</button></div>`);
+}
+
+/* ======================================================================
+   THE OFFICE (between days)
+   ====================================================================== */
+let tab = "day";
+const TABS = [["day", "Today"], ["stock", "Stock"], ["menu", "Menu"], ["staff", "Staff"], ["kitchen", "Kitchen"], ["room", "Dining room"], ["ads", "Marketing"]];
+function openManage(t) { show("manage"); renderManage(t || "day"); }
+function canAfford(c) { return S.cash >= c; }
+function spend(c) { S.cash = Math.round((S.cash - c) * 100) / 100; }
+function suggested() {
+  const groups = expectedGroups(S), items = groups * 1.75 * (1.12 + .07 * starsOf(S.rep));
+  const menu = onMenuS().filter(r => r && RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t)));
+  const out = {};
+  if (!menu.length) return out;
+  const wsum = menu.reduce((a, r) => a + (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1), 0);
+  for (const r of menu) { const w = (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1) / wsum; for (const [k, q] of Object.entries(RECIPES[r].i)) out[k] = (out[k] || 0) + items * w * q * 1.15; }
+  for (const k in out) out[k] = Math.ceil(out[k]);
+  return out;
+}
+function onMenuS() { return S.owned.filter(r => !S.off.includes(r)); }
+function usedIngs() { const s = new Set(); for (const r of S.owned) for (const k in RECIPES[r].i) s.add(k); for (const k in S.stock) if (S.stock[k] > 0) s.add(k); return [...s]; }
+function makeCands() {
+  const roles = ["waiter", "porter", "cook", "drinks", "floor"], out = [];
+  for (let i = 0; i < 3; i++) {
+    const role = pickOne(roles), lvl = Math.random() < .6 ? 1 : Math.random() < .7 ? 2 : 3;
+    out.push({ name: pickOne(FIRST), role, lvl, wage: Math.round(fairWage(role, lvl) * rnd(.92, 1.12)), look: { skin: pickOne(SKINS), hair: pickOne(HAIRS), style: pickOne(["short", "long", "bun", "curly", "bald"]), slim: Math.random() < .5 } });
+  }
+  return out;
+}
+function renderManage(t) {
+  tab = t || tab;
+  const V = VENUES[S.venue], st = starsOf(S.rep);
+  $("mName").textContent = S.name;
+  $("mSub").textContent = `${V.places[S.prem]} · day ${S.day} next`;
+  $("mCash").textContent = money(Math.round(S.cash * 100) / 100); $("mCash").className = S.cash < 0 ? "neg" : "";
+  $("mStars").innerHTML = `<span class="stars" style="font-size:.85rem">${starStr(st)}</span>`;
+  $("tabs").innerHTML = TABS.map(([id, n]) => `<button class="${id === tab ? "on" : ""}" data-tab="${id}">${n}</button>`).join("");
+  $("openBtn").textContent = `Open for day ${S.day} →`;
+  const f = { day: tabDay, stock: tabStock, menu: tabMenu, staff: tabStaff, kitchen: tabKitchen, room: tabRoom, ads: tabAds }[tab];
+  const sc = $("mbody").scrollTop;
+  $("mwrap").innerHTML = f();
+  $("mbody").scrollTop = sc;
+}
+$("tabs").onclick = e => { const b = e.target.closest("[data-tab]"); if (b) { renderManage(b.dataset.tab); $("mbody").scrollTop = 0; } };
+$("openBtn").onclick = () => {
+  const sug = suggested(), short = Object.keys(sug).filter(k => (S.stock[k] || 0) < sug[k] * .5);
+  if (short.length) {
+    dialog(`<h3>Low on stock</h3><p class="muted" style="text-align:center">You're low on ${short.map(k => INGS[k].n.toLowerCase()).join(", ")}. Customers who can't get what they want will leave.</p>
+      <div class="acts"><button class="btn pri" data-a="stock">Buy stock</button><button class="btn" data-a="go">Open anyway</button></div>`, a => { if (a === "go") startDay(); else renderManage("stock"); });
+  } else startDay();
+};
+function tabDay() {
+  const L = S.last, st = starsOf(S.rep), next = st < 5 ? STAR_AT[st + 1] : null;
+  const prog = next ? (S.rep - STAR_AT[st]) / (next - STAR_AT[st]) : 1;
+  let h = "";
+  if (L && L.news.length) h += `<div class="news">${L.news.map(esc).join("<br>")}</div>`;
+  h += `<div class="card"><div class="row spread"><h2>Reputation</h2><span class="stars">${starStr(st)}</span></div><div class="meter"><i style="width:${prog * 100}%"></i></div>
+    <p class="small muted">${next ? `${Math.round(S.rep)} / ${next} to the next star. Happy customers raise it; walk-outs, spills left on the floor and bad critics lower it.` : "Five stars: the best in town!"}</p>
+    <p class="small">About <b>${Math.round(expectedGroups(S))}</b> groups of customers expected tomorrow.</p></div>`;
+  if (L) {
+    h += `<div class="card"><h2>Day ${L.day}</h2><div class="lines">
+      <div><span>Customers</span><b>${L.served} served of ${L.people}</b></div>
+      ${L.angry ? `<div><span>Walked out</span><b class="neg">${L.angry}</b></div>` : ""}${L.turned ? `<div><span>Turned away (out of stock)</span><b class="neg">${L.turned}</b></div>` : ""}
+      ${L.thrown ? `<div><span>Rowdy ones shown the door</span><b>${L.thrown}</b></div>` : ""}${L.burnt ? `<div><span>Burnt dishes</span><b class="neg">${L.burnt}</b></div>` : ""}
+      ${L.spills ? `<div><span>Spills while pouring</span><b class="neg">${L.spills}</b></div>` : ""}${L.messes ? `<div><span>Messes left on the floor</span><b class="neg">${L.messes}</b></div>` : ""}
+      <div><span>Takings</span><b>${money(L.rev)}</b></div><div><span>Tips</span><b>${money(L.tips)}</b></div>
+      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
+      <div class="tot"><span>Profit</span><b class="${L.net >= 0 ? "pos" : "neg"}">${money(L.net)}</b></div></div>
+      ${Object.keys(L.spoiled).length ? `<p class="small muted">Went off overnight: ${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].n.toLowerCase()).join(", ")}.</p>` : ""}</div>`;
+  } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Check your stock and menu, then open the doors.</p></div>`;
+  const hist = S.hist.slice(-14);
+  if (hist.length > 1) {
+    const mx = Math.max(1, ...hist.map(x => Math.abs(x.net)));
+    h += `<div class="card"><h3>Profit, last ${hist.length} days</h3><div style="display:flex;align-items:center;gap:3px;height:70px">${hist.map(x => `<div title="Day ${x.d}" style="flex:1;display:flex;flex-direction:column;justify-content:${x.net >= 0 ? "flex-end" : "flex-start"};height:100%"><div style="height:${Math.max(3, Math.abs(x.net) / mx * 50)}%;background:${x.net >= 0 ? "var(--good)" : "var(--bad)"};border-radius:3px;${x.net >= 0 ? "" : "margin-top:50%"}"></div></div>`).join("")}</div></div>`;
+  }
+  h += `<div class="card"><div class="row spread"><div class="grow"><b>${esc(S.name)}</b><div class="small muted">${esc(VENUES[S.venue].n)} · ${S.stats.served} customers served in total</div></div><button class="btn sm" data-act="rename">Rename</button></div></div>`;
+  h += `<button class="btn" data-act="title">Back to save slots</button>`;
+  return h;
+}
+function tabStock() {
+  const sug = suggested();
+  let h = `<div class="card"><div class="row spread"><div class="grow"><h2>Stock for tomorrow</h2><p class="small muted">Suggested amounts are for the customers you expect. Fresh food (marked 🌱) loses half of what's left each night.</p></div></div>
+    <button class="btn good" data-act="autostock">Top up to suggested</button>`;
+  for (const k of usedIngs()) {
+    const I = INGS[k], have = S.stock[k] || 0, s = sug[k] || 0, bought = (S.bt || {})[k] || 0;
+    h += `<div class="item"><div class="ic">${I.e}</div><div class="grow"><b>${I.n}${I.f ? " 🌱" : ""}</b><span>Have <b>${have}</b>${s ? ` · suggested ${s}` : ""} · ${money(I.c)} each</span></div>
+      <div class="qty"><button class="btn sm" data-act="stk" data-k="${k}" data-n="-5" ${bought <= 0 ? "disabled" : ""}>−</button><b>${have}</b><button class="btn sm" data-act="stk" data-k="${k}" data-n="5">+5</button><button class="btn sm" data-act="stk" data-k="${k}" data-n="20">+20</button></div></div>`;
+  }
+  return h + `</div>`;
+}
+function tabMenu() {
+  const st = starsOf(S.rep), V = S.venue;
+  let h = `<div class="card"><h2>On the menu</h2><p class="small muted">Customers only order what's on the menu, in stock, and that your kitchen has the equipment for.</p>`;
+  for (const r of S.owned) {
+    const R = RECIPES[r], on = !S.off.includes(r), missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t));
+    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">${money(R.p)}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")} → plate${missing.length ? ` · <b class="neg">needs ${missing.map(t => STATIONS[t].n.toLowerCase()).join(", ")}</b>` : ""}</span></div>
+      <button class="btn sm ${on ? "good" : ""}" data-act="toggle" data-r="${r}">${on ? "On" : "Off"}</button></div>`;
+  }
+  h += `</div>`;
+  const opts2 = onMenuS();
+  h += `<div class="card"><h2>Tomorrow's special</h2><p class="small muted">Put one dish on offer. More people order it and a few more come in, but it earns less each.</p>
+    <div class="row"><select id="discR"><option value="">No special</option>${opts2.map(r => `<option value="${r}" ${S.disc && S.disc.r === r ? "selected" : ""}>${RECIPES[r].e} ${esc(RECIPES[r].n)}</option>`).join("")}</select>
+    <select id="discP">${[.1, .25, .5].map(p => `<option value="${p}" ${S.disc && S.disc.pct === p ? "selected" : ""}>${p * 100}% off</option>`).join("")}</select></div></div>`;
+  h += `<div class="card"><h2>Learn new recipes</h2>`;
+  const locked = Object.keys(RECIPES).filter(r => RECIPES[r].v === V && !S.owned.includes(r)).sort((a, b) => RECIPES[a].c - RECIPES[b].c);
+  if (!locked.length) h += `<p class="muted">You know every recipe!</p>`;
+  for (const r of locked) {
+    const R = RECIPES[r], missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t)), ok = st >= R.st;
+    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">sells for ${money(R.p)}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")}${missing.length ? ` · needs ${missing.map(t => STATIONS[t].n.toLowerCase()).join(", ")}` : ""}${ok ? "" : ` · <b>${R.st}★ reputation</b>`}</span></div>
+      <button class="btn sm pri" data-act="learn" data-r="${r}" ${ok && canAfford(R.c) ? "" : "disabled"}>${money(R.c)}</button></div>`;
+  }
+  return h + `</div>`;
+}
+function tabStaff() {
+  const prem = PREMISES[S.prem];
+  let h = `<div class="card"><div class="row spread"><h2>Your team</h2><span class="muted small">${S.staff.length} of ${prem.staff} (bigger places hold more)</span></div>`;
+  if (!S.staff.length) h += `<p class="muted small">It's just Lee Lee for now. Staff do jobs on their own all day, and are paid at the end of each day.</p>`;
+  for (const s of S.staff) {
+    const fair = fairWage(s.role, s.lvl), canPromote = s.lvl < 5 && (s.days || 0) >= s.lvl * 4, pcost = 60 * s.lvl * s.lvl;
+    const mc = s.morale > 60 ? "var(--good)" : s.morale > 30 ? "var(--gold)" : "var(--bad)";
+    h += `<div class="item"><div class="ic">${ROLES[s.role].e}</div><div class="grow"><b>${esc(s.name)} <span class="muted small">${roleName(S, s.role)} · level ${s.lvl}</span></b>
+      <span>${money(s.wage)}/day (fair is ${money(fair)}) · mood <span class="mor"><i style="width:${s.morale}%;background:${mc}"></i></span> · ${s.days || 0} day${s.days === 1 ? "" : "s"}</span>
+      <span class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-act="raise" data-id="${s.id}">Pay rise +${money(Math.max(2, Math.round(s.wage * .1)))}</button>
+      <button class="btn sm" data-act="promote" data-id="${s.id}" ${canPromote && canAfford(pcost) ? "" : "disabled"}>${s.lvl >= 5 ? "Top level" : canPromote ? `Promote (${money(pcost)} training)` : `Promote in ${s.lvl * 4 - (s.days || 0)} day${s.lvl * 4 - (s.days || 0) === 1 ? "" : "s"}`}</button>
+      <button class="btn sm" data-act="fire" data-id="${s.id}">Let go</button></span></div></div>`;
+  }
+  h += `</div><div class="card"><h2>Looking for work</h2><p class="small muted">New people apply every day. Higher levels work faster but want more pay.</p>`;
+  S.cands.forEach((c, i) => {
+    h += `<div class="item"><div class="ic">${ROLES[c.role].e}</div><div class="grow"><b>${esc(c.name)} <span class="muted small">${roleName(S, c.role)} · level ${c.lvl}</span></b><span>${esc(ROLES[c.role].job)}${c.role === "floor" && S.venue === "pub" ? " Handy late at night." : ""}</span><span>Wants <b>${money(c.wage)}</b> a day</span></div>
+      <button class="btn sm pri" data-act="hire" data-i="${i}" ${S.staff.length < prem.staff ? "" : "disabled"}>Hire</button></div>`;
+  });
+  return h + `</div>`;
+}
+function tabKitchen() {
+  const prem = PREMISES[S.prem], V = VENUES[S.venue];
+  let h = `<div class="card"><div class="row spread"><h2>Kitchen</h2><span class="muted small">${S.stations.length} of ${prem.slots} spaces used</span></div>`;
+  S.stations.forEach((t, i) => {
+    h += `<div class="item"><div class="ic">${STATIONS[t].e}</div><div class="grow"><b>${STATIONS[t].n}</b></div><button class="btn sm" data-act="sell" data-i="${i}">Sell ${money(Math.round(STATIONS[t].c / 2))}</button></div>`;
+  });
+  h += `</div><div class="card"><h2>Buy equipment</h2>`;
+  for (const t of V.stations) {
+    const D = STATIONS[t], have = S.stations.filter(x => x === t).length;
+    const desc = D.k === "pas" ? `Cooks on its own (${D.d}s)${D.b ? ", burns if left" : ""}` : D.k === "act" ? "Hands-on" : D.k === "dw" ? `Washes ${DW_CAP} plates at a time by itself` : D.k === "sink" ? "Wash plates by hand" : "Ingredients";
+    h += `<div class="item"><div class="ic">${D.e}</div><div class="grow"><b>${D.n}${have ? ` <span class="pill g">have ${have}</span>` : ""}</b><span>${desc}</span></div>
+      <button class="btn sm pri" data-act="buyst" data-t="${t}" ${S.stations.length < prem.slots && canAfford(D.c) ? "" : "disabled"}>${money(D.c)}</button></div>`;
+  }
+  h += `</div><div class="card"><h2>Upgrades</h2>`;
+  const types = [...new Set(S.stations)].filter(t => STATIONS[t].k !== "get");
+  for (const t of types) {
+    const l = S.lvl[t] || 0, c = Math.round(STATIONS[t].c * [1, 2, 4][l] || 0);
+    h += `<div class="item"><div class="ic">${STATIONS[t].e}</div><div class="grow"><b>Faster ${STATIONS[t].n.toLowerCase()} <span class="muted small">level ${l}/3</span></b><span>${STATIONS[t].k === "pas" ? "Cooks quicker and stays good for longer before burning" : "Work goes quicker here"}</span></div>
+      <button class="btn sm pri" data-act="lvl" data-t="${t}" ${l < 3 && canAfford(c) ? "" : "disabled"}>${l < 3 ? money(c) : "Max"}</button></div>`;
+  }
+  const pc = 30 + 10 * Math.max(0, S.plates - 6);
+  h += `<div class="item"><div class="ic">🍽️</div><div class="grow"><b>Two more plates <span class="muted small">have ${S.plates}</span></b><span>More plates means washing up can wait a little</span></div><button class="btn sm pri" data-act="plates" ${S.plates < 30 && canAfford(pc) ? "" : "disabled"}>${S.plates < 30 ? money(pc) : "Max"}</button></div>`;
+  const sh = SHOES[S.shoes];
+  h += `<div class="item"><div class="ic">👟</div><div class="grow"><b>${sh ? sh.n : "Fastest shoes"} for Lee Lee</b><span>She walks ${12}% faster</span></div><button class="btn sm pri" data-act="shoes" ${sh && canAfford(sh.c) ? "" : "disabled"}>${sh ? money(sh.c) : "Max"}</button></div>`;
+  return h + `</div>`;
+}
+function tabRoom() {
+  const prem = PREMISES[S.prem], V = VENUES[S.venue], st = starsOf(S.rep);
+  let h = `<div class="card"><div class="row spread"><h2>Tables</h2><span class="muted small">${S.tables.length} of ${prem.tables}</span></div>`;
+  S.tables.forEach((n, i) => {
+    h += `<div class="item"><div class="ic">🪑</div><div class="grow"><b>Table ${i + 1}</b><span>Seats ${n}</span></div>${n < 4 ? `<button class="btn sm pri" data-act="bigtable" data-i="${i}" ${canAfford(150) ? "" : "disabled"}>Seat 4: ${money(150)}</button>` : `<span class="pill g">Seats 4</span>`}</div>`;
+  });
+  const tc = 100 + 60 * S.tables.length;
+  h += `<button class="btn pri" data-act="table" ${S.tables.length < prem.tables && canAfford(tc) ? "" : "disabled"}>${S.tables.length < prem.tables ? `Add a table: ${money(tc)}` : "No more room: move somewhere bigger"}</button></div>`;
+  const d = DECOR[S.decor];
+  h += `<div class="card"><h2>Decor</h2><p class="small muted">A nicer room keeps people patient and makes them tip more.</p>
+    ${DECOR.slice(0, S.decor).map(x => `<div class="small">✓ ${esc(x.n)}</div>`).join("")}
+    ${d ? `<div class="item"><div class="ic">🪴</div><div class="grow"><b>${esc(d.n)}</b><span>Level ${S.decor + 1} of ${DECOR.length}</span></div><button class="btn sm pri" data-act="decor" ${canAfford(d.c) ? "" : "disabled"}>${money(d.c)}</button></div>` : `<p class="pos"><b>Fully decorated!</b></p>`}</div>`;
+  h += `<div class="card"><h2>Premises</h2><p class="small">You're at <b>${esc(V.places[S.prem])}</b>: rent ${money(prem.rent)} a day, room for ${prem.tables} tables, ${prem.slots} pieces of kitchen equipment and ${prem.staff} staff.</p>`;
+  const nx = PREMISES[S.prem + 1];
+  if (nx) {
+    const ok = st >= nx.st && canAfford(nx.cost);
+    h += `<div class="item"><div class="ic">🏠</div><div class="grow"><b>Move to ${esc(V.places[S.prem + 1])}</b><span>Rent ${money(nx.rent)}/day · ${nx.tables} tables · ${nx.slots} kitchen spaces · ${nx.staff} staff · more passing trade. Needs ${nx.st}★. You keep everything you own.</span></div>
+      <button class="btn sm pri" data-act="move" ${ok ? "" : "disabled"}>${money(nx.cost)}</button></div>`;
+  } else h += `<p class="pos"><b>This is the finest spot in town.</b></p>`;
+  return h + `</div>`;
+}
+function tabAds() {
+  const st = starsOf(S.rep);
+  let h = `<div class="card"><h2>Marketing</h2><p class="small muted">Bring in more customers for a few days. Several can run at once. Make sure you have the tables, stock and staff for the extra people!</p>`;
+  if ((S.camp || []).length) h += `<div class="news">${S.camp.map(c => { const C = CAMPAIGNS.find(x => x.id === c.id); return `${C.e} ${esc(C.n)}: ${c.days} day${c.days > 1 ? "s" : ""} left`; }).join("<br>")}</div>`;
+  for (const C of CAMPAIGNS) {
+    const running = (S.camp || []).some(c => c.id === C.id), ok = st >= C.st && canAfford(C.c) && !running;
+    h += `<div class="item"><div class="ic">${C.e}</div><div class="grow"><b>${esc(C.n)}</b><span>${C.job ? esc(C.job) : `About ${Math.round(C.b * 100)}% more customers for ${C.days} days`}${st < C.st ? ` · <b>needs ${C.st}★</b>` : ""}</span></div>
+      <button class="btn sm pri" data-act="camp" data-id="${C.id}" ${ok ? "" : "disabled"}>${running ? "Running" : money(C.c)}</button></div>`;
+  }
+  return h + `</div>`;
+}
+$("mwrap").addEventListener("change", e => {
+  if (e.target.id === "discR" || e.target.id === "discP") {
+    const r = $("discR").value, p = +$("discP").value;
+    S.disc = r ? { r, pct: p } : null; saveGame();
+  }
+});
+$("mwrap").onclick = e => {
+  const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
+  const a = b.dataset.act, V = VENUES[S.venue];
+  if (a === "title") { renderTitle(); show("title"); return; }
+  if (a === "rename") {
+    dialog(`<h3>Rename</h3><input type="text" id="rnIn" maxlength="28" value="${esc(S.name)}"><div class="acts"><button class="btn pri" data-a="ok">Save</button><button class="btn" data-a="">Cancel</button></div>`, x => {
+      const v = $("rnIn").value.trim(); if (x === "ok" && v) { S.name = v; saveGame(); renderManage(); }
+    });
+    $("rnIn").focus();
+    return;
+  }
+  if (a === "stk") {
+    const k = b.dataset.k, n = +b.dataset.n, I = INGS[k];
+    if (n > 0) { const can = Math.min(n, Math.floor((S.cash + 150) / I.c)); if (can <= 0) return; spend(can * I.c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
+    else { const back = Math.min(-n, S.bt[k] || 0, S.stock[k] || 0); spend(-back * I.c); S.stock[k] -= back; S.bt[k] -= back; }
+  }
+  if (a === "autostock") {
+    const sug = suggested();
+    for (const k in sug) { const want = sug[k] - (S.stock[k] || 0); if (want <= 0) continue; const can = Math.min(want, Math.floor((S.cash + 150) / INGS[k].c)); if (can <= 0) continue; spend(can * INGS[k].c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
+  }
+  if (a === "toggle") { const r = b.dataset.r; if (S.off.includes(r)) S.off = S.off.filter(x => x !== r); else if (onMenuS().length > 1) S.off.push(r); }
+  if (a === "learn") { const R = RECIPES[b.dataset.r]; if (canAfford(R.c)) { spend(R.c); S.owned.push(b.dataset.r); for (const k in R.i) if (S.stock[k] == null) S.stock[k] = 0; } }
+  if (a === "hire") { const c = S.cands[+b.dataset.i]; if (c && S.staff.length < PREMISES[S.prem].staff) { S.staff.push({ id: "s" + (S.sid++), name: c.name, role: c.role, lvl: c.lvl, wage: c.wage, morale: 70, days: 0, look: c.look }); S.cands.splice(+b.dataset.i, 1); } }
+  if (a === "raise") { const s = S.staff.find(x => x.id === b.dataset.id); if (s) { s.wage += Math.max(2, Math.round(s.wage * .1)); s.morale = Math.min(100, s.morale + 15); } }
+  if (a === "promote") { const s = S.staff.find(x => x.id === b.dataset.id), c = s && 60 * s.lvl * s.lvl; if (s && canAfford(c)) { spend(c); s.lvl++; s.wage = Math.max(s.wage, fairWage(s.role, s.lvl)); s.morale = Math.min(100, s.morale + 12); s.days = 0; } }
+  if (a === "fire") {
+    const s = S.staff.find(x => x.id === b.dataset.id);
+    dialog(`<h3>Let ${esc(s.name)} go?</h3><div class="acts"><button class="btn" data-a="yes" style="color:var(--bad)">Let them go</button><button class="btn" data-a="">Keep them</button></div>`, x => { if (x === "yes") { S.staff = S.staff.filter(y => y !== s); saveGame(); renderManage(); } });
+    return;
+  }
+  if (a === "sell") { const t = S.stations[+b.dataset.i]; S.stations.splice(+b.dataset.i, 1); S.cash += Math.round(STATIONS[t].c / 2); }
+  if (a === "buyst") { const t = b.dataset.t; if (canAfford(STATIONS[t].c) && S.stations.length < PREMISES[S.prem].slots) { spend(STATIONS[t].c); S.stations.push(t); } }
+  if (a === "lvl") { const t = b.dataset.t, l = S.lvl[t] || 0, c = Math.round(STATIONS[t].c * [1, 2, 4][l]); if (l < 3 && canAfford(c)) { spend(c); S.lvl[t] = l + 1; } }
+  if (a === "plates") { const pc = 30 + 10 * Math.max(0, S.plates - 6); if (canAfford(pc)) { spend(pc); S.plates += 2; } }
+  if (a === "shoes") { const sh = SHOES[S.shoes]; if (sh && canAfford(sh.c)) { spend(sh.c); S.shoes++; } }
+  if (a === "table") { const tc = 100 + 60 * S.tables.length; if (canAfford(tc) && S.tables.length < PREMISES[S.prem].tables) { spend(tc); S.tables.push(2); } }
+  if (a === "bigtable") { const i = +b.dataset.i; if (canAfford(150)) { spend(150); S.tables[i] = 4; } }
+  if (a === "decor") { const d = DECOR[S.decor]; if (d && canAfford(d.c)) { spend(d.c); S.decor++; } }
+  if (a === "move") {
+    const nx = PREMISES[S.prem + 1];
+    dialog(`<h3>Move to ${esc(V.places[S.prem + 1])}?</h3><p class="muted" style="text-align:center">Costs ${money(nx.cost)}. Rent goes up to ${money(nx.rent)} a day, but more people pass by.</p><div class="acts"><button class="btn pri" data-a="yes">Move!</button><button class="btn" data-a="">Not yet</button></div>`, x => {
+      if (x === "yes" && canAfford(nx.cost)) { spend(nx.cost); S.prem++; saveGame(); renderManage(); toastOffice(`Welcome to ${V.places[S.prem]}!`); }
+    });
+    return;
+  }
+  if (a === "camp") { const C = CAMPAIGNS.find(x => x.id === b.dataset.id); if (C && canAfford(C.c)) { spend(C.c); S.camp.push({ id: C.id, days: C.days }); } }
+  saveGame(); renderManage();
+};
+function toastOffice(m) { dialog(`<h3>${esc(m)}</h3><div class="acts"><button class="btn pri" data-a="ok">Great</button></div>`); }
+
+/* ---------- back button ---------- */
+window.SG_BACK = () => {
+  if (!$("ov").hidden) { if (view === "play" && paused) { closeDialog(); paused = false; lastT = performance.now(); } else { const cb = dlgCb; closeDialog(); if (view === "play" && cb && !paused) cb(""); } return true; }
+  if (view === "play") { if (mg) { mg.s.user = null; closeMini(); return true; } pauseMenu(); return true; }
+  if (view === "manage" || view === "newgame") { renderTitle(); show("title"); return true; }
+  return false;
+};
+window.LL = { get G() { return G; }, get S() { return S; }, get lee() { return lee; }, leeTap, hitTest, endDay, startDay, step: dt => step(dt) };
+renderTitle();
+</script>
+<script src="../../shell.js"></script>
+</body>
+</html>

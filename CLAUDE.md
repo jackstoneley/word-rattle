@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus nine self-contained HTML games, published two ways:
+A home page plus ten self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -13,6 +13,7 @@ A home page plus nine self-contained HTML games, published two ways:
 | Boxed In | `games/boxed-in` | `bi.` |
 | Echo Cartographer | `games/echo-cartographer` | `ec.` |
 | Buddy's Big Slide | `games/big-slide` | `slide.` |
+| Lee Lee's Kitchen | `games/lee-lee` | `ll.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -148,6 +149,19 @@ changing it, or the physics, changes every future daily. Other saved data: `slid
 `SITE_URL#sl.` + `z` base64url(deflate-raw JSON) or `j` base64url(JSON), JSON `[1, title, author, startX, startY,
 [[type, side, x0, y0, dx1, dy1, ...], ...]]`; the hub, `shell.js`, Word Rattle and Link Up send `#sl.…` links here.
 Keep that format readable forever.
+
+### Lee Lee's Kitchen (`games/lee-lee`)
+
+A relaxed cooking and restaurant-management game (in the spirit of PlateUp, gentler). Lee Lee (slim, light brown skin, dark
+bun, coral headband and top) is the player: tap anything and she walks to it. Customers sit, order (📝), wait, eat, pay and
+leave dirty plates; dishes are recipes of station steps (`RECIPES[].s`, ending in `plate` at the counter). Stations are `get`
+(fridge), `act` (hands-on: chop / mix / pour mini-games, or timed when mini-games are off) and `pas` (cooks alone, burns after
+`b` seconds). Two venues: `cafe` (daytime) and `pub` (evening, pints, rowdy customers late on). Staff roles (`waiter`,
+`porter`, `cook`, `drinks`, `floor`) run their own task loops in `staffThink`. Data and economy sit between
+`/*CORE-START*/` and `/*CORE-END*/`. Five save slots, `ll.slot.0`-`ll.slot.4` (whole save object per slot; `migrate()` fills
+missing fields, so new fields need a default in `newSave`), plus `ll.opts` (`mini`). A day is not saved until it ends. Lists
+like `RECIPES`, `STATIONS`, `CAMPAIGNS`, `DECOR` are keyed by id or index in saves (`owned`, `stations`, `decor` level):
+append, never reorder or rename ids. `window.LL` exposes the day for Playwright bots (`step(dt)`, `leeTap(target)`).
 
 ### Adding a new game
 

@@ -125,7 +125,9 @@
       "id": 12,
       "type": "fixes",
       "headline": "Echo Cartographer: Restart moved",
-      "details": ["The Restart button is now the ↻ at the top, away from the arrows, so it's harder to tap by accident."]
+      "details": [
+        "The Restart button is now the ↻ at the top, away from the arrows, so it's harder to tap by accident."
+      ]
     },
     {
       "id": 13,
@@ -145,6 +147,18 @@
       "details": [
         "Endless climb: board after board, each a bit harder, the same boards for both of you. Finish each within its move limit or lose a heart. Three hearts, and every 5 boards wins one back.",
         "45 new levels (now 75) with three new tiles: crumbly tiles that fall away behind you, ice that slides you along, and purple pads that teleport you across the board."
+      ]
+    },
+    {
+      "id": 15,
+      "type": "new-game",
+      "headline": "New game: Lee Lee's Kitchen",
+      "details": [
+        "Run a café, bakery and deli, or a restaurant and pub, as Lee Lee.",
+        "Take orders, cook (chop, stir and pour yourself), serve, clear tables and wash up. Burnt food and slow service cost you.",
+        "Pubs get busy and rowdy late at night: calm people down and mop up the spills.",
+        "Each evening in the office: buy stock, learn recipes, hire and promote staff, buy equipment, advertise, and move somewhere bigger.",
+        "Five save slots, and you can rename your place any time."
       ]
     }
   ]
