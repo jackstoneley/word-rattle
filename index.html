@@ -237,7 +237,8 @@ function renderStats(){
   if(kk&&kk.levels){const solved=Object.values(kk.levels).filter(l=>l&&l.solves).length,inProg=Object.keys(load("kk.saves",{})).length;
     if(solved||inProg)setHTML("stCS",[{b:String(solved)}," of 200 solved",inProg?` · ${inProg} in progress`:""])}
   const tpl=load("tp.levels",{}),tpd=load("tp.daily",{}),tpn=Object.keys(tpl).length,tpS=Object.values(tpl).reduce((a,r)=>a+(r&&r.stars||0),0),tpToday=Object.values(tpd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now()));
-  if(tpn||Object.keys(tpd).length)setHTML("stTP",[{b:String(tpn)}," of 30 levels · ",{b:String(tpS)}," stars",tpToday?" · today's puzzle done":""]);
+  const tpc=load("tp.climb",{})||{};
+  if(tpn||Object.keys(tpd).length||tpc.best)setHTML("stTP",[{b:String(tpn)}," of 75 levels · ",{b:String(tpS)}," stars",tpc.best?` · climb best ${tpc.best}`:"",tpToday?" · today's puzzle done":""]);
   const bi=load("bi.best",null);
   if(bi&&Object.keys(bi).length){const top=Object.values(bi).reduce((a,b)=>b.wave>a.wave?b:a);setHTML("stBI",["Best: wave ",{b:String(top.wave)}," · ",{b:top.score.toLocaleString("en-GB")}," points"])}
   const ecl=load("ec.levels",{}),ecd=load("ec.daily",{}),ecn=Object.keys(ecl).length,ecS=Object.values(ecl).reduce((a,r)=>a+(r&&r.stars||0),0),ecToday=Object.values(ecd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now()));

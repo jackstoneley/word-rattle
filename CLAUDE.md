@@ -99,6 +99,14 @@ A block-rolling puzzle (after Bloxorz). Levels live in the `<script type="applic
 run it to make and check levels. **Append** levels only: progress (`tp.levels`) is keyed by level number. The daily
 puzzle (`tp.daily`, keyed by day number from 30 October 2026) is generated on the phone from the date, so changing
 `generate` or `dailyLevel` changes every future daily board: don't, without a plan.
+Tiles beyond the originals: `c` crumbly (falls away once the block leaves it; its fallen state is a bit in the mask after
+the bridges), `i` ice (a block wholly on ice slides on until part of it has grip), `p` teleport pads, paired in the
+level's optional `t` list `[[x1,y1,x2,y2]]` (standing on one jumps to the other). The generator only places these when
+its options ask (`crumble`, `ice`, `icePatches`, `tele`), so the daily board is unaffected: keep any new generator step
+behind an option that the daily doesn't set. **Endless climb**: board k is `climbLevel(k)`, made from its number (the same
+for everyone); the move limit is `climbLimit`. Saved as `tp.climb` (`best`, `runs`, `run: {k, lives, moves, path}`), where
+`path` replays the block's position on the current board. Changing `generate` for those options or `climbLevel` changes
+the climb boards. `tools/topple-check.js` (run by build.py) checks every level's par and the first 40 climb boards.
 
 ### Buddy Breakout (`games/mudlark`, first called Mudlark)
 

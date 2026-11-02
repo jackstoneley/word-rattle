@@ -82,6 +82,8 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
 .ovc p{margin:0;color:var(--muted);line-height:1.45}
 .stars{font-size:2rem;letter-spacing:.15em;color:var(--star)}
 .stars .off{color:#3B4F75}
+.moves.low b{color:#FF7B6B}
+.hearts,.bar .ttl .hearts{color:#FF7B6B;letter-spacing:.08em}
 .ovc .acts{display:flex;flex-direction:column;gap:8px}
 @media (max-height:640px){.pad{grid-template-rows:repeat(3,38px)}.pad{grid-template-columns:repeat(3,46px)}}
 </style>
@@ -93,6 +95,7 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
       <a class="sg-home" href="../../index.html">← All games</a>
       <header class="head"><div class="logo" aria-hidden="true"><i></i></div><div><h1>Topple</h1><p>Tip the block end over end. Drop it in the hole.</p></div></header>
       <div class="card daily" id="dailyCard"></div>
+      <div class="card" id="climbCard"></div>
       <div class="card">
         <div class="row spread"><h2>Levels</h2><span class="muted" id="lvNote"></span></div>
         <div class="levels" id="levelGrid"></div>
@@ -105,8 +108,12 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
           <li>Don't let any part of it hang over the edge. If it falls, it pops back to where it was.</li>
           <li><span class="sw" style="background:#E8893A"></span><b>Orange tiles</b> are fragile: they hold the block lying down, but not standing up.</li>
           <li><span class="sw" style="background:#9AA8C2;border-radius:50%"></span><b>Round switches</b> work when any part of the block touches them. <b>✕ switches</b> only work when the block stands on them. Each one opens or closes the matching bridge.</li>
+          <li><span class="sw" style="background:#D8C49A"></span><b>Crumbly tiles</b> fall away as soon as the block leaves them, so plan a way that doesn't need them twice.</li>
+          <li><span class="sw" style="background:#CDEBF5"></span><b>Ice</b>: when the whole block is on ice it slides on in the same direction until part of it has grip again (or it slides off the edge).</li>
+          <li><span class="sw" style="background:#8FA3C4;box-shadow:inset 0 0 0 3px #A77BEA;border-radius:50%"></span><b>Purple pads</b> come in pairs: stand the block up on one and it jumps to the other.</li>
           <li>Each level has a <b>par</b>: the fewest moves it can be done in. Match it for three stars.</li>
           <li><b>Undo</b> takes back a move. <b>Hint</b> shows the best next move, but the level then gives at most two stars.</li>
+          <li><b>Endless climb</b>: board after board, each a little harder, the same boards for everyone. Each board has a move limit; run out and you lose a heart and start that board again. Undo and Restart move the block back but don't give moves back, and there are no hints. Lose all three hearts and the climb is over. Every 5 boards cleared wins a heart back.</li>
         </ul>
       </details>
     </div>
@@ -116,7 +123,7 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
     <div class="bar">
       <button class="ib" id="backBtn" aria-label="Back to levels">←</button>
       <div class="ttl"><b id="pTitle">Level 1</b><span id="pSub">Par 10</span></div>
-      <div class="moves"><b id="pMoves">0</b><span>moves</span></div>
+      <div class="moves" id="movesBox"><b id="pMoves">0</b><span id="pMovesL">moves</span></div>
     </div>
     <div class="stage" id="stage"><canvas id="cv"></canvas><div class="toast" id="toast" style="opacity:0"></div></div>
     <div class="hintline" id="hintLine">Swipe on the board to tip the block.</div>
@@ -132,8 +139,9 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
 </div>
 <div class="ov" id="ov" hidden><div class="ovc" id="ovc"></div></div>
 
-<!-- Levels: m = rows of tiles (. empty, o floor, G hole, f fragile, s round switch, h ✕ switch, b bridge closed, B bridge open),
-     s = start [x,y] standing up, w = switches [x,y,[[bridge x,bridge y,mode]...]] with mode t (toggle), 1 (open), 0 (close), p = par.
+<!-- Levels: m = rows of tiles (. empty, o floor, G hole, f fragile, s round switch, h ✕ switch, b bridge closed, B bridge open,
+     c crumbly, i ice, p teleport pad), s = start [x,y] standing up, w = switches [x,y,[[bridge x,bridge y,mode]...]] with mode
+     t (toggle), 1 (open), 0 (close), t = teleport pairs [[x1,y1,x2,y2]...] (optional), p = par.
      Append only: progress is saved by level number. -->
 <script type="application/json" id="levels">[
 {"m":["ooo.......","oooooo....","ooooooooo.",".ooooooooo",".....ooGoo","......ooo."],"s":[1,1],"w":[],"p":7},
@@ -166,36 +174,51 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0}
 {"m":["...hbo......","...fos......","..oooo......","...o.o......","...o.o......","ofoo.fo...bo",".o.o.oo...fo","...oGooooooo","..........o."],"s":[0,5],"w":[[3,0,[[10,5,"t"]]],[5,1,[[4,0,"t"]]]],"p":32},
 {"m":[".hfoob..","oooooo..","oG..oof.",".b...oo.","oohooooo","o......."],"s":[0,4],"w":[[1,0,[[1,3,"t"]]],[2,4,[[5,0,"1"]]]],"p":37},
 {"m":["........ooo.",".........oo.","...o.....oo.",".osf.....ooo",".obbo.....oo","ooso......oo",".o.ooGoooooo"],"s":[0,5],"w":[[2,3,[[3,4,"t"]]],[2,5,[[2,4,"t"]]]],"p":45},
-{"m":["Goo.....","oooofo..","....oof.","....oooo","....ofo.","..o.o...","..ooo...","..ofoo.."],"s":[2,5],"w":[],"p":22},
-{"m":["foo......","ooo......","ooo......",".of......",".oo......","ooo.....o","..oofoooG"],"s":[0,5],"w":[],"p":23},
-{"m":["......Gooo",".........o",".........o",".........o","ooofoo...f",".o.ofo...o","...ooooooo"],"s":[1,4],"w":[],"p":23},
-{"m":["ooooooo..","ooo...oof","foo..oooo","......ooo",".......G."],"s":[1,2],"w":[],"p":24},
-{"m":["......oof.","....oofoo.","....ooooo.","ooo.G...fo","ooooooooo."],"s":[2,3],"w":[],"p":24},
-{"m":["......Goo.",".......oo.","ffo....ooo","foo....oo.","..o....ooo","..o....ooo","..ooooooof"],"s":[2,2],"w":[],"p":26},
-{"m":["o.........","fo......ob","oo......oo","oohfoooooo",".......oo.",".......oo.","......Gfo."],"s":[0,0],"w":[[2,3,[[9,1,"t"]]]],"p":26},
-{"m":["foGo.","ooboo","o..oh","oo.of",".oooo",".oooo","..ooo"],"s":[1,3],"w":[[4,2,[[2,1,"1"]]]],"p":27},
-{"m":[".........G","o........f","o........o","o.......oo","foooohoooo","ooo....ooo",".......boo"],"s":[0,2],"w":[[5,4,[[7,6,"t"]]]],"p":27},
-{"m":["......ooo","o.....fbo","ooo.....o","ofoooohoo","ooo.o...G","........o"],"s":[0,1],"w":[[6,3,[[7,1,"t"]]]],"p":30},
-{"m":["ooo........","ofo........","ofoo.......","o.o.....o..","ooooooooohG","bo.........","oo........."],"s":[2,3],"w":[[9,4,[[0,5,"1"]]]],"p":30},
-{"m":["..Goboooo.","........o.",".......oo.",".......ooo",".......oof",".......foo","ohooooooo.",".o........"],"s":[0,6],"w":[[1,6,[[4,0,"1"]]]],"p":30},
-{"m":["o.........","ooo.......","oho.......","fooo......","oo........","ooo.......","fo........","ooboofoooG"],"s":[2,5],"w":[[1,2,[[2,7,"t"]]]],"p":32},
-{"m":["....o......","...Gooofbo.",".......o.o.",".........o.","oo.......oo","of.......o.","oooooooooo.",".......hoo."],"s":[1,6],"w":[[7,7,[[8,1,"t"]]]],"p":32},
-{"m":[".o........","oof.......","ooo.......","oooohf....","....oo....","....ofo...","....oh.obG","....boooo."],"s":[1,1],"w":[[5,6,[[8,6,"t"]]],[4,3,[[4,7,"t"]]]],"p":36},
-{"m":[".o..........",".oo......ooo","oof......ooo","hoh....o.foG","ooobbooooo.."],"s":[1,2],"w":[[0,3,[[3,4,"t"]]],[2,3,[[4,4,"t"]]]],"p":37},
-{"m":[".o......","oooof...","..ooh...","..ohoo..",".....b..",".oo..o..",".oo..oof",".Goooobo"],"s":[0,1],"w":[[4,2,[[6,7,"t"]]],[3,3,[[5,4,"t"]]]],"p":37},
-{"m":["G........","f........","o........","obooobo..",".o....oho",".ooooohoo",".oo...foo",".fo......"],"s":[1,5],"w":[[7,4,[[5,3,"t"]]],[6,5,[[1,3,"1"]]]],"p":38},
-{"m":[".Gfoo.foo","....boohh","....oooob",".....o...","..oooo...","o.f......","ooo......","ooo......"],"s":[2,6],"w":[[7,1,[[4,1,"1"]]],[8,1,[[8,2,"t"]]]],"p":38},
-{"m":["...obo..ooG.","fhooof..ooo.","ohoo.ooooofo","boo........."],"s":[2,1],"w":[[1,1,[[4,0,"t"]]],[1,2,[[0,3,"t"]]]],"p":39},
-{"m":[".oo........",".of........","ooo........","bo.........","oo.........","oo.........","oo.........","oo......Gos","oooosoooofb"],"s":[1,5],"w":[[4,8,[[0,3,"t"]]],[10,7,[[10,8,"1"]]]],"p":40},
-{"m":[".Gooo....","....o....","...oo....","fosob....","obf..oooo","oooooooh.",".....o...","..oooo...","..o.o...."],"s":[2,7],"w":[[2,3,[[1,4,"t"]]],[7,5,[[4,3,"t"]]]],"p":40},
-{"m":["..ooo......",".fooo......","ooooo......",".b.........",".foo.......",".Go.....ooo",".os.....ooo","..ooooffh..","..oobboso.."],"s":[2,4],"w":[[8,7,[[4,8,"t"]]],[7,8,[[5,8,"t"]]],[2,6,[[1,3,"t"]]]],"p":40},
-{"m":["......o.","......G.","......b.","..ooooo.","..h..oso","..oooobo","boo.oso.","ooo.....","ffo....."],"s":[2,5],"w":[[2,4,[[0,6,"t"]]],[6,4,[[6,2,"t"]]],[5,6,[[6,5,"t"]]]],"p":41},
-{"m":["oooo.....o.","..ooo...boo","..o.f...oos","....o.G.ohf","....ohfooo.","......bbo.."],"s":[1,0],"w":[[9,3,[[6,5,"t"]]],[10,2,[[8,1,"t"]]],[5,4,[[7,5,"1"]]]],"p":42},
-{"m":["...o.......","ooooofhooo.","....o...hoo","........ooo","........hof","........o..","........fo.","........of.","Goboboooob."],"s":[1,1],"w":[[8,2,[[4,8,"t"]]],[8,4,[[2,8,"t"]]],[6,1,[[9,8,"t"]]]],"p":44},
-{"m":["o....oobo..","ooooofoh...","oooofoso...","oo....bbofo",".........of",".........oo",".....Gsfooo"],"s":[0,3],"w":[[6,2,[[7,0,"t"]]],[7,1,[[7,3,"t"]]],[6,6,[[6,3,"t"]]]],"p":49},
-{"m":["Gof...",".hoooo",".o..bo","....fo","....ob","oos.oo","hoo.oo","bofoof","o....."],"s":[1,5],"w":[[2,5,[[0,7,"t"]]],[0,6,[[4,2,"1"]]],[1,1,[[5,4,"t"]]]],"p":50},
-{"m":["..........fh",".oooooooosho","........ooob","......ooo...","......ooo...","......o.o...","......o.....","......o.....","Goobobo....."],"s":[1,1],"w":[[10,1,[[5,8,"1"]]],[11,0,[[3,8,"t"]]],[9,1,[[11,2,"t"]]]],"p":50},
-{"m":[".......G....",".ooo...bf...","oooo...bo...",".o......o...",".ohooooooooo",".o......fhfh",".........oob"],"s":[1,5],"w":[[9,5,[[11,6,"t"]]],[2,4,[[7,2,"t"]]],[11,5,[[7,1,"t"]]]],"p":50}
+{"m":[".....Gcc","......oo",".o....ff","oooooooo",".cco....",".cc....."],"s":[0,3],"w":[],"p":21},
+{"m":["cc......","cfooo...","cooooc..","..o.ooc.","....ooGo"],"s":[2,3],"w":[],"p":21},
+{"m":["...Gcc.","....oo.","cfc.oo.","ooooooo","ofo...."],"s":[1,3],"w":[],"p":22},
+{"m":[".cc.Gcc","cfooooo","oooc.fc",".....cc"],"s":[0,2],"w":[],"p":22},
+{"m":[".....occ","...cfscc","...cco..","..oc.c..","...ooc..","..ooo...","..ooo...","Gcoob..."],"s":[2,6],"w":[[5,1,[[4,7,"t"]]]],"p":26},
+{"m":["G.....","f.....","c.....","bo.ooo","coooho","cooooc"],"s":[2,5],"w":[[4,4,[[0,3,"1"]]]],"p":27},
+{"m":["oooc..","oooocc","oo.occ",".h..bc",".ooocc",".ofG.."],"s":[0,2],"w":[[1,3,[[4,3,"1"]]]],"p":29},
+{"m":[".Gccccc..",".....boo.","......oo.","ohfoooooc","......ccc",".......o."],"s":[0,3],"w":[[1,3,[[5,1,"t"]]]],"p":29},
+{"m":["...o..","cccccc","bc...c","oo...c","ooc..G","oho...","ofo..."],"s":[1,3],"w":[[1,5,[[0,2,"1"]]]],"p":30},
+{"m":["..cf......",".cooc..occ",".ooooooohc","occ.o..obc","........c.","........c.",".....Gffc."],"s":[1,2],"w":[[8,2,[[8,3,"t"]]]],"p":30},
+{"m":["oos........","obo........","coo........",".fo........",".booosccfGo"],"s":[2,3],"w":[[5,4,[[1,4,"t"]]],[2,0,[[1,1,"t"]]]],"p":34},
+{"m":["o....","G....","c....","b.o..","ccc..",".fooc","o.obc","ooso.","hoo.."],"s":[0,6],"w":[[2,7,[[3,6,"t"]]],[0,8,[[0,3,"t"]]]],"p":35},
+{"m":["..ccG.","o.fb..","oohfb.","hooooo","..ooo."],"s":[0,1],"w":[[2,2,[[3,1,"t"]]],[0,3,[[4,2,"1"]]]],"p":36},
+{"m":["osoo.......","hob..bcccfG","foocccco..."],"s":[2,0],"w":[[0,1,[[5,1,"t"]]],[1,0,[[2,1,"t"]]]],"p":36},
+{"m":["ooooosG",".fb....","ooc....",".oc....",".fc....",".bc....","oos....","ooo....","oo....."],"s":[1,6],"w":[[5,0,[[2,1,"t"]]],[2,6,[[1,5,"t"]]]],"p":37},
+{"m":[".oof",".fii","ooii",".oii",".oii",".ooo","...G"],"s":[0,2],"w":[],"p":20},
+{"m":["..i....","iii...G","oiiiooo","ooioooo","ofo...."],"s":[0,2],"w":[],"p":21},
+{"m":[".o...ooo",".oiooooo","Goiiioo.","...i....","...iii.."],"s":[1,0],"w":[],"p":21},
+{"m":[".iiii...","oiiioffo","ooiooooo","ooo....G"],"s":[0,1],"w":[],"p":22},
+{"m":["Giib","iiii","ioio","ifoo","iiho","i...","o..."],"s":[1,2],"w":[[2,4,[[3,0,"t"]]]],"p":24},
+{"m":["....i..","..oii..","oooii..","fohiiii","ooiiibG"],"s":[2,1],"w":[[2,3,[[5,4,"t"]]]],"p":25},
+{"m":[".o...","ioooG","ibi..","iii..","iiii.","ioi..","hfo..","ooo.."],"s":[1,5],"w":[[0,6,[[1,2,"t"]]]],"p":27},
+{"m":["......G.","......b.","......o.","......oo","......f.","hooiiio.","oioiioo.",".iiiiii."],"s":[2,6],"w":[[0,5,[[6,1,"t"]]]],"p":28},
+{"m":[".ofoooooo","ooiho.oo.","iii...oo.","fii...o..","iiiiG....","oiiob....","ooofo...."],"s":[1,1],"w":[[3,1,[[4,5,"1"]]]],"p":29},
+{"m":["..o.....","ooofooo.",".ooiioho","ofobi.G.","iiiiiii.","..ii...."],"s":[0,1],"w":[[6,2,[[3,3,"t"]]]],"p":30},
+{"m":[".hofo",".coio","ioiii","iiiii","Gi.io","bcofo","choob"],"s":[1,2],"w":[[1,0,[[0,5,"t"]]],[1,6,[[4,6,"t"]]]],"p":32},
+{"m":["osoc....",".oocii..",".oo.iioo",".bhoifoo","..oiiioc","..ciii..","..coi...","Gcfb...."],"s":[0,0],"w":[[1,0,[[1,3,"t"]]],[2,3,[[3,7,"1"]]]],"p":35},
+{"m":["fsocciii","hfbiiici","oooiiic.","...ii.b.","......oo","......cc",".......G"],"s":[2,2],"w":[[0,1,[[6,3,"1"]]],[1,0,[[2,1,"t"]]]],"p":36},
+{"m":["G........","oooci.sfo","cbiii.ofo",".iiibcc.o",".oiiii..o",".cciohooo",".oooooofo"],"s":[1,4],"w":[[6,1,[[1,2,"t"]]],[5,5,[[4,3,"1"]]]],"p":38},
+{"m":["ooo.......","sobi..o..G",".oiioooccf","..bioofoos","...iii....","...ii.....","...ii.....","....i....."],"s":[1,2],"w":[[9,3,[[2,3,"t"]]],[0,1,[[2,1,"t"]]]],"p":38},
+{"m":["..o...","..o...","..o...","..ooG.","poooo.","ofoo..","oo.fop"],"s":[2,0],"w":[],"t":[[0,4,5,6]],"p":22},
+{"m":["pfo....",".......",".......",".....oo","..o.Goo","..ooooo","ooopoo."],"s":[0,6],"w":[],"t":[[0,0,3,6]],"p":22},
+{"m":["..ooo.o","..ooo.o","..o.G.p","..o....","foo....","oop....","o......","o......"],"s":[0,6],"w":[],"t":[[2,5,6,2]],"p":22},
+{"m":[".oo.....",".foo..po","oop...fo","Gooooooo"],"s":[1,2],"w":[],"t":[[2,2,6,1]],"p":22},
+{"m":["ooiiiipsbG","ofoii.....","oooii..ofp","..ii...o.."],"s":[2,1],"w":[[7,0,[[8,0,"t"]]]],"t":[[9,2,6,0]],"p":23},
+{"m":["..iiii...","...iii...","oofiib...",".Ghpioo.p",".....oo.o",".....fo.o"],"s":[0,2],"w":[[2,3,[[5,2,"t"]]]],"t":[[3,3,8,3]],"p":27},
+{"m":["..Goo..","...obo.",".....o.","ooiipo.","piiioo.",".ii.ooo",".i..foh",".ii.oof"],"s":[0,3],"w":[[6,6,[[4,1,"1"]]]],"t":[[0,4,4,3]],"p":31},
+{"m":[".pioo.....","iiifo.....","iiohf.....",".ii......o","oii....poo","oo.....o..","obooooGo..",".....ooo.."],"s":[2,2],"w":[[3,2,[[1,6,"1"]]]],"t":[[7,4,1,0]],"p":31},
+{"m":["oo........","ooo...ii..","ooopobiiG.","fho..iiii.",".....o.iio","........p."],"s":[0,2],"w":[[1,3,[[5,2,"t"]]]],"t":[[8,5,3,2]],"p":32},
+{"m":["opiiiiiosb.","ooii.ii.ofo","ooo...io..o","..........f","..........o","..........p","........ooG","........ooo"],"s":[2,2],"w":[[8,0,[[9,0,"t"]]]],"t":[[1,0,10,5]],"p":32},
+{"m":[".G....",".p....",".ooiii",".o.iii","fooiip","coooso","...bbo","....ch"],"s":[2,4],"w":[[5,7,[[3,6,"t"]]],[4,5,[[4,6,"t"]]]],"t":[[5,4,1,1]],"p":35},
+{"m":[".cbccfcccG","oos.......","obo.......","fop.......","ii........","iiiio.....","iiho......",".ooo......",".oop......"],"s":[1,7],"w":[[2,6,[[2,0,"t"]]],[2,1,[[1,2,"1"]]]],"t":[[3,8,2,3]],"p":35},
+{"m":["pfG","ho.","oo.","fo.","bo.","is.","ibc","poo","coo"],"s":[1,2],"w":[[0,1,[[1,6,"t"]]],[1,5,[[0,4,"1"]]]],"t":[[0,7,0,0]],"p":38},
+{"m":[".........o.","..Gccccccfb",".........hb","...iii...so","opiiioooooo","..ii....pfo"],"s":[0,4],"w":[[9,3,[[10,2,"t"]]],[9,2,[[10,1,"t"]]]],"t":[[1,4,8,5]],"p":40},
+{"m":["..ofc....","..ohc.cG.",".ooo..oo.",".oso..oop","iic...bob","iiii...fc","io.......","ip......."],"s":[1,6],"w":[[2,3,[[8,4,"t"]]],[3,1,[[6,4,"1"]]]],"t":[[1,7,8,3]],"p":41}
 ]</script>
 <script>
 "use strict";
@@ -205,10 +228,13 @@ function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 // A level, ready to play: grid of tile codes, bridge bit numbers, switches by cell.
 function load(L){
-  const H=L.m.length,W=Math.max(...L.m.map(r=>r.length)),g=[],bridge={},sw={};let mask=0,nb=0;
+  const H=L.m.length,W=Math.max(...L.m.map(r=>r.length)),g=[],bridge={},sw={},tele={};let mask=0,nb=0;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=L.m[y][x]||".";g.push(c);if(c==="b"||c==="B"){bridge[y*W+x]=nb;if(c==="B")mask|=1<<nb;nb++}}
+  // crumbly tiles get the bits after the bridges: a set bit means that tile has fallen away
+  for(let i=0;i<g.length;i++)if(g[i]==="c")bridge[i]=nb++;
   for(const [x,y,t] of L.w||[]){const hard=g[y*W+x]==="h";sw[y*W+x]={hard,t:t.map(([bx,by,m])=>[bridge[by*W+bx],m])}}
-  return{W,H,g,bridge,sw,mask0:mask,start:{x:L.s[0],y:L.s[1],o:"U"}};
+  for(const [x1,y1,x2,y2] of L.t||[]){tele[y1*W+x1]=[x2,y2];tele[y2*W+x2]=[x1,y1]}
+  return{W,H,g,bridge,sw,tele,mask0:mask,start:{x:L.s[0],y:L.s[1],o:"U"}};
 }
 // o: U standing on one cell, X lying across x..x+1, Y lying across y..y+1.
 const cellsOf=b=>b.o==="U"?[[b.x,b.y]]:b.o==="X"?[[b.x,b.y],[b.x+1,b.y]]:[[b.x,b.y],[b.x,b.y+1]];
@@ -217,16 +243,29 @@ function roll(b,d){const {x,y,o}=b;
   if(o==="X")return d==="R"?{x:x+2,y,o:"U"}:d==="L"?{x:x-1,y,o:"U"}:d==="D"?{x,y:y+1,o:"X"}:{x,y:y-1,o:"X"};
   return d==="R"?{x:x+1,y,o:"Y"}:d==="L"?{x:x-1,y,o:"Y"}:d==="D"?{x,y:y+2,o:"U"}:{x,y:y-1,o:"U"}}
 const tileAt=(P,x,y)=>x<0||y<0||x>=P.W||y>=P.H?".":P.g[y*P.W+x];
+// Why the block can't rest here (a fall reason), or "" when it can.
+function unsafe(P,b,mask){
+  for(const [x,y] of cellsOf(b)){const c=tileAt(P,x,y);
+    if(c===".")return"edge";
+    if((c==="b"||c==="B")&&!(mask&(1<<P.bridge[y*P.W+x])))return"edge";
+    if(c==="c"&&mask&(1<<P.bridge[y*P.W+x]))return"edge";
+    if(c==="f"&&b.o==="U")return"crack"}
+  return"";
+}
 // The result of one move: {b,mask} when the block lands safely, {fall:reason} when it doesn't, plus won.
+// segs lists what happened for the animation: the roll, any slides across ice, a teleport.
+// Rules: crumbly tiles (c) fall away once the block leaves them; on ice (i) the block, with every part on ice,
+// slides on in the same direction until some part has grip; standing on a teleport pad (p) jumps to its twin.
 function step(P,st,d){
-  const b=roll(st.b,d),cs=cellsOf(b);let mask=st.mask;
-  for(const [x,y] of cs){const c=tileAt(P,x,y);
-    if(c===".")return{fall:"edge",b};
-    if((c==="b"||c==="B")&&!(mask&(1<<P.bridge[y*P.W+x])))return{fall:"edge",b};
-    if(c==="f"&&b.o==="U")return{fall:"crack",b}}
-  for(const [x,y] of cs){const s=P.sw[y*P.W+x];if(!s||(s.hard&&b.o!=="U"))continue;
+  let b=roll(st.b,d),mask=st.mask;const segs=[{k:"roll",from:st.b,to:b}];
+  let bad=unsafe(P,b,mask);if(bad)return{fall:bad,b,segs};
+  for(const [x,y] of cellsOf(st.b))if(tileAt(P,x,y)==="c")mask|=1<<P.bridge[y*P.W+x];
+  while(cellsOf(b).every(([x,y])=>tileAt(P,x,y)==="i")){const [dx,dy]=DIRS[d],nb={x:b.x+dx,y:b.y+dy,o:b.o};
+    segs.push({k:"slide",from:b,to:nb});b=nb;bad=unsafe(P,b,mask);if(bad)return{fall:bad,b,segs}}
+  for(const [x,y] of cellsOf(b)){const s=P.sw[y*P.W+x];if(!s||(s.hard&&b.o!=="U"))continue;
     for(const [i,m] of s.t)mask=m==="t"?mask^(1<<i):m==="1"?mask|(1<<i):mask&~(1<<i)}
-  return{b,mask,won:b.o==="U"&&tileAt(P,b.x,b.y)==="G"};
+  if(b.o==="U"&&tileAt(P,b.x,b.y)==="p"&&P.tele[b.y*P.W+b.x]){const [tx,ty]=P.tele[b.y*P.W+b.x],nb={x:tx,y:ty,o:"U"};segs.push({k:"tele",from:b,to:nb});b=nb}
+  return{b,mask,segs,won:b.o==="U"&&tileAt(P,b.x,b.y)==="G"};
 }
 const keyOf=st=>((st.mask*64+st.b.y)*64+st.b.x)*3+"UXY".indexOf(st.b.o);
 // Shortest solution from a state, as a string of moves; null when there is none.
@@ -248,11 +287,16 @@ function generate(rng,o){
   const mark=bb=>cellsOf(bb).forEach(([x,y])=>g[y*W+x]="o");mark(b);
   for(let i=0;i<o.walk;i++){const ds=Object.keys(DIRS),d=last&&rng()<.45?last:ds[R(4)],nb=roll(b,d);
     if(cellsOf(nb).every(([x,y])=>x>=0&&y>=0&&x<W&&y<H)){b=nb;last=d;mark(b)}}
-  const toL=(gg,w)=>({m:Array.from({length:H},(_,y)=>gg.slice(y*W,y*W+W).join("")),s:[sx,sy],w:w||[]});
+  const tp=[];
+  const toL=(gg,w)=>{const L={m:Array.from({length:H},(_,y)=>gg.slice(y*W,y*W+W).join("")),s:[sx,sy],w:w||[]};if(tp.length)L.t=tp;return L};
+  // teleport pads: a pair of floor cells far apart; stripping tiles later may leave the pads as the only way across
+  if(o.tele){const fl=g.map((c,i)=>c==="o"&&i!==sy*W+sx?i:-1).filter(i=>i>=0);
+    for(let k=0;k<40&&!tp.length;k++){const a=fl[R(fl.length)],c=fl[R(fl.length)],ax=a%W,ay=Math.floor(a/W),cx=c%W,cy=Math.floor(c/W);
+      if(Math.abs(ax-cx)+Math.abs(ay-cy)>=o.tele){g[a]=g[c]="p";tp.push([ax,ay,cx,cy])}}}
   // farthest standing spot becomes the hole
   {const P=load(toL(g)),st0=startState(P),dist=new Map([[keyOf(st0),0]]),q=[st0];let best=null,bd=0;
     for(let h=0;h<q.length;h++){const st=q[h],dd=dist.get(keyOf(st));
-      if(st.b.o==="U"&&dd>bd&&!(st.b.x===sx&&st.b.y===sy)){bd=dd;best=st.b}
+      if(st.b.o==="U"&&dd>bd&&!(st.b.x===sx&&st.b.y===sy)&&g[st.b.y*W+st.b.x]==="o"){bd=dd;best=st.b}
       for(const d of "LRUD"){const r=step(P,st,d);if(r.fall)continue;const ns={b:r.b,mask:r.mask},k=keyOf(ns);if(dist.has(k))continue;dist.set(k,dd+1);q.push(ns)}}
     if(!best)return null;g[best.y*W+best.x]="G"}
   let w=[],par=parOf(toL(g,w));if(par<1)return null;
@@ -272,6 +316,17 @@ function generate(rng,o){
         const p=parOf(toL(g,w));if(p>par){par=p;placed=true;break}w.pop();g[j]="o"}
       if(placed)break;g[i]="o"}
   }
+  // crumbly tiles: floor that falls away behind the block, kept when the level gets no shorter
+  if(o.crumble){let n=0;
+    for(const i of shuffle(floor())){if(n>=o.crumble)break;if(tryChange(()=>g[i]="c",()=>g[i]="o",p=>p))n++}}
+  // ice: try a few patches (over floor and gaps alike) and keep the one that makes the level longest
+  if(o.ice){let best=null,bp=0;const base=g.slice(),okC=c=>c==="."||c==="o";
+    for(let k=0;k<o.icePatches;k++){const gg=base.slice(),seed=R(W*H);if(!okC(gg[seed])||seed===sy*W+sx)continue;
+      const front=[seed];let n=0;
+      while(front.length&&n<o.ice){const i=front.splice(R(front.length),1)[0];if(!okC(gg[i])||i===sy*W+sx)continue;gg[i]="i";n++;
+        const x=i%W,y=Math.floor(i/W);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]])if(x+dx>=0&&y+dy>=0&&x+dx<W&&y+dy<H)front.push((y+dy)*W+x+dx)}
+      const p=parOf(toL(gg,w));if(p>bp){bp=p;best=gg}}
+    if(best&&bp>=par-2){for(let i=0;i<g.length;i++)g[i]=best[i];par=bp}}
   // scatter a few spare tiles back so the shape is less of a thin trail
   for(let k=0;k<o.extra;k++){const i=R(W*H),x=i%W,y=Math.floor(i/W);if(g[i]!==".")continue;
     if(![[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>{const c=tileAt({W,H,g},x+dx,y+dy);return c!=="."}))continue;
@@ -280,6 +335,7 @@ function generate(rng,o){
   const L=toL(g,w);let x0=W,x1=0,y0=H,y1=0;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(g[y*W+x]!=="."){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)}
   const out={m:L.m.slice(y0,y1+1).map(r=>r.slice(x0,x1+1)),s:[sx-x0,sy-y0],w:w.map(([x,y,t])=>[x-x0,y-y0,t.map(([bx,by,m])=>[bx-x0,by-y0,m])])};
+  if(tp.length)out.t=tp.map(([a,b2,c,d])=>[a-x0,b2-y0,c-x0,d-y0]);
   out.p=parOf(out);return out.p>0?out:null;
 }
 /*CORE-END*/
@@ -307,6 +363,27 @@ function dailyLevel(day){
   DAILY.set(day,best);return best;
 }
 
+/* ================= endless climb: board k is made from its number, the same for everyone ================= */
+// Saved as tp.climb: {best: most boards cleared in one climb, runs, run: {k, lives, moves, path} or null}.
+const getClimb=()=>Object.assign({best:0,runs:0,run:null},loadJSON("tp.climb",{}));
+const CLIMB=new Map();
+function climbLevel(k){
+  if(CLIMB.has(k))return CLIMB.get(k);
+  const rng=mulberry(hashStr("topple-climb|"+k)),t=Math.min(k,40);
+  const o={w:Math.min(12,8+Math.floor(t/8)),h:Math.min(9,6+Math.floor(t/10)),walk:30+Math.floor(t*1.2),fragile:.1,
+    bridges:k<5?0:k<15?1:k<30?2:3,hard:k>=8,extra:6,icePatches:12};
+  if(k>=4&&rng()<.4)o.crumble=6+Math.min(8,k>>2);
+  if(k>=7&&rng()<.4)o.ice=8+Math.min(6,k>>3);
+  if(k>=10&&rng()<.35)o.tele=5;
+  const target=Math.min(44,9+Math.round(k*1.1));let best=null;
+  for(let i=0;i<10;i++){const L=generate(rng,o);if(L&&(!best||Math.abs(L.p-target)<Math.abs(best.p-target)))best=L;if(best&&Math.abs(best.p-target)<=2)break}
+  CLIMB.set(k,best);return best;
+}
+const climbLimit=(k,par)=>par+Math.max(3,8-Math.floor((k-1)/4));
+const hearts=n=>"♥".repeat(n)+"♡".repeat(3-n);
+// The first time a tile turns up, the line under the board explains it.
+const TIPS={c:"crumbly tiles fall away once the block leaves them.",i:"on ice the block slides until part of it has grip.",p:"stand on a purple pad to jump to the other one."};
+
 /* ================= menu ================= */
 let view="menu";
 function show(v){view=v;$("menu").hidden=v!=="menu";$("play").hidden=v!=="play";if(v==="play")requestAnimationFrame(resize)}
@@ -319,6 +396,14 @@ function renderMenu(){
     <p class="muted" style="margin:0">${td?"Come back tomorrow for the next one, or try to match par.":"Same puzzle for everyone today. Weekends are bigger."}</p>
     <div class="row"><button class="btn pri" id="dailyBtn">${td?"Play again":"Play today's puzzle"}</button>${streak()>1?`<span class="muted">${streak()} day streak</span>`:""}</div>`;
   $("dailyBtn").onclick=()=>{$("dailyBtn").textContent="Making today's board…";setTimeout(()=>startLevel({daily:today}),30)};
+  const cl=getClimb(),run=cl.run,cc=$("climbCard");
+  cc.innerHTML=`<div class="row spread"><span class="label">Endless climb</span>${cl.best?`<span class="label">Best: ${cl.best} board${cl.best===1?"":"s"}</span>`:""}</div>
+    <h2>${run?`On board ${run.k} · <span class="hearts">${hearts(run.lives)}</span>`:"How high can you climb?"}</h2>
+    <p class="muted" style="margin:0">Board after board, each a bit harder. Finish each within its move limit, or lose a heart. Three hearts.</p>
+    <div class="row"><button class="btn pri" id="climbBtn">${run?"Carry on":"Start climbing"}</button>${run?'<button class="btn" id="climbNew">Start again</button>':""}</div>`;
+  const go=()=>{$("climbBtn").textContent="Making the board…";setTimeout(()=>startLevel({climb:getClimb().run.k}),30)};
+  $("climbBtn").onclick=()=>{const c=getClimb();if(!c.run){c.run={k:1,lives:3,moves:0,path:""};c.runs++;saveJSON("tp.climb",c)}go()};
+  if(run)$("climbNew").onclick=()=>{if(!confirm("Give up this climb and start again from board 1?"))return;const c=getClimb();c.run={k:1,lives:3,moves:0,path:""};c.runs++;saveJSON("tp.climb",c);go()};
   const grid=$("levelGrid");grid.innerHTML="";let next=LEVELS.findIndex((_,i)=>!done[i+1]);if(next<0)next=LEVELS.length;
   const nDone=LEVELS.filter((_,i)=>done[i+1]).length,stars=LEVELS.reduce((a,_,i)=>a+(done[i+1]?done[i+1].stars:0),0);
   $("lvNote").textContent=`${nDone} of ${LEVELS.length} · ${stars} ★`;
@@ -328,31 +413,74 @@ function renderMenu(){
 function streak(){const d=getDaily();let t=dayNum();if(!d[t])t--;let n=0;while(d[t]){n++;t--}return n}
 
 /* ================= play ================= */
-let P=null,LV=null,ST=null,hist=[],moves=0,hinted=false,anim=null,queue=[],hintDir=null,flash=0;
+let P=null,LV=null,ST=null,hist=[],path=[],moves=0,hinted=false,anim=null,queue=[],hintDir=null,flash=0,crumbs=[];
 function startLevel(src){
-  LV=src;const L=src.daily!=null?dailyLevel(src.daily):LEVELS[src.n-1];if(!L){toast("Couldn't make today's board");return}
-  LV.L=L;P=load(L);clearTimeout(toastT);$("toast").style.opacity=0;ST=startState(P);hist=[];moves=0;hinted=false;anim=null;queue=[];hintDir=null;
-  $("pTitle").textContent=src.daily!=null?"Daily puzzle":"Level "+src.n;$("pSub").textContent="Par "+L.p;
-  $("hintLine").textContent="Swipe on the board to tip the block.";
+  LV=src;const L=src.climb!=null?climbLevel(src.climb):src.daily!=null?dailyLevel(src.daily):LEVELS[src.n-1];if(!L){toast("Couldn't make the board");return}
+  LV.L=L;P=load(L);clearTimeout(toastT);$("toast").style.opacity=0;ST=startState(P);hist=[];path=[];moves=0;hinted=false;anim=null;queue=[];hintDir=null;crumbs=[];
+  const codes=new Set(L.m.join(""));let tip="";
+  if(src.climb!=null){LV.limit=climbLimit(src.climb,L.p);const run=getClimb().run;
+    // carry on where the climb was left: replay the block's moves, keep the moves used
+    if(run&&run.k===src.climb){moves=run.moves;for(const d of run.path){const r=step(P,ST,d);if(r.fall)break;hist.push(ST);path.push(d);ST={b:r.b,mask:r.mask}}}
+    $("pTitle").textContent="Climb · board "+src.climb;
+    tip=[..."cip"].filter(c=>codes.has(c)).map(c=>TIPS[c][0].toUpperCase()+TIPS[c].slice(1)).join(" ");
+    if(!tip)tip=`Finish within ${LV.limit} moves. Undo and Restart don't give moves back.`}
+  else{$("pTitle").textContent=src.daily!=null?"Daily puzzle":"Level "+src.n;$("pSub").textContent="Par "+L.p;
+    if(src.n){const seen=new Set(LEVELS.slice(0,src.n-1).map(l=>l.m.join("")).join(""));tip=[..."cip"].filter(c=>codes.has(c)&&!seen.has(c)).map(c=>"New: "+TIPS[c]).join(" ")}}
+  $("hintBtn").hidden=src.climb!=null;
+  $("hintLine").textContent=tip||"Swipe on the board to tip the block.";
   show("play");updateMoves();
 }
-function updateMoves(){$("pMoves").textContent=moves;$("undoBtn").disabled=!hist.length}
+function updateMoves(){
+  if(LV&&LV.climb!=null){const left=LV.limit-moves;$("pMoves").textContent=left;$("pMovesL").textContent="moves left";$("movesBox").classList.toggle("low",left<=3);
+    $("pSub").innerHTML=`<span class="hearts">${hearts(getClimb().run?getClimb().run.lives:0)}</span> · par ${LV.L.p}`}
+  else{$("pMoves").textContent=moves;$("pMovesL").textContent="moves";$("movesBox").classList.remove("low")}
+  $("undoBtn").disabled=!hist.length}
+function saveClimb(){if(LV.climb==null)return;const c=getClimb();if(!c.run)return;c.run.moves=moves;c.run.path=path.join("");saveJSON("tp.climb",c)}
+function climbOut(){
+  const c=getClimb();if(!c.run)return;c.run.lives--;
+  if(c.run.lives>0){c.run.moves=0;c.run.path="";saveJSON("tp.climb",c);try{navigator.vibrate&&navigator.vibrate([40,60,40])}catch(e){}
+    startLevel({climb:LV.climb});toast("Out of moves: one heart gone");return}
+  const cleared=c.run.k-1;c.best=Math.max(c.best,cleared);c.run=null;saveJSON("tp.climb",c);
+  $("ovc").innerHTML=`<h3>Out of moves</h3><div class="stars"><span class="off">♥♥♥</span></div>
+    <p>That was your last heart. You cleared ${cleared} board${cleared===1?"":"s"}.${cleared>0&&cleared>=c.best?" That's your best climb!":` Your best is ${c.best}.`}</p>
+    <div class="acts"><button class="btn pri" id="oAgain">Climb again</button><button class="btn" id="oMenu">Back to the menu</button></div>`;
+  $("ov").hidden=false;
+  $("oAgain").onclick=()=>{$("ov").hidden=true;const c2=getClimb();c2.run={k:1,lives:3,moves:0,path:""};c2.runs++;saveJSON("tp.climb",c2);startLevel({climb:1})};
+  $("oMenu").onclick=()=>{$("ov").hidden=true;toMenu()};
+}
+function climbWon(){
+  const c=getClimb(),k=LV.climb;if(!c.run)return toMenu();
+  const bonus=k%5===0&&c.run.lives<3;c.run={k:k+1,lives:c.run.lives+(bonus?1:0),moves:0,path:""};c.best=Math.max(c.best,k);saveJSON("tp.climb",c);
+  try{navigator.vibrate&&navigator.vibrate([15,50,15,50,40])}catch(e){}
+  $("ovc").innerHTML=`<h3>Board ${k} cleared</h3><div class="stars hearts">${hearts(c.run.lives)}</div>
+    <p>${moves} moves (par ${LV.L.p}, limit ${LV.limit}).${bonus?" Five more boards: you win a heart back!":k%5===0?" Five more boards cleared.":""}</p>
+    <div class="acts"><button class="btn pri" id="oNext">Board ${k+1}</button><button class="btn" id="oMenu">Back to the menu</button></div>`;
+  $("ov").hidden=false;
+  $("oNext").onclick=()=>{$("oNext").textContent="Making the board…";setTimeout(()=>{$("ov").hidden=true;startLevel({climb:k+1})},30)};
+  $("oMenu").onclick=()=>{$("ov").hidden=true;toMenu()};
+  setTimeout(()=>climbLevel(k+1),400);
+}
 function tryMove(d){
   if(view!=="play"||!$("ov").hidden)return;
   if(anim){if(queue.length<2)queue.push(d);return}
   const r=step(P,ST,d);hintDir=null;
-  anim={from:ST.b,to:r.b,d,t:0,dur:.17,falls:r.fall,res:r};
+  anim={segs:r.segs,i:0,d,t:0,dur:SEGDUR.roll,falls:r.fall,res:r};
   try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}
 }
+const SEGDUR={roll:.17,slide:.09,tele:.4};
 function finishAnim(){
-  const a=anim;anim=null;
-  if(a.falls){anim={fall:true,b:a.to,t:0,dur:.55,reason:a.falls};return}
-  hist.push(ST);ST={b:a.res.b,mask:a.res.mask};moves++;updateMoves();
+  const a=anim;if(a.i<a.segs.length-1){a.i++;a.t=0;a.dur=SEGDUR[a.segs[a.i].k];return}
+  anim=null;
+  if(a.falls){anim={fall:true,b:a.res.b,t:0,dur:.55,reason:a.falls};return}
+  for(const [x,y] of cellsOf(ST.b))if(tileAt(P,x,y)==="c")crumbs.push({x,y,t:0});
+  hist.push(ST);path.push(a.d);ST={b:a.res.b,mask:a.res.mask};moves++;updateMoves();saveClimb();
   if(a.res.won){anim={sink:true,b:ST.b,t:0,dur:.5};queue=[];return}
+  if(LV.climb!=null&&moves>=LV.limit){queue=[];climbOut();return}
   if(queue.length)tryMove(queue.shift());
 }
 function afterFall(reason){anim=null;queue=[];toast(reason==="crack"?"The tile cracked. Try again":"Off the edge. Try again");try{navigator.vibrate&&navigator.vibrate([30,40,30])}catch(e){}}
 function won(){
+  if(LV.climb!=null)return climbWon();
   const st=starsFor(moves,LV.L.p,hinted);let first=false,rec;
   if(LV.daily!=null){const d=getDaily(),o=d[LV.daily];first=!o;rec={best:o?Math.min(o.best,moves):moves,stars:Math.max(o?o.stars:0,st),at:Date.now()};d[LV.daily]=rec;saveJSON("tp.daily",d)}
   else{const d=getLv(),o=d[LV.n];first=!o;rec={best:o?Math.min(o.best,moves):moves,stars:Math.max(o?o.stars:0,st)};d[LV.n]=rec;saveJSON("tp.levels",d)}
@@ -367,9 +495,12 @@ function won(){
   $("oMenu").onclick=()=>{$("ov").hidden=true;toMenu()};
 }
 function toMenu(){anim=null;queue=[];renderMenu();show("menu")}
-$("undoBtn").onclick=()=>{if(anim||!hist.length)return;ST=hist.pop();moves--;hintDir=null;updateMoves()};
-$("restartBtn").onclick=()=>{if(anim)return;startLevel(LV.daily!=null?{daily:LV.daily}:{n:LV.n})};
-$("hintBtn").onclick=()=>{if(anim)return;const s=solve(P,ST);if(!s){toast("No way through from here. Undo or restart");return}
+// In the climb, Undo and Restart move the block back but the moves stay used.
+$("undoBtn").onclick=()=>{if(anim||!hist.length)return;ST=hist.pop();path.pop();if(LV.climb==null)moves--;hintDir=null;crumbs=[];updateMoves();saveClimb()};
+$("restartBtn").onclick=()=>{if(anim)return;
+  if(LV.climb!=null){if(!hist.length)return;ST=startState(P);hist=[];path=[];hintDir=null;crumbs=[];updateMoves();saveClimb();return}
+  startLevel(LV.daily!=null?{daily:LV.daily}:{n:LV.n})};
+$("hintBtn").onclick=()=>{if(anim||LV.climb!=null)return;const s=solve(P,ST);if(!s){toast("No way through from here. Undo or restart");return}
   hinted=true;hintDir=s[0];flash=0;$("hintLine").textContent=`Hint: ${({L:"left",R:"right",U:"up",D:"down"})[s[0]]}. ${s.length} move${s.length>1?"s":""} from the finish.`};
 $("backBtn").onclick=toMenu;
 document.querySelectorAll(".pad button").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();tryMove(b.dataset.d)}));
@@ -395,9 +526,11 @@ function resize(){
   OX=(r.width-P.W*S)/2;OY=(r.height-(P.H*KY*S))/2+KZ*S*.9;
 }
 new ResizeObserver(resize).observe($("stage"));
-const TILE={o:["#8FA3C4","#5E7396"],f:["#F0964A","#B9612A"],G:["#0E1626","#0E1626"],s:["#8FA3C4","#5E7396"],h:["#8FA3C4","#5E7396"],b:["#6FB7A8","#3F8073"],B:["#6FB7A8","#3F8073"]};
+const TILE={o:["#8FA3C4","#5E7396"],f:["#F0964A","#B9612A"],G:["#0E1626","#0E1626"],s:["#8FA3C4","#5E7396"],h:["#8FA3C4","#5E7396"],b:["#6FB7A8","#3F8073"],B:["#6FB7A8","#3F8073"],
+  c:["#D8C49A","#9C8758"],i:["#CDEBF5","#86B9CC"],p:["#8FA3C4","#5E7396"]};
 function poly(pts,fill,stroke){ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
 function drawTile(x,y,c,on,now){
+  if(c==="c"&&!on)return;
   const open=(c==="b"||c==="B")?on:true;if(!open){const [a,b2]=[pr(x+.08,y+.08,0),pr(x+.92,y+.92,0)];ctx.setLineDash([3,4]);ctx.strokeStyle="rgba(111,183,168,.45)";ctx.lineWidth=1.5;ctx.strokeRect(a[0],a[1],b2[0]-a[0],b2[1]-a[1]);ctx.setLineDash([]);return}
   const [top,side]=TILE[c]||TILE.o,g=.05,th=.22;
   if(tileAt(P,x,y+1)==="."||!bridgeOpen(x,y+1))poly([pr(x+g,y+1-g,0),pr(x+1-g,y+1-g,0),pr(x+1-g,y+1-g,-th),pr(x+g,y+1-g,-th)],side);
@@ -407,9 +540,15 @@ function drawTile(x,y,c,on,now){
     ctx.fillStyle=`rgba(242,165,65,${.12+.08*Math.sin(now*3)})`;ctx.fillRect(a[0],a[1],b2[0]-a[0],b2[1]-a[1])}
   if(c==="s"){ctx.fillStyle="#DDE6F5";ctx.beginPath();ctx.ellipse(cx,cy,S*.22,S*.22*KY,0,0,7);ctx.fill();ctx.fillStyle="#6FB7A8";ctx.beginPath();ctx.ellipse(cx,cy,S*.13,S*.13*KY,0,0,7);ctx.fill()}
   if(c==="h"){ctx.strokeStyle="#DDE6F5";ctx.lineWidth=Math.max(2,S*.08);ctx.lineCap="round";const q=S*.2;ctx.beginPath();ctx.moveTo(cx-q,cy-q*KY);ctx.lineTo(cx+q,cy+q*KY);ctx.moveTo(cx+q,cy-q*KY);ctx.lineTo(cx-q,cy+q*KY);ctx.stroke()}
+  if(c==="c"){ctx.fillStyle="rgba(90,70,30,.4)";for(const [dx,dy] of [[-.2,-.15],[.15,-.05],[-.05,.18],[.22,.2],[-.24,.12]]){ctx.beginPath();ctx.ellipse(cx+dx*S,cy+dy*S*KY,S*.045,S*.045*KY,0,0,7);ctx.fill()}}
+  if(c==="i"){ctx.strokeStyle="rgba(255,255,255,.75)";ctx.lineWidth=Math.max(1.5,S*.05);ctx.lineCap="round";ctx.beginPath();
+    ctx.moveTo(cx-S*.28,cy+S*.05*KY);ctx.lineTo(cx-S*.05,cy-S*.2*KY);ctx.moveTo(cx-S*.05,cy+S*.22*KY);ctx.lineTo(cx+S*.25,cy-S*.1*KY);ctx.stroke()}
+  if(c==="p"){const pulse=.75+.25*Math.sin(now*4);ctx.strokeStyle="#A77BEA";ctx.lineWidth=Math.max(2,S*.09);ctx.beginPath();ctx.ellipse(cx,cy,S*.3*pulse,S*.3*KY*pulse,0,0,7);ctx.stroke();
+    ctx.fillStyle="#C9A8F5";ctx.beginPath();ctx.ellipse(cx,cy,S*.1,S*.1*KY,0,0,7);ctx.fill()}
   if(c==="f"){ctx.strokeStyle="rgba(90,40,10,.35)";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(cx-S*.2,cy-S*.1);ctx.lineTo(cx,cy+S*.02);ctx.lineTo(cx+S*.18,cy-S*.08);ctx.stroke()}
 }
-const bridgeOpen=(x,y)=>{const c=tileAt(P,x,y);if(c!=="b"&&c!=="B")return true;return !!(ST.mask&(1<<P.bridge[y*P.W+x]))};
+// Is this tile there right now? Bridges when open; crumbly tiles until they have fallen away.
+const bridgeOpen=(x,y)=>{const c=tileAt(P,x,y);if(c==="c")return !(ST.mask&(1<<P.bridge[y*P.W+x]));if(c!=="b"&&c!=="B")return true;return !!(ST.mask&(1<<P.bridge[y*P.W+x]))};
 // The block as 8 corners; a roll turns them a quarter turn about the edge it tips over.
 function boxCorners(b){const w=b.o==="X"?2:1,d=b.o==="Y"?2:1,h=b.o==="U"?2:1,x=b.x,y=b.y;
   return[[x,y,0],[x+w,y,0],[x+w,y+d,0],[x,y+d,0],[x,y,h],[x+w,y,h],[x+w,y+d,h],[x,y+d,h]]}
@@ -431,25 +570,30 @@ function blockPts(now){
     if(anim&&anim.sink){const k=Math.min(1,anim.t/anim.dur);pts=pts.map(([x,y,z])=>[x,y,z-2.2*k*k])}
     if(anim&&anim.fall){const k=Math.min(1,anim.t/anim.dur);pts=pts.map(([x,y,z])=>[x,y,z-3*k*k])}
     return pts}
-  const a=anim,k=Math.min(1,a.t/a.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,from=a.from,pts=boxCorners(from);
+  const a=anim,sg=a.segs[a.i],k=Math.min(1,a.t/a.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,from=sg.from,pts=boxCorners(from);
+  if(sg.k==="slide")return pts.map(([x,y,z])=>[x+(sg.to.x-from.x)*k,y+(sg.to.y-from.y)*k,z]);
+  if(sg.k==="tele"){blockAlpha=Math.abs(1-2*k);return k<.5?pts.map(([x,y,z])=>[x,y,z+k*1.2]):boxCorners(sg.to).map(([x,y,z])=>[x,y,z+(1-k)*1.2])}
   const w=from.o==="X"?2:1,d=from.o==="Y"?2:1,ang=e*Math.PI/2;
   if(a.d==="R")return rotPts(pts,"y",from.x+w,0,-ang);
   if(a.d==="L")return rotPts(pts,"y",from.x,0,ang);
   if(a.d==="D")return rotPts(pts,"x",from.y+d,0,-ang);
   return rotPts(pts,"x",from.y,0,ang);
 }
-let lastT=0;
+let lastT=0,blockAlpha=1;
 function frame(ts){
   requestAnimationFrame(frame);const dt=Math.min(.05,lastT?(ts-lastT)/1000:0);lastT=ts;
   if(view!=="play"||!P)return;
   if(anim){anim.t+=dt;if(anim.t>=anim.dur){if(anim.sink){anim=null;won()}else if(anim.fall)afterFall(anim.reason);else finishAnim()}}
   const now=ts/1000;ctx.setTransform(dpr,0,0,dpr,0,0);const r=cv.width/dpr,h=cv.height/dpr;ctx.clearRect(0,0,r,h);
-  const pts=blockPts(now),rowMax=Math.max(...pts.map(p=>p[1]));
+  blockAlpha=1;const pts=blockPts(now),rowMax=Math.max(...pts.map(p=>p[1]));
   let drawn=false;
   for(let y=0;y<P.H;y++){
     if(!drawn&&(anim&&(anim.fall||anim.sink))&&y>Math.floor(rowMax-.01)){drawBox(pts,anim.fall?1-Math.min(1,anim.t/anim.dur)*.6:1);drawn=true}
     for(let x=0;x<P.W;x++){const c=P.g[y*P.W+x];if(c===".")continue;drawTile(x,y,c,bridgeOpen(x,y),now)}}
-  if(!drawn)drawBox(pts,anim&&anim.fall?1-Math.min(1,anim.t/anim.dur)*.6:1);
+  // crumbly tiles that just fell away drop out of sight
+  crumbs=crumbs.filter(c=>(c.t+=dt)<.5);
+  for(const c of crumbs){const z=-2.5*c.t*c.t,g=.05;ctx.globalAlpha=1-c.t*2;poly([pr(c.x+g,c.y+g,z),pr(c.x+1-g,c.y+g,z),pr(c.x+1-g,c.y+1-g,z),pr(c.x+g,c.y+1-g,z)],TILE.c[0]);ctx.globalAlpha=1}
+  if(!drawn)drawBox(pts,anim&&anim.fall?1-Math.min(1,anim.t/anim.dur)*.6:blockAlpha);
   if(hintDir&&!anim){const [cx,cy]=pr(...[pts.reduce((a,p)=>a+p[0],0)/8,pts.reduce((a,p)=>a+p[1],0)/8,2.2]);const [dx,dy]=DIRS[hintDir];
     ctx.save();ctx.translate(cx+dx*S*.9,cy+dy*S*.9*KY);ctx.rotate(Math.atan2(dy*KY,dx));ctx.globalAlpha=.6+.4*Math.sin(now*6);ctx.fillStyle="#FFD25E";
     ctx.beginPath();ctx.moveTo(S*.35,0);ctx.lineTo(-S*.15,-S*.25);ctx.lineTo(-S*.15,S*.25);ctx.closePath();ctx.fill();ctx.restore()}
