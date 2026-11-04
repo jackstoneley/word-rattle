@@ -164,6 +164,39 @@
     {
       "id": 16,
       "type": "new-game",
+      "headline": "New game: Gravity Well",
+      "details": [
+        "Launch a ball and let the planets bend it round to a target that's usually out of view.",
+        "Every planet pulls, harder the closer you get. Pink ones push you away, and moons circle as you fly.",
+        "30 levels, plus a new daily orbit every day that's the same for both of you.",
+        "Drag to aim, then fine-tune with the buttons. Tap Map to see the whole level."
+      ]
+    },
+    {
+      "id": 17,
+      "type": "new-game",
+      "headline": "New game: Epoch Siege",
+      "details": [
+        "Your base on the left, the enemy's on the right: train troops and knock their base down first.",
+        "Six ages, from the Stone Age to the Future Age. Beat enemies to earn experience, then evolve for far stronger troops, defences and a tougher base.",
+        "Five kinds of troop in every age, including healers and a champion that smashes bases. Units that win three fights become veterans.",
+        "Defences for your base, six upgrades that go up to ten levels, a special attack for each age, and orders to charge, hold or fall back.",
+        "Four enemy levels, from Easy to Brutal. The battle saves itself, so you can leave and carry on later."
+      ]
+    },
+    {
+      "id": 18,
+      "type": "features",
+      "headline": "Epoch Siege: a tougher enemy and crowd fighting",
+      "details": [
+        "Every enemy level is harder. Normal now earns more gold and experience than you, defends its base properly, and catches up quickly if you get an age ahead.",
+        "If you still find it easy, try Hard or Brutal.",
+        "New option, Crowd fighting: troops bunch up three at a time, so more of them fight at once instead of waiting in a line."
+      ]
+    },
+    {
+      "id": 19,
+      "type": "new-game",
       "headline": "New game: Hollowdeep",
       "details": [
         "Dig out an underground realm and beat the rival lords, in the spirit of the old dungeon-building games.",
