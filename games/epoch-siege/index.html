@@ -57,6 +57,40 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
 .rec b{display:block;font-size:1.3rem}
 .rec span{font-size:.72rem;color:var(--muted)}
 .rec .med{color:var(--accent)}
+.nav{position:sticky;top:0;z-index:2}
+.nav button{padding:11px 4px;font-size:.95rem}
+.lo{text-align:left;font:inherit;color:inherit;cursor:pointer;gap:4px;padding:10px 14px}
+.lo b{font-size:.95rem}
+.lo span{font-size:.82rem;color:var(--muted)}
+.mlist{display:flex;flex-direction:column;gap:6px}
+.mi{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;border:1px solid var(--line2);background:var(--bg2);border-radius:10px;padding:8px 10px;text-align:left}
+.mi .no{width:30px;height:30px;border-radius:8px;background:var(--panel);display:grid;place-items:center;font-weight:800}
+.mi b{display:block;font-size:.95rem}
+.mi small{color:var(--muted);font-size:.76rem}
+.mi .stars{color:var(--accent);font-size:1.05rem;letter-spacing:1px;white-space:nowrap}
+.mi .stars i{color:var(--line2);font-style:normal}
+.mi:disabled{opacity:.45}
+.mi.done .no{background:var(--accent);color:var(--accent-ink)}
+.medal{font-weight:800;color:var(--accent)}
+.glist,.plist{display:flex;flex-direction:column;gap:6px}
+.gi,.pi{border:1px solid var(--line2);background:var(--bg2);border-radius:10px;padding:9px 11px;text-align:left;display:flex;flex-direction:column;gap:3px}
+.gi.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.gi b,.pi b{font-size:.95rem}
+.gi .gd{font-size:.8rem;color:var(--good)}
+.gi .bd{font-size:.8rem;color:#FF9C8C}
+.gi:disabled,.pi.lock{opacity:.5}
+.pi .row{gap:8px}
+.pi .pd{font-size:.8rem;color:var(--muted)}
+.pi .btn{padding:6px 10px;font-size:.82rem}
+.pi.on{border-color:var(--good)}
+.goal{display:flex;gap:8px;font-size:.9rem;align-items:baseline}
+.goal i{font-style:normal;color:var(--accent);width:16px;flex:none}
+.goal.no i{color:var(--line2)}
+.rules{margin:0;padding-left:18px;font-size:.88rem;line-height:1.4}
+.bigstars{font-size:2rem;color:var(--accent);letter-spacing:4px;text-align:center}
+.bigstars i{color:var(--line2);font-style:normal}
+.unl{background:var(--bg2);border-radius:8px;padding:8px 10px;font-size:.88rem}
+.ub.no{opacity:.25}
 .howto{font-size:.92rem;line-height:1.5}
 .howto summary{font-weight:700;font-size:1.05rem;cursor:pointer}
 .howto ul{padding-left:18px;margin:8px 0 0}
@@ -145,6 +179,28 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
         <div class="row"><button class="btn pri" id="contBtn">Continue</button><button class="btn bad" id="abandonBtn">Abandon</button></div>
       </div>
 
+      <div class="seg nav" id="navSeg"><button data-v="camp">Campaign</button><button data-v="battle">Battle</button><button data-v="barr">Barracks</button></div>
+
+      <button class="card lo" id="loCard"></button>
+
+      <div id="secCamp" class="sec">
+        <div class="card">
+          <div class="row spread"><h2>Campaign</h2><span class="muted" id="campInfo"></span></div>
+          <p class="muted" style="margin:0;font-size:.9rem">Twelve battles with their own rules. Each has three stars to earn, and every new star is a medal to spend in the Barracks.</p>
+          <div id="missions" class="mlist"></div>
+        </div>
+      </div>
+
+      <div id="secBarr" class="sec">
+        <div class="card">
+          <div class="row spread"><h2>Barracks</h2><span class="medal" id="medals"></span></div>
+          <p class="muted" style="margin:0;font-size:.9rem">Earn medals from campaign stars and battle wins (Easy 1, Normal 2, Hard 3, Brutal 4). Pick a general, buy perks up to level 3, and take up to three perks into each battle.</p>
+        </div>
+        <div class="card"><h2>General</h2><div id="gens" class="glist"></div></div>
+        <div class="card"><div class="row spread"><h2>Perks</h2><span class="muted" id="perkInfo"></span></div><div id="perks" class="plist"></div></div>
+      </div>
+
+      <div id="secBattle" class="sec">
       <div class="card">
         <h2>New battle</h2>
         <div><div class="label" style="margin-bottom:6px">Enemy</div><div class="seg" id="diffSeg"></div></div>
@@ -160,6 +216,7 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
         <div class="row spread"><h2>Your record</h2><span class="muted" id="recInfo"></span></div>
         <div class="rec" id="rec"></div>
       </div>
+      </div>
 
       <details class="card howto">
         <summary>How to play</summary>
@@ -173,6 +230,8 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
           <li>The <b>orders</b> button switches between Charge, Hold (stand a little way out from your base) and Fall back (come home). Holding is handy while you save up.</li>
           <li>In the <b>Future Age</b> there's nowhere left to evolve: your experience charges the <b>Star Lance</b> instead, which knocks a fifth off the enemy base. The enemy has one too, so keep beating their troops.</li>
           <li>Each age has a <b>champion</b>: expensive, and only one at a time, but it is tough and hits bases three times as hard. Champions are how you break through strong defences.</li>
+          <li><b>Campaign</b>: twelve missions with their own rules, each with three stars. <b>Barracks</b>: spend medals on perks (levels 1 to 3) and choose a general. You can take three perks into a battle. New generals and perks unlock as you clear missions.</li>
+          <li>Shooters aim at enemy healers when they can reach them, and a troop can only be healed about once a second, however many healers are behind it.</li>
           <li>A unit that beats three enemies becomes a <b>veteran</b> (gold star): it heals up and hits harder.</li>
           <li>Drag the battlefield to look around, or tap the strip at the top to jump there. The battle saves itself, so you can leave and carry on later.</li>
         </ul>
@@ -223,7 +282,7 @@ const KIND = [
   { cost: 15, hp: 75, dmg: 13, cd: 1, rng: 12, spd: 42, w: 14, tr: 1.2 },
   { cost: 25, hp: 45, dmg: 8, cd: 1.2, rng: 150, spd: 40, w: 14, tr: 1.6, proj: 1 },
   { cost: 100, hp: 360, dmg: 30, cd: 1.5, rng: 16, spd: 30, w: 34, tr: 3.5 },
-  { cost: 50, hp: 60, dmg: 4, cd: 1, rng: 12, spd: 40, w: 14, tr: 2, heal: 9, hcd: 1.2, hrng: 110 },
+  { cost: 50, hp: 60, dmg: 4, cd: 1, rng: 12, spd: 40, w: 14, tr: 2, heal: 8, hcd: 1.2, hrng: 110 },
   { cost: 300, hp: 950, dmg: 40, cd: 1.2, rng: 16, spd: 30, w: 22, tr: 8, ar: .2, siege: 3, champ: 1 }
 ];
 const TWEAK = [
@@ -243,14 +302,14 @@ const UPG = [
 ];
 const UPG_COST = [200, 500, 1200, 2800, 6000, 14000, 32000, 75000, 180000, 420000];
 const UPG_MAX = { drill: 5 }; // others go to 10
-const ARMY_CAP = 20, CROWD_RANK = 3;
+const ARMY_CAP = 20, CROWD_RANK = 3, HEAL_GAP = 1.2; // a unit can be healed once every HEAL_GAP seconds, however many healers
 function upMax(id) { return UPG_MAX[id] || 10; }
 const DIFF = [
   // inc / xp: the enemy's gold and experience compared with yours; pxp: experience it earns each second anyway
   { n: "Easy", inc: .95, xp: 1, pxp: .5, think: 1, q: 3, slots: 2 },
   { n: "Normal", inc: 1.35, xp: 1.3, pxp: 1.5, think: .5, q: 4, slots: 3 },
-  { n: "Hard", inc: 1.75, xp: 1.55, pxp: 2.5, think: .35, q: 5, slots: 4 },
-  { n: "Brutal", inc: 2.3, xp: 1.85, pxp: 4, think: .25, q: 5, slots: 4 }
+  { n: "Hard", inc: 1.85, xp: 1.6, pxp: 2.8, think: .3, q: 5, slots: 4 },
+  { n: "Brutal", inc: 2.05, xp: 1.7, pxp: 3.2, think: .25, q: 5, slots: 4 }
 ];
 const SPC = [ // special per age: k rain / buff / sweep
   { k: "rain", n: 14, dmg: 60, sp: 34, c: "meteor" }, { k: "rain", n: 34, dmg: 22, sp: 12, c: "arrow" }, { k: "buff", c: "horn" },
@@ -266,55 +325,71 @@ const TSTAT = ERAS.map((E, e) => TURK.map((K, k) => {
   return Object.assign(b, { e, k, n: E.t[k], cost: nice(b.cost * Math.pow(CM, e)), dmg: b.dmg * m });
 }));
 
-function newSide(era, ai, diff, o) {
+// Side modifiers, from the player's general and perks or a mission's rules. Multipliers unless noted.
+// cost: per kind; vk: kills to become a veteran; vm: veteran strength; gold: extra starting gold (Stone Age money);
+// ftur: free defences at the start; slot: extra defence spots; pinc: passive gold only; ctrain/ccost: champion training/cost.
+const MOD0 = { dmg: 1, hp: 1, spd: 1, train: 1, ctrain: 1, sp: 1, xp: 1, inc: 1, pinc: 1, base: 1, heal: 1, tcost: 1, tdmg: 1, cost: [1, 1, 1, 1, 1], vk: 3, vm: 1.3, gold: 0, ftur: 0, slot: 0 };
+function mkMod(m) { const r = Object.assign({}, MOD0, m || {}); r.cost = (m && m.cost || MOD0.cost).slice(); return r; }
+function md(P) { return P.m || MOD0; }
+function newSide(era, ai, diff, o, m) {
   const up = {}; for (const u of UPG) up[u[0]] = 0;
-  const hp = ERAS[era].hp;
-  return { era, xp: ERAS[era].xp, gold: Math.round(175 * Math.pow(CM, era)), hp, mhp: hp, up, tur: [null, null, null, null], slots: 1,
-    q: [], spcd: 25, buff: 0, stance: 0, ai: !!ai, diff: diff | 0, think: 0, kills: 0, trained: 0, earned: 0, lost: 0, noDef: !!o.noDef };
+  m = mkMod(m);
+  const hp = Math.round(ERAS[era].hp * m.base);
+  const P = { era, xp: ERAS[era].xp, gold: Math.round((175 + m.gold) * Math.pow(CM, era)), hp, mhp: hp, up, tur: [null, null, null, null], slots: Math.min(4, 1 + m.slot),
+    q: [], spcd: 25, buff: 0, stance: 0, ai: !!ai, diff: diff | 0, think: 0, kills: 0, trained: 0, earned: 0, lost: 0, noDef: !!o.noDef, m, maxEra: o.maxEra == null ? 5 : o.maxEra };
+  if (!o.noDef) for (let i = 0; i < Math.min(4, m.ftur); i++) { P.slots = Math.max(P.slots, i + 1); const k = i % 2; P.tur[i] = { e: era, k, cd: 0, paid: TSTAT[era][k].cost }; }
+  return P;
 }
 function newGame(o) {
   o = Object.assign({ diff: 1, era: 0, rich: false, fast: false, noDef: false, crowd: false, botDiff: -1 }, o || {});
-  return { v: 1, t: 0, o, nid: 1, over: -1, sd: [newSide(o.era, o.botDiff >= 0, Math.max(0, o.botDiff), o), newSide(o.era, true, o.diff, o)], u: [], p: [], dr: [], ev: [] };
+  const eEra = o.eEra == null ? o.era : o.eEra;
+  return { v: 1, t: 0, o, nid: 1, over: -1, sd: [newSide(o.era, o.botDiff >= 0, Math.max(0, o.botDiff), o, o.pm), newSide(eEra, true, o.diff, o, o.em)], u: [], p: [], dr: [], ev: [] };
 }
-function incMult(S, s) { const P = S.sd[s]; return (S.o.rich ? 2 : 1) * (P.ai ? DIFF[P.diff].inc : 1); }
+function unitCost(P, k, e) { const c = STAT[e == null ? P.era : e][k].cost; const f = md(P).cost[k]; return f === 1 ? c : nice(c * f); }
+function turCost(P, k) { const c = TSTAT[P.era][k].cost; return md(P).tcost === 1 ? c : nice(c * md(P).tcost); }
+function canTrain(S, s, k) { return !(s === 0 && S.o.only && S.o.only.indexOf(k) < 0); }
+function incMult(S, s) { const P = S.sd[s]; return (S.o.rich ? 2 : 1) * (P.ai ? DIFF[P.diff].inc : 1) * md(P).inc; }
 // A computer side that falls an age behind earns experience three times as fast until it catches up.
-function xpMult(S, s) { const P = S.sd[s]; return (S.o.fast ? 2 : 1) * (P.ai ? DIFF[P.diff].xp * (P.era < S.sd[1 - s].era ? 3 : 1) : 1); }
+function xpMult(S, s) { const P = S.sd[s]; return (S.o.fast ? 2 : 1) * (P.ai ? DIFF[P.diff].xp * (P.era < S.sd[1 - s].era ? 3 : 1) : 1) * md(P).xp; }
 function warEconomy(S) { return Math.min(4, 1 + S.t / 900); } // passive gold grows as the battle goes on, so stand-offs break
-function income(S, s) { const P = S.sd[s]; return 1.1 * Math.pow(CM, P.era) * (1 + .15 * P.up.treasury) * incMult(S, s) * warEconomy(S); }
-function baseMax(era, walls) { return Math.round(ERAS[era].hp * (1 + .15 * walls)); }
-function trainTime(P, st) { return st.tr * (1 - .1 * P.up.drill); }
-function spCool(P) { return 50 * (1 - .07 * P.up.drill); }
+function income(S, s) { const P = S.sd[s]; return 1.1 * Math.pow(CM, P.era) * (1 + .15 * P.up.treasury) * incMult(S, s) * md(P).pinc * warEconomy(S); }
+function baseMax(P) { return Math.round(ERAS[P.era].hp * (1 + .15 * P.up.walls) * md(P).base); }
+function trainTime(P, st) { return st.tr * (1 - .1 * P.up.drill) * md(P).train * (st.champ ? md(P).ctrain : 1); }
+function spCool(P) { return 50 * (1 - .07 * P.up.drill) * md(P).sp; }
 function upCost(P, id) { const l = P.up[id]; return l >= upMax(id) ? Infinity : nice(UPG_COST[l] * (1 + P.era * .6)); }
-// Final age: experience charges the Star Lance, which strikes the enemy base for a fifth of its health.
+// Last age (the Future, or the cap a mission sets): experience charges the Star Lance, which strikes the enemy base
+// for a fifth of its health. The charge needed scales with the age.
 const LANCE_XP = 100000, LANCE_HIT = .2;
-function lanceFrom(P) { return P.lx == null ? ERAS[5].xp : P.lx; }
-function lanceReady(P) { return P.era === 5 && P.xp - lanceFrom(P) >= LANCE_XP; }
+function topEra(P) { return P.maxEra == null ? 5 : P.maxEra; }
+function lanceXp(P) { return LANCE_XP * Math.pow(CM, P.era - 5); }
+function lanceFrom(P) { return P.lx == null ? ERAS[P.era].xp : P.lx; }
+function lanceReady(P) { return P.era >= topEra(P) && P.xp - lanceFrom(P) >= lanceXp(P); }
 function fireLance(S, s) {
   const P = S.sd[s], O = S.sd[1 - s]; if (!lanceReady(P) || S.over >= 0) return false;
-  P.lx = lanceFrom(P) + LANCE_XP; P.lances = (P.lances || 0) + 1;
+  P.lx = lanceFrom(P) + lanceXp(P); P.lances = (P.lances || 0) + 1;
   S.ev.push({ t: "lance", s });
   damage(S, s, "base", O.mhp * LANCE_HIT, null); return true;
 }
-function canEvolve(P) { return P.era < 5 && P.xp >= ERAS[P.era + 1].xp; }
+function canEvolve(P) { return P.era < topEra(P) && P.xp >= ERAS[P.era + 1].xp; }
 function evolve(S, s) {
   const P = S.sd[s]; if (!canEvolve(P)) return false;
-  const old = P.mhp; P.era++; if (P.era === 5) P.lx = P.xp; P.mhp = baseMax(P.era, P.up.walls); P.hp += P.mhp - old;
+  const old = P.mhp; P.era++; if (P.era >= topEra(P)) P.lx = P.xp; P.mhp = baseMax(P); P.hp += P.mhp - old;
   S.ev.push({ t: "evo", s }); return true;
 }
 function buyUnit(S, s, k) {
-  const P = S.sd[s], st = STAT[P.era][k];
-  if (P.q.length >= QMAX || P.gold < st.cost || S.over >= 0 || st.champ && hasChamp(S, s)) return false;
-  P.gold -= st.cost; P.q.push({ e: P.era, k, t: trainTime(P, st), T: trainTime(P, st) }); S.ev.push({ t: "buy", s }); return true;
+  const P = S.sd[s], st = STAT[P.era][k], c = unitCost(P, k);
+  if (P.q.length >= QMAX || P.gold < c || S.over >= 0 || st.champ && hasChamp(S, s) || !canTrain(S, s, k)) return false;
+  P.gold -= c; P.q.push({ e: P.era, k, t: trainTime(P, st), T: trainTime(P, st), paid: c }); S.ev.push({ t: "buy", s }); return true;
 }
 function hasChamp(S, s) { return S.u.some(u => u.s === s && STAT[u.e][u.k].champ) || S.sd[s].q.some(q => STAT[q.e][q.k].champ); }
 function cancelQueue(S, s, i) { // refund a unit still waiting in the line
   const P = S.sd[s], q = P.q[i]; if (!q) return false;
-  P.gold += STAT[q.e][q.k].cost; P.q.splice(i, 1); return true;
+  P.gold += q.paid == null ? STAT[q.e][q.k].cost : q.paid; P.q.splice(i, 1); return true;
 }
 function buyTurret(S, s, slot, k) {
-  const P = S.sd[s], st = TSTAT[P.era][k];
-  if (P.noDef || slot >= P.slots || P.tur[slot] || P.gold < st.cost) return false;
-  P.gold -= st.cost; P.tur[slot] = { e: P.era, k, cd: 0, paid: st.cost }; S.ev.push({ t: "buy", s }); return true;
+  const P = S.sd[s], c = turCost(P, k);
+  if (P.noDef || slot >= P.slots || P.tur[slot] || P.gold < c) return false;
+  P.gold -= c; P.tur[slot] = { e: P.era, k, cd: 0, paid: c }; S.ev.push({ t: "buy", s }); return true;
 }
 function sellTurret(S, s, slot) {
   const P = S.sd[s], t = P.tur[slot]; if (!t) return false;
@@ -327,7 +402,7 @@ function buySlot(S, s) {
 function buyUpgrade(S, s, id) {
   const P = S.sd[s], c = upCost(P, id); if (P.gold < c) return false;
   P.gold -= c; P.up[id]++;
-  if (id === "walls") { const old = P.mhp; P.mhp = baseMax(P.era, P.up.walls); P.hp = Math.min(P.mhp, P.hp + (P.mhp - old) + P.mhp * .08); }
+  if (id === "walls") { const old = P.mhp; P.mhp = baseMax(P); P.hp = Math.min(P.mhp, P.hp + (P.mhp - old) + P.mhp * .08); }
   return true;
 }
 function setStance(S, s, v) { S.sd[s].stance = v; }
@@ -349,10 +424,10 @@ function useSpecial(S, s) {
 }
 function unitDmg(S, u) {
   const P = S.sd[u.s], st = STAT[u.e][u.k];
-  return st.dmg * (1 + .08 * P.up.forge) * (u.vet ? 1.3 : 1) * (P.buff > 0 ? 1.5 : 1);
+  return st.dmg * (1 + .08 * P.up.forge) * md(P).dmg * (u.vet ? md(P).vm : 1) * (P.buff > 0 ? 1.5 : 1);
 }
 function spawn(S, s, e, k) {
-  const P = S.sd[s], st = STAT[e][k], mhp = Math.round(st.hp * (1 + .08 * P.up.armour));
+  const P = S.sd[s], st = STAT[e][k], mhp = Math.round(st.hp * (1 + .08 * P.up.armour) * md(P).hp);
   const u = { id: S.nid++, s, e, k, x: BX[s] + DIR[s] * st.w / 2, hp: mhp, mhp, cd: .3, hcd: 0, kills: 0, vet: 0, ph: Math.random() * 6 };
   S.u.push(u); P.trained++; return u;
 }
@@ -376,7 +451,7 @@ function damage(S, s, tgt, dmg, src) { // s = attacking side; tgt = unit or "bas
     const P = S.sd[s], c = STAT[tgt.e][tgt.k].cost, g = Math.round(c * .9 * incMult(S, s));
     P.gold += g; P.earned += g; P.xp += c * 1.2 * xpMult(S, s); P.kills++; S.sd[1 - s].lost++;
     S.ev.push({ t: "die", u: tgt, g, by: s });
-    if (src && src.hp > 0 && ++src.kills === 3 && !src.vet) { src.vet = 1; src.hp = Math.min(src.mhp * 1.3, src.hp + src.mhp * .5); src.mhp = Math.round(src.mhp * 1.3); S.ev.push({ t: "vet", u: src }); }
+    if (src && src.hp > 0 && ++src.kills >= md(S.sd[s]).vk && !src.vet) { const vm = md(S.sd[s]).vm; src.vet = 1; src.hp = Math.min(src.mhp * vm, src.hp + src.mhp * .5); src.mhp = Math.round(src.mhp * vm); S.ev.push({ t: "vet", u: src }); }
   }
 }
 function splash(S, s, x, r, dmg, skip, src) {
@@ -396,6 +471,8 @@ function shoot(S, s, x, y, tgt, dmg, sp, g, src) {
 function step(S, dt) {
   if (S.over >= 0) return;
   S.t += dt;
+  if (S.o.survive && S.t >= S.o.survive) { S.over = 0; S.ev.push({ t: "over", s: 0 }); return; } // held out long enough
+  if (S.o.limit && S.t >= S.o.limit) { S.over = 1; S.ev.push({ t: "over", s: 1 }); return; }   // ran out of time
   for (let s = 0; s < 2; s++) {
     const P = S.sd[s], g = income(S, s) * dt;
     P.gold += g; P.earned += g;
@@ -426,6 +503,13 @@ function step(S, dt) {
       if (!retreating) {
         if (ef && edist <= st.rng && edist <= bdist) tgt = ef;
         else if (bdist <= st.rng) tgt = "base";
+        // shooters pick off a healer in reach before anything else
+        if (u.k === 1 && tgt) for (const f of ord[1 - s]) {
+          if (f.k !== 3) continue;
+          const d = (f.x - u.x) * D - (st.w + STAT[f.e][f.k].w) / 2;
+          if (d > st.rng) break;
+          tgt = f; break;
+        }
       }
       plan[s].push({ u, st, tgt, goal, retreating });
     }
@@ -438,8 +522,8 @@ function step(S, dt) {
       if (u.hp <= 0) continue;
       if (st.heal && u.hcd <= 0) {
         let best = null, bm = 0;
-        for (const a of ord[s]) if (a !== u && a.hp > 0 && Math.abs(a.x - u.x) <= st.hrng && a.mhp - a.hp > bm) { bm = a.mhp - a.hp; best = a; }
-        if (best) { best.hp = Math.min(best.mhp, best.hp + st.heal * (1 + .08 * P.up.forge)); u.hcd = st.hcd; S.ev.push({ t: "heal", x1: u.x, x2: best.x, s, fly: !!st.fly }); }
+        for (const a of ord[s]) if (a !== u && a.hp > 0 && Math.abs(a.x - u.x) <= st.hrng && a.mhp - a.hp > bm && S.t - (a.hl || -9) >= HEAL_GAP) { bm = a.mhp - a.hp; best = a; }
+        if (best) { best.hl = S.t; best.hp = Math.min(best.mhp, best.hp + st.heal * (1 + .08 * P.up.forge) * md(P).heal); u.hcd = st.hcd; S.ev.push({ t: "heal", x1: u.x, x2: best.x, s, fly: !!st.fly }); }
       }
       if (tgt && u.cd <= 0 && (tgt === "base" || tgt.hp > 0)) {
         const dmg = unitDmg(S, u) * (tgt === "base" && st.siege ? st.siege : 1);
@@ -461,7 +545,7 @@ function step(S, dt) {
       const prev = done[done.length - rank] || null;
       if (u.hp <= 0) continue;
       if (!tgt) {
-        const sp = st.spd * (P.buff > 0 ? 1.3 : 1) * dt;
+        const sp = st.spd * md(P).spd * (P.buff > 0 ? 1.3 : 1) * dt;
         let nx;
         if (retreating) nx = u.x - D * Math.min(sp, (u.x - goal) * D);
         else {
@@ -486,7 +570,7 @@ function step(S, dt) {
       if (ef && (ef.x - BX[s]) * D <= rng) {
         t.cd = st.cd;
         const sp = slotPos(s, i);
-        shoot(S, s, sp[0], sp[1], ef, st.dmg * (1 + .12 * P.up.engineer), st.sp, TG[t.e][t.k], null);
+        shoot(S, s, sp[0], sp[1], ef, st.dmg * (1 + .12 * P.up.engineer) * md(P).tdmg, st.sp, TG[t.e][t.k], null);
       }
     }
   }
@@ -519,6 +603,79 @@ function step(S, dt) {
 }
 function slotPos(s, i) { return [BX[s] - DIR[s] * (12 + i * 15), GROUND - 60 - i * 16]; }
 
+// ---- Generals, perks and campaign missions ----
+// A general and up to three perks shape the player's side (mods as in MOD0). Lists are keyed by id in saves:
+// append, never rename ids.
+const GENERALS = [
+  { id: "rowan", n: "Rowan the Steady", good: "No weaknesses", bad: "No strengths", m: {} },
+  { id: "mags", n: "Mags the Builder", good: "Defences 30% cheaper and 20% stronger, an extra defence spot", bad: "Troops walk 10% slower", m: { tcost: .7, tdmg: 1.2, slot: 1, spd: .9 }, un: { m: 2 } },
+  { id: "kit", n: "Kit the Raider", good: "Champions 40% cheaper and trained twice as fast", bad: "Base 20% weaker", m: { cost: [1, 1, 1, 1, .6], ctrain: .5, base: .8 }, un: { m: 4 } },
+  { id: "orrin", n: "Orrin the Sage", good: "35% more experience", bad: "15% less gold", m: { xp: 1.35, inc: .85, pinc: 1 }, un: { m: 6 } },
+  { id: "ivy", n: "Ivy the Mender", good: "Healers 40% cheaper and heal 35% more", bad: "Fighters cost 20% more", m: { cost: [1.2, 1, 1, .6, 1], heal: 1.35 }, un: { m: 8 } },
+  { id: "brann", n: "Brann the Warlord", good: "Troops hit 15% harder, special recharges 25% faster", bad: "Troops cost 15% more", m: { dmg: 1.15, sp: .75, cost: [1.15, 1.15, 1.15, 1.15, 1.15] }, un: { d: 2 } },
+  { id: "sela", n: "Sela the Swift", good: "Training 30% faster, troops 15% quicker on their feet", bad: "Troops have 10% less health", m: { train: .7, spd: 1.15, hp: .9 }, un: { m: 11 } }
+];
+const PERKS = [
+  { id: "chest", n: "War Chest", d: ["Start with 100 more gold", "Start with 250 more gold", "Start with 450 more gold"], m: [{ gold: 100 }, { gold: 250 }, { gold: 450 }] },
+  { id: "steel", n: "Sharp Steel", d: ["Troops hit 5% harder", "Troops hit 10% harder", "Troops hit 15% harder"], m: [{ dmg: 1.05 }, { dmg: 1.1 }, { dmg: 1.15 }] },
+  { id: "walls", n: "Thick Walls", d: ["Base 10% stronger", "Base 20% stronger", "Base 30% stronger"], m: [{ base: 1.1 }, { base: 1.2 }, { base: 1.3 }] },
+  { id: "hands", n: "Quick Hands", d: ["Training 8% faster", "Training 15% faster", "Training 23% faster"], m: [{ train: .92 }, { train: .85 }, { train: .77 }], un: 0 },
+  { id: "skin", n: "Iron Skin", d: ["Troops 5% tougher", "Troops 10% tougher", "Troops 15% tougher"], m: [{ hp: 1.05 }, { hp: 1.1 }, { hp: 1.15 }], un: 1 },
+  { id: "scholar", n: "Scholar", d: ["10% more experience", "20% more experience", "30% more experience"], m: [{ xp: 1.1 }, { xp: 1.2 }, { xp: 1.3 }], un: 2 },
+  { id: "watch", n: "Watchtower", d: ["Start with a free defence", "A free defence and a second spot", "Two free defences"], m: [{ ftur: 1 }, { ftur: 1, slot: 1 }, { ftur: 2, slot: 1 }], un: 3 },
+  { id: "cry", n: "Rallying Cry", d: ["Special recharges 10% faster", "Special recharges 20% faster", "Special recharges 30% faster"], m: [{ sp: .9 }, { sp: .8 }, { sp: .7 }], un: 4 },
+  { id: "vets", n: "Veteran Corps", d: ["Veterans 40% stronger (not 30%)", "Veterans after 2 wins, 40% stronger", "Veterans after 2 wins, 55% stronger"], m: [{ vm: 1.4 }, { vk: 2, vm: 1.4 }, { vk: 2, vm: 1.55 }], un: 5 },
+  { id: "medic", n: "Field Medics", d: ["Healers heal 15% more", "Healers heal 30% more", "Healers heal 50% more"], m: [{ heal: 1.15 }, { heal: 1.3 }, { heal: 1.5 }], un: 6 },
+  { id: "call", n: "Champion's Call", d: ["Champions 15% cheaper", "Champions 30% cheaper", "Champions 45% cheaper"], m: [{ cost: [1, 1, 1, 1, .85] }, { cost: [1, 1, 1, 1, .7] }, { cost: [1, 1, 1, 1, .55] }], un: 7 },
+  { id: "tax", n: "Tax Collector", d: ["7% more gold", "14% more gold", "22% more gold"], m: [{ inc: 1.07 }, { inc: 1.14 }, { inc: 1.22 }], un: 8 },
+  { id: "engine", n: "Siege Engineers", d: ["Defences hit 10% harder", "Defences hit 20% harder", "Defences hit 35% harder"], m: [{ tdmg: 1.1 }, { tdmg: 1.2 }, { tdmg: 1.35 }], un: 9 }
+];
+const PERK_COST = [1, 2, 3], PERK_SLOTS = 3;
+// Stack modifier sets: multipliers multiply, gold/ftur/slot add, veterans take the best.
+function addMods(a, b) {
+  const r = mkMod(a);
+  if (!b) return r;
+  for (const k in b) {
+    const v = b[k];
+    if (k === "cost") r.cost = r.cost.map((c, i) => c * (v[i] == null ? 1 : v[i]));
+    else if (k === "gold" || k === "ftur" || k === "slot") r[k] += v;
+    else if (k === "vk") r.vk = Math.min(r.vk, v);
+    else if (k === "vm") r.vm = Math.max(r.vm, v);
+    else r[k] *= v;
+  }
+  return r;
+}
+function loadoutMods(gen, perks) { // perks: [[id, level 1-3], ...]
+  let m = addMods(MOD0, (GENERALS.find(g => g.id === gen) || GENERALS[0]).m);
+  for (const [id, lv] of perks || []) { const p = PERKS.find(x => x.id === id); if (p && lv >= 1) m = addMods(m, p.m[Math.min(3, lv) - 1]); }
+  return m;
+}
+// Campaign. o: battle options (era, eEra, diff, maxEra, survive, limit, only, noDef, crowd, rich, pm and em for each side's
+// rules). Goals beyond winning: time (win within seconds), hp (base health fraction left), lost (troops lost at most).
+const MISSIONS = [
+  { n: "First Blood", b: "A neighbouring tribe wants your valley. Show them who lives here.", o: { era: 0, diff: 0, maxEra: 1 }, g: [{ t: "time", v: 900 }, { t: "hp", v: .75 }] },
+  { n: "Stampede", b: "Your scouts found a herd of mammoths. No foot soldiers this time: heavies, healers and champions only.", o: { era: 0, diff: 1, only: [2, 3, 4], em: { inc: .8 } }, g: [{ t: "time", v: 1080 }, { t: "lost", v: 25 }] },
+  { n: "Bronze Rivals", b: "Two cities, one river. Neither side can go past the Middle Ages.", o: { era: 1, diff: 1, maxEra: 2 }, g: [{ t: "time", v: 900 }, { t: "hp", v: .6 }] },
+  { n: "Hold the Line", b: "A far bigger army is coming. Keep your walls standing for eight minutes.", o: { era: 1, diff: 2, survive: 480 }, g: [{ t: "hp", v: .6 }, { t: "lost", v: 30 }] },
+  { n: "Behind the Times", b: "They have bronze. You have sticks. Catch up, then catch them out.", o: { era: 0, eEra: 1, diff: 1 }, g: [{ t: "time", v: 1500 }, { t: "hp", v: .5 }] },
+  { n: "The Keep", b: "A fortress with four defences and walls half again as thick. Gold is plentiful.", o: { era: 2, diff: 1, rich: true, em: { base: 1.6, ftur: 4, slot: 3 } }, g: [{ t: "time", v: 1200 }, { t: "hp", v: .5 }] },
+  { n: "Lean Times", b: "The treasury is empty. You only earn gold by beating enemies.", o: { era: 2, diff: 1, pm: { pinc: 0 } }, g: [{ t: "time", v: 1500 }, { t: "lost", v: 40 }] },
+  { n: "Press of Bodies", b: "A narrow valley, and everyone shoves forward at once.", o: { era: 3, diff: 2, crowd: true }, g: [{ t: "time", v: 1200 }, { t: "hp", v: .5 }] },
+  { n: "Open Field", b: "No walls to hide behind: neither side may build defences.", o: { era: 3, diff: 2, noDef: true }, g: [{ t: "time", v: 1320 }, { t: "lost", v: 50 }] },
+  { n: "Blitz", b: "Strike fast. If their base still stands after twelve minutes, you lose.", o: { era: 4, diff: 1, rich: true, limit: 720 }, g: [{ t: "time", v: 540 }, { t: "hp", v: .6 }] },
+  { n: "Last Stand", b: "The strongest army in the world is at your gate. Hold for ten minutes.", o: { era: 4, diff: 3, survive: 600 }, g: [{ t: "hp", v: .5 }, { t: "lost", v: 40 }] },
+  { n: "The Iron Titan", b: "Their fortress has twice the walls and fires its special twice as often. End this war.", o: { era: 4, diff: 2, em: { base: 2, sp: .5 } }, g: [{ t: "time", v: 1500 }, { t: "hp", v: .5 }] }
+];
+function missionGame(i, pm) {
+  const M = MISSIONS[i], o = Object.assign({}, M.o, { mission: i });
+  o.pm = addMods(pm || MOD0, M.o.pm); o.em = M.o.em || null;
+  return newGame(o);
+}
+function goalMet(S, g) { // after a win
+  const P = S.sd[0];
+  return g.t === "time" ? S.t <= g.v : g.t === "hp" ? P.hp / P.mhp >= g.v - 1e-9 : g.t === "lost" ? P.lost <= g.v : false;
+}
+
 // The enemy's brain (also flies the player's side in the balance check).
 function armyValue(list) { let v = 0; for (const u of list) v += u.hp / u.mhp * STAT[u.e][u.k].cost; return v; }
 function aiThink(S, s, dt) {
@@ -528,22 +685,24 @@ function aiThink(S, s, dt) {
   if (evolve(S, s) || fireLance(S, s)) return;
   const e = P.era, mine = S.u.filter(u => u.s === s), theirs = S.u.filter(u => u.s !== s);
   const near = theirs.filter(u => (u.x - BX[s]) * DIR[s] < 480);
-  const threat = armyValue(theirs), army = armyValue(mine);
+  const threat = armyValue(theirs), army = armyValue(mine), healers = theirs.filter(u => u.k === 3).length;
+  const uc = k => unitCost(P, k), ok = k => canTrain(S, s, k);
+  if (P.spcd <= 0 && healers >= 2 && theirs.length >= 4) useSpecial(S, s); // break up a healed knot
   if (P.spcd <= 0 && (theirs.length >= 5 && threat > STAT[e][0].cost * 5 || near.length >= 3 && armyValue(near) > STAT[e][0].cost * 3)) useSpecial(S, s);
   // hold near its defences while outnumbered or an age behind; under siege, everything goes on troops
   const behind = e < S.sd[1 - s].era, siege = near.length >= 2 || near.some(u => (u.x - BX[s]) * DIR[s] < 120);
   P.stance = (army < threat * .45 && theirs.length > 3 || behind && army < threat * 1.2) && near.length < 2 ? 1 : 0;
   if (siege && P.q.length < QMAX) {
     if (P.spcd <= 0) useSpecial(S, s);
-    for (const k of [2, 0, 1]) if (P.gold >= STAT[e][k].cost * (k === 2 ? 1.5 : 1)) { buyUnit(S, s, k); return; }
+    for (const k of [2, 0, 1, 4]) if (ok(k) && P.gold >= uc(k) * (k === 2 ? 1.5 : 1) && buyUnit(S, s, k)) return;
   }
   // defences: replace old ones, fill spots, buy spots
   const reserve = STAT[e][0].cost * 2;
   if (!P.noDef) {
     for (let i = 0; i < P.slots; i++) {
-      const t = P.tur[i], k = P.gold > TSTAT[e][1].cost * 1.6 || (t && t.k === 1) ? 1 : 0;
-      if (t && t.e < e && P.gold + t.paid / 2 >= TSTAT[e][k].cost + reserve && near.length < 3) { sellTurret(S, s, i); buyTurret(S, s, i, k); return; }
-      if (!t && P.gold >= TSTAT[e][k].cost + reserve && (near.length || P.gold > TSTAT[e][k].cost * 2 || mine.length >= 4)) { buyTurret(S, s, i, k); return; }
+      const t = P.tur[i], k = P.gold > turCost(P, 1) * 1.6 || (t && t.k === 1) ? 1 : 0, tc = turCost(P, k);
+      if (t && t.e < e && P.gold + t.paid / 2 >= tc + reserve && near.length < 3) { sellTurret(S, s, i); buyTurret(S, s, i, k); return; }
+      if (!t && P.gold >= tc + reserve && (near.length || P.gold > tc * 2 || mine.length >= 4)) { buyTurret(S, s, i, k); return; }
     }
     if (P.slots < D.slots && P.tur.slice(0, P.slots).every(Boolean) && P.gold >= SLOT_COST[P.slots] * 1.4 + reserve) { buySlot(S, s); return; }
   }
@@ -553,18 +712,18 @@ function aiThink(S, s, dt) {
   if (cheap && P.gold > upCost(P, cheap) * (P.diff >= 2 ? 2.2 : 3.2) + reserve && !near.length) { buyUpgrade(S, s, cheap); return; }
   // units
   if (P.q.length < D.q && armySize(S, s) + P.q.length < ARMY_CAP + 2) {
-    const ch = STAT[e][4];
-    if (!hasChamp(S, s) && P.gold >= ch.cost * (P.diff ? 1.15 : 1.6) && (P.diff || S.t > 480)) { buyUnit(S, s, 4); return; }
+    if (ok(4) && !hasChamp(S, s) && P.gold >= uc(4) * (P.diff ? 1.15 : 1.6) && (P.diff || S.t > 480)) { buyUnit(S, s, 4); return; }
     const cnt = [0, 0, 0, 0, 0];
     for (const u of mine) if (u.e === e) cnt[u.k]++;
     for (const q of P.q) cnt[q.k]++;
-    const tot = cnt.reduce((a, b) => a + b, 0) + 1, want = [.44, .32, .17, .07];
-    let k = 0, best = -9;
+    const tot = cnt.reduce((a, b) => a + b, 0) + 1, want = healers >= 2 ? [.36, .42, .15, .07] : [.44, .32, .17, .07];
+    let k = -1, best = -9;
     for (let i = 0; i < 4; i++) {
-      if (i === 3 && mine.length < 3) continue;
+      if (i === 3 && mine.length < 3 || !ok(i)) continue;
       const v = want[i] - cnt[i] / tot; if (v > best) { best = v; k = i; }
     }
-    if (P.gold < STAT[e][k].cost) { if (near.length || Math.random() < .35) k = P.gold >= STAT[e][1].cost && Math.random() < .4 ? 1 : 0; else return; }
+    if (k < 0) { if (ok(4) && !hasChamp(S, s)) buyUnit(S, s, 4); return; }
+    if (P.gold < uc(k)) { if (near.length || Math.random() < .35) { const alt = ok(1) && P.gold >= uc(1) && Math.random() < .4 ? 1 : 0; if (ok(alt)) k = alt; } else return; }
     buyUnit(S, s, k);
   }
 }
@@ -999,6 +1158,11 @@ function render(t, dt) {
   c.globalAlpha = 1;
   c.restore();
   if (flash > 0) { c.fillStyle = `rgba(200,170,255,${flash * .6})`; c.fillRect(0, MM, cw, ch - MM); }
+  if (S.o.survive || S.o.limit) {
+    const left = Math.max(0, (S.o.survive || S.o.limit) - S.t), txt = (S.o.survive ? "Hold on " : "Time left ") + clock(left);
+    c.font = "800 14px Figtree,sans-serif"; c.textAlign = "center"; c.fillStyle = "rgba(0,0,0,.5)"; c.fillText(txt, cw / 2 + 1, MM + 21);
+    c.fillStyle = S.o.limit && left < 60 ? "#FF8A80" : "#fff"; c.fillText(txt, cw / 2, MM + 20);
+  }
   // minimap
   c.fillStyle = "rgba(10,8,6,.88)"; c.fillRect(0, 0, cw, MM);
   const mx = x => x / WORLD * cw;
@@ -1056,7 +1220,7 @@ function renderPanels(force) {
     STAT[e].forEach((st, k) => {
       const b = el("button", "ub"); b.dataset.k = k;
       const cvs = document.createElement("canvas"); unitIcon(cvs, e, k); b.append(cvs);
-      b.append(el("span", "nm", st.n), el("span", "co", fmt(st.cost)), el("span", "st", k === 3 ? `❤${fmt(st.hp)} ✚${fmt(st.heal)}` : `❤${fmt(st.hp)} ⚔${fmt(st.dmg / st.cd)}`));
+      b.append(el("span", "nm", st.n), el("span", "co", fmt(unitCost(P, k))), el("span", "st", k === 3 ? `❤${fmt(st.hp)} ✚${fmt(st.heal)}` : `❤${fmt(st.hp)} ⚔${fmt(st.dmg / st.cd)}`));
       if (st.champ) b.title = "One at a time. Triple damage to bases.";
       b.onclick = () => { if (buyUnit(S, 0, k)) updateHud(); };
       A.append(b);
@@ -1078,9 +1242,9 @@ function renderPanels(force) {
     const g = el("div", "grid");
     TSTAT[e].forEach((st, k) => {
       const b = el("button", "ub"); const cvs = document.createElement("canvas"); turIcon(cvs, e, k); b.append(cvs);
-      b.append(el("span", "nm", st.n), el("span", "co", fmt(st.cost)), el("span", "st", `⚔${fmt(st.dmg / st.cd)} ↔${Math.round(st.rng)}${st.sp ? " ✸" : ""}`));
+      b.append(el("span", "nm", st.n), el("span", "co", fmt(turCost(P, k))), el("span", "st", `⚔${fmt(st.dmg / st.cd)} ↔${Math.round(st.rng)}${st.sp ? " ✸" : ""}`));
       let slot = -1; for (let i = 0; i < P.slots; i++) if (!P.tur[i]) { slot = defSel < P.slots && !P.tur[defSel] ? defSel : i; break; }
-      b.disabled = slot < 0 || P.gold < st.cost;
+      b.disabled = slot < 0 || P.gold < turCost(P, k);
       b.onclick = () => { if (buyTurret(S, 0, slot, k)) renderPanels(); };
       g.append(b);
     });
@@ -1111,12 +1275,12 @@ function updateHud() {
   $("inc").textContent = "+" + fmt(income(S, 0) * 10) / 10 + "/s";
   $("inc").textContent = "+" + (income(S, 0) < 10 ? income(S, 0).toFixed(1) : fmt(income(S, 0))) + " a sec";
   $("eraName").textContent = ERAS[e].n;
-  if (e < 5) { const a = ERAS[e].xp, b = ERAS[e + 1].xp, f = Math.max(0, Math.min(1, (P.xp - a) / (b - a))); $("xpFill").style.width = f * 100 + "%"; $("xpTxt").textContent = fmt(P.xp) + " / " + fmt(b) + " xp"; }
-  else { const f = Math.min(1, (P.xp - lanceFrom(P)) / LANCE_XP); $("xpFill").style.width = f * 100 + "%"; $("xpTxt").textContent = "Star Lance " + Math.floor(f * 100) + "%"; }
-  const ev = $("evoBtn"), ready = e >= 5 ? lanceReady(P) : canEvolve(P);
-  ev.textContent = e >= 5 ? "Star Lance" : "Evolve"; ev.disabled = !ready; ev.classList.toggle("ready", ready);
+  if (e < topEra(P)) { const a = ERAS[e].xp, b = ERAS[e + 1].xp, f = Math.max(0, Math.min(1, (P.xp - a) / (b - a))); $("xpFill").style.width = f * 100 + "%"; $("xpTxt").textContent = fmt(P.xp) + " / " + fmt(b) + " xp"; }
+  else { const f = Math.min(1, (P.xp - lanceFrom(P)) / lanceXp(P)); $("xpFill").style.width = f * 100 + "%"; $("xpTxt").textContent = "Star Lance " + Math.floor(f * 100) + "%"; }
+  const ev = $("evoBtn"), top = e >= topEra(P), ready = top ? lanceReady(P) : canEvolve(P);
+  ev.textContent = top ? "Star Lance" : "Evolve"; ev.disabled = !ready; ev.classList.toggle("ready", ready);
   const champ = hasChamp(S, 0);
-  for (const b of $("pArmy").children) { const k = +b.dataset.k; b.disabled = P.gold < STAT[e][k].cost || P.q.length >= QMAX || k === 4 && champ; }
+  for (const b of $("pArmy").children) { const k = +b.dataset.k, no = !canTrain(S, 0, k); b.classList.toggle("no", no); b.disabled = no || P.gold < unitCost(P, k) || P.q.length >= QMAX || k === 4 && champ; }
   const q = $("queue");
   if (q.children.length !== QMAX) { q.textContent = ""; qCanv = []; for (let i = 0; i < QMAX; i++) { const d = el("div", "qs"), cvs = document.createElement("canvas"); d.append(cvs, el("i")); d.onclick = () => { if (cancelQueue(S, 0, i)) updateHud(); }; q.append(d); qCanv.push({ d, cvs, key: "" }); } }
   qCanv.forEach((o, i) => {
@@ -1165,8 +1329,8 @@ function frame(ts) {
     let n = 0; while (acc >= STEP && n < 12) { step(S, STEP); acc -= STEP; n++; } if (n >= 12) acc = 0;
     events();
     if ((saveT += dt) > 5) { saveT = 0; saveBattle(); }
-    if (S.over >= 0) finish();
   }
+  if (S.over >= 0 && !S.done) { S.done = true; finish(); } // however it ended: a step, a Star Lance button, giving up
   tickFx(paused ? 0 : dt * opts.speed);
   updateCam(dt);
   render(ts / 1000, dt);
@@ -1206,7 +1370,7 @@ function closeDlg() { $("ov").hidden = true; }
 function openPause() {
   if (!S || S.over >= 0) return;
   paused = true;
-  openDlg(`<h2>Paused</h2><p class="muted" style="margin:0">${clock(S.t)} · ${ERAS[S.sd[0].era].n} vs ${ERAS[S.sd[1].era].n} · ${DIFF[S.o.diff].n}</p>
+  openDlg(`<h2>Paused</h2><p class="muted" style="margin:0">${S.o.mission != null ? `Mission ${S.o.mission + 1}: ${MISSIONS[S.o.mission].n} · ` : ""}${clock(S.t)} · ${ERAS[S.sd[0].era].n} vs ${ERAS[S.sd[1].era].n} · ${DIFF[S.o.diff].n}</p>${S.o.mission != null ? `<div class="unl">${goalList(MISSIONS[S.o.mission], null)}</div>` : ""}
     <button class="btn pri" id="dRes">Carry on</button>
     <div class="row"><button class="btn" id="dSnd" style="flex:1">Sound: ${opts.sound ? "on" : "off"}</button><button class="btn" id="dSpd" style="flex:1">Speed: ${opts.speed}×</button></div>
     <button class="btn" id="dQuit">Save and leave</button>
@@ -1215,27 +1379,48 @@ function openPause() {
     $("dSnd").onclick = () => { opts.sound = !opts.sound; saveOpts(); $("dSnd").textContent = "Sound: " + (opts.sound ? "on" : "off"); };
     $("dSpd").onclick = () => { opts.speed = opts.speed >= 3 ? 1 : opts.speed + 1; saveOpts(); $("dSpd").textContent = "Speed: " + opts.speed + "×"; };
     $("dQuit").onclick = () => { saveBattle(); closeDlg(); toMenu(); };
-    $("dSur").onclick = () => { S.over = 1; S.sd[0].hp = 0; finish(true); };
+    $("dSur").onclick = () => { S.over = 1; S.done = true; S.sd[0].hp = 0; finish(true); };
   });
 }
 function finish(gaveUp) {
   saveBattle(); drop("es.save");
-  const won = S.over === 0, P = S.sd[0], st = load("es.stats", {}) || {};
-  st.played = (st.played || 0) + 1; st.kills = (st.kills || 0) + P.kills;
-  st.wins = st.wins || [0, 0, 0, 0]; st.losses = st.losses || [0, 0, 0, 0]; st.fast = st.fast || [0, 0, 0, 0];
-  const d = S.o.diff;
-  let best = false;
-  if (won) { st.wins[d]++; if (!st.fast[d] || S.t < st.fast[d]) { best = !!st.fast[d]; st.fast[d] = Math.round(S.t); } }
-  else st.losses[d]++;
-  st.last = Date.now(); store("es.stats", st);
+  const won = S.over === 0, P = S.sd[0], st = load("es.stats", {}) || {}, M0 = meta(), before = unlocked(M0);
+  const mi = S.o.mission, d = S.o.diff;
+  let head = "", body = "", medals = 0, best = false;
+  if (mi == null) { // skirmish: record, and medals for a win
+    st.played = (st.played || 0) + 1; st.kills = (st.kills || 0) + P.kills;
+    st.wins = st.wins || [0, 0, 0, 0]; st.losses = st.losses || [0, 0, 0, 0]; st.fast = st.fast || [0, 0, 0, 0];
+    if (won) { st.wins[d]++; medals = [1, 2, 3, 4][d]; if (!st.fast[d] || S.t < st.fast[d]) { best = !!st.fast[d]; st.fast[d] = Math.round(S.t); } }
+    else st.losses[d]++;
+    st.last = Date.now(); store("es.stats", st);
+    body = `<p class="muted" style="margin:0">${won ? `You flattened the ${DIFF[d].n.toLowerCase()} enemy in ${clock(S.t)}.${best ? " Your fastest yet!" : ""}` : `The ${DIFF[d].n.toLowerCase()} enemy won after ${clock(S.t)}.`}</p>`;
+  } else { // mission: stars, and a medal for each new one
+    const M = MISSIONS[mi], rec = M0.camp[mi] || { won: false, st: [false, false, false] };
+    const got = won ? [true, goalMet(S, M.g[0]), goalMet(S, M.g[1])] : [false, false, false];
+    got.forEach((g, i) => { if (g && !rec.st[i]) { rec.st[i] = true; medals++; } });
+    if (won && !rec.won) { rec.won = true; medals++; }
+    if (won && (!rec.best || S.t < rec.best)) rec.best = Math.round(S.t);
+    rec.tries = (rec.tries || 0) + 1;
+    M0.camp[mi] = rec;
+    head = `<div class="bigstars">${got.map(g => g ? "★" : "<i>★</i>").join("")}</div>`;
+    body = `<p class="muted" style="margin:0">Mission ${mi + 1}: ${M.n}${won ? ` · ${clock(S.t)}` : ""}</p><div>${goalList(M, won ? S : null)}</div>`;
+  }
+  M0.medals += medals; M0.earned += medals; saveMeta(M0);
+  const after = unlocked(M0), news = after.filter(x => before.indexOf(x) < 0);
   snd(won ? "win" : "lose");
+  const lostTxt = mi != null && MISSIONS[mi].o.limit && !won && S.sd[1].hp > 0 && S.t >= MISSIONS[mi].o.limit ? "Out of time" : "Your base fell";
+  const title = won ? (mi != null && MISSIONS[mi].o.survive ? "You held out!" : "Victory!") : gaveUp ? "You gave up" : lostTxt;
   setTimeout(() => {
     paused = true;
-    openDlg(`<h2>${won ? "Victory!" : gaveUp ? "You gave up" : "Your base fell"}</h2>
-      <p class="muted" style="margin:0">${won ? `You flattened the ${DIFF[d].n.toLowerCase()} enemy in ${clock(S.t)}.${best ? " Your fastest yet!" : ""}` : `The ${DIFF[d].n.toLowerCase()} enemy won after ${clock(S.t)}.`}</p>
-      <div class="res"><div><b>${P.kills}</b>enemies beaten</div><div><b>${P.trained}</b>troops trained</div><div><b>${fmt(P.earned)}</b>gold earned</div><div><b>${ERAS[P.era].n}</b>reached</div></div>
-      <button class="btn pri" id="dAgain">Play again</button><button class="btn" id="dMenu">Back to menu</button>`, () => {
-      $("dAgain").onclick = () => startBattle(newGame(S.o));
+    openDlg(`<h2>${title}</h2>${head}${body}
+      ${medals ? `<div class="unl">🎖 <b>+${medals} medal${medals === 1 ? "" : "s"}</b> (you have ${M0.medals})</div>` : ""}
+      ${news.map(x => `<div class="unl">🔓 ${x}</div>`).join("")}
+      <div class="res"><div><b>${P.kills}</b>enemies beaten</div><div><b>${P.lost}</b>troops lost</div><div><b>${fmt(P.earned)}</b>gold earned</div><div><b>${ERAS[P.era].n}</b>reached</div></div>
+      ${won && mi != null && mi + 1 < MISSIONS.length ? `<button class="btn pri" id="dNext">Next mission</button>` : ""}
+      <button class="btn${won && mi != null && mi + 1 < MISSIONS.length ? "" : " pri"}" id="dAgain">${won ? "Play again" : "Try again"}</button><button class="btn" id="dMenu">Back to menu</button>`, () => {
+      const o = S.o;
+      $("dAgain").onclick = () => startBattle(o.mission != null ? missionGame(o.mission, playerMods()) : newGame(Object.assign({}, o, { pm: playerMods() })));
+      if ($("dNext")) $("dNext").onclick = () => { closeDlg(); toMenu(); openMission(o.mission + 1); };
       $("dMenu").onclick = () => { closeDlg(); toMenu(); };
     });
   }, gaveUp ? 0 : 900);
@@ -1243,7 +1428,128 @@ function finish(gaveUp) {
 function toMenu() { show("menu"); paused = true; renderMenu(); }
 
 const ERA_SHORT = ["Stone", "Bronze", "Middle", "Gunpowder", "Modern"];
+/* ---------- campaign, generals and perks (saved as es.meta) ---------- */
+function meta() {
+  const m = Object.assign({ medals: 3, earned: 3, perks: {}, equip: [], gen: "rowan", camp: {} }, load("es.meta", {}) || {});
+  m.perks = m.perks || {}; m.equip = Array.isArray(m.equip) ? m.equip : []; m.camp = m.camp || {};
+  return m;
+}
+function saveMeta(m) { store("es.meta", m); }
+const cleared = (m, i) => !!(m.camp[i] && m.camp[i].won);
+function missionOpen(m, i) { return i === 0 || cleared(m, i - 1); }
+function genOpen(m, g) {
+  if (!g.un) return true;
+  if (g.un.m != null) return cleared(m, g.un.m);
+  const w = (load("es.stats", {}) || {}).wins || [];
+  return w.some((x, i) => i >= g.un.d && x > 0);
+}
+function perkOpen(m, p) { return p.un == null || cleared(m, p.un); }
+function unlockText(un) { return un.m != null ? `Clear mission ${un.m + 1}` : `Win a battle on ${DIFF[un.d].n} or harder`; }
+function unlocked(m) { // names of everything open, for "you unlocked" messages
+  return [...MISSIONS.map((M, i) => missionOpen(m, i) ? `Mission ${i + 1}: ${M.n}` : null), ...GENERALS.map(g => genOpen(m, g) ? `General: ${g.n}` : null), ...PERKS.map(p => perkOpen(m, p) ? `Perk: ${p.n}` : null)].filter(Boolean);
+}
+function loadout(m) {
+  m = m || meta();
+  const g = GENERALS.find(x => x.id === m.gen && genOpen(m, x)) || GENERALS[0];
+  const perks = m.equip.filter(id => { const p = PERKS.find(x => x.id === id); return p && perkOpen(m, p) && (m.perks[id] || 0) > 0; }).slice(0, PERK_SLOTS);
+  return { g, perks: perks.map(id => [id, m.perks[id]]) };
+}
+function playerMods() { const L = loadout(); return loadoutMods(L.g.id, L.perks); }
+const ROMAN = ["", "I", "II", "III"];
+function loText() {
+  const L = loadout();
+  return `<b>${L.g.n}</b><span>${L.perks.length ? L.perks.map(([id, lv]) => PERKS.find(p => p.id === id).n + " " + ROMAN[lv]).join(" · ") : "No perks taken"} · tap to change</span>`;
+}
+function goalText(g) { return g.t === "time" ? `Win within ${clock(g.v)}` : g.t === "hp" ? `Win with ${Math.round(g.v * 100)}% of your base left` : `Win losing ${g.v} troops or fewer`; }
+function goalList(M, S2) { // S2: a finished, won battle to tick goals against; null to just list them
+  const i0 = M.o.survive ? "Hold out until the clock runs down" : M.o.limit ? `Destroy their base within ${clock(M.o.limit)}` : "Destroy the enemy base";
+  const rows = [[i0, S2 ? true : null], ...M.g.map(g => [goalText(g), S2 ? goalMet(S2, g) : null])];
+  return rows.map(([t, ok]) => `<div class="goal${ok === false ? " no" : ""}"><i>${ok === false ? "☆" : "★"}</i>${t}</div>`).join("");
+}
+function rulesList(M) {
+  const o = M.o, r = [];
+  r.push(`You start in the ${ERAS[o.era].n}` + (o.eEra != null && o.eEra !== o.era ? `, the enemy in the ${ERAS[o.eEra].n}` : ""));
+  r.push(`Enemy: ${DIFF[o.diff].n}`);
+  if (o.maxEra != null) r.push(`Nobody can go past the ${ERAS[o.maxEra].n} (the Star Lance charges there instead)`);
+  if (o.only) r.push(`You can only train: ${o.only.map(k => ["fighters", "shooters", "heavies", "healers", "champions"][k]).join(", ")}`);
+  if (o.survive) r.push(`Survive for ${clock(o.survive)}`);
+  if (o.limit) r.push(`You lose if their base stands after ${clock(o.limit)}`);
+  if (o.noDef) r.push("No defences for either side");
+  if (o.crowd) r.push("Crowd fighting");
+  if (o.rich) r.push("Gold rush: double gold for both sides");
+  if (o.pm && o.pm.pinc === 0) r.push("You get no gold over time, only for beating enemies");
+  if (o.em && o.em.base) r.push(`Enemy base ${Math.round(o.em.base * 100)}% as strong`);
+  if (o.em && o.em.ftur) r.push(`Enemy starts with ${o.em.ftur} defences`);
+  if (o.em && o.em.sp) r.push("Enemy special recharges twice as fast");
+  return `<ul class="rules">${r.map(x => `<li>${x}</li>`).join("")}</ul>`;
+}
+function startGuard(go) {
+  if (loadBattle()) openDlg(`<h2>Start a new battle?</h2><p class="muted" style="margin:0">This ends the battle you have in progress.</p><button class="btn pri" id="dYes">Start new battle</button><button class="btn" id="dNo">Keep it</button>`, () => { $("dYes").onclick = () => { drop("es.save"); go(); }; $("dNo").onclick = closeDlg; });
+  else go();
+}
+function openMission(i) {
+  const m = meta(), M = MISSIONS[i]; if (!M || !missionOpen(m, i)) return;
+  const rec = m.camp[i];
+  openDlg(`<h2>${i + 1}. ${M.n}</h2><p style="margin:0">${M.b}</p>${rulesList(M)}
+    <div><div class="label" style="margin-bottom:4px">Stars${rec && rec.best ? ` · best ${clock(rec.best)}` : ""}</div>${goalList(M, null).replace(/<div class="goal">/g, (x, j) => x)}</div>
+    <button class="card lo" id="dLo">${loText()}</button>
+    <button class="btn pri" id="dGo">Start mission</button><button class="btn" id="dNo">Back</button>`, () => {
+    // tick goals already earned
+    const rows = $("dlg").querySelectorAll(".goal"); if (rec) rows.forEach((r, j) => { if (!rec.st[j]) r.classList.add("no"); else r.firstChild.textContent = "★"; });
+    else rows.forEach(r => r.classList.add("no"));
+    $("dLo").onclick = () => { closeDlg(); setTab("barr"); };
+    $("dGo").onclick = () => startGuard(() => startBattle(missionGame(i, playerMods())));
+    $("dNo").onclick = closeDlg;
+  });
+}
+let menuTab = opts.tab || "camp";
+function setTab(v) { menuTab = v; opts.tab = v; saveOpts(); renderMenu(); $("menu").scrollTop = 0; }
+$("navSeg").onclick = ev => { const b = ev.target.closest("button"); if (b) setTab(b.dataset.v); };
+$("loCard").onclick = () => setTab("barr");
+function renderCampaign(m) {
+  const L = $("missions"); L.textContent = "";
+  let stars = 0;
+  MISSIONS.forEach((M, i) => {
+    const rec = m.camp[i], st = rec ? rec.st : [false, false, false], open = missionOpen(m, i);
+    stars += st.filter(Boolean).length;
+    const b = el("button", "mi" + (rec && rec.won ? " done" : ""), `<span class="no">${open ? i + 1 : "🔒"}</span><span><b>${M.n}</b><small>${open ? ERAS[M.o.era].n + " · " + DIFF[M.o.diff].n + (M.o.survive ? " · survive" : M.o.limit ? " · against the clock" : "") : "Clear mission " + i + " to open"}</small></span><span class="stars">${st.map(x => x ? "★" : "<i>★</i>").join("")}</span>`);
+    b.disabled = !open; b.onclick = () => openMission(i);
+    L.append(b);
+  });
+  $("campInfo").textContent = `${stars} of ${MISSIONS.length * 3} ★`;
+}
+function renderBarracks(m) {
+  $("medals").textContent = "🎖 " + m.medals + " medal" + (m.medals === 1 ? "" : "s");
+  const G = $("gens"); G.textContent = "";
+  const cur = loadout(m).g.id;
+  GENERALS.forEach(g => {
+    const open = genOpen(m, g), b = el("button", "gi" + (g.id === cur ? " on" : ""), `<b>${g.n}${g.id === cur ? " ✓" : ""}</b><span class="gd">+ ${g.good}</span><span class="bd">− ${g.bad}</span>${open ? "" : `<span class="pd">🔒 ${unlockText(g.un)}</span>`}`);
+    b.disabled = !open; b.onclick = () => { const M = meta(); M.gen = g.id; saveMeta(M); renderMenu(); };
+    G.append(b);
+  });
+  const P = $("perks"); P.textContent = "";
+  const eq = loadout(m).perks.map(x => x[0]);
+  $("perkInfo").textContent = `Taking ${eq.length} of ${PERK_SLOTS}`;
+  PERKS.forEach(p => {
+    const open = perkOpen(m, p), lv = m.perks[p.id] || 0, on = eq.indexOf(p.id) >= 0;
+    const d = el("div", "pi" + (open ? "" : " lock") + (on ? " on" : ""));
+    d.innerHTML = `<div class="row spread"><b>${p.n}${lv ? " " + ROMAN[lv] : ""}</b><span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lv ? "on" : ""}"></i>`).join("")}</span></div>
+      <span class="pd">${open ? (lv ? p.d[lv - 1] : "Not bought yet: " + p.d[0]) + (lv && lv < 3 ? ` · next: ${p.d[lv]}` : "") : "🔒 Clear mission " + (p.un + 1)}</span>`;
+    if (open) {
+      const row = el("div", "row");
+      if (lv < 3) { const c = PERK_COST[lv], u = el("button", "btn", `${lv ? "Upgrade" : "Buy"} · 🎖${c}`); u.disabled = m.medals < c; u.onclick = () => { const M = meta(); if (M.medals < c) return; M.medals -= c; M.perks[p.id] = lv + 1; if (!lv && loadout(M).perks.length < PERK_SLOTS && M.equip.indexOf(p.id) < 0) M.equip.push(p.id); saveMeta(M); snd("buy"); renderMenu(); }; row.append(u); }
+      if (lv) { const t = el("button", "btn" + (on ? " pri" : ""), on ? "Taking ✓" : "Take into battle"); t.disabled = !on && eq.length >= PERK_SLOTS; t.onclick = () => { const M = meta(); M.equip = loadout(M).perks.map(x => x[0]); const i = M.equip.indexOf(p.id); if (i >= 0) M.equip.splice(i, 1); else if (M.equip.length < PERK_SLOTS) M.equip.push(p.id); saveMeta(M); renderMenu(); }; row.append(t); }
+      d.append(row);
+    }
+    P.append(d);
+  });
+}
 function renderMenu() {
+  const m = meta();
+  for (const b of $("navSeg").children) b.classList.toggle("on", b.dataset.v === menuTab);
+  $("secCamp").hidden = menuTab !== "camp"; $("secBattle").hidden = menuTab !== "battle"; $("secBarr").hidden = menuTab !== "barr";
+  $("loCard").hidden = menuTab === "barr"; $("loCard").innerHTML = loText();
+  renderCampaign(m); renderBarracks(m);
   const st = load("es.stats", {}) || {}, wins = st.wins || [0, 0, 0, 0], fast = st.fast || [0, 0, 0, 0];
   const ds = $("diffSeg"); ds.textContent = "";
   DIFF.forEach((D, i) => { const b = el("button", opts.diff === i ? "on" : "", `${D.n}<small>${wins[i] ? "★ " + wins[i] + " won" : "&nbsp;"}</small>`); b.onclick = () => { opts.diff = i; saveOpts(); renderMenu(); }; ds.append(b); });
@@ -1255,16 +1561,14 @@ function renderMenu() {
   $("recInfo").textContent = st.played ? `${st.played} battle${st.played === 1 ? "" : "s"} · ${fmt(st.kills || 0)} beaten` : "No battles yet";
   const sv = loadBattle();
   $("contCard").hidden = !sv;
-  if (sv) $("contInfo").textContent = `${clock(sv.t)} · ${ERAS[sv.sd[0].era].n} · ${DIFF[sv.o.diff].n}`;
+  if (sv) $("contInfo").textContent = `${sv.o.mission != null ? "Mission " + (sv.o.mission + 1) + " · " : ""}${clock(sv.t)} · ${ERAS[sv.sd[0].era].n} · ${DIFF[sv.o.diff].n}`;
 }
 $("mRich").onchange = e => { opts.rich = e.target.checked; saveOpts(); };
 $("mFast").onchange = e => { opts.fast = e.target.checked; saveOpts(); };
 $("mNoDef").onchange = e => { opts.noDef = e.target.checked; saveOpts(); };
 $("mCrowd").onchange = e => { opts.crowd = e.target.checked; saveOpts(); };
 $("startBtn").onclick = () => {
-  const go = () => startBattle(newGame({ diff: opts.diff, era: opts.era, rich: opts.rich, fast: opts.fast, noDef: opts.noDef, crowd: opts.crowd }));
-  if (loadBattle()) openDlg(`<h2>Start a new battle?</h2><p class="muted" style="margin:0">This ends the battle you have in progress.</p><button class="btn pri" id="dYes">Start new battle</button><button class="btn" id="dNo">Keep it</button>`, () => { $("dYes").onclick = () => { drop("es.save"); go(); }; $("dNo").onclick = closeDlg; });
-  else go();
+  startGuard(() => startBattle(newGame({ diff: opts.diff, era: opts.era, rich: opts.rich, fast: opts.fast, noDef: opts.noDef, crowd: opts.crowd, pm: playerMods() })));
 };
 $("contBtn").onclick = () => { const s = loadBattle(); if (s) startBattle(s); };
 $("abandonBtn").onclick = () => openDlg(`<h2>Abandon this battle?</h2><p class="muted" style="margin:0">It won't count as a win or a loss.</p><button class="btn bad" id="dYes">Abandon</button><button class="btn" id="dNo">Keep it</button>`, () => { $("dYes").onclick = () => { drop("es.save"); closeDlg(); renderMenu(); }; $("dNo").onclick = closeDlg; });

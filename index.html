@@ -278,7 +278,8 @@ function renderStats(){
   if(gwn||Object.keys(gwd).length)setHTML("stGW",[{b:String(gwn)}," of 30 levels · ",{b:String(gwS)}," stars",gwToday?" · today's orbit done":""]);
   {const es=load("es.stats",null)||{},esv=load("es.save",null),esw=(es.wins||[]).reduce((a,b)=>a+b,0),ESD=["Easy","Normal","Hard","Brutal"];
     let top=-1;(es.wins||[]).forEach((w,i)=>{if(w)top=i});
-    if(es.played||esv)setHTML("stES",[{b:String(esw)},` win${esw===1?"":"s"} in ${es.played||0} battle${es.played===1?"":"s"}`,top>=0?` · beaten ${ESD[top]}`:"",esv&&esv.sd?` · battle in progress`:""])}
+    const esm=load("es.meta",null)||{},esc=Object.values(esm.camp||{}),esCl=esc.filter(c=>c&&c.won).length,esSt=esc.reduce((a,c)=>a+((c&&c.st)||[]).filter(Boolean).length,0);
+    if(es.played||esv||esc.length)setHTML("stES",[esCl?"":"",{b:String(esCl)}," of 12 missions · ",{b:String(esSt)}," ★",esw?` · ${esw} battle win${esw===1?"":"s"}`:"",top>=0?` · beaten ${ESD[top]}`:"",esv&&esv.sd?` · battle in progress`:""])}
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
   {const cleared=Object.values(gb.cleared||{}).filter(Boolean).length;
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}

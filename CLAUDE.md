@@ -187,7 +187,14 @@ Rules, unit tables (`ERAS`, `KIND`, `TWEAK`, `TURK`, `UPG`), the fixed-step batt
 (`warEconomy`), upgrades to level 10 with a 20-unit army cap, and in the last age the Star Lance (experience charges a
 hit for a fifth of the enemy base). `tools/epoch-siege-check.js` (seeded, run by build.py) plays a Normal computer against
 each difficulty and fails on any battle that lasts an hour. Saved data: `es.save` (the battle in progress, plain JSON of
-the state minus projectiles), `es.stats` (`played`, `wins`/`losses`/`fast` per difficulty, `kills`), `es.opts`.
+the state minus projectiles), `es.stats` (`played`, `wins`/`losses`/`fast` per difficulty, `kills`), `es.opts`,
+`es.meta` (`medals`, `earned`, `perks` {id: level 1-3}, `equip` [up to 3 ids], `gen` id, `camp` {mission index: {won,
+st: [3 stars], best, tries}}).
+Campaign, generals and perks live in CORE too: `MISSIONS` (battle options `o`, two star goals `g`: time / hp / lost),
+`GENERALS` and `PERKS` (modifier sets, see `MOD0`; `addMods` stacks them, `loadoutMods` builds the player's side).
+Each side carries its modifiers in `P.m` (`md(P)`, defaulting to `MOD0` for old saves). Missions are keyed by index,
+generals and perks by id: append only. The Star Lance charges in the last age a battle allows (`topEra`), so missions
+capped below the Future still end. Healing: a troop can be healed once per `HEAL_GAP`; shooters target healers in reach.
 Saves hold era and kind numbers, so append to the tables, never reorder them.
 Difficulty (`DIFF`): `inc`/`xp` multiply the computer's gold and experience, `pxp` is experience it earns each second,
 and a computer side an age behind earns experience three times as fast (`xpMult`). Normal is meant to beat a good player

@@ -193,6 +193,17 @@
         "If you still find it easy, try Hard or Brutal.",
         "New option, Crowd fighting: troops bunch up three at a time, so more of them fight at once instead of waiting in a line."
       ]
+    },
+    {
+      "id": 19,
+      "type": "features",
+      "headline": "Epoch Siege: campaign, generals and perks",
+      "details": [
+        "A 12-mission campaign, each battle with its own twist: heavies only, survive the clock, no gold over time, a fortress with double walls, and more. Every mission has three stars to earn.",
+        "Stars and battle wins earn medals. Spend them in the new Barracks on 13 perks, each going up to level 3, and take three into any battle.",
+        "Seven generals to unlock, each with a strength and a weakness: the Builder, the Raider, the Sage, the Mender and more.",
+        "Balance: healers can no longer stack on one troop, shooters now aim for enemy healers first, Hard is a bit tougher and Brutal a bit kinder."
+      ]
     }
   ]
 }
