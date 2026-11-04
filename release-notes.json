@@ -183,6 +183,16 @@
         "Defences for your base, six upgrades that go up to ten levels, a special attack for each age, and orders to charge, hold or fall back.",
         "Four enemy levels, from Easy to Brutal. The battle saves itself, so you can leave and carry on later."
       ]
+    },
+    {
+      "id": 18,
+      "type": "features",
+      "headline": "Epoch Siege: a tougher enemy and crowd fighting",
+      "details": [
+        "Every enemy level is harder. Normal now earns more gold and experience than you, defends its base properly, and catches up quickly if you get an age ahead.",
+        "If you still find it easy, try Hard or Brutal.",
+        "New option, Crowd fighting: troops bunch up three at a time, so more of them fight at once instead of waiting in a line."
+      ]
     }
   ]
 }

@@ -189,6 +189,10 @@ hit for a fifth of the enemy base). `tools/epoch-siege-check.js` (seeded, run by
 each difficulty and fails on any battle that lasts an hour. Saved data: `es.save` (the battle in progress, plain JSON of
 the state minus projectiles), `es.stats` (`played`, `wins`/`losses`/`fast` per difficulty, `kills`), `es.opts`.
 Saves hold era and kind numbers, so append to the tables, never reorder them.
+Difficulty (`DIFF`): `inc`/`xp` multiply the computer's gold and experience, `pxp` is experience it earns each second,
+and a computer side an age behind earns experience three times as fast (`xpMult`). Normal is meant to beat a good player
+who doesn't plan: it was far too easy at 1x. Battle option `crowd` (Crowd fighting): troops stand in ranks of
+`CROWD_RANK` (3) instead of single file, and up to three can leave the base at once.
 
 ### Adding a new game
 
