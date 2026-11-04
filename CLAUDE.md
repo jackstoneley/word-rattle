@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus eleven self-contained HTML games, published two ways:
+A home page plus twelve self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -15,6 +15,7 @@ A home page plus eleven self-contained HTML games, published two ways:
 | Buddy's Big Slide | `games/big-slide` | `slide.` |
 | Lee Lee's Kitchen | `games/lee-lee` | `ll.` |
 | Gravity Well | `games/gravity-well` | `gw.` |
+| Epoch Siege | `games/epoch-siege` | `es.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -38,6 +39,7 @@ games/word-rattle/src/     Word Rattle source: template.html + words.txt + commo
 tools/build.py             Build step. Run after ANY change, before committing
 tools/big-slide-check.js   Rides every Big Slide level's answer (run by build.py)
 tools/gravity-well-check.js  Checks every Gravity Well level can be won (run by build.py)
+tools/epoch-siege-check.js   Computer-vs-computer Epoch Siege battles must all finish (run by build.py)
 release-notes.json         What's new in each release; shown in the app's update banner
 android-app/               Capacitor project: config, native plugin, build scripts, icons, signing key
 .github/workflows/android.yml  Builds the APK and replaces the "latest" release
@@ -175,6 +177,18 @@ optional `o` moons `[planet, distance, r, m, speed, phase]` (they restart from t
 made with `generate` and picked by how many aims hit; `tools/gravity-well-check.js` (run by build.py) checks each can be won.
 **Append** levels only: progress (`gw.levels`) is keyed by level number. The daily orbit (`gw.daily`, day 1 is 4 November
 2026) is generated from the day by `dailyLevel`: changing it, `generate` or the physics changes every future daily.
+
+### Epoch Siege (`games/epoch-siege`)
+
+A side-on base-against-base battle through six ages (in the genre of the old Flash age-war games, with its own units and art).
+Rules, unit tables (`ERAS`, `KIND`, `TWEAK`, `TURK`, `UPG`), the fixed-step battle (`step`) and the enemy's brain
+(`aiThink`) sit between `/*CORE-START*/` and `/*CORE-END*/`. Kinds per age: 0 fighter, 1 shooter, 2 heavy, 3 healer,
+4 champion (one at a time, triple damage to bases). Stand-offs are broken by passive gold growing over the battle
+(`warEconomy`), upgrades to level 10 with a 20-unit army cap, and in the last age the Star Lance (experience charges a
+hit for a fifth of the enemy base). `tools/epoch-siege-check.js` (seeded, run by build.py) plays a Normal computer against
+each difficulty and fails on any battle that lasts an hour. Saved data: `es.save` (the battle in progress, plain JSON of
+the state minus projectiles), `es.stats` (`played`, `wins`/`losses`/`fast` per difficulty, `kills`), `es.opts`.
+Saves hold era and kind numbers, so append to the tables, never reorder them.
 
 ### Adding a new game
 

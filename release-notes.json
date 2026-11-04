@@ -171,6 +171,18 @@
         "30 levels, plus a new daily orbit every day that's the same for both of you.",
         "Drag to aim, then fine-tune with the buttons. Tap Map to see the whole level."
       ]
+    },
+    {
+      "id": 17,
+      "type": "new-game",
+      "headline": "New game: Epoch Siege",
+      "details": [
+        "Your base on the left, the enemy's on the right: train troops and knock their base down first.",
+        "Six ages, from the Stone Age to the Future Age. Beat enemies to earn experience, then evolve for far stronger troops, defences and a tougher base.",
+        "Five kinds of troop in every age, including healers and a champion that smashes bases. Units that win three fights become veterans.",
+        "Defences for your base, twelve upgrades to buy, a special attack for each age, and orders to charge, hold or fall back.",
+        "Four enemy levels, from Easy to Brutal. The battle saves itself, so you can leave and carry on later."
+      ]
     }
   ]
 }

@@ -7,7 +7,7 @@ What it does:
   1. Word Rattle: games/word-rattle/src/template.html + words.txt + common.txt
      -> games/word-rattle/index.html (the word list is embedded so the game works offline).
   2. sw.js: stamps a VERSION from a hash of every page, so phones pick up changes.
-  3. Checks Link Up puzzles, Big Slide, Topple and Gravity Well levels and release notes, and that the JavaScript in every page parses (needs `node` on the PATH; skipped if missing).
+  3. Checks Link Up puzzles, Big Slide, Topple and Gravity Well levels, Epoch Siege battles and release notes, and that the JavaScript in every page parses (needs `node` on the PATH; skipped if missing).
 """
 import hashlib, pathlib, re, shutil, subprocess, sys, tempfile
 
@@ -83,6 +83,18 @@ def check_gravity_well():
         sys.exit(1)
 
 
+def check_epoch_siege():
+    """Epoch Siege battles between computer players always finish (needs node)."""
+    node = shutil.which("node")
+    if not node:
+        print("node not found: skipped the Epoch Siege check")
+        return
+    r = subprocess.run([node, str(ROOT / "tools" / "epoch-siege-check.js")], capture_output=True, text=True)
+    print((r.stdout + r.stderr).strip())
+    if r.returncode:
+        sys.exit(1)
+
+
 def check_release_notes():
     """release-notes.json: unique ids, a known type, a headline and details on every note."""
     import json
@@ -135,6 +147,7 @@ if __name__ == "__main__":
     check_big_slide()
     check_topple()
     check_gravity_well()
+    check_epoch_siege()
     check_release_notes()
     stamp_service_worker()
     check_scripts()

@@ -125,6 +125,8 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .art.gw .p{position:absolute;left:50%;top:50%;width:32px;height:32px;margin:-16px 0 0 -16px;border-radius:50%;background:#FFC65A;box-shadow:inset -7px -7px 0 rgba(0,0,0,.28)}
 .art.gw .t{position:absolute;right:12px;top:14px;width:16px;height:16px;border-radius:50%;border:2px solid #7CFFB2}
 .art.gw svg{position:absolute;inset:0;width:100%;height:100%}
+.art.es{background:#F0A65E;overflow:hidden}
+.art.es svg{position:absolute;inset:0;width:100%;height:100%}
 .art.gb{background:#231F31}
 .art.gb .gem{width:48px;height:48px;clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%);
   background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.62),rgba(255,255,255,.06) 42%,rgba(0,0,0,.34) 100%),conic-gradient(#ec3b55 0 70deg,#f4d03f 70deg 170deg,#3d82f5 170deg 260deg,#a25cf0 260deg 360deg)}
@@ -217,6 +219,11 @@ textarea{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--li
     <div class="info"><span class="kind">Gravity puzzle · daily</span><h2>Gravity Well</h2><span class="stat" id="stGW">Bend your shot round the planets.</span><span class="go">Play</span></div>
   </a>
 
+  <a class="game" href="games/epoch-siege/index.html">
+    <div class="art es" aria-hidden="true"><svg viewBox="0 0 96 112"><rect width="96" height="112" fill="#F0A65E"/><rect y="62" width="96" height="50" fill="#F6DDB0"/><path d="M0 84Q24 70 48 80T96 76V112H0z" fill="#7C8A3C"/><rect y="90" width="96" height="22" fill="#5A4632"/><path d="M-2 90V50h8v-6h6v6h6v-6h6v6h4v40z" fill="#9A968E"/><rect x="8" y="30" width="1.6" height="16" fill="#2A2420"/><path d="M9.6 30l9 3-9 3z" fill="#3D8BFF"/><path d="M98 90V56h-7v-6h-5v6h-5v-6h-5v6h-4v34z" fill="#8C8C84"/><rect x="85" y="34" width="1.6" height="16" fill="#2A2420"/><path d="M85 34l-9 3 9 3z" fill="#FF5147"/><g stroke-linecap="round"><path d="M38 90l2-8 2 8M40 82v-8" stroke="#5E3B22" stroke-width="2.4"/><rect x="37" y="72" width="6" height="10" rx="2" fill="#8A5A33"/><rect x="37" y="77" width="6" height="2" fill="#3D8BFF"/><circle cx="40.4" cy="69" r="3.2" fill="#C98B5B"/><path d="M42 76l7-6" stroke="#6B4426" stroke-width="2.4"/><circle cx="49" cy="70" r="2.4" fill="#6B4426"/><path d="M58 90l-2-8-2 8M56 82v-8" stroke="#4A5431" stroke-width="2.4"/><rect x="53" y="72" width="6" height="10" rx="2" fill="#5E6B3E"/><rect x="53" y="77" width="6" height="2" fill="#FF5147"/><circle cx="55.6" cy="69" r="3.2" fill="#D9A27A"/><path d="M51.5 68a4 4 0 0 1 8 0z" fill="#56603A"/><path d="M54 76h-9" stroke="#2E2E2A" stroke-width="2"/></g><circle cx="47" cy="74" r="2" fill="#FFE7A0"/></svg></div>
+    <div class="info"><span class="kind">Base against base · strategy</span><h2>Epoch Siege</h2><span class="stat" id="stES">From clubs to lasers: knock their base down.</span><span class="go">Play</span></div>
+  </a>
+
   <h3>Your data</h3>
   <div class="panel">
     <p>Each game saves on this phone. A backup code holds every game, so you can keep a copy or move to a new phone.</p>
@@ -269,13 +276,16 @@ function renderStats(){
     if(best)setHTML("stLL",[String(best.name||"")," · day ",{b:String(best.day)}," · ",{b:"★".repeat([0,60,250,700,1600,3200].filter(x=>(best.rep||0)>=x).length-1)||"no stars yet"}])}
   const gwl=load("gw.levels",{}),gwd=load("gw.daily",{}),gwn=Object.keys(gwl).length,gwS=Object.values(gwl).reduce((a,r)=>a+(r&&r.stars||0),0),gwToday=Object.values(gwd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now()));
   if(gwn||Object.keys(gwd).length)setHTML("stGW",[{b:String(gwn)}," of 30 levels · ",{b:String(gwS)}," stars",gwToday?" · today's orbit done":""]);
+  {const es=load("es.stats",null)||{},esv=load("es.save",null),esw=(es.wins||[]).reduce((a,b)=>a+b,0),ESD=["Easy","Normal","Hard","Brutal"];
+    let top=-1;(es.wins||[]).forEach((w,i)=>{if(w)top=i});
+    if(es.played||esv)setHTML("stES",[{b:String(esw)},` win${esw===1?"":"s"} in ${es.played||0} battle${es.played===1?"":"s"}`,top>=0?` · beaten ${ESD[top]}`:"",esv&&esv.sd?` · battle in progress`:""])}
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
   {const cleared=Object.values(gb.cleared||{}).filter(Boolean).length;
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}
 }
 
 /* ---------- backup and restore (every game's saved data) ---------- */
-const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi.","ec.","slide.","ll.","gw."];
+const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi.","ec.","slide.","ll.","gw.","es."];
 function b64u(str){const bytes=new TextEncoder().encode(str);let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const bin=atob(s);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
 function backupCode(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PREFIXES.some(p=>k.startsWith(p)))data[k]=localStorage.getItem(k)}return "SGB1."+b64u(JSON.stringify({v:1,at:Date.now(),data}))}
