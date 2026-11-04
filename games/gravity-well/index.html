@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05070D">
+<title>Gravity Well</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: menu (daily card, level grid, how to play) or play (top bar / space canvas / aim controls). */
+:root{
+  --bg:#05070D; --bg2:#0A0F1A; --panel:#0C1220; --line:#1C2740; --line2:#2A3958; --fg:#EAF0FA; --muted:#8392AE;
+  --accent:#5CC8FF; --accent-ink:#00172A; --target:#7CFFB2; --warn:#FF8B5E; --star:#FFD25E;
+  --font:"Figtree",system-ui,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--font)}
+body{overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+#app{height:100%;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(16px,env(safe-area-inset-left,0px))}
+.screen{flex:1;min-height:0}
+/* menu */
+#menu{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 0 32px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.sg-home{align-self:flex-start;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none}
+.head{display:flex;align-items:center;gap:14px}
+.logo{width:46px;height:46px;flex:none;position:relative;border-radius:50%;border:1.5px solid var(--line2)}
+.logo::before{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#FFC65A}
+.logo::after{content:"";position:absolute;right:2px;top:6px;width:7px;height:7px;border-radius:50%;background:#fff;box-shadow:0 0 6px var(--accent)}
+h1{font-weight:800;font-size:1.9rem;margin:0;line-height:1;letter-spacing:-.01em}
+.head p{margin:5px 0 0;color:var(--muted);font-size:.92rem}
+h2{font-weight:700;font-size:1.15rem;margin:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.daily{background:linear-gradient(135deg,#0E1B33,#0C1220)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.btn{border:1px solid var(--line2);background:var(--bg2);border-radius:10px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.levels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.lv{aspect-ratio:1;border:1px solid var(--line);background:var(--bg2);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0}
+.lv b{font-size:1.2rem;font-weight:800;font-variant-numeric:tabular-nums}
+.lv .st{font-size:.62rem;letter-spacing:.05em;color:var(--star);min-height:.8em;line-height:1}
+.lv.done{background:#0F1C33;border-color:#24365A}
+.lv.next{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.lv:disabled{opacity:.3}
+.howto{font-size:.92rem;line-height:1.5}
+.howto summary{font-weight:700;font-size:1.05rem;cursor:pointer}
+.howto ul{padding-left:18px;margin:8px 0 0}
+.howto li{margin-bottom:6px}
+/* play */
+#play{display:flex;flex-direction:column;gap:8px;padding:8px 0;max-width:620px;width:100%;margin:0 auto}
+.bar{display:flex;align-items:center;gap:8px;flex:none}
+.bar .ttl{flex:1;min-width:0}
+.bar .ttl b{display:block;font-size:1.1rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ttl span{font-size:.8rem;color:var(--muted)}
+.ib{height:42px;min-width:42px;border:1px solid var(--line);background:var(--panel);border-radius:10px;display:grid;place-items:center;font-size:1.05rem;font-weight:700;padding:0 10px;flex:none}
+.ib.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.stage{flex:1;min-height:0;position:relative;touch-action:none;background:var(--bg);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(8,13,24,.92);border:1px solid var(--line2);border-radius:99px;padding:6px 14px;font-weight:700;font-size:.9rem;pointer-events:none;transition:opacity .25s;white-space:nowrap}
+.ctrl{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;flex:none;padding:2px 0 4px}
+.tune{display:flex;flex-direction:column;align-items:center;gap:5px}
+.tune .read{font-family:var(--mono);font-size:1.05rem;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.tune .read small{display:block;font-family:var(--font);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;text-align:center}
+.tune .pr{display:flex;gap:6px}
+.tune .pr button{width:50px;height:42px;border:1px solid var(--line2);background:var(--panel);border-radius:10px;font-size:1.15rem;font-weight:700;padding:0}
+.tune .pr button:active{background:var(--line)}
+.go{width:92px;height:92px;border-radius:50%;border:2px solid var(--accent);background:#0B2236;color:var(--accent);font-weight:800;font-size:1.05rem;letter-spacing:.04em}
+.go:active{background:#103252}
+.go.stop{border-color:var(--warn);color:var(--warn);background:#2A1408}
+.go:disabled{opacity:.35}
+.hintline{font-size:.82rem;color:var(--muted);text-align:center;min-height:1.2em;flex:none}
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:end center;z-index:10;padding:16px 16px max(24px,env(safe-area-inset-bottom,0px))}
+.ovc{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:20px;width:min(360px,100%);display:flex;flex-direction:column;gap:12px;text-align:center}
+.ovc h3{font-size:1.6rem;font-weight:800;margin:0}
+.ovc p{margin:0;color:var(--muted);line-height:1.45}
+.stars{font-size:2rem;letter-spacing:.15em;color:var(--star)}
+.ovc .acts{display:flex;flex-direction:column;gap:8px}
+@media (max-height:660px){.go{width:78px;height:78px;font-size:.95rem}.tune .pr button{height:38px;width:46px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="menu" class="screen">
+    <div class="wrap">
+      <a class="sg-home" href="../../index.html">← All games</a>
+      <header class="head"><div class="logo" aria-hidden="true"></div><div><h1>Gravity Well</h1><p>Launch the ball. Let the planets bend it to the target.</p></div></header>
+      <div class="card daily" id="dailyCard"></div>
+      <div class="card">
+        <div class="row spread"><h2>Levels</h2><span class="muted" id="lvNote"></span></div>
+        <div class="levels" id="levelGrid"></div>
+      </div>
+      <details class="card howto">
+        <summary>How to play</summary>
+        <ul>
+          <li>Get the white ball into the green <b>target</b>. It is usually out of view: the green arrow at the edge of the screen points to it and says how far away it is.</li>
+          <li><b>Drag</b> anywhere on space to swing the aiming arrow round and make it longer or shorter. Longer is a harder shot. For fine aiming, use the <b>↺ ↻</b> buttons (a tenth of a degree) and <b>− +</b> (one percent of power).</li>
+          <li>Tap <b>Launch</b>. Every planet pulls on the ball, harder the closer it gets, and several planets pull at once. Pink planets push it away instead.</li>
+          <li>The dashed rings round a planet show where its pull is strong. Moons go round their planet once you launch, and start from the same place every shot.</li>
+          <li>Hit a planet, fly off the edge of space (the faint dashed box) or loop for too long and the shot is over. Your last few shots stay drawn so you can adjust.</li>
+          <li><b>Map</b> zooms out to the whole level. One shot earns three stars, up to three shots earns two.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <section id="play" class="screen" hidden>
+    <div class="bar">
+      <button class="ib" id="backBtn" aria-label="Back to levels">←</button>
+      <div class="ttl"><b id="pTitle">Level 1</b><span id="pSub">Shot 1</span></div>
+      <button class="ib" id="mapBtn" aria-label="Show the whole level">Map</button>
+      <button class="ib" id="restartBtn" aria-label="Start the level again">↻</button>
+    </div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="toast" id="toast" style="opacity:0"></div></div>
+    <div class="ctrl">
+      <div class="tune">
+        <div class="read" id="angRead">000.0°<small>Angle</small></div>
+        <div class="pr"><button id="angL" aria-label="Turn aim anticlockwise">↺</button><button id="angR" aria-label="Turn aim clockwise">↻</button></div>
+      </div>
+      <button class="go" id="goBtn">LAUNCH</button>
+      <div class="tune">
+        <div class="read" id="pwRead">60%<small>Power</small></div>
+        <div class="pr"><button id="pwM" aria-label="Less power">−</button><button id="pwP" aria-label="More power">+</button></div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ov" id="ov" hidden><div class="ovc" id="ovc"></div></div>
+
+<script type="application/json" id="levels">
+[
+{"n":"First Launch","s":[0,0],"t":[640,0,32],"p":[[320,190,70,2600000]]},
+{"n":"In the Way","s":[0,0],"t":[820,0,32],"p":[[400,0,85,4200000]]},
+{"n":"Slingshot","s":[0,0],"t":[150,-820,32],"p":[[160,-380,90,4600000],[620,-260,40,700000]]},
+{"n":"Two Worlds","s":[0,0],"t":[513,564,30],"p":[[283,273,99,6828924],[363,24,36,740913]]},
+{"n":"Drift","s":[0,0],"t":[437,667,30],"p":[[240,358,97,6214643],[-87,448,72,3128295],[782,407,30,402051]]},
+{"n":"Kepler's Step","s":[0,0],"t":[34,873,30],"p":[[9,379,102,6139313],[-169,-111,80,2960721],[-56,1049,82,4250086]]},
+{"n":"The Long Way","s":[0,0],"t":[818,-412,30],"p":[[411,-213,67,2830567],[-145,-22,34,742434],[316,-435,77,2398317]]},
+{"n":"Undertow","s":[0,0],"t":[154,-845,30],"p":[[71,-508,90,4982153],[190,-240,75,3176159],[-241,-228,31,495473]]},
+{"n":"Halo","s":[0,0],"t":[838,211,30],"p":[[456,108,104,6656447],[769,375,57,1840831],[213,-127,55,1568948]]},
+{"n":"Gravel Field","s":[0,0],"t":[761,-753,28],"p":[[440,-441,92,5280426],[91,-713,29,429082],[237,195,80,3312244],[753,-68,51,1267421]]},
+{"n":"Crosswind","s":[0,0],"t":[254,-984,28],"p":[[133,-521,80,3530798],[566,236,67,-1344095],[688,-636,96,-4085907],[-431,-828,63,2037128]]},
+{"n":"Binary","s":[0,0],"t":[1026,563,28],"p":[[559,324,104,6424294],[848,141,87,4310093],[1338,-90,69,-1800423],[-148,487,46,1439909]]},
+{"n":"Narrow Gap","s":[0,0],"t":[716,711,28],"p":[[461,458,85,5034053],[204,-405,97,5886404],[563,-262,53,-921893],[-106,788,81,-2062830]]},
+{"n":"Push and Pull","s":[0,0],"t":[930,-477,28],"p":[[414,-171,101,5420842],[858,-717,88,4747904],[1015,44,91,-3358968],[1065,-174,57,2228709]]},
+{"n":"Bounce House","s":[0,0],"t":[77,1156,28],"p":[[49,619,77,3333627],[-232,588,84,3541636],[344,436,95,6145339],[616,-230,88,-2413855],[343,-199,86,-3541383]]},
+{"n":"Lantern","s":[0,0],"t":[952,507,28],"p":[[514,269,70,3398143],[389,-313,57,2184950],[-284,450,43,1232209],[685,837,64,2106382],[69,760,49,-1091349]],"o":[[2,123,11,36300,-0.39,3.54]]},
+{"n":"Tidal Lock","s":[0,0],"t":[1180,737,28],"p":[[488,317,110,8189187],[316,1143,36,867783],[1034,1490,87,-3650680],[1129,1009,86,4089234],[918,-429,96,-4213509]],"o":[[3,163,10,30000,0.56,5.23]]},
+{"n":"Corkscrew","s":[0,0],"t":[1154,-252,28],"p":[[693,-140,77,2925887],[1243,-445,48,1234726],[423,-226,63,2591190],[923,535,85,-2540762],[986,27,78,3473555]],"o":[[1,95,12,43200,0.54,2.04]]},
+{"n":"Shepherd Moon","s":[0,0],"t":[1052,604,28],"p":[[569,357,64,2360477],[677,1057,95,4782503],[55,928,97,5709309],[789,818,45,-836144],[710,621,52,1331806]],"o":[[4,103,17,86700,-0.37,3.67]]},
+{"n":"Eclipse","s":[0,0],"t":[1141,934,26],"p":[[546,443,105,5498204],[1533,767,89,4617349],[-477,488,67,-1345823],[239,1518,82,4461765],[710,1561,37,601866],[1072,761,73,3575882]],"o":[[5,135,12,43200,0.79,0.43]]},
+{"n":"Breakwater","s":[0,0],"t":[1122,916,26],"p":[[422,342,99,6023628],[1320,1024,44,-635405],[462,1120,52,1432682],[1757,273,31,662586],[1844,464,93,5045911],[263,1141,38,723567]],"o":[[3,86,12,43200,0.55,2.38]]},
+{"n":"Ricochet","s":[0,0],"t":[1315,-499,26],"p":[[620,-239,93,4318083],[-146,282,81,-2410772],[722,-53,41,678033],[132,386,42,1134687],[1554,493,60,-1573572],[568,410,84,3814138]],"o":[[2,95,16,76800,-0.4,3.23]]},
+{"n":"Far Shore","s":[0,0],"t":[1563,-583,26],"p":[[789,-271,85,4371009],[25,-281,62,-1813629],[350,-473,53,1374128],[875,691,45,-774529],[261,86,84,4793434],[20,284,64,-1342248]],"o":[[4,141,11,36300,-0.71,3.37]]},
+{"n":"Carousel","s":[0,0],"t":[1492,-777,26],"p":[[798,-420,70,2599716],[2026,15,50,1181291],[1417,-340,70,-1814021],[1498,72,98,6094136],[1545,336,85,3204154],[1436,565,78,4138387]],"o":[[0,134,14,58800,0.36,6.27]]},
+{"n":"Orrery","s":[0,0],"t":[1305,-815,26],"p":[[608,-387,72,3210576],[486,-1281,37,-508358],[310,659,50,-1097768],[-205,203,79,2675693],[1415,-354,55,1883069],[333,-1093,69,2911050],[775,-862,84,-2998201]],"o":[[5,153,13,50700,0.6,2.5]]},
+{"n":"Deep Field","s":[0,0],"t":[715,-1224,26],"p":[[395,-609,70,3291775],[-18,-513,38,-438602],[822,-464,51,1301205],[-216,-113,82,3604702],[630,-202,91,3972521],[292,-1540,48,1014641],[343,-212,29,-283484]],"o":[[2,109,14,58800,-0.53,1.96]]},
+{"n":"Clockwork","s":[0,0],"t":[1298,1125,26],"p":[[804,700,72,2868158],[1082,-456,29,447376],[568,980,92,-3211809],[-35,1468,58,1580161],[2056,479,71,2044319],[-21,285,56,1309756],[1622,529,94,-3295889]],"o":[[3,129,14,58800,0.63,1.25],[4,147,11,36300,0.59,1.81]]},
+{"n":"Needle","s":[0,0],"t":[1070,1596,26],"p":[[513,749,106,5520367],[-88,1711,30,594561],[1027,578,79,3582395],[-510,1467,71,2388196],[-88,2167,38,-652715],[1242,-699,43,1037620],[-906,1183,35,745171]],"o":[[3,148,14,58800,0.6,3.47],[0,172,13,50700,0.82,2.94]]},
+{"n":"Event Horizon","s":[0,0],"t":[1787,-228,26],"p":[[806,-114,60,1954221],[1813,38,38,-682284],[1483,772,32,578113],[1392,-1466,65,2075324],[833,485,80,2955069],[-168,624,66,2093049],[2001,-1296,46,1135896]],"o":[[0,116,14,58800,0.47,5.83]]},
+{"n":"Last Light","s":[0,0],"t":[1509,262,26],"p":[[684,140,103,4869078],[1719,701,44,-854075],[1522,537,74,3767760],[1762,-131,91,4632776],[400,257,54,-1189466],[378,1037,75,3321026],[1548,-47,67,2239585]],"o":[[2,140,14,58800,0.79,1.67]]}
+]
+</script>
+<script>
+"use strict";
+/*CORE-START*/
+/* Physics, solver and level generator. No page dependencies, so a Node script can run this part.
+   A level: s [x,y] start, t [x,y,r] target, p planets [x,y,r,m] (m is the pull: acceleration m/d^2; negative pushes),
+   o moons [planet index, orbit distance, r, m, angular speed, phase]. Moons start at their phase on every shot.
+   The daily level is made from its day number by dailyLevel: changing it, or the physics, changes every future daily. */
+const DT=1/120, TMAX=30, VMAX=340, BALL=6, MARGIN=650;
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function bounds(L){let x0=Math.min(L.s[0],L.t[0]),x1=Math.max(L.s[0],L.t[0]),y0=Math.min(L.s[1],L.t[1]),y1=Math.max(L.s[1],L.t[1]);
+  for(const p of L.p){x0=Math.min(x0,p[0]-p[2]);x1=Math.max(x1,p[0]+p[2]);y0=Math.min(y0,p[1]-p[2]);y1=Math.max(y1,p[1]+p[2])}
+  for(const o of L.o||[]){const p=L.p[o[0]],e=o[1]+o[2];x0=Math.min(x0,p[0]-e);x1=Math.max(x1,p[0]+e);y0=Math.min(y0,p[1]-e);y1=Math.max(y1,p[1]+e)}
+  return [x0,y0,x1,y1]}
+// every body at time t: [x,y,r,m]
+function bodies(L,t){const out=L.p.map(p=>p);for(const o of L.o||[]){const p=L.p[o[0]],a=o[4]*t+o[5];out.push([p[0]+o[1]*Math.cos(a),p[1]+o[1]*Math.sin(a),o[2],o[3]])}return out}
+// Fly a shot. vx,vy in units/s. Returns {r:"hit"|"crash"|"lost"|"time", t, path (every 2nd step, flat [x,y,...]), at (body index hit)}
+function fly(L,vx,vy,keepPath,tmax){
+  const B=bounds(L),bx0=B[0]-MARGIN,by0=B[1]-MARGIN,bx1=B[2]+MARGIN,by1=B[3]+MARGIN,P=L.p,O=L.o||[],np=P.length,no=O.length;
+  const tx=L.t[0],ty=L.t[1],tr=(L.t[2]+BALL)*(L.t[2]+BALL),lim=tmax||TMAX;
+  let x=L.s[0],y=L.s[1],t=0,i=0;const path=keepPath?[x,y]:null;
+  const mx=new Float64Array(no),my=new Float64Array(no);
+  while(t<lim){
+    let ax=0,ay=0;
+    for(let k=0;k<no;k++){const o=O[k],p=P[o[0]],a=o[4]*t+o[5];mx[k]=p[0]+o[1]*Math.cos(a);my[k]=p[1]+o[1]*Math.sin(a);
+      const dx=mx[k]-x,dy=my[k]-y,d2=dx*dx+dy*dy,f=o[3]/(d2*Math.sqrt(d2));ax+=dx*f;ay+=dy*f}
+    for(let k=0;k<np;k++){const p=P[k],dx=p[0]-x,dy=p[1]-y,d2=dx*dx+dy*dy,f=p[3]/(d2*Math.sqrt(d2));ax+=dx*f;ay+=dy*f}
+    vx+=ax*DT;vy+=ay*DT;x+=vx*DT;y+=vy*DT;t+=DT;i++;
+    if(keepPath&&!(i&1))path.push(x,y);
+    let dx=x-tx,dy=y-ty;if(dx*dx+dy*dy<tr){if(keepPath)path.push(x,y);return {r:"hit",t,path}}
+    for(let k=0;k<np;k++){const p=P[k];dx=x-p[0];dy=y-p[1];const rr=p[2]+BALL;if(dx*dx+dy*dy<rr*rr){if(keepPath)path.push(x,y);return {r:"crash",t,path,at:k}}}
+    for(let k=0;k<no;k++){dx=x-mx[k];dy=y-my[k];const rr=O[k][2]+BALL;if(dx*dx+dy*dy<rr*rr){if(keepPath)path.push(x,y);return {r:"crash",t,path,at:np+k}}}
+    if(x<bx0||x>bx1||y<by0||y>by1){if(keepPath)path.push(x,y);return {r:"lost",t,path}}
+  }
+  return {r:"time",t,path};
+}
+// aim: angle in tenths of a degree (0 = right, 900 = up), power 1-100 (% of VMAX)
+function aimVel(a,pw){const r=a/1800*Math.PI,v=VMAX*pw/100;return [v*Math.cos(r),-v*Math.sin(r)]}
+function shoot(L,a,pw,keep){const v=aimVel(a,pw);return fly(L,v[0],v[1],keep)}
+// Searches a grid of aims; returns the hits [a,pw] (stops after `want` hits if given)
+function solve(L,da,powers,want){const hits=[];
+  for(const pw of powers)for(let a=0;a<3600;a+=da){if(shoot(L,a,pw).r==="hit"){hits.push([a,pw]);if(want&&hits.length>=want)return hits}}
+  return hits}
+// true if the straight line from start to target passes through (or near) a body
+function blocked(L){const [sx,sy]=L.s,[tx,ty]=L.t,ux=tx-sx,uy=ty-sy,len2=ux*ux+uy*uy;
+  return bodies(L,0).some(b=>{let u=((b[0]-sx)*ux+(b[1]-sy)*uy)/len2;u=Math.max(0,Math.min(1,u));const dx=sx+ux*u-b[0],dy=sy+uy*u-b[1];return dx*dx+dy*dy<(b[2]+30)*(b[2]+30)})}
+// opts: n planets, dist (start to target), repel (chance a planet pushes), moons, spread
+function generate(rng,opts){
+  const D=opts.dist*(0.85+rng()*0.3),ang=(rng()*2-1)*Math.PI*(opts.wide||0.35);
+  const L={s:[0,0],t:[Math.round(D*Math.cos(ang)),Math.round(-D*Math.sin(ang)),opts.tr||28],p:[],o:[]};
+  const ok=(x,y,r)=>{if(Math.hypot(x-L.s[0],y-L.s[1])<r+110)return false;if(Math.hypot(x-L.t[0],y-L.t[1])<r+L.t[2]+70)return false;
+    for(const p of L.p)if(Math.hypot(x-p[0],y-p[1])<r+p[2]+(opts.gap||70))return false;return true};
+  // a blocker near the middle of the straight line
+  {const u=0.4+rng()*0.25,r=Math.round(60+rng()*50),x=L.t[0]*u+(rng()*2-1)*30,y=L.t[1]*u+(rng()*2-1)*30;L.p.push([Math.round(x),Math.round(y),r,Math.round(r*r*(opts.g||1)*(450+rng()*250))])}
+  let tries=0;
+  while(L.p.length<opts.n&&tries++<400){
+    const ux=rng()*1.4-0.2,vy=(rng()*2-1)*(opts.spread||0.6),r=Math.round(28+rng()*(opts.big||70));
+    const x=Math.round(L.t[0]*ux-L.t[1]*vy),y=Math.round(L.t[1]*ux+L.t[0]*vy);
+    if(!ok(x,y,r))continue;
+    const neg=rng()<(opts.repel||0);
+    L.p.push([x,y,r,Math.round((neg?-0.7:1)*r*r*(opts.g||1)*(400+rng()*300))]);
+  }
+  for(let k=0;k<(opts.moons||0);k++){const pi=rng()*L.p.length|0,p=L.p[pi];if(p[3]<0)continue;
+    const d=Math.round(p[2]+45+rng()*40),r=Math.round(10+rng()*8),w=Math.round(((rng()<.5?-1:1)*(0.35+rng()*0.5))*100)/100;
+    L.o.push([pi,d,r,Math.round(r*r*300),w,Math.round(rng()*628)/100])}
+  if(!L.o.length)delete L.o;
+  return L;
+}
+const DAILY_OPTS=day=>({n:4+day%3,dist:1100+(day%5)*120,repel:day%4===3?0.25:0,moons:day%7===5?1:0,spread:0.7,wide:0.5});
+function dailyLevel(day){
+  for(let k=0;k<40;k++){const L=generate(mulberry(hashStr("gw-daily|"+day+"|"+k)),DAILY_OPTS(day));
+    if(!blocked(L))continue;
+    if(solve(L,10,[100,85,70,55],2).length>=2){L.n="Daily orbit";return L}}
+  return null;
+}
+const starsFor=shots=>shots<=1?3:shots<=3?2:1;
+/*CORE-END*/
+
+/* ================= storage ================= */
+const $=id=>document.getElementById(id);
+const loadJSON=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const saveJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const getLv=()=>loadJSON("gw.levels",{});
+const getDaily=()=>loadJSON("gw.daily",{});
+const starTxt=n=>"★".repeat(n)+"☆".repeat(3-n);
+const LEVELS=JSON.parse($("levels").textContent),NL=LEVELS.length;
+const DAY_MS=864e5, EPOCH=Date.UTC(2026,10,4); // daily #1 is 4 November 2026
+const dayNum=(d=new Date())=>Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-EPOCH)/DAY_MS)+1;
+const fmt=n=>Math.round(n).toLocaleString("en-GB");
+
+/* ================= menu ================= */
+let view="menu";
+function show(v){view=v;$("menu").hidden=v!=="menu";$("play").hidden=v!=="play";if(v==="play")requestAnimationFrame(resize);else renderMenu()}
+function streak(){const d=getDaily();let t=dayNum();if(!d[t])t--;let n=0;while(d[t]){n++;t--}return n}
+function renderMenu(){
+  const done=getLv(),dd=getDaily(),today=dayNum(),td=dd[today];
+  const date=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}),sk=streak();
+  $("dailyCard").innerHTML=`<div class="row spread"><span class="label">Daily orbit · ${date}</span><span class="label">#${today}</span></div>
+    <h2>${td?"Done today in "+td.shots+" shot"+(td.shots===1?"":"s")+" "+starTxt(td.stars):"A new star system every day"}</h2>
+    <p class="muted" style="margin:0">${td?"Come back tomorrow for the next one.":"The same system for everyone today."}</p>
+    <div class="row"><button class="btn pri" id="dailyBtn">${td?"Play again":"Play today's orbit"}</button>${sk>1?`<span class="muted">${sk} day streak</span>`:""}</div>`;
+  $("dailyBtn").onclick=()=>startDaily(today);
+  const grid=$("levelGrid");grid.innerHTML="";
+  let next=0;while(next<NL&&done[next+1])next++;
+  let nDone=0,stars=0;for(let i=1;i<=NL;i++)if(done[i]){nDone++;stars+=done[i].stars}
+  $("lvNote").textContent=`${nDone} of ${NL} · ${stars} ★`;
+  for(let i=0;i<NL;i++){const r=done[i+1],b=document.createElement("button");b.className="lv"+(r?" done":"")+(i===next?" next":"");
+    b.disabled=!r&&i>next+1;b.innerHTML=`<b>${i+1}</b><span class="st">${r?starTxt(r.stars):""}</span>`;b.onclick=()=>startLevel({n:i+1});grid.append(b)}
+}
+const dailyCache={};
+function startDaily(day){
+  if(dailyCache[day]){startLevel({daily:day});return}
+  const b=$("dailyBtn");b.disabled=true;b.textContent="Plotting today's orbit…";
+  setTimeout(()=>{dailyCache[day]=dailyLevel(day);startLevel({daily:day})},30);
+}
+
+/* ================= play ================= */
+const FLY_SPEED=1.4, ARROW=110, PREVIEW=1;
+const COLS=["#FF8B5E","#FFC65A","#6E8BFF","#4FD1C5","#C08BFF","#F2E9D8","#7ED957"];
+let S=null;
+function startLevel(src){
+  const L=src.daily!=null?dailyCache[src.daily]:LEVELS[src.n-1];
+  if(!L){toMenu();return}
+  const B=bounds(L),ang=Math.round(Math.atan2(-(L.t[1]-L.s[1]),L.t[0]-L.s[0])/Math.PI*1800);
+  S={src,L,B,a:(ang+3600)%3600,pw:60,shots:0,trails:[],fl:null,done:false,map:false,fx:[],prev:null,
+     cam:{x:L.s[0],y:L.s[1],z:0},hold:0,col:L.p.map((p,i)=>COLS[(i*3+(src.n||src.daily||0))%COLS.length])};
+  $("pTitle").textContent=src.daily!=null?`Daily orbit #${src.daily}`:`${src.n}. ${L.n}`;
+  $("ov").hidden=true;$("toast").style.opacity=0;$("mapBtn").classList.remove("on");
+  show("play");hud();
+}
+function toMenu(){S=null;$("ov").hidden=true;show("menu")}
+function hud(){
+  if(!S)return;
+  const deg=(S.a/10).toFixed(1).padStart(5,"0");
+  $("angRead").innerHTML=`${deg}°<small>Angle</small>`;$("pwRead").innerHTML=`${S.pw}%<small>Power</small>`;
+  const best=S.src.daily!=null?getDaily()[S.src.daily]:getLv()[S.src.n];
+  $("pSub").textContent=(S.done?`Done in ${S.shots}`:`Shot ${S.shots+1}`)+(best?` · best ${best.shots} ${starTxt(best.stars)}`:" · 1 shot for ★★★");
+  const fl=!!S.fl;$("goBtn").textContent=fl?"STOP":"LAUNCH";$("goBtn").classList.toggle("stop",fl);$("goBtn").disabled=S.done&&!fl;
+  for(const id of ["angL","angR","pwM","pwP"])$(id).disabled=fl||S.done;
+  S.prev=null;
+}
+let toastT=0;
+function toast(msg,ms=1600){const t=$("toast");t.textContent=msg;t.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>t.style.opacity=0,ms)}
+function setAim(a,pw){if(!S||S.fl||S.done)return;S.a=((Math.round(a)%3600)+3600)%3600;S.pw=Math.max(5,Math.min(100,Math.round(pw)));hud()}
+function launch(){
+  if(!S||S.done)return;
+  if(S.fl){endFlight(true);return}
+  const v=aimVel(S.a,S.pw),res=fly(S.L,v[0],v[1],true);
+  S.shots++;S.fl={res,t:0,end:0};S.hold=0;hud();
+}
+function endFlight(stopped){
+  const f=S.fl,res=f.res;
+  if(stopped){const n=Math.min(res.path.length/2-1,Math.floor(f.t*60));res.path=res.path.slice(0,n*2+2);res.r="stop"}
+  S.trails.push({path:res.path,r:res.r});if(S.trails.length>4)S.trails.shift();
+  const end=[res.path[res.path.length-2],res.path[res.path.length-1]];
+  S.fl=null;
+  if(res.r==="hit"){
+    S.done=true;S.fx.push({k:"win",x:S.L.t[0],y:S.L.t[1],t:0});
+    const stars=starsFor(S.shots),rec={stars,shots:S.shots,at:Date.now()};
+    if(S.src.daily!=null){const d=getDaily(),o=d[S.src.daily];if(!o||o.shots>S.shots)d[S.src.daily]=rec;else o.at=rec.at;saveJSON("gw.daily",d)}
+    else{const d=getLv(),o=d[S.src.n];if(!o||o.shots>S.shots)d[S.src.n]=rec;saveJSON("gw.levels",d)}
+    hud();setTimeout(()=>{if(S&&S.done)winOverlay(stars)},900);
+  }else{
+    if(res.r==="crash")S.fx.push({k:"boom",x:end[0],y:end[1],t:0});
+    toast(res.r==="crash"?(res.at>=S.L.p.length?"Hit a moon":"Crashed into a planet"):res.r==="lost"?"Lost in space":res.r==="time"?"Stuck in orbit":"Shot stopped");
+    S.hold=0.9;S.holdAt=end;hud();
+  }
+}
+function winOverlay(stars){
+  const d=S.src.daily!=null,next=!d&&S.src.n<NL;
+  $("ovc").innerHTML=`<div class="stars">${starTxt(stars)}</div><h3>${S.shots===1?"Hole in one!":"Target reached"}</h3>
+    <p>${d?`Daily orbit #${S.src.daily}`:`Level ${S.src.n}`} in ${S.shots} shot${S.shots===1?"":"s"}.${stars<3?" Do it in one shot for three stars.":""}</p>
+    <div class="acts">${next?`<button class="btn pri" id="ovNext">Next level</button>`:""}${d?`<button class="btn pri" id="ovShare">Share result</button>`:""}
+    <button class="btn" id="ovAgain">Play again</button><button class="btn" id="ovMenu">${d?"Back":"All levels"}</button></div>`;
+  $("ov").hidden=false;
+  if(next)$("ovNext").onclick=()=>startLevel({n:S.src.n+1});
+  if(d)$("ovShare").onclick=()=>{const txt=`Gravity Well daily #${S.src.daily}: ${S.shots} shot${S.shots===1?"":"s"} ${starTxt(stars)}`;
+    if(navigator.share)navigator.share({text:txt}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Copied"),()=>{})};
+  $("ovAgain").onclick=()=>startLevel(S.src);$("ovMenu").onclick=toMenu;
+}
+
+/* ================= input ================= */
+const stage=$("stage"),cv=$("cv"),ctx=cv.getContext("2d");
+let W=0,H=0,DPR=1;
+function resize(){const r=stage.getBoundingClientRect();DPR=Math.min(3,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR)}
+window.addEventListener("resize",resize);
+let drag=null;
+stage.addEventListener("pointerdown",e=>{if(!S||S.fl||S.done)return;stage.setPointerCapture(e.pointerId);
+  const r=S.a/1800*Math.PI,len=S.pw/100*ARROW;drag={id:e.pointerId,x:e.clientX,y:e.clientY,tx:Math.cos(r)*len,ty:-Math.sin(r)*len}});
+stage.addEventListener("pointermove",e=>{if(!drag||e.pointerId!==drag.id)return;
+  const k=.6;drag.tx+=(e.clientX-drag.x)*k;drag.ty+=(e.clientY-drag.y)*k;drag.x=e.clientX;drag.y=e.clientY;
+  const len=Math.hypot(drag.tx,drag.ty);if(len>ARROW){drag.tx*=ARROW/len;drag.ty*=ARROW/len}
+  if(len>3)setAim(Math.atan2(-drag.ty,drag.tx)/Math.PI*1800,Math.min(len,ARROW)/ARROW*100)});
+const endDrag=e=>{if(drag&&e.pointerId===drag.id)drag=null};
+stage.addEventListener("pointerup",endDrag);stage.addEventListener("pointercancel",endDrag);
+// fine-tune buttons repeat while held, faster the longer they are held
+function repeater(id,fn){const b=$(id);let t=0,n=0;
+  const stop=()=>{clearTimeout(t);t=0};
+  const tick=()=>{fn(n<8?1:n<24?5:20);n++;t=setTimeout(tick,n===1?380:70)};
+  b.addEventListener("pointerdown",e=>{e.preventDefault();if(b.disabled)return;n=0;tick()});
+  for(const ev of ["pointerup","pointerleave","pointercancel"])b.addEventListener(ev,stop);
+  b.addEventListener("contextmenu",e=>e.preventDefault());}
+repeater("angL",s=>S&&setAim(S.a+s,S.pw));repeater("angR",s=>S&&setAim(S.a-s,S.pw));
+repeater("pwM",s=>S&&setAim(S.a,S.pw-Math.min(s,5)));repeater("pwP",s=>S&&setAim(S.a,S.pw+Math.min(s,5)));
+$("goBtn").onclick=launch;
+$("backBtn").onclick=toMenu;
+$("restartBtn").onclick=()=>{if(S)startLevel(S.src)};
+$("mapBtn").onclick=()=>{if(!S)return;S.map=!S.map;$("mapBtn").classList.toggle("on",S.map)};
+window.addEventListener("keydown",e=>{if(view!=="play"||!S)return;
+  const s=e.shiftKey?10:1;
+  if(e.key==="ArrowLeft")setAim(S.a+s,S.pw);else if(e.key==="ArrowRight")setAim(S.a-s,S.pw);
+  else if(e.key==="ArrowUp")setAim(S.a,S.pw+1);else if(e.key==="ArrowDown")setAim(S.a,S.pw-1);
+  else if(e.key===" "||e.key==="Enter"){e.preventDefault();launch()}else if(e.key==="m")$("mapBtn").click();else return;e.preventDefault()});
+
+/* ================= drawing ================= */
+const STARS=(()=>{const r=mulberry(7),a=[];for(let i=0;i<140;i++)a.push([r()*1024,r()*1024,r()<.15?1.6:1,.25+r()*.5]);return a})();
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(S&&view==="play"){step(dt);draw()}
+  requestAnimationFrame(frame);
+}
+function ballPos(){
+  if(S.fl){const p=S.fl.res.path,n=p.length/2-1,f=Math.min(n,S.fl.t*60),i=Math.floor(f),u=f-i,j=Math.min(n,i+1);
+    return [p[i*2]+(p[j*2]-p[i*2])*u,p[i*2+1]+(p[j*2+1]-p[i*2+1])*u]}
+  if(S.hold>0)return S.holdAt;
+  return S.L.s;
+}
+function step(dt){
+  if(S.fl){S.fl.t+=dt*FLY_SPEED;if(S.fl.t>=S.fl.res.t)endFlight(false)}
+  else if(S.hold>0)S.hold-=dt;
+  for(const f of S.fx)f.t+=dt;S.fx=S.fx.filter(f=>f.t<(f.k==="win"?2.4:.9));
+  // camera
+  const near=Math.min(W,H)/620,B=S.B,pad=90;
+  let tx,ty,tz;
+  if(S.map){tx=(B[0]+B[2])/2;ty=(B[1]+B[3])/2;tz=Math.min(W/(B[2]-B[0]+pad*2),H/(B[3]-B[1]+pad*2))}
+  else{const p=S.done&&!S.fl?[S.L.t[0],S.L.t[1]]:ballPos();tx=p[0];ty=p[1];tz=near}
+  const c=S.cam;if(!c.z){c.z=tz;c.x=tx;c.y=ty}
+  const k=1-Math.exp(-dt*(S.fl?6:4));c.x+=(tx-c.x)*k;c.y+=(ty-c.y)*k;c.z*=Math.pow(tz/c.z,k);
+}
+const sx=x=>W/2+(x-S.cam.x)*S.cam.z, sy=y=>H/2+(y-S.cam.y)*S.cam.z;
+function draw(){
+  const g=ctx,c=S.cam,z=c.z,L=S.L,t=S.fl?S.fl.t:0;
+  g.setTransform(DPR,0,0,DPR,0,0);g.fillStyle="#05070D";g.fillRect(0,0,W,H);
+  // distant stars (slight parallax)
+  g.fillStyle="#fff";
+  for(const s of STARS){const x=((s[0]-c.x*z*.15)%1024+1024)%1024,y=((s[1]-c.y*z*.15)%1024+1024)%1024;
+    for(let ox=x;ox<W;ox+=1024)for(let oy=y;oy<H;oy+=1024){g.globalAlpha=s[3];g.fillRect(Math.round(ox),Math.round(oy),s[2],s[2])}}
+  g.globalAlpha=1;
+  // grid
+  const gs=z*100>26?100:z*500>26?500:1000;
+  g.strokeStyle="rgba(120,150,210,.07)";g.lineWidth=1;g.beginPath();
+  const x0=Math.floor((c.x-W/2/z)/gs)*gs,y0=Math.floor((c.y-H/2/z)/gs)*gs;
+  for(let x=x0;x<c.x+W/2/z;x+=gs){const X=Math.round(sx(x))+.5;g.moveTo(X,0);g.lineTo(X,H)}
+  for(let y=y0;y<c.y+H/2/z;y+=gs){const Y=Math.round(sy(y))+.5;g.moveTo(0,Y);g.lineTo(W,Y)}
+  g.stroke();
+  // edge of space
+  g.setLineDash([6,6]);g.strokeStyle="rgba(255,139,94,.35)";
+  g.strokeRect(sx(S.B[0]-MARGIN),sy(S.B[1]-MARGIN),(S.B[2]-S.B[0]+MARGIN*2)*z,(S.B[3]-S.B[1]+MARGIN*2)*z);
+  // gravity rings
+  g.setLineDash([3,5]);
+  L.p.forEach((p,i)=>{const m=Math.abs(p[3]);g.strokeStyle=p[3]<0?"rgba(255,79,163,.32)":"rgba(170,190,255,.22)";
+    for(const a of [120,40]){const R=Math.sqrt(m/a);if(R>p[2]+6){g.beginPath();g.arc(sx(p[0]),sy(p[1]),R*z,0,7);g.stroke()}}});
+  // moon orbits
+  g.setLineDash([2,4]);g.strokeStyle="rgba(200,210,230,.25)";
+  for(const o of L.o||[]){const p=L.p[o[0]];g.beginPath();g.arc(sx(p[0]),sy(p[1]),o[1]*z,0,7);g.stroke()}
+  g.setLineDash([]);
+  // trails
+  S.trails.forEach((tr,i)=>{const fresh=i===S.trails.length-1;
+    g.strokeStyle=tr.r==="hit"?"#7CFFB2":tr.r==="crash"?"#FF8B5E":"#9AA8C4";g.globalAlpha=fresh?.6:.22;g.lineWidth=fresh?1.6:1.2;
+    path(tr.path,tr.path.length/2)});
+  g.globalAlpha=1;
+  // target
+  {const X=sx(L.t[0]),Y=sy(L.t[1]),R=Math.max(4,L.t[2]*z),now=performance.now()/1000;
+    g.strokeStyle="#7CFFB2";g.lineWidth=2;g.beginPath();g.arc(X,Y,R,0,7);g.stroke();
+    g.fillStyle="rgba(124,255,178,.12)";g.fill();
+    g.lineWidth=1;g.setLineDash([4,6]);g.lineDashOffset=-now*10;g.beginPath();g.arc(X,Y,R+8,0,7);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
+    g.beginPath();g.moveTo(X-R*.45,Y);g.lineTo(X+R*.45,Y);g.moveTo(X,Y-R*.45);g.lineTo(X,Y+R*.45);g.stroke()}
+  // start pad
+  {const X=sx(L.s[0]),Y=sy(L.s[1]);g.strokeStyle="rgba(92,200,255,.55)";g.lineWidth=1;g.beginPath();g.arc(X,Y,14,0,7);g.stroke();
+    g.beginPath();g.moveTo(X-20,Y);g.lineTo(X-16,Y);g.moveTo(X+16,Y);g.lineTo(X+20,Y);g.moveTo(X,Y-20);g.lineTo(X,Y-16);g.moveTo(X,Y+16);g.lineTo(X,Y+20);g.stroke()}
+  // planets and moons
+  bodies(L,t).forEach((b,i)=>{const X=sx(b[0]),Y=sy(b[1]),R=Math.max(2,b[2]*z),moon=i>=L.p.length;
+    if(b[3]<0){g.fillStyle="#170A15";g.beginPath();g.arc(X,Y,R,0,7);g.fill();g.strokeStyle="#FF4FA3";g.lineWidth=2;g.stroke();
+      g.lineWidth=1.5;g.beginPath();for(let k=0;k<12;k++){const a=k/12*Math.PI*2;g.moveTo(X+Math.cos(a)*(R+4),Y+Math.sin(a)*(R+4));g.lineTo(X+Math.cos(a)*(R+9),Y+Math.sin(a)*(R+9))}g.stroke();
+      g.beginPath();g.arc(X,Y,R*.45,0,7);g.stroke();return}
+    const col=moon?"#B9C2D3":S.col[i];
+    g.fillStyle=col;g.beginPath();g.arc(X,Y,R,0,7);g.fill();
+    g.save();g.clip();g.fillStyle="rgba(0,0,0,.28)";g.beginPath();g.arc(X+R*.35,Y+R*.35,R,0,7);g.fill();g.restore();
+    g.strokeStyle="rgba(255,255,255,.55)";g.lineWidth=1;g.beginPath();g.arc(X,Y,R+.5,0,7);g.stroke()});
+  // aim arrow and preview
+  if(!S.fl&&!S.done&&S.hold<=0){
+    const X=sx(L.s[0]),Y=sy(L.s[1]),r=S.a/1800*Math.PI,len=12+S.pw/100*ARROW,ex=X+Math.cos(r)*len,ey=Y-Math.sin(r)*len;
+    if(!S.prev){const v=aimVel(S.a,S.pw);S.prev=fly(L,v[0],v[1],true,PREVIEW).path}
+    g.fillStyle="rgba(234,240,250,.7)";const P=S.prev;for(let i=4;i<P.length;i+=6){g.beginPath();g.arc(sx(P[i]),sy(P[i+1]),1.4,0,7);g.fill()}
+    g.strokeStyle="#5CC8FF";g.lineWidth=2;g.beginPath();g.moveTo(X+Math.cos(r)*10,Y-Math.sin(r)*10);g.lineTo(ex,ey);g.stroke();
+    g.fillStyle="#5CC8FF";g.beginPath();g.moveTo(ex+Math.cos(r)*9,ey-Math.sin(r)*9);
+    g.lineTo(ex+Math.cos(r+2.5)*8,ey-Math.sin(r+2.5)*8);g.lineTo(ex+Math.cos(r-2.5)*8,ey-Math.sin(r-2.5)*8);g.fill();
+    g.strokeStyle="rgba(92,200,255,.25)";g.lineWidth=1;g.beginPath();g.arc(X,Y,12+ARROW,0,7);g.stroke()}
+  // flight path so far
+  if(S.fl){const n=Math.min(S.fl.res.path.length/2,Math.floor(S.fl.t*60)+1);g.strokeStyle="#EAF0FA";g.globalAlpha=.75;g.lineWidth=1.6;path(S.fl.res.path,n);g.globalAlpha=1}
+  // ball
+  if(!(S.done&&!S.fl)){const p=ballPos();g.fillStyle="#fff";g.beginPath();g.arc(sx(p[0]),sy(p[1]),Math.max(3.5,BALL*z),0,7);g.fill();
+    g.strokeStyle="rgba(92,200,255,.6)";g.lineWidth=1;g.beginPath();g.arc(sx(p[0]),sy(p[1]),Math.max(3.5,BALL*z)+3,0,7);g.stroke()}
+  // effects
+  for(const f of S.fx){const X=sx(f.x),Y=sy(f.y);
+    if(f.k==="boom"){const u=f.t/.9;g.strokeStyle=`rgba(255,139,94,${1-u})`;g.lineWidth=1.5;g.beginPath();
+      for(let k=0;k<10;k++){const a=k/10*Math.PI*2+.3,r0=6+u*30,r1=r0+6;g.moveTo(X+Math.cos(a)*r0,Y+Math.sin(a)*r0);g.lineTo(X+Math.cos(a)*r1,Y+Math.sin(a)*r1)}g.stroke()}
+    else for(let k=0;k<3;k++){const u=(f.t-k*.3)/1.6;if(u<0||u>1)continue;g.strokeStyle=`rgba(124,255,178,${1-u})`;g.lineWidth=1.5;g.beginPath();g.arc(X,Y,L.t[2]*z+u*90,0,7);g.stroke()}}
+  // target indicator at the screen edge
+  {const X=sx(L.t[0]),Y=sy(L.t[1]),m=28;
+    if(X<m||X>W-m||Y<m||Y>H-m){const cx=W/2,cy=H/2,dx=X-cx,dy=Y-cy,s=Math.min((W/2-m)/Math.abs(dx||1e-9),(H/2-m)/Math.abs(dy||1e-9)),ix=cx+dx*s,iy=cy+dy*s,a=Math.atan2(dy,dx);
+      g.fillStyle="#7CFFB2";g.beginPath();g.moveTo(ix+Math.cos(a)*12,iy+Math.sin(a)*12);g.lineTo(ix+Math.cos(a+2.4)*10,iy+Math.sin(a+2.4)*10);g.lineTo(ix+Math.cos(a-2.4)*10,iy+Math.sin(a-2.4)*10);g.fill();
+      const p=ballPos(),d=Math.hypot(L.t[0]-p[0],L.t[1]-p[1]);g.font="600 12px "+getComputedStyle(document.body).fontFamily;g.textAlign="center";g.textBaseline="middle";
+      const lx=ix-Math.cos(a)*24,ly=iy-Math.sin(a)*16;g.fillStyle="rgba(5,7,13,.8)";const tw=g.measureText(fmt(d)+" km").width+10;g.fillRect(lx-tw/2,ly-9,tw,18);
+      g.fillStyle="#7CFFB2";g.fillText(fmt(d)+" km",lx,ly)}}
+  function path(P,n){if(n<2)return;g.beginPath();g.moveTo(sx(P[0]),sy(P[1]));for(let i=1;i<n;i++)g.lineTo(sx(P[i*2]),sy(P[i*2+1]));g.stroke()}
+}
+requestAnimationFrame(frame);
+window.SG_BACK=()=>{if(!$("ov").hidden){toMenu();return true}if(view==="play"){toMenu();return true}return false};
+renderMenu();
+</script>
+<script src="../../shell.js"></script>
+</body>
+</html>

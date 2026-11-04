@@ -160,6 +160,17 @@
         "Each evening in the office: buy stock, learn recipes, hire and promote staff, buy equipment, advertise, and move somewhere bigger.",
         "Five save slots, and you can rename your place any time."
       ]
+    },
+    {
+      "id": 16,
+      "type": "new-game",
+      "headline": "New game: Gravity Well",
+      "details": [
+        "Launch a ball and let the planets bend it round to a target that's usually out of view.",
+        "Every planet pulls, harder the closer you get. Pink ones push you away, and moons circle as you fly.",
+        "30 levels, plus a new daily orbit every day that's the same for both of you.",
+        "Drag to aim, then fine-tune with the buttons. Tap Map to see the whole level."
+      ]
     }
   ]
 }

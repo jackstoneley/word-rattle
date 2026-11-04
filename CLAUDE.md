@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus ten self-contained HTML games, published two ways:
+A home page plus eleven self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -14,6 +14,7 @@ A home page plus ten self-contained HTML games, published two ways:
 | Echo Cartographer | `games/echo-cartographer` | `ec.` |
 | Buddy's Big Slide | `games/big-slide` | `slide.` |
 | Lee Lee's Kitchen | `games/lee-lee` | `ll.` |
+| Gravity Well | `games/gravity-well` | `gw.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -36,6 +37,7 @@ games/<id>/index.html      One self-contained game per folder (all CSS/JS inline
 games/word-rattle/src/     Word Rattle source: template.html + words.txt + common.txt -> built index.html
 tools/build.py             Build step. Run after ANY change, before committing
 tools/big-slide-check.js   Rides every Big Slide level's answer (run by build.py)
+tools/gravity-well-check.js  Checks every Gravity Well level can be won (run by build.py)
 release-notes.json         What's new in each release; shown in the app's update banner
 android-app/               Capacitor project: config, native plugin, build scripts, icons, signing key
 .github/workflows/android.yml  Builds the APK and replaces the "latest" release
@@ -162,6 +164,17 @@ leave dirty plates; dishes are recipes of station steps (`RECIPES[].s`, ending i
 missing fields, so new fields need a default in `newSave`), plus `ll.opts` (`mini`). A day is not saved until it ends. Lists
 like `RECIPES`, `STATIONS`, `CAMPAIGNS`, `DECOR` are keyed by id or index in saves (`owned`, `stations`, `decor` level):
 append, never reorder or rename ids. `window.LL` exposes the day for Playwright bots (`step(dt)`, `leeTap(target)`).
+
+### Gravity Well (`games/gravity-well`)
+
+A gravity golf puzzle: aim (angle in tenths of a degree, power 1-100%), launch, and every planet pulls the ball (acceleration
+`m/d²`, negative `m` pushes) towards a target that is usually off screen. Physics, solver and level generator sit between
+`/*CORE-START*/` and `/*CORE-END*/` (fixed step `DT`, the same flight on every phone). Levels live in the
+`<script type="application/json" id="levels">` block: `n` name, `s` start, `t` target `[x,y,r]`, `p` planets `[x,y,r,m]`,
+optional `o` moons `[planet, distance, r, m, speed, phase]` (they restart from their phase on every shot). The levels were
+made with `generate` and picked by how many aims hit; `tools/gravity-well-check.js` (run by build.py) checks each can be won.
+**Append** levels only: progress (`gw.levels`) is keyed by level number. The daily orbit (`gw.daily`, day 1 is 4 November
+2026) is generated from the day by `dailyLevel`: changing it, `generate` or the physics changes every future daily.
 
 ### Adding a new game
 
