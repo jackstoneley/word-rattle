@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus ten self-contained HTML games, published two ways:
+A home page plus eleven self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -14,6 +14,7 @@ A home page plus ten self-contained HTML games, published two ways:
 | Echo Cartographer | `games/echo-cartographer` | `ec.` |
 | Buddy's Big Slide | `games/big-slide` | `slide.` |
 | Lee Lee's Kitchen | `games/lee-lee` | `ll.` |
+| Hollowdeep | `games/hollowdeep` | `hd.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -162,6 +163,19 @@ leave dirty plates; dishes are recipes of station steps (`RECIPES[].s`, ending i
 missing fields, so new fields need a default in `newSave`), plus `ll.opts` (`mini`). A day is not saved until it ends. Lists
 like `RECIPES`, `STATIONS`, `CAMPAIGNS`, `DECOR` are keyed by id or index in saves (`owned`, `stations`, `decor` level):
 append, never reorder or rename ids. `window.LL` exposes the day for Playwright bots (`step(dt)`, `leeTap(target)`).
+
+### Hollowdeep (`games/hollowdeep`)
+
+A dungeon-building strategy game (in the spirit of Dungeon Keeper, with its own names and look): the player never steers
+units directly. They mark rock to dig (`mark` bit 2), paint rooms on their own floor, plant a rally flag, or pick up and
+drop creatures. Diggers dig, claim floor next to their owner's and carry gold home; creatures come through owned Gates
+when the rooms they need exist (`KINDS[].need`) and there is a free Lair bed, then sleep, eat, train and fight on their own.
+Rival lords (owners 2-4, wild creatures are owner 5) use the same rules plus `aiThink` (expand, mine, build rooms, tunnel
+to the player and raid in growing waves). Rules, map maker and AI sit between `/*CORE-START*/` and `/*CORE-END*/` with no page
+dependencies, so a Node script can play whole games. Maps are made from `spec.seed`; campaign realms are `CAMPAIGN`
+(append only: progress `hd.progress.won` is keyed by realm number). The game in progress is `hd.game` (`saveWorld`:
+tile arrays as base64 plus units and lords; `loadWorld` must keep reading old saves). `window.HD` exposes the world for
+Playwright.
 
 ### Adding a new game
 

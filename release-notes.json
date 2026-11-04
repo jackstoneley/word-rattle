@@ -160,6 +160,18 @@
         "Each evening in the office: buy stock, learn recipes, hire and promote staff, buy equipment, advertise, and move somewhere bigger.",
         "Five save slots, and you can rename your place any time."
       ]
+    },
+    {
+      "id": 16,
+      "type": "new-game",
+      "headline": "New game: Hollowdeep",
+      "details": [
+        "Dig out an underground realm and beat the rival lords, in the spirit of the old dungeon-building games.",
+        "You don't steer anyone: mark rock to dig and build rooms. Your diggers and creatures get on with it themselves.",
+        "Lairs, mushroom farms, treasuries, training pits and libraries attract Beetles, Goblins, Hexers and Ogres through your Gate.",
+        "Plant a flag to send your creatures to fight, or pick them up and drop them where you want them.",
+        "Six realms to conquer, plus quick games against 1 to 3 rivals. Your game saves itself."
+      ]
     }
   ]
 }
