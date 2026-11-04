@@ -105,7 +105,7 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
           <li><b>Drag</b> anywhere on space to swing the aiming arrow round and make it longer or shorter. Longer is a harder shot. For fine aiming, use the <b>↺ ↻</b> buttons (a tenth of a degree) and <b>− +</b> (one percent of power).</li>
           <li>Tap <b>Launch</b>. Every planet pulls on the ball, harder the closer it gets, and several planets pull at once. Pink planets push it away instead.</li>
           <li>The dashed rings round a planet show where its pull is strong. Moons go round their planet once you launch, and start from the same place every shot.</li>
-          <li>Hit a planet, fly off the edge of space (the faint dashed box) or loop for too long and the shot is over. Your last few shots stay drawn so you can adjust.</li>
+          <li>Hit a planet, fly off the edge of space (the faint dashed box) or loop for too long and the shot is over. Your last two shots stay drawn so you can adjust.</li>
           <li><b>Map</b> zooms out to the whole level. One shot earns three stars, up to three shots earns two.</li>
         </ul>
       </details>
@@ -322,7 +322,7 @@ function launch(){
 function endFlight(stopped){
   const f=S.fl,res=f.res;
   if(stopped){const n=Math.min(res.path.length/2-1,Math.floor(f.t*60));res.path=res.path.slice(0,n*2+2);res.r="stop"}
-  S.trails.push({path:res.path,r:res.r});if(S.trails.length>4)S.trails.shift();
+  S.trails.push({path:res.path,r:res.r});if(S.trails.length>2)S.trails.shift();
   const end=[res.path[res.path.length-2],res.path[res.path.length-1]];
   S.fl=null;
   if(res.r==="hit"){
@@ -469,7 +469,15 @@ function draw(){
     g.lineTo(ex+Math.cos(r+2.5)*8,ey-Math.sin(r+2.5)*8);g.lineTo(ex+Math.cos(r-2.5)*8,ey-Math.sin(r-2.5)*8);g.fill();
     g.strokeStyle="rgba(92,200,255,.25)";g.lineWidth=1;g.beginPath();g.arc(X,Y,12+ARROW,0,7);g.stroke()}
   // flight path so far
-  if(S.fl){const n=Math.min(S.fl.res.path.length/2,Math.floor(S.fl.t*60)+1);g.strokeStyle="#EAF0FA";g.globalAlpha=.75;g.lineWidth=1.6;path(S.fl.res.path,n);g.globalAlpha=1}
+  // flight so far: a faint line for the whole path, and a glowing tail behind the ball that fades out over about a second
+  if(S.fl){const P=S.fl.res.path,n=Math.min(P.length/2,Math.floor(S.fl.t*60)+1),b=ballPos(),TAIL=60;
+    g.strokeStyle="#EAF0FA";g.globalAlpha=.2;g.lineWidth=1.2;path(P,n);
+    g.lineCap="round";g.strokeStyle="#5CC8FF";
+    let px=b[0],py=b[1];
+    for(let k=0;k<TAIL&&n-1-k>=0;k++){const i=n-1-k,u=1-k/TAIL;
+      g.globalAlpha=u*u*.9;g.lineWidth=1+u*Math.max(2,BALL*z*1.2);
+      g.beginPath();g.moveTo(sx(px),sy(py));g.lineTo(sx(P[i*2]),sy(P[i*2+1]));g.stroke();px=P[i*2];py=P[i*2+1]}
+    g.globalAlpha=1;g.lineCap="butt"}
   // ball
   if(!(S.done&&!S.fl)){const p=ballPos();g.fillStyle="#fff";g.beginPath();g.arc(sx(p[0]),sy(p[1]),Math.max(3.5,BALL*z),0,7);g.fill();
     g.strokeStyle="rgba(92,200,255,.6)";g.lineWidth=1;g.beginPath();g.arc(sx(p[0]),sy(p[1]),Math.max(3.5,BALL*z)+3,0,7);g.stroke()}
