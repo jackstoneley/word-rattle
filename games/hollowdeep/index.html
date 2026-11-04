@@ -1,0 +1,1185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14110E">
+<title>Hollowdeep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Archivo+Black&display=swap">
+<style>
+/* Layout: menu (realms, quick game, how to play) or game (full-screen map canvas, status bar on top, tools along the bottom). */
+:root{
+  --bg:#14110E; --panel:#221D18; --panel2:#2E2720; --line:#4A4036; --fg:#F3EDE4; --muted:#B5AA99;
+  --accent:#3FC1B0; --accent-ink:#06231F; --gold:#F2C94C; --red:#E0503C; --good:#7CD67C;
+  --display:"Archivo Black",system-ui,sans-serif; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--body)}
+body{overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.sm{padding:7px 12px;font-size:.9rem}
+.muted{color:var(--muted)}
+#menu{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.sg-home{align-self:flex-start;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none}
+.head{display:flex;align-items:center;gap:14px}
+.logo{width:50px;height:50px;flex:none;border-radius:12px;background:#3E3024;position:relative;overflow:hidden}
+.logo::before{content:"";position:absolute;left:9px;top:9px;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff 0 12%,#3FC1B0 45%,#0D4D45 100%);box-shadow:0 0 14px #3FC1B0}
+h1{font-family:var(--display);font-size:2rem;margin:0;line-height:1;letter-spacing:.01em}
+.head p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.realm{display:flex;gap:12px;align-items:center;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;width:100%}
+.realm .n{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;font-family:var(--display);background:#3E3024}
+.realm.won .n{background:var(--accent);color:var(--accent-ink)}
+.realm .t{flex:1;min-width:0}
+.realm b{display:block;font-family:var(--display);font-weight:400;font-size:1.02rem}
+.realm small{color:var(--muted);display:block;line-height:1.35}
+.realm:disabled{opacity:.45}
+.seg{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.seg span{min-width:74px;color:var(--muted);font-size:.9rem}
+.seg button{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:7px 12px;font-weight:700}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.howto{font-size:.93rem;line-height:1.5}
+.howto summary{font-family:var(--display);font-size:1.05rem;cursor:pointer}
+.howto ul{padding-left:18px;margin:8px 0 0}
+.howto li{margin-bottom:4px}
+
+#game{position:fixed;inset:0;background:#0A0908;touch-action:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.top{position:absolute;left:0;right:0;top:0;display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+  padding:calc(8px + env(safe-area-inset-top,0px)) calc(118px + env(safe-area-inset-right,0px)) 0 max(8px,env(safe-area-inset-left,0px));pointer-events:none}
+.ib{pointer-events:auto;min-width:40px;height:40px;border:0;border-radius:12px;background:rgba(20,17,14,.82);font-weight:800;flex:none;padding:0 10px}
+.chip{pointer-events:auto;background:rgba(20,17,14,.82);border-radius:10px;padding:5px 8px;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;font-size:.85rem;border:0}
+.chip small{color:var(--muted);font-weight:400}
+#mini{position:absolute;right:max(8px,env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));width:104px;height:104px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:#000;image-rendering:pixelated;touch-action:none}
+.goal{position:absolute;left:max(8px,env(safe-area-inset-left,0px));top:calc(120px + env(safe-area-inset-top,0px));max-width:min(330px,calc(100% - 16px));background:rgba(20,17,14,.86);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:.88rem;line-height:1.35;pointer-events:auto}
+.goal b{color:var(--gold)}
+#toasts{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(122px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column-reverse;gap:6px;align-items:center;width:min(92vw,420px);pointer-events:none}
+.toast{pointer-events:auto;background:rgba(20,17,14,.92);border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:10px;padding:6px 10px;font-size:.84rem;font-weight:700;transition:opacity .4s;max-width:100%}
+.toast.good{border-left-color:var(--good)}.toast.bad{border-left-color:var(--red)}
+.tools{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:6px;padding:0 8px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.tools button{pointer-events:auto;width:62px;height:58px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(28,24,20,.9);font-size:1.35rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}
+.tools button small{font-size:.68rem;font-weight:700;color:var(--muted)}
+.tools button.on{background:var(--accent);border-color:var(--accent)}
+.tools button.on small{color:var(--accent-ink)}
+.float{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;pointer-events:none;flex-wrap:wrap;justify-content:center;width:calc(100% - 16px)}
+.float>*{pointer-events:auto}
+.info{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom,0px));width:min(94vw,400px);background:rgba(24,20,16,.96);border:1px solid var(--line);border-radius:14px;padding:12px;font-size:.92rem;line-height:1.4}
+.info h2{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.info .x{border:0;background:none;color:var(--muted);font-size:1.3rem;padding:0 4px}
+.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin:3px 0 6px}
+.bar i{display:block;height:100%;background:var(--good)}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:78%;overflow-y:auto;background:var(--panel);border-top:1px solid var(--line);border-radius:18px 18px 0 0;
+  padding:14px max(14px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px}
+.sheet .row{display:flex;justify-content:space-between;align-items:center}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:9px 12px;width:100%}
+.opt .ic{font-size:1.5rem;width:32px;text-align:center;flex:none}
+.opt .t{flex:1;min-width:0}
+.opt b{display:block}
+.opt small{color:var(--muted);display:block;line-height:1.3}
+.opt .c{font-weight:800;color:var(--gold);white-space:nowrap}
+.opt:disabled{opacity:.5}
+.overlay{position:absolute;inset:0;background:rgba(10,8,6,.78);display:flex;align-items:center;justify-content:center;padding:20px}
+.overlay .card{width:min(420px,100%);text-align:center;align-items:center}
+.overlay h2{font-size:1.6rem}
+.overlay .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.list{width:100%;text-align:left;display:flex;flex-direction:column;gap:4px;font-size:.93rem}
+.list div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,255,255,.07);padding:3px 0}
+</style>
+</head>
+<body>
+
+<section id="menu">
+  <div class="wrap">
+    <a class="sg-home" href="../../index.html">← All games</a>
+    <div class="head"><div class="logo" aria-hidden="true"></div><div><h1>Hollowdeep</h1><p>Dig a realm under the hills. Beat the rival lords.</p></div></div>
+    <div id="contCard" class="card" hidden>
+      <h2>Game in progress</h2>
+      <span class="muted" id="contTxt"></span>
+      <div class="seg"><button class="btn pri" id="contBtn">Carry on</button></div>
+    </div>
+    <div class="card"><h2>Realms</h2><span class="muted">Win one to open the next.</span><div id="realms" style="display:flex;flex-direction:column;gap:8px"></div></div>
+    <div class="card">
+      <h2>Quick game</h2>
+      <span class="muted">A new random map each time.</span>
+      <div class="seg" id="qRivals"><span>Rivals</span><button data-v="1" class="on">1</button><button data-v="2">2</button><button data-v="3">3</button></div>
+      <div class="seg" id="qDiff"><span>Rivals are</span><button data-v="0" class="on">Gentle</button><button data-v="1">Fair</button><button data-v="2">Fierce</button></div>
+      <div class="seg" id="qSize"><span>Map</span><button data-v="44">Small</button><button data-v="54" class="on">Medium</button><button data-v="64">Large</button></div>
+      <div class="seg"><button class="btn pri" id="quickBtn">Start</button></div>
+    </div>
+    <details class="card howto" id="howto">
+      <summary>How to play</summary>
+      <ul>
+        <li>The glowing orb is your <b>Heart</b>. If it is destroyed you lose. Destroy every rival Heart to win.</li>
+        <li><b>⛏ Dig:</b> tap rock to mark it. To mark lots, press and hold, then drag. Your diggers dig marked rock when they are free, and claim the new floor for you. Yellow rock is gold.</li>
+        <li><b>🧱 Build:</b> rooms go on your own coloured floor. <b>Lair</b> gives beds, <b>Mushroom farm</b> gives food, <b>Treasury</b> holds gold, <b>Training pit</b> and <b>Library</b> level creatures up and bring new kinds.</li>
+        <li>Creatures come through a <b>Gate</b> you own. Dig a tunnel to the nearest Gate, and your diggers will claim it.</li>
+        <li>Creatures look after themselves: they sleep, eat and train. Every 2½ minutes is <b>payday</b>. Unpaid, hungry or bedless creatures get cross and leave.</li>
+        <li><b>🚩 Flag:</b> plant it, and your creatures march there and fight anything on the way. Plant it on a rival's Heart to attack it.</li>
+        <li><b>✋ Hand:</b> pick up as many as 8 creatures, then tap your own floor to drop them there.</li>
+        <li><b>👆 Look:</b> tap anything to see what it is doing. Tap the 👾 count for your whole realm.</li>
+        <li>Drag to look around, and pinch to zoom. Tap the little map to jump. The game saves itself.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <canvas id="cv"></canvas>
+  <div class="top">
+    <button class="ib" id="menuBtn" aria-label="Pause menu">☰</button>
+    <button class="chip" id="hudGold"></button>
+    <button class="chip" id="hudCrit"></button>
+    <button class="chip" id="hudPay"></button>
+    <button class="ib" id="speedBtn" aria-label="Game speed">1×</button>
+  </div>
+  <canvas id="mini" width="104" height="104"></canvas>
+  <div class="goal" id="goal" hidden></div>
+  <div id="toasts"></div>
+  <div class="float" id="float"></div>
+  <div class="info" id="info" hidden></div>
+  <div class="tools" id="tools">
+    <button data-tool="look" class="on">👆<small>Look</small></button>
+    <button data-tool="dig">⛏<small>Dig</small></button>
+    <button data-tool="build" id="buildTool">🧱<small>Build</small></button>
+    <button data-tool="hand" id="handTool">✋<small>Hand</small></button>
+    <button data-tool="flag">🚩<small>Flag</small></button>
+  </div>
+  <div class="sheet" id="sheet" hidden></div>
+  <div class="overlay" id="ov" hidden><div class="card" id="ovCard"></div></div>
+</section>
+
+<script>
+"use strict";
+/*CORE-START*/
+/* Rules, map maker, creatures and rival lords. No page dependencies, so a Node script can play whole games. */
+const T={ROCK:1,HARD:2,GOLD:3,GEM:4,FLOOR:5,HEART:6,GATE:7};
+const RM={LAIR:1,FARM:2,TREASURY:3,TRAINING:4,LIBRARY:5};
+const RI={lair:1,farm:2,treasury:3,training:4,library:5};
+const ROOMS=[null,
+  {id:"lair",name:"Lair",icon:"🛏",cost:80,desc:"Beds. Each tile is a bed for one creature. 4 tiles bring Beetles."},
+  {id:"farm",name:"Mushroom farm",icon:"🍄",cost:100,desc:"Grows mushrooms. Hungry creatures eat here, or get grumpy."},
+  {id:"treasury",name:"Treasury",icon:"🪙",cost:50,desc:"Holds 500 more gold per tile."},
+  {id:"training",name:"Training pit",icon:"⚔",cost:120,desc:"Creatures level up here, for 1 gold a second each. 4 tiles bring Goblins. 9, with 9 Lair and 6 farm, bring Ogres."},
+  {id:"library",name:"Library",icon:"📚",cost:150,desc:"Hexers study here to level up. 4 tiles bring Hexers, who cast spells from a distance."}];
+const KINDS={
+  digger:{name:"Digger",hp:60,spd:2.7,atk:3,cd:1,rng:1.2,wage:0},
+  beetle:{name:"Beetle",hp:210,spd:1.5,atk:11,cd:1.2,rng:1.2,wage:20,need:{lair:4},blurb:"Slow and tough."},
+  goblin:{name:"Goblin",hp:125,spd:2.4,atk:14,cd:.9,rng:1.2,wage:35,need:{lair:4,training:4},blurb:"Quick fighter with a spear."},
+  hexer:{name:"Hexer",hp:85,spd:1.9,atk:19,cd:1.6,rng:4,wage:50,need:{lair:4,library:4},blurb:"Casts bolts from a distance."},
+  ogre:{name:"Ogre",hp:380,spd:1.6,atk:32,cd:1.6,rng:1.3,wage:90,need:{lair:9,training:9,farm:6},blurb:"Huge, hungry and very strong."},
+  spider:{name:"Cave spider",hp:90,spd:2.2,atk:9,cd:1,rng:1.2,wage:0,wild:1},
+  troll:{name:"Rock troll",hp:320,spd:1.3,atk:24,cd:1.6,rng:1.3,wage:0,wild:1}
+};
+const FIGHTERS=["beetle","goblin","hexer","ogre"];
+const WILD=5;
+const OWN_COL=[null,"#3FC1B0","#E0503C","#A06BE0","#5C9BE8","#9A927E"];
+const RIVALS=["Lord Grimble","Lady Murk","Old Snagtooth"];
+const DIFF=[
+  {name:"Gentle",arrive:58,cap:10,army:3,every:400,first:600,income:1.5,start:1},
+  {name:"Fair",arrive:44,cap:15,army:4,every:320,first:450,income:2.5,start:2},
+  {name:"Fierce",arrive:34,cap:22,army:5,every:250,first:330,income:4,start:4}];
+const CAMPAIGN=[
+  {name:"First Hollow",size:40,rivals:1,diff:0,caves:2,seed:101,tips:true,blurb:"Learn the ropes against Lord Grimble."},
+  {name:"The Gold Vein",size:46,rivals:1,diff:1,caves:3,seed:202,gold:1.4,blurb:"Rich seams, and a sharper rival."},
+  {name:"Two Lords",size:52,rivals:2,diff:0,caves:4,seed:303,blurb:"Two rivals, one in each corner."},
+  {name:"Wild Deeps",size:52,rivals:1,diff:2,caves:6,seed:404,wild:2,blurb:"Caves full of spiders and trolls, and a fierce lord."},
+  {name:"The Crossing",size:58,rivals:2,diff:1,caves:5,seed:505,blurb:"Two fair rivals across a wide map."},
+  {name:"Three Crowns",size:64,rivals:3,diff:1,caves:6,seed:606,blurb:"Every lord at once."}];
+const PAYDAY=150;
+const PAY_CAP=30;
+
+function rngOf(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const isRock=t=>t===T.ROCK||t===T.GOLD||t===T.GEM;
+const walkT=t=>t===T.FLOOR||t===T.GATE;
+const lvlMult=u=>1+.15*(u.lvl-1);
+const maxHp=u=>Math.round(KINDS[u.k].hp*lvlMult(u));
+const wage=u=>Math.round(KINDS[u.k].wage*(1+.2*(u.lvl-1)));
+const tileOf=(W,u)=>(u.y|0)*W.w+(u.x|0);
+const diggerCost=n=>150+60*Math.max(0,n-3);
+const cheb=(W,i,x,y)=>Math.max(Math.abs(i%W.w-x),Math.abs((i/W.w|0)-y));
+function nb4(W,i){const w=W.w,x=i%w,o=[];if(x>0)o.push(i-1);if(x<w-1)o.push(i+1);if(i>=w)o.push(i-w);if(i<W.w*W.h-w)o.push(i+w);return o}
+const ringOf=(W,K,c)=>walkT(W.tile[c])&&cheb(W,c,K.hx,K.hy)===2;
+
+function initRuntime(W){
+  const N=W.w*W.h;
+  W.byId=new Map();for(const u of W.units)W.byId.set(u.id,u);
+  W.fx=[];W.events=[];W.evT={};
+  W.resD=new Int32Array(N);W.resC=new Int32Array(N);W.digp=new Float32Array(N);W.vis=new Uint8Array(N);
+  W._p=new Int32Array(N);W._s=new Uint32Array(N);W._q=new Int32Array(N);W._st=0;
+  W.rc=0;W.vt=0;W.ft=40;
+}
+
+function newWorld(spec){
+  const S=spec.size,w=S,h=S,N=w*h,R=rngOf(spec.seed);
+  const W={v:1,spec,w,h,t:0,nid:1,tile:new Uint8Array(N).fill(T.ROCK),own:new Uint8Array(N),room:new Uint8Array(N),mark:new Uint8Array(N),
+    gold:new Uint16Array(N),food:new Uint8Array(N),known:new Uint8Array(N),gates:[],units:[],k:[null],over:0,stats:{kills:0,lost:0}};
+  initRuntime(W);
+  const I=(x,y)=>y*w+x, inner=(x,y)=>x>0&&y>0&&x<w-1&&y<h-1;
+  const noise=sc=>{const gw=Math.ceil(w/sc)+2,g=[];for(let k=0;k<gw*gw;k++)g.push(R());const out=new Float32Array(N);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const fx=x/sc,fy=y/sc,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty);
+      const a=g[iy*gw+ix],b=g[iy*gw+ix+1],c=g[(iy+1)*gw+ix],d=g[(iy+1)*gw+ix+1];out[I(x,y)]=a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy}return out};
+  const nh=noise(7),ng=noise(4);
+  const m=7,corners=[[m,h-1-m],[w-1-m,m],[m,m],[w-1-m,h-1-m]];
+  const pick=spec.rivals===1?[1]:spec.rivals===2?[2,3]:[1,2,3];
+  const starts=[corners[0],...pick.map(k=>corners[k])];
+  const far=(x,y,r)=>starts.every(([sx,sy])=>Math.max(Math.abs(x-sx),Math.abs(y-sy))>r);
+  const gth=.76/Math.pow(spec.gold||1,.25);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=I(x,y);
+    if(!inner(x,y)){W.tile[i]=T.HARD;continue}
+    if(nh[i]>.72&&far(x,y,8))W.tile[i]=T.HARD;
+    else if(ng[i]>gth&&far(x,y,4)){W.tile[i]=T.GOLD;W.gold[i]=500}}
+  const floor=(x,y,o)=>{if(!inner(x,y))return;const i=I(x,y);W.tile[i]=T.FLOOR;W.own[i]=o;W.gold[i]=0};
+  const clearHard=(cx,cy,r)=>{for(let y=cy-r;y<=cy+r;y++)for(let x=cx-r;x<=cx+r;x++)if(inner(x,y)&&W.tile[I(x,y)]===T.HARD)W.tile[I(x,y)]=T.ROCK};
+  const blob=(x,y,n,t)=>{for(let k=0;k<n*3&&n>0;k++){if(inner(x,y)&&W.tile[I(x,y)]===T.ROCK){W.tile[I(x,y)]=t;if(t===T.GOLD)W.gold[I(x,y)]=500;n--}
+    const d=Math.floor(R()*4);x+=d===0?1:d===1?-1:0;y+=d===2?1:d===3?-1:0;x=Math.max(1,Math.min(w-2,x));y=Math.max(1,Math.min(h-2,y))}};
+  const gate=(cx,cy,o)=>{for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const i=I(cx+dx,cy+dy);W.tile[i]=T.GATE;W.own[i]=o}W.gates.push(I(cx,cy))};
+  const reveal=(cx,cy,r)=>{for(let y=cy-r;y<=cy+r;y++)for(let x=cx-r;x<=cx+r;x++)if(x>=0&&y>=0&&x<w&&y<h&&(x-cx)**2+(y-cy)**2<=r*r+1)W.known[I(x,y)]=1};
+  const targets=[];
+  starts.forEach(([cx,cy],n)=>{
+    const o=n+1,ai=o>1,D=DIFF[spec.diff],sx=cx<w/2?1:-1,sy=cy<h/2?1:-1;
+    clearHard(cx,cy,8);
+    for(let g=0;g<2;g++){const a=R()*6.283,dd=ai?8:6+R()*2;blob(Math.round(cx+Math.cos(a)*dd),Math.round(cy+Math.sin(a)*dd),4,T.GOLD)}
+    const r=ai?5:3;
+    for(let y=cy-r;y<=cy+r;y++)for(let x=cx-r;x<=cx+r;x++)floor(x,y,o);
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const i=I(cx+dx,cy+dy);W.tile[i]=T.HEART;W.own[i]=o}
+    W.k[o]={o,name:ai?RIVALS[n-1]:"You",ai,gold:ai?1200+400*spec.diff:1200,cap:1500,hx:cx,hy:cy,hp:2000,maxhp:2000,alive:true,rally:-1,
+      payT:PAYDAY,arriveT:ai?20:25,attackAt:ai?D.first:0,attacking:false,attackEnd:0,aiT:R()*2,hitT:-99,tunnelT:0,expT:0,goldT:0,zap:0};
+    if(ai){
+      const P=(dx,dy)=>[cx+dx*sx,cy+dy*sy];
+      gate(...P(3,3),o);
+      const room=(x0,x1,y0,y1,rm)=>{for(let dy=y0;dy<=y1;dy++)for(let dx=x0;dx<=x1;dx++){const [x,y]=P(dx,dy);W.room[I(x,y)]=rm;if(rm===RM.FARM)W.food[I(x,y)]=2}};
+      room(-4,-2,-4,-2,RM.LAIR);room(-4,-2,2,4,RM.FARM);room(2,4,-4,-4,RM.TREASURY);
+      if(spec.diff>=1)room(-1,1,3,4,RM.TRAINING);
+      targets.push([cx,cy]);
+    }else{
+      let vx=w/2-cx,vy=h/2-cy;const L=Math.hypot(vx,vy);vx/=L;vy/=L;
+      const gx=Math.round(cx+vx*10),gy=Math.round(cy+vy*10);
+      for(let k=0;k<=12;k++)clearHard(Math.round(cx+vx*k),Math.round(cy+vy*k),3);
+      for(let y=gy-2;y<=gy+2;y++)for(let x=gx-2;x<=gx+2;x++)floor(x,y,0);
+      gate(gx,gy,0);reveal(gx,gy,4);reveal(cx,cy,7);
+      W.firstGate=I(gx,gy);
+    }
+  });
+  const caves=[];
+  for(let tries=0;caves.length<(spec.caves||3)&&tries<600;tries++){
+    const x=5+Math.floor(R()*(w-10)),y=5+Math.floor(R()*(h-10));
+    if(!far(x,y,10))continue;
+    if(caves.some(c=>Math.hypot(c[0]-x,c[1]-y)<10))continue;
+    if(W.gates.some(g=>Math.hypot(g%w-x,(g/w|0)-y)<8))continue;
+    caves.push([x,y]);
+  }
+  caves.forEach(([cx,cy],n)=>{
+    const r=n===0&&caves.length>2?3.2:2+R()*1.3;
+    clearHard(cx,cy,Math.ceil(r)+1);
+    for(let y=cy-4;y<=cy+4;y++)for(let x=cx-4;x<=cx+4;x++)if((x-cx)**2+(y-cy)**2<=r*r)floor(x,y,0);
+    if(n===0&&caves.length>2)gate(cx,cy,0);
+    if(n===1||n===2){const edge=[];for(let y=cy-4;y<=cy+4;y++)for(let x=cx-4;x<=cx+4;x++)if(inner(x,y)&&W.tile[I(x,y)]===T.ROCK&&nb4(W,I(x,y)).some(j=>W.tile[j]===T.FLOOR))edge.push(I(x,y));
+      if(edge.length){const i=edge[Math.floor(R()*edge.length)];W.tile[i]=T.GEM}}
+    const cells=[];for(let y=cy-3;y<=cy+3;y++)for(let x=cx-3;x<=cx+3;x++)if(inner(x,y)&&W.tile[I(x,y)]===T.FLOOR)cells.push([x,y]);
+    const wl=spec.wild||1,sp=1+Math.floor(R()*2)+(wl>1?1:0);
+    const put=k=>{const [x,y]=cells[Math.floor(R()*cells.length)];const u=mkUnit(W,WILD,k,x,y);u.home=I(x,y)};
+    for(let k=0;k<sp;k++)put("spider");
+    if(wl>1&&R()<.6||(n===0&&caves.length>2))put("troll");
+    targets.push([cx,cy]);
+  });
+  // every rival and cave must be diggable-to from the player's Heart
+  const [px,py]=starts[0];
+  for(let pass=0;pass<8;pass++){
+    const seen=new Uint8Array(N),q=[I(px,py)];seen[q[0]]=1;
+    while(q.length){const c=q.pop();for(const j of nb4(W,c))if(!seen[j]&&W.tile[j]!==T.HARD){seen[j]=1;q.push(j)}}
+    const miss=targets.filter(([x,y])=>!seen[I(x,y)]);
+    if(!miss.length)break;
+    for(const [tx,ty] of miss){const n=Math.max(Math.abs(tx-px),Math.abs(ty-py));
+      for(let k=0;k<=n;k++){const x=Math.round(tx+(px-tx)*k/n),y=Math.round(ty+(py-ty)*k/n);if(inner(x,y)&&W.tile[I(x,y)]===T.HARD)W.tile[I(x,y)]=T.ROCK;if(inner(x+1,y)&&W.tile[I(x+1,y)]===T.HARD)W.tile[I(x+1,y)]=T.ROCK}}
+  }
+  for(let o=1;o<W.k.length;o++){const K=W.k[o];
+    for(let k=0;k<4;k++){const [dx,dy]=[[-2,0],[2,0],[0,-2],[0,2]][k];mkUnit(W,o,"digger",K.hx+dx,K.hy+dy)}
+    if(K.ai)for(let k=0;k<DIFF[spec.diff].start;k++)mkUnit(W,o,k%2?"goblin":"beetle",K.hx+(k%3)-1,K.hy+(k%2?2:-2))}
+  recount(W);
+  return W;
+}
+
+function fresh(u){u.task=null;u.path=null;u.pi=0;u.st=null;u.stT=0;u.then=null;u.cd=0;u.scan=Math.random()*.4;u.think=Math.random()*.5;u.tgt=0;u.rp=0;u.ig={};
+  u.jx=(Math.random()-.5)*.34;u.jy=(Math.random()-.5)*.34;u.face=1;u.anim=0;u.work=0;u.atkT=-9}
+function mkUnit(W,o,k,x,y){const u={id:W.nid++,o,k,x:x+.5,y:y+.5,hp:0,lvl:1,xp:0,mood:75,hunger:Math.random()*40,sleepy:Math.random()*60,carry:0,held:false,home:-1,bed:-1};
+  fresh(u);u.hp=maxHp(u);W.units.push(u);W.byId.set(u.id,u);return u}
+
+function ev(W,txt,i,cls){W.events.push({txt,i:i==null?-1:i,cls:cls||""})}
+function evT(W,key,gap,txt,i,cls){if((W.evT[key]||-1e9)+gap>W.t)return;W.evT[key]=W.t;ev(W,txt,i,cls)}
+function fx(W,o){o.t0=W.t;W.fx.push(o);if(W.fx.length>200)W.fx.shift()}
+
+/* breadth-first search over walkable tiles. visit(c) returns true to stop. Parents kept for pathTo. */
+function bfs(W,start,visit,limit){
+  const P=W._p,S=W._s,Q=W._q,st=++W._st,w=W.w,N=W.w*W.h;let h=0,t=0,n=0;
+  Q[t++]=start;S[start]=st;P[start]=-1;
+  while(h<t){const c=Q[h++];if(visit(c))return c;if(++n>limit)return -1;const x=c%w;
+    if(x>0){const j=c-1;if(S[j]!==st&&walkT(W.tile[j])){S[j]=st;P[j]=c;Q[t++]=j}}
+    if(x<w-1){const j=c+1;if(S[j]!==st&&walkT(W.tile[j])){S[j]=st;P[j]=c;Q[t++]=j}}
+    if(c>=w){const j=c-w;if(S[j]!==st&&walkT(W.tile[j])){S[j]=st;P[j]=c;Q[t++]=j}}
+    if(c<N-w){const j=c+w;if(S[j]!==st&&walkT(W.tile[j])){S[j]=st;P[j]=c;Q[t++]=j}}}
+  return -1;
+}
+function pathTo(W,goal){const p=[];for(let c=goal;c>=0&&W._p[c]!==-1;c=W._p[c])p.push(c);return p.reverse()}
+function findPath(W,from,goalFn,limit){const g=bfs(W,from,goalFn,limit||W.w*W.h);return g<0?null:pathTo(W,g)}
+
+function moveAlong(W,u,dt){
+  if(!u.path||u.pi>=u.path.length)return true;
+  const c=u.path[u.pi],tx=c%W.w+.5+u.jx,ty=(c/W.w|0)+.5+u.jy,dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy),sp=KINDS[u.k].spd*dt;
+  u.anim+=dt;if(Math.abs(dx)>.05)u.face=dx<0?-1:1;
+  if(d<=sp){u.x=tx;u.y=ty;u.pi++;return u.pi>=u.path.length}
+  u.x+=dx/d*sp;u.y+=dy/d*sp;return false;
+}
+function go(W,u,goalFn,then,limit){const p=findPath(W,tileOf(W,u),goalFn,limit);if(!p)return false;u.path=p;u.pi=0;u.st="go";u.then=then;return true}
+
+function recount(W){
+  const N=W.w*W.h;
+  for(let o=1;o<W.k.length;o++){const K=W.k[o];if(!K)continue;K.c={rooms:[0,0,0,0,0,0],tiles:[[],[],[],[],[],[]],floor:0,walk:[],gates:[],marks:0,fighters:0,diggers:0}}
+  for(let i=0;i<N;i++){const o=W.own[i];if(o&&o<WILD&&W.k[o]){const c=W.k[o].c;if(walkT(W.tile[i])){c.floor++;c.walk.push(i);const r=W.room[i];if(r){c.rooms[r]++;c.tiles[r].push(i)}}}
+    const m=W.mark[i];if(m)for(let o2=1;o2<W.k.length;o2++)if(m&(1<<o2)&&W.k[o2])W.k[o2].c.marks++}
+  for(const g of W.gates){const o=W.own[g];if(o&&W.k[o])W.k[o].c.gates.push(g)}
+  for(const u of W.units){if(u.hp<=0||u.o===WILD)continue;const c=W.k[u.o].c;if(u.k==="digger")c.diggers++;else c.fighters++}
+  for(let o=1;o<W.k.length;o++){const K=W.k[o];if(K)K.cap=1500+500*K.c.rooms[RM.TREASURY]}
+}
+
+function updVis(W){
+  const vis=W.vis,w=W.w,h=W.h;vis.fill(0);
+  const lit=(cx,cy,r)=>{for(let y=Math.max(0,cy-r);y<=Math.min(h-1,cy+r);y++)for(let x=Math.max(0,cx-r);x<=Math.min(w-1,cx+r);x++)if((x-cx)**2+(y-cy)**2<=r*r+1){const i=y*w+x;vis[i]=1;W.known[i]=1}};
+  for(const u of W.units)if(u.o===1&&!u.held&&u.hp>0)lit(u.x|0,u.y|0,4);
+  for(let i=0;i<w*h;i++)if(W.own[i]===1){const x=i%w,y=i/w|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<w&&Y<h){vis[Y*w+X]=1;W.known[Y*w+X]=1}}}
+}
+
+function step(W,dt){
+  if(W.over)return;
+  W.t+=dt;
+  if((W.rc-=dt)<=0){W.rc=1;recount(W)}
+  if((W.vt-=dt)<=0){W.vt=.5;updVis(W)}
+  if((W.ft-=dt)<=0){W.ft=40;for(let i=0;i<W.room.length;i++)if(W.room[i]===RM.FARM&&W.food[i]<2)W.food[i]++}
+  for(let o=1;o<W.k.length;o++){const K=W.k[o];if(K&&K.alive)keeperTick(W,K,dt)}
+  for(const u of W.units)if(u.hp>0&&!u.held)unitTick(W,u,dt);
+  if(W.units.some(u=>u.hp<=0)){for(const u of W.units)if(u.hp<=0){W.byId.delete(u.id)}W.units=W.units.filter(u=>u.hp>0)}
+}
+
+function keeperTick(W,K,dt){
+  const D=DIFF[W.spec.diff],c=K.c;
+  if(K.gold<K.cap)K.gold=Math.min(K.cap,K.gold+dt*(K.ai?D.income:1));
+  if(W.t-K.hitT>8&&K.hp<K.maxhp)K.hp=Math.min(K.maxhp,K.hp+2*dt);
+  if((K.zap-=dt)<=0){K.zap=1;const t=nearestHostile(W,K.o,K.hx+.5,K.hy+.5,2.9);
+    if(t){fx(W,{k:"bolt",x1:K.hx+.5,y1:K.hy+.5,x2:t.x,y2:t.y,c:OWN_COL[K.o]});hit(W,null,t,10)}}
+  if((K.payT-=dt)<=0){K.payT=PAYDAY;payday(W,K)}
+  if((K.arriveT-=dt)<=0)arrival(W,K,D);
+  if(K.ai&&(K.aiT-=dt)<=0){K.aiT=2;aiThink(W,K,D)}
+}
+function nearestHostile(W,o,x,y,r){let best=null,bd=r;for(const u of W.units){if(u.o===o||u.held||u.hp<=0)continue;const d=Math.hypot(u.x-x,u.y-y);if(d<bd){bd=d;best=u}}return best}
+function hostileNear(W,o,i,r){const x=i%W.w+.5,y=(i/W.w|0)+.5;for(const u of W.units)if(u.o!==o&&!u.held&&u.hp>0&&u.k!=="digger"&&Math.hypot(u.x-x,u.y-y)<r)return true;return false}
+
+function payday(W,K){let total=0,unpaid=0;
+  for(const u of W.units)if(u.o===K.o&&u.hp>0&&KINDS[u.k].wage){const g=wage(u);if(K.gold>=g){K.gold-=g;total+=g}else{u.mood-=35;unpaid++}}
+  if(!K.ai&&(total||unpaid))ev(W,unpaid?`Payday: ${unpaid} creature${unpaid>1?"s were":" was"} not paid, and they're cross.`:`Payday: you paid ${total} gold in wages.`,-1,unpaid?"bad":"")}
+
+function canCome(K,k){const n=KINDS[k].need;return Object.keys(n).every(r=>K.c.rooms[RI[r]]>=n[r])}
+function arrival(W,K,D){
+  const c=K.c,g=c.gates;
+  K.arriveT=(K.ai?D.arrive:34)/Math.pow(Math.max(1,g.length),.6);
+  if(!g.length){if(!K.ai&&W.t>120)evT(W,"gate",150,"No creatures can come until you own a Gate. Dig to one and your diggers will claim it.",W.firstGate);return}
+  if(c.fighters>=(K.ai?D.cap:PAY_CAP))return;
+  const opts=FIGHTERS.filter(k=>canCome(K,k));
+  if(!opts.length){if(!K.ai)evT(W,"lair",120,"Build a Lair of at least 4 tiles so creatures will come.",-1);return}
+  if(c.fighters>=c.rooms[RM.LAIR]){if(!K.ai)evT(W,"beds",90,"Creatures want to come, but every bed is taken. Build more Lair.",-1);return}
+  const k=opts[Math.floor(Math.random()*opts.length)],gi=g[Math.floor(Math.random()*g.length)];
+  mkUnit(W,K.o,k,gi%W.w,gi/W.w|0);c.fighters++;
+  fx(W,{k:"poof",x:gi%W.w+.5,y:(gi/W.w|0)+.5,c:"#B58CFF"});
+  if(!K.ai)ev(W,`A ${KINDS[k].name} came through your Gate.`,gi,"good");
+}
+
+function hit(W,a,tg,amt){
+  tg.hp-=amt;
+  fx(W,{k:"hit",x:tg.x,y:tg.y});
+  if(tg.o===1&&tg.k==="digger")evT(W,"dhit",25,"Your diggers are being attacked!",tileOf(W,tg),"bad");
+  else if(tg.o===1)evT(W,"fight",30,"Your creatures are fighting.",tileOf(W,tg),"");
+  if(a&&tg.k!=="digger"&&!tg.tgt)tg.tgt=a.id;
+  if(tg.hp<=0){tg.hp=0;fx(W,{k:"poof",x:tg.x,y:tg.y,c:"#ddd"});
+    if(a){a.xp+=10;lvlCheck(W,a)}
+    if(tg.o===1){W.stats.lost++;ev(W,`Your ${KINDS[tg.k].name} was killed.`,tileOf(W,tg),"bad")}else if(a&&a.o===1)W.stats.kills++}
+}
+function hitHeart(W,a,H,amt){
+  H.hp-=amt;H.hitT=W.t;fx(W,{k:"hit",x:H.hx+.5+(Math.random()-.5),y:H.hy+.5+(Math.random()-.5)});
+  if(H.o===1)evT(W,"heart",15,"Your Heart is under attack!",H.hy*W.w+H.hx,"bad");
+  if(H.hp<=0)destroyRealm(W,H,a?a.o:0);
+}
+function lvlCheck(W,u){if(u.k==="digger")return;while(u.lvl<10&&u.xp>=40*u.lvl){const before=maxHp(u);u.xp-=40*u.lvl;u.lvl++;u.hp+=maxHp(u)-before;
+  if(u.o===1)evT(W,"lvl"+u.id,5,`Your ${KINDS[u.k].name} reached level ${u.lvl}.`,tileOf(W,u),"good")}}
+
+function destroyRealm(W,H,by){
+  H.alive=false;H.hp=0;H.rally=-1;H.attacking=false;
+  for(const u of W.units)if(u.o===H.o&&u.hp>0){u.hp=0;fx(W,{k:"poof",x:u.x,y:u.y,c:OWN_COL[H.o]})}
+  const bit=1<<H.o;
+  for(let i=0;i<W.tile.length;i++){if(W.own[i]===H.o){if(W.tile[i]===T.HEART)W.tile[i]=T.FLOOR;W.own[i]=0;W.room[i]=0;W.food[i]=0}W.mark[i]&=~bit}
+  for(const K of W.k)if(K&&K.rally>=0&&W.tile[K.rally]!==T.HEART&&cheb(W,K.rally,H.hx,H.hy)<=1)K.rally=-1;
+  fx(W,{k:"boom",x:H.hx+.5,y:H.hy+.5,c:OWN_COL[H.o]});
+  if(H.o===1){W.over=2;ev(W,"Your Heart has been destroyed.",-1,"bad")}
+  else{const P=W.k[1],loot=Math.round(H.gold*.5);if(by===1&&P.alive)P.gold+=loot;
+    ev(W,`${H.name} is beaten!${by===1&&loot?` You took ${loot} gold.`:""}`,H.hy*W.w+H.hx,"good");
+    if(W.k.every((K,o)=>!K||o===1||!K.alive))W.over=1}
+  recount(W);
+}
+
+function unitTick(W,u,dt){
+  u.cd-=dt;
+  if(u.k==="digger"){digger(W,u,dt);return}
+  if(u.o!==WILD){
+    u.mood=Math.min(100,u.mood);
+    if(u.mood<=0){u.hp=0;u.left=true;if(u.o===1)ev(W,`Your ${KINDS[u.k].name} was unhappy and left.`,tileOf(W,u),"bad");fx(W,{k:"poof",x:u.x,y:u.y,c:"#888"});return}
+  }
+  fighter(W,u,dt);
+}
+
+/* ---------- diggers: dig marked rock, claim floor, carry gold home ---------- */
+function freeD(W,i){const r=W.resD[i];if(!r)return true;const v=W.byId.get(r);return !(v&&v.hp>0&&!v.held&&v.task&&v.task.t==="dig"&&v.task.i===i)}
+function freeC(W,i){const r=W.resC[i];if(!r)return true;const v=W.byId.get(r);return !(v&&v.hp>0&&!v.held&&v.task&&v.task.t==="claim"&&v.task.i===i)}
+function claimable(W,c,o){
+  if(W.own[c]===o||!walkT(W.tile[c])||!freeC(W,c))return false;
+  if(!nb4(W,c).some(j=>W.own[j]===o))return false;
+  if(W.own[c]&&W.k[W.own[c]]&&W.k[W.own[c]].alive&&hostileNear(W,o,c,2.5))return false;
+  return true;
+}
+function endTask(W,u){const t=u.task;if(t){if(t.t==="dig"&&W.resD[t.i]===u.id)W.resD[t.i]=0;if(t.t==="claim"&&W.resC[t.i]===u.id)W.resC[t.i]=0}
+  u.task=null;u.path=null;u.pi=0;u.work=0}
+function collapse(W,i){W.tile[i]=T.FLOOR;W.own[i]=0;W.gold[i]=0;W.mark[i]=0;W.digp[i]=0;fx(W,{k:"dust",x:i%W.w+.5,y:(i/W.w|0)+.5})}
+function claimTile(W,i,o){
+  const prev=W.own[i];W.own[i]=o;if(prev){W.room[i]=0;W.food[i]=0}
+  const g=W.gates.indexOf(i);
+  if(g>=0){if(o===1)ev(W,"You claimed a Gate! Creatures can come through it now.",i,"good");else if(prev===1)ev(W,"A rival took one of your Gates.",i,"bad")}
+  fx(W,{k:"claim",x:i%W.w+.5,y:(i/W.w|0)+.5,c:OWN_COL[o]});
+}
+function deposit(W,u){const K=W.k[u.o],room=Math.max(0,K.cap-K.gold),add=Math.min(u.carry,room);K.gold+=add;
+  if(add)fx(W,{k:"txt",x:u.x,y:u.y-.4,s:"+"+add,c:"#F2C94C"});
+  if(u.carry>add&&u.o===1)evT(W,"full",60,"Your treasury is full, so gold is being lost. Build more Treasury.",-1,"bad");
+  u.carry=0}
+function goDeposit(W,u){const K=W.k[u.o];const p=findPath(W,tileOf(W,u),c=>(W.room[c]===RM.TREASURY&&W.own[c]===u.o)||ringOf(W,K,c),3000);
+  if(!p)return false;endTask(W,u);u.task={t:"dep"};u.path=p;u.pi=0;return true}
+
+function digger(W,u,dt){
+  const K=W.k[u.o],tk=u.task;
+  if(tk){
+    if(tk.t==="dig"){
+      const i=tk.i;
+      if(!(W.mark[i]&(1<<u.o))||!isRock(W.tile[i])){endTask(W,u);return}
+      if(!moveAlong(W,u,dt))return;
+      u.anim+=dt;u.work+=dt;u.face=(i%W.w)+.5<u.x?-1:1;
+      if(u.work>=.5){u.work-=.5;const t=W.tile[i];
+        if(t===T.GOLD){const g=Math.min(20,W.gold[i]);W.gold[i]-=g;u.carry+=g;if(W.gold[i]<=0)collapse(W,i)}
+        else if(t===T.GEM){u.carry+=10;W.digp[i]=(W.digp[i]+1)%4}
+        else{W.digp[i]+=.5;if(W.digp[i]>=2.5)collapse(W,i)}
+        if(u.carry>=100){endTask(W,u);goDeposit(W,u)}else if(!isRock(W.tile[i]))endTask(W,u)}
+      return;
+    }
+    if(tk.t==="claim"){
+      const i=tk.i;
+      if(W.own[i]===u.o||!walkT(W.tile[i])){endTask(W,u);return}
+      if(!moveAlong(W,u,dt))return;
+      const prev=W.own[i];
+      if(prev&&W.k[prev]&&W.k[prev].alive&&hostileNear(W,u.o,i,2.5)){endTask(W,u);u.think=1.5;return}
+      u.anim+=dt;u.work+=dt;
+      if(u.work>=(prev&&W.k[prev]&&W.k[prev].alive?(W.room[i]?7:4.5):1.4)){claimTile(W,i,u.o);endTask(W,u)}
+      return;
+    }
+    if(tk.t==="dep"){if(moveAlong(W,u,dt)){deposit(W,u);endTask(W,u)}return}
+    if(tk.t==="walk"){if(moveAlong(W,u,dt))endTask(W,u);return}
+  }
+  if((u.think-=dt)>0)return;
+  u.think=.45+Math.random()*.35;
+  if(u.carry>=60&&goDeposit(W,u))return;
+  const o=u.o,bit=1<<o,preferClaim=u.id%2===0;
+  let dig=null,claim=-1;
+  bfs(W,tileOf(W,u),c=>{
+    if(!dig)for(const j of nb4(W,c))if((W.mark[j]&bit)&&isRock(W.tile[j])&&freeD(W,j)){dig={i:j,stand:c};break}
+    if(claim<0&&claimable(W,c,o))claim=c;
+    return preferClaim?claim>=0:!!dig;
+  },2600);
+  let job=null;
+  if(preferClaim)job=claim>=0?{t:"claim",i:claim,goal:claim}:dig?{t:"dig",i:dig.i,goal:dig.stand}:null;
+  else job=dig?{t:"dig",i:dig.i,goal:dig.stand}:claim>=0?{t:"claim",i:claim,goal:claim}:null;
+  if(job){
+    // the search already holds a route to the goal: rebuild it from the parents of the last search
+    const p=findPath(W,tileOf(W,u),c=>c===job.goal,4000);
+    if(!p)return;
+    endTask(W,u);u.task={t:job.t,i:job.i};u.path=p;u.pi=0;
+    if(job.t==="dig")W.resD[job.i]=u.id;else W.resC[job.i]=u.id;
+    return;
+  }
+  if(u.carry>0&&goDeposit(W,u))return;
+  if(Math.random()<.25){const tg=K.c.walk.filter(c=>cheb(W,c,K.hx,K.hy)<=4);if(tg.length){const g=tg[Math.floor(Math.random()*tg.length)];const p=findPath(W,tileOf(W,u),c=>c===g,900);if(p){u.task={t:"walk"};u.path=p;u.pi=0}}}
+}
+
+/* ---------- creatures: fight, follow the flag, sleep, eat, train ---------- */
+function findTarget(W,u){
+  const wild=u.o===WILD,K=W.k[u.o],sight=wild?4:(K&&K.rally>=0?7:6);let best=null,bs=1e9;
+  for(const v of W.units){if(v.o===u.o||v.held||v.hp<=0)continue;if(u.ig[v.id]>W.t)continue;
+    const d=Math.hypot(v.x-u.x,v.y-u.y);if(d>(!wild&&W.own[tileOf(W,v)]===u.o?9:sight))continue;
+    if(wild&&u.home>=0&&Math.hypot(v.x-(u.home%W.w+.5),v.y-((u.home/W.w|0)+.5))>6)continue;
+    const s=d+(v.k==="digger"?2:0);if(s<bs){bs=s;best=v}}
+  return best?best.id:0;
+}
+function heartAt(W,i){return W.tile[i]===T.HEART?W.k[W.own[i]]:null}
+function bedFree(W,u,c){for(const v of W.units)if(v!==u&&v.bed===c&&v.hp>0)return false;return true}
+
+function fighter(W,u,dt){
+  const K=W.k[u.o],st=KINDS[u.k],wild=u.o===WILD,mult=lvlMult(u),w=W.w;
+  if(!wild){u.hunger+=dt;u.sleepy+=dt;if(u.hunger>150)u.mood-=.3*dt}
+  if((u.scan-=dt)<=0){u.scan=.3+Math.random()*.15;const nt=findTarget(W,u);if(nt!==u.tgt){u.tgt=nt;u.path=null;u.rp=0}}
+  const tg=u.tgt?W.byId.get(u.tgt):null;
+  if(tg&&tg.hp>0&&!tg.held){
+    if(u.st==="sleep"||u.st==="train"||u.st==="eat"||u.st==="go")u.st=null;
+    const d=Math.hypot(tg.x-u.x,tg.y-u.y);
+    if(d<=st.rng){u.face=tg.x<u.x?-1:1;if(u.cd<=0){u.cd=st.cd;u.atkT=W.t;if(st.rng>2)fx(W,{k:"bolt",x1:u.x,y1:u.y-.2,x2:tg.x,y2:tg.y,c:"#C59BFF"});hit(W,u,tg,st.atk*mult)}return}
+    if((u.rp-=dt)<=0||!u.path||u.pi>=u.path.length){u.rp=.7;const ti=tileOf(W,tg),tx=tg.x,ty=tg.y,r=st.rng;
+      const p=findPath(W,tileOf(W,u),c=>c===ti||(r>2&&Math.hypot(c%w+.5-tx,(c/w|0)+.5-ty)<=r-.4),1800);
+      if(!p||!p.length){u.ig[tg.id]=W.t+4;u.tgt=0;return}u.path=p;u.pi=0}
+    moveAlong(W,u,dt);return;
+  }
+  u.tgt=0;
+  if(wild){
+    const hx=u.home%w+.5,hy=(u.home/w|0)+.5;
+    if(Math.hypot(u.x-hx,u.y-hy)>1.5){if(u.st!=="go"&&!go(W,u,c=>c===u.home,"idle",1500)){u.x=hx;u.y=hy}}
+    if(u.st==="go"){if(moveAlong(W,u,dt))u.st=null}
+    return;
+  }
+  // the flag
+  if(K.rally>=0&&(!K.ai||u.raid)){
+    const H=heartAt(W,K.rally);
+    if(H&&H.o!==u.o&&H.alive){
+      const d=Math.hypot(H.hx+.5-u.x,H.hy+.5-u.y)-1.5;
+      if(d<=st.rng){u.st=null;u.face=H.hx+.5<u.x?-1:1;if(u.cd<=0){u.cd=st.cd;u.atkT=W.t;if(st.rng>2)fx(W,{k:"bolt",x1:u.x,y1:u.y-.2,x2:H.hx+.5,y2:H.hy+.5,c:"#C59BFF"});hitHeart(W,u,H,st.atk*mult)}return}
+      if(u.st!=="rally"||!u.path||u.pi>=u.path.length||(u.rp-=dt)<=0){u.rp=3;
+        const p=findPath(W,tileOf(W,u),c=>Math.hypot(c%w+.5-H.hx-.5,(c/w|0)+.5-H.hy-.5)-1.5<=st.rng-.15);
+        u.path=p;u.pi=0;u.st="rally";if(!p){u.st="rallyStuck";u.stT=3}}
+      if(u.st==="rallyStuck"){if((u.stT-=dt)<=0)u.st=null;return}
+      moveAlong(W,u,dt);return;
+    }
+    const rx=K.rally%w+.5,ry=(K.rally/w|0)+.5;
+    if(Math.hypot(rx-u.x,ry-u.y)>2.2){
+      if(u.st!=="rally"||!u.path||u.pi>=u.path.length){const p=findPath(W,tileOf(W,u),c=>Math.hypot(c%w+.5-rx,(c/w|0)+.5-ry)<=1.6);u.path=p;u.pi=0;u.st=p?"rally":"rallyStuck";u.stT=3}
+      if(u.st==="rallyStuck"){if((u.stT-=dt)<=0)u.st=null;return}
+      moveAlong(W,u,dt);return;
+    }
+    if(u.st==="rally")u.st=null;
+    return;
+  }
+  if(u.st==="rally"||u.st==="rallyStuck")u.st=null;
+  // the Heart is under attack: everyone rushes home to defend it
+  if(W.t-K.hitT<4){
+    const hx=K.hx+.5,hy=K.hy+.5;
+    if(Math.hypot(u.x-hx,u.y-hy)>3.2){if(u.st!=="defend"||!u.path||u.pi>=u.path.length){const p=findPath(W,tileOf(W,u),c=>Math.hypot(c%w+.5-hx,(c/w|0)+.5-hy)<=2.6);u.path=p;u.pi=0;u.st=p?"defend":"idle";u.stT=2}
+      if(u.st==="defend"){moveAlong(W,u,dt);return}}
+  }
+  if(u.st==="defend")u.st=null;
+  const mh=maxHp(u);
+  switch(u.st){
+    case "go":{if(moveAlong(W,u,dt))arrive(W,u);return}
+    case "sleep":{const onBed=W.room[tileOf(W,u)]===RM.LAIR;u.hp=Math.min(mh,u.hp+mh*(onBed?.06:.03)*dt);u.mood+=(onBed?.4:.1)*dt;
+      if((u.stT-=dt)<=0&&u.hp>=mh*.95){u.st=null;u.sleepy=0}return}
+    case "eat":{if((u.stT-=dt)<=0)u.st=null;return}
+    case "train":{const r=u.k==="hexer"?RM.LIBRARY:RM.TRAINING,ti=tileOf(W,u);
+      if(K.gold<1||W.room[ti]!==r||W.own[ti]!==u.o){u.st=null;return}
+      K.gold-=dt;u.xp+=dt*1.2;u.mood+=.12*dt;u.anim+=dt;lvlCheck(W,u);
+      if((u.stT-=dt)<=0||u.hunger>110||u.sleepy>170)u.st=null;return}
+    case "idle":{if((u.stT-=dt)<=0)u.st=null;return}
+  }
+  // decide what to do next
+  if(u.hp<mh*.5||u.sleepy>170){
+    if(!(u.bed>=0&&W.room[u.bed]===RM.LAIR&&W.own[u.bed]===u.o))u.bed=-1;
+    if(u.bed<0){const b=bfs(W,tileOf(W,u),c=>W.room[c]===RM.LAIR&&W.own[c]===u.o&&bedFree(W,u,c),4000);if(b>=0)u.bed=b}
+    if(u.bed>=0&&go(W,u,c=>c===u.bed,"sleep"))return;
+    u.mood-=8;if(u.o===1)evT(W,"nobed",60,"A creature has no bed to sleep in. Build more Lair.",tileOf(W,u),"bad");
+    u.st="sleep";u.stT=10;return;
+  }
+  if(u.hunger>110){
+    if(go(W,u,c=>W.room[c]===RM.FARM&&W.own[c]===u.o&&W.food[c]>0,"eat",4000))return;
+    if(u.o===1&&u.hunger>150)evT(W,"food",60,"Your creatures are hungry. Build a bigger Mushroom farm.",-1,"bad");
+  }
+  const tr=u.k==="hexer"?RM.LIBRARY:RM.TRAINING,tl=K.c.tiles[tr];
+  if(tl.length&&K.gold>=20&&u.lvl<10&&Math.random()<.7){const g=tl[Math.floor(Math.random()*tl.length)];if(go(W,u,c=>c===g,"train",4000))return}
+  const near=K.c.walk.length?K.c.walk[Math.floor(Math.random()*K.c.walk.length)]:-1;
+  if(near>=0&&go(W,u,c=>c===near,"idle",1500))return;
+  u.st="idle";u.stT=2;
+}
+function arrive(W,u){
+  const t=u.then,ti=tileOf(W,u);u.path=null;u.st=null;
+  if(t==="sleep"){u.st="sleep";u.stT=12}
+  else if(t==="eat"){if(W.room[ti]===RM.FARM&&W.food[ti]>0){W.food[ti]--;u.hunger=0;u.mood+=10;u.st="eat";u.stT=3}}
+  else if(t==="train"){u.st="train";u.stT=20+Math.random()*12}
+  else if(t==="idle"){u.st="idle";u.stT=2+Math.random()*4}
+}
+
+/* ---------- player and rival actions ---------- */
+function summonDigger(W,K){const cost=diggerCost(K.c.diggers);if(K.gold<cost||K.c.diggers>=20)return false;
+  const ring=K.c.walk.filter(c=>cheb(W,c,K.hx,K.hy)===2);if(!ring.length)return false;
+  const c=ring[Math.floor(Math.random()*ring.length)];K.gold-=cost;mkUnit(W,K.o,"digger",c%W.w,c/W.w|0);K.c.diggers++;fx(W,{k:"poof",x:c%W.w+.5,y:(c/W.w|0)+.5,c:OWN_COL[K.o]});return true}
+function canBuild(W,o,i,r){return W.tile[i]===T.FLOOR&&W.own[i]===o&&W.room[i]!==r}
+function buildRoom(W,K,i,r){if(!canBuild(W,K.o,i,r)||K.gold<ROOMS[r].cost)return false;K.gold-=ROOMS[r].cost;W.room[i]=r;W.food[i]=0;return true}
+function sellRoom(W,K,i){if(W.own[i]!==K.o||!W.room[i])return false;K.gold+=Math.round(ROOMS[W.room[i]].cost/2);W.room[i]=0;W.food[i]=0;return true}
+
+/* weighted route through rock from a rival's floor to a goal; returns the tiles on the way */
+function digRoute(W,K,goal,maxCost){
+  const N=W.w*W.h,dist=new Float32Array(N).fill(1e9),prev=new Int32Array(N).fill(-1),heap=[];
+  const push=(d,i)=>{heap.push([d,i]);let k=heap.length-1;while(k>0){const p=(k-1)>>1;if(heap[p][0]<=heap[k][0])break;[heap[p],heap[k]]=[heap[k],heap[p]];k=p}};
+  const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let k=0;for(;;){const l=2*k+1,r=l+1;let m=k;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===k)break;[heap[m],heap[k]]=[heap[k],heap[m]];k=m}}return top};
+  for(const c of K.c.walk){dist[c]=0;push(0,c)}
+  while(heap.length){const [d,c]=pop();if(d>dist[c])continue;if(d>(maxCost||1e9))break;
+    if(goal(c)){const p=[];for(let x=c;x>=0;x=prev[x])p.push(x);return p.reverse()}
+    for(const j of nb4(W,c)){const t=W.tile[j];if(t===T.HARD||t===T.HEART)continue;const nd=d+(walkT(t)?1:4);if(nd<dist[j]){dist[j]=nd;prev[j]=c;push(nd,j)}}}
+  return null;
+}
+function markRoute(W,K,route){if(!route)return 0;let n=0;const bit=1<<K.o;for(const c of route)if(isRock(W.tile[c])&&!(W.mark[c]&bit)){W.mark[c]|=bit;n++}return n}
+
+function aiThink(W,K,D){
+  const c=K.c,P=W.k[1];
+  const want=Math.min(12,4+Math.floor(c.floor/40));
+  if(c.diggers<want&&K.gold>diggerCost(c.diggers)+200)summonDigger(W,K);
+  aiRooms(W,K);
+  if(K.attacking){
+    const left=W.units.filter(u=>u.o===K.o&&u.raid&&u.hp>0).length;
+    if(left===0||W.t>K.attackEnd||W.t-K.hitT<2||!P.alive){K.attacking=false;K.rally=-1;K.wave=(K.wave||0)+1;for(const u of W.units)if(u.o===K.o)u.raid=false;K.attackAt=W.t+D.every*(.8+Math.random()*.4)}
+  }else if(W.t>=K.attackAt&&c.fighters>=Math.min(D.army+2*(K.wave||0),D.cap-1)&&P.alive){
+    const ph=P.hy*W.w+P.hx,start=c.walk.find(i=>ringOf(W,K,i));
+    if(start!=null&&bfs(W,start,i=>ringOf(W,P,i),W.w*W.h)>=0){K.attacking=true;K.rally=ph;K.attackEnd=W.t+180;
+      const n=Math.min(D.army+2*(K.wave||0),c.fighters-1),f=W.units.filter(u=>u.o===K.o&&u.k!=="digger").sort((a,b)=>b.lvl-a.lvl);f.slice(0,n).forEach(u=>{u.raid=true;u.st=null;u.path=null});ev(W,`${K.name}'s creatures are marching on your Heart!`,K.hy*W.w+K.hx,"bad")}
+    else if(W.t>=K.tunnelT){K.tunnelT=W.t+25;markRoute(W,K,digRoute(W,K,i=>W.own[i]===1&&walkT(W.tile[i])))}
+  }
+  if(c.marks<4&&W.t>=K.expT){
+    K.expT=W.t+6;const bit=1<<K.o;
+    const desired=70+30*Math.min(4,Math.floor(W.t/200));
+    if(c.floor<desired){
+      const R=Math.ceil(Math.sqrt(desired)/2)+2,cand=[];
+      for(let y=K.hy-R;y<=K.hy+R;y++)for(let x=K.hx-R;x<=K.hx+R;x++){if(x<1||y<1||x>=W.w-1||y>=W.h-1)continue;const i=y*W.w+x;
+        if(W.tile[i]===T.ROCK&&!(W.mark[i]&bit)&&nb4(W,i).some(j=>W.own[j]===K.o&&walkT(W.tile[j])))cand.push([Math.hypot(x-K.hx,y-K.hy)+Math.random(),i])}
+      cand.sort((a,b)=>a[0]-b[0]);for(const [,i] of cand.slice(0,6))W.mark[i]|=bit;
+    }else if(W.t>=K.goldT){
+      K.goldT=W.t+40;
+      if(c.gates.length<2)markRoute(W,K,digRoute(W,K,i=>W.gates.includes(i)&&!W.own[i]&&cheb(W,i,K.hx,K.hy)<22,120));
+      markRoute(W,K,digRoute(W,K,i=>(W.tile[i]===T.GOLD||W.tile[i]===T.GEM)&&cheb(W,i,K.hx,K.hy)<=18,90));
+    }
+  }
+}
+function aiRooms(W,K){
+  const c=K.c,R=c.rooms,F=c.fighters;
+  const wants=[[RM.LAIR,Math.max(6,F+3)],[RM.FARM,Math.ceil(F/2)+3],[RM.TRAINING,W.t>90?6:0],[RM.TREASURY,K.gold>K.cap*.8?R[RM.TREASURY]+2:0],
+    [RM.LIBRARY,W.t>300?6:0],[RM.TRAINING,W.t>600?10:0],[RM.LAIR,W.t>600?10:0],[RM.FARM,W.t>600?7:0]];
+  for(const [r,n] of wants){
+    if(R[r]>=n)continue;
+    if(K.gold<ROOMS[r].cost+150)return;
+    let best=-1,bs=1e9;
+    for(const i of c.walk){if(W.tile[i]!==T.FLOOR||W.room[i]||cheb(W,i,K.hx,K.hy)<=2)continue;
+      const adj=nb4(W,i).filter(j=>W.room[j]===r&&W.own[j]===K.o).length,s=Math.hypot(i%W.w-K.hx,(i/W.w|0)-K.hy)-4*adj;
+      if(s<bs){bs=s;best=i}}
+    if(best>=0){buildRoom(W,K,best,r);R[r]++;c.tiles[r].push(best)}
+    return;
+  }
+}
+
+/* ---------- saving ---------- */
+function b64(u8){let s="";for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(s)}
+function unb64(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+function saveWorld(W){return {v:1,spec:W.spec,w:W.w,h:W.h,t:W.t,nid:W.nid,over:W.over,stats:W.stats,gates:W.gates,firstGate:W.firstGate,
+  tile:b64(W.tile),own:b64(W.own),room:b64(W.room),mark:b64(W.mark),gold:b64(new Uint8Array(W.gold.buffer)),food:b64(W.food),known:b64(W.known),
+  k:W.k.map(K=>K&&Object.assign({},K,{c:undefined})),
+  units:W.units.filter(u=>u.hp>0).map(u=>({id:u.id,o:u.o,k:u.k,x:u.x,y:u.y,hp:u.hp,lvl:u.lvl,xp:u.xp,mood:u.mood,hunger:u.hunger,sleepy:u.sleepy,carry:u.carry,held:u.held,home:u.home,bed:u.bed}))}}
+function loadWorld(d){
+  const W={v:1,spec:d.spec,w:d.w,h:d.h,t:d.t||0,nid:d.nid,over:d.over||0,stats:d.stats||{kills:0,lost:0},gates:d.gates||[],firstGate:d.firstGate,
+    tile:unb64(d.tile),own:unb64(d.own),room:unb64(d.room),mark:unb64(d.mark),gold:new Uint16Array(unb64(d.gold).buffer),food:unb64(d.food),known:unb64(d.known),
+    k:d.k.map(K=>K&&Object.assign({zap:0,expT:0,goldT:0,tunnelT:0},K)),units:[]};
+  for(const s of d.units){const u=Object.assign({},s);fresh(u);W.units.push(u)}
+  initRuntime(W);recount(W);updVis(W);return W;
+}
+/*CORE-END*/
+
+/* ======================= page ======================= */
+const $=id=>document.getElementById(id);
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const fmt=n=>Math.floor(n).toLocaleString("en-GB");
+const mmss=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+let W=null,view="menu",speed=1,paused=false,tool="look",buildSel=RM.LAIR,held=[],sel=null,lastSave=0;
+const cv=$("cv"),ctx=cv.getContext("2d"),mini=$("mini"),mctx=mini.getContext("2d");
+let VW=0,VH=0,DPR=1;
+const cam={x:0,y:0,z:36};
+
+function show(v){view=v;$("menu").hidden=v!=="menu";$("game").hidden=v!=="game";if(v==="game")resize()}
+
+/* ---------- menu ---------- */
+function progress(){return LS.get("hd.progress",{won:{}})}
+function renderMenu(){
+  const pr=progress(),box=$("realms");box.textContent="";
+  CAMPAIGN.forEach((m,n)=>{
+    const won=pr.won[n+1],open=n===0||pr.won[n];
+    const b=document.createElement("button");b.className="realm"+(won?" won":"");b.disabled=!open;
+    b.innerHTML=`<span class="n">${won?"✓":n+1}</span><span class="t"><b></b><small></small></span>`;
+    b.querySelector("b").textContent=m.name;
+    b.querySelector("small").textContent=open?`${m.blurb} ${m.rivals} rival${m.rivals>1?"s":""} · ${DIFF[m.diff].name}${won?` · won in ${mmss(won.time)}`:""}`:"Win the realm before to open this one.";
+    b.onclick=()=>startGame(Object.assign({camp:n+1},m));
+    box.append(b);
+  });
+  const g=LS.get("hd.game",null);
+  $("contCard").hidden=!g;
+  if(g)$("contTxt").textContent=`${g.spec.camp?CAMPAIGN[g.spec.camp-1].name:"Quick game"} · ${mmss(g.t)} played`;
+}
+function segVal(id){return +$(id).querySelector(".on").dataset.v}
+for(const id of ["qRivals","qDiff","qSize"])$(id).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
+$("quickBtn").onclick=()=>startGame({name:"Quick game",size:segVal("qSize"),rivals:segVal("qRivals"),diff:segVal("qDiff"),caves:3+Math.floor(segVal("qSize")/16),seed:Math.floor(Math.random()*1e9)});
+$("contBtn").onclick=()=>{const g=LS.get("hd.game",null);if(!g)return;try{W=loadWorld(g)}catch(e){LS.del("hd.game");renderMenu();return}enterGame()};
+
+function startGame(spec){
+  if(LS.get("hd.game",null)&&!confirm("Start a new game? The game in progress will be lost."))return;
+  W=newWorld(spec);updVis(W);enterGame();
+}
+function enterGame(){
+  held=W.units.filter(u=>u.held&&u.o===1);sel=null;tool="look";paused=false;speed=1;
+  const P=W.k[1];cam.x=P.hx+.5;cam.y=P.hy+.5;cam.z=36;
+  $("ov").hidden=true;$("sheet").hidden=true;$("info").hidden=true;$("toasts").textContent="";
+  setTool("look");show("game");save();lastFrame=performance.now();
+}
+function save(){if(!W)return;if(W.over){LS.del("hd.game");return}LS.set("hd.game",saveWorld(W));lastSave=W.t}
+function quitToMenu(){save();W=null;renderMenu();show("menu")}
+
+/* ---------- tools ---------- */
+function setTool(t){
+  tool=t;
+  document.querySelectorAll("#tools button").forEach(b=>b.classList.toggle("on",b.dataset.tool===t));
+  const bt=$("buildTool");bt.innerHTML=t==="build"?`${buildSel==="sell"?"💰":ROOMS[buildSel].icon}<small>${buildSel==="sell"?"Sell":"Build"}</small>`:"🧱<small>Build</small>";
+  renderFloat();
+}
+$("tools").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const t=b.dataset.tool;
+  if(t==="build"){openBuild();return}
+  if(t===tool&&t!=="look"){setTool("look");return}
+  setTool(t);
+  if(t==="dig")toast("Tap rock to mark it for digging. Hold, then drag, to mark lots.");
+  if(t==="flag")toast("Tap a spot to send your creatures there, or tap a rival's Heart to attack it.");
+  if(t==="hand")toast(held.length?"Tap your own floor to drop them.":"Tap your creatures to pick them up.");
+});
+function openBuild(){
+  const K=W.k[1],s=$("sheet");s.textContent="";
+  const head=document.createElement("div");head.className="row";head.innerHTML=`<h2>Build</h2><span class="chip">🪙 ${fmt(K.gold)}</span>`;s.append(head);
+  const opt=(ic,name,desc,cost,fn,dis)=>{const b=document.createElement("button");b.className="opt";b.disabled=!!dis;
+    b.innerHTML=`<span class="ic"></span><span class="t"><b></b><small></small></span><span class="c"></span>`;
+    b.querySelector(".ic").textContent=ic;b.querySelector("b").textContent=name;b.querySelector("small").textContent=desc;b.querySelector(".c").textContent=cost;b.onclick=fn;s.append(b)};
+  for(let r=1;r<ROOMS.length;r++){const R=ROOMS[r];opt(R.icon,R.name,`${R.desc} You have ${K.c.rooms[r]}.`,`${R.cost} a tile`,()=>{buildSel=r;s.hidden=true;setTool("build");toast(`Tap your floor to build ${R.name}. Hold, then drag, to fill an area.`)})}
+  const dc=diggerCost(K.c.diggers);
+  opt("⛏","New digger",`Diggers dig, claim floor and carry gold. You have ${K.c.diggers}.`,`${dc} gold`,()=>{if(summonDigger(W,K)){toast("A new digger popped up by your Heart.","good");openBuild()}else toast(K.c.diggers>=20?"That's the most diggers you can have.":"Not enough gold.","bad")},K.gold<dc||K.c.diggers>=20);
+  opt("💰","Sell rooms","Tap a room tile to sell it for half what it cost.","",()=>{buildSel="sell";s.hidden=true;setTool("build")});
+  const c=document.createElement("button");c.className="btn";c.textContent="Close";c.onclick=()=>{s.hidden=true};s.append(c);
+  s.hidden=false;$("info").hidden=true;
+}
+function renderFloat(){
+  const f=$("float");f.textContent="";if(!W)return;
+  const K=W.k[1];
+  if(held.length){const b=document.createElement("button");b.className="chip";b.textContent=`✋ Holding ${held.length} · tap your floor to drop`;b.onclick=()=>setTool("hand");f.append(b)}
+  if(K.rally>=0){const b=document.createElement("button");b.className="chip";b.textContent="🚩 Call off the flag";b.onclick=()=>{K.rally=-1;renderFloat();toast("Your creatures are back to their own business.")};f.append(b)}
+  $("handTool").innerHTML=held.length?`✋<small>Hand ${held.length}</small>`:"✋<small>Hand</small>";
+}
+
+/* ---------- taps ---------- */
+function tileAtScreen(px,py){const x=Math.floor((px-VW/2)/cam.z+cam.x),y=Math.floor((py-VH/2)/cam.z+cam.y);if(x<0||y<0||x>=W.w||y>=W.h)return -1;return y*W.w+x}
+function unitAtScreen(px,py,own){const wx=(px-VW/2)/cam.z+cam.x,wy=(py-VH/2)/cam.z+cam.y;let best=null,bd=.75;
+  for(const u of W.units){if(u.held||u.hp<=0)continue;if(own&&u.o!==1)continue;if(u.o!==1&&!W.vis[tileOf(W,u)])continue;const d=Math.hypot(u.x-wx,u.y-wy+.15);if(d<bd){bd=d;best=u}}return best}
+function tap(px,py){
+  const i=tileAtScreen(px,py);if(i<0)return;
+  const K=W.k[1],t=W.tile[i];
+  if(tool==="look"){const u=unitAtScreen(px,py,false);if(u){sel={u:u.id};showInfo();return}sel={i};showInfo();return}
+  if(tool==="dig"){
+    if(isRock(t)){W.mark[i]^=2;W.rc=0}
+    else if(t===T.HARD)toast("That rock is too hard to dig.","bad");
+    return;
+  }
+  if(tool==="build"){
+    if(buildSel==="sell"){if(!sellRoom(W,K,i))toast("Tap one of your room tiles to sell it.");return}
+    if(!canBuild(W,1,i,buildSel)){toast(W.own[i]===1&&walkT(t)&&t!==T.FLOOR?"You can't build on a Gate.":"Rooms go on your own claimed floor (the coloured tiles).","bad");return}
+    if(!buildRoom(W,K,i,buildSel))toast("Not enough gold.","bad");else W.rc=0;
+    return;
+  }
+  if(tool==="hand"){
+    const u=unitAtScreen(px,py,true);
+    if(u&&held.length<8){endTask(W,u);u.held=true;u.st=null;u.path=null;u.tgt=0;held.push(u);renderFloat();return}
+    if(u&&held.length>=8){toast("Your hand is full (8). Drop them first.");return}
+    if(!held.length){toast("Tap one of your creatures or diggers to pick it up.");return}
+    if(!walkT(t)||W.own[i]!==1){toast("Drop creatures on your own floor.","bad");return}
+    for(const v of held){v.held=false;fresh(v);v.x=i%W.w+.5+v.jx;v.y=(i/W.w|0)+.5+v.jy;fx(W,{k:"poof",x:v.x,y:v.y,c:OWN_COL[1]})}
+    held=[];renderFloat();return;
+  }
+  if(tool==="flag"){
+    const H=heartAt(W,i);
+    if(H&&H.o!==1&&W.known[i]){K.rally=H.hy*W.w+H.hx;toast(`Your creatures are off to attack ${H.name}'s Heart!`,"good")}
+    else if(walkT(t)&&W.known[i]){K.rally=i;toast("Your creatures are heading for the flag.")}
+    else{toast("Plant the flag on open floor you have seen.","bad");return}
+    for(const u of W.units)if(u.o===1&&u.k!=="digger"){u.st=null;u.path=null}
+    renderFloat();setTool("look");
+  }
+}
+function rectApply(a,b){
+  const w=W.w,x0=Math.min(a%w,b%w),x1=Math.max(a%w,b%w),y0=Math.min(a/w|0,b/w|0),y1=Math.max(a/w|0,b/w|0),K=W.k[1];
+  if(tool==="dig"){const unmark=isRock(W.tile[a])&&(W.mark[a]&2);
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*w+x;if(isRock(W.tile[i])){if(unmark)W.mark[i]&=~2;else W.mark[i]|=2}}W.rc=0;return}
+  if(tool==="build"){let n=0,broke=false;
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*w+x;
+      if(buildSel==="sell"){if(sellRoom(W,K,i))n++}
+      else if(canBuild(W,1,i,buildSel)){if(buildRoom(W,K,i,buildSel))n++;else broke=true}}
+    if(broke)toast("You ran out of gold.","bad");W.rc=0}
+}
+
+/* ---------- info panels ---------- */
+const MOODS=[[70,"😊 Happy"],[40,"😐 OK"],[15,"😠 Cross"],[-1,"😡 About to leave"]];
+function doing(u){
+  if(u.k==="digger"){const t=u.task;if(!t)return u.carry?`Carrying ${u.carry} gold`:"Looking for work";
+    return t.t==="dig"?(W.tile[t.i]===T.GOLD||W.tile[t.i]===T.GEM?"Mining gold":"Digging"):t.t==="claim"?"Claiming floor":t.t==="dep"?`Taking ${u.carry} gold home`:"Wandering"}
+  if(u.tgt)return "Fighting";
+  if(u.st==="rally"||u.st==="rallyStuck")return "Following the flag";
+  if(u.st==="defend")return "Rushing to defend the Heart";
+  if(u.o===1&&W.k[1].rally>=0)return "At the flag";
+  return {sleep:"Sleeping",eat:"Eating",train:u.k==="hexer"?"Studying":"Training",idle:"Wandering about"}[u.st]||(u.st==="go"?{sleep:"Off to bed",eat:"Off to eat",train:"Off to train",idle:"Wandering about"}[u.then]:"Thinking");
+}
+function showInfo(){
+  const box=$("info");if(!sel){box.hidden=true;return}
+  const row=(a,b)=>`<div style="display:flex;justify-content:space-between;gap:8px"><span class="muted">${a}</span><span>${b}</span></div>`;
+  let h="";
+  if(sel.u){const u=W.byId.get(sel.u);if(!u||u.hp<=0||u.held){box.hidden=true;sel=null;return}
+    const k=KINDS[u.k],mine=u.o===1,K=W.k[u.o],mh=maxHp(u);
+    h=`<h2><span>${k.name}${u.k!=="digger"&&!k.wild?` · level ${u.lvl}`:""}</span><button class="x" data-x>✕</button></h2>`;
+    h+=`<div class="muted">${mine?"Yours":u.o===WILD?"Wild":K.name+"'s"}${k.blurb?" · "+k.blurb:""}</div>`;
+    h+=`<div>Health ${Math.ceil(u.hp)} / ${mh}</div><div class="bar"><i style="width:${Math.max(0,u.hp/mh*100)}%"></i></div>`;
+    if(mine){h+=row("Doing",doing(u));
+      if(u.k!=="digger"){h+=row("Mood",MOODS.find(m=>u.mood>m[0])[1]);h+=row("Wage",`${wage(u)} gold each payday`);
+        h+=row("Bed",u.bed>=0?"Has one":"None yet");if(u.lvl<10)h+=row("Next level",`${Math.round(u.xp/(40*u.lvl)*100)}%`)}
+      h+=`<div class="seg" style="margin-top:8px"><button class="btn sm" data-pick>✋ Pick up</button></div>`}
+  }else{
+    const i=sel.i,t=W.tile[i],o=W.own[i],K=W.k[o];
+    if(!W.known[i]){h=`<h2><span>Unexplored</span><button class="x" data-x>✕</button></h2><div class="muted">Dig closer to see what's here.</div>`}
+    else if(t===T.HEART){h=`<h2><span>${o===1?"Your Heart":K.name+"'s Heart"}</span><button class="x" data-x>✕</button></h2>`;
+      h+=`<div>Strength ${Math.ceil(K.hp)} / ${K.maxhp}</div><div class="bar"><i style="width:${K.hp/K.maxhp*100}%"></i></div>`;
+      h+=`<div class="muted">${o===1?"Keep it safe. It zaps intruders that get close, and mends itself when left alone.":"Destroy it to beat "+K.name+". Use 🚩 Flag and tap it to send your creatures in."}</div>`}
+    else if(t===T.GATE){h=`<h2><span>Gate</span><button class="x" data-x>✕</button></h2><div class="muted">${o===1?"Yours. Creatures come through it when you have the rooms they like and a free bed.":o?"Owned by "+K.name+". Claim the floor around it to take it.":"Nobody owns it. Dig to it, and your diggers will claim it."}</div>`}
+    else if(isRock(t)||t===T.HARD){h=`<h2><span>${t===T.GOLD?"Gold seam":t===T.GEM?"Gem seam":t===T.HARD?"Hard rock":"Rock"}</span><button class="x" data-x>✕</button></h2><div class="muted">${t===T.GOLD?`About ${W.gold[i]} gold left. Mark it with ⛏ Dig.`:t===T.GEM?"Never runs out: diggers chip gold from it for ever.":t===T.HARD?"Too hard to dig.":"Mark it with ⛏ Dig and your diggers will dig it out."}${W.mark[i]&2?" Marked for digging.":""}</div>`}
+    else{const r=W.room[i];
+      if(r){const R=ROOMS[r];h=`<h2><span>${R.icon} ${R.name}</span><button class="x" data-x>✕</button></h2><div class="muted">${o===1?"Yours":K?K.name+"'s":""} · ${K?K.c.rooms[r]:0} tiles. ${R.desc}</div>`;if(r===RM.FARM)h+=`<div>Mushrooms here: ${W.food[i]} of 2</div>`}
+      else h=`<h2><span>Floor</span><button class="x" data-x>✕</button></h2><div class="muted">${o===1?"Your claimed floor. Build rooms here with 🧱 Build.":o?`Claimed by ${K.name}.`:"Unclaimed. Your diggers claim floor next to your own."}</div>`}
+  }
+  box.innerHTML=h;box.hidden=false;
+  const x=box.querySelector("[data-x]");if(x)x.onclick=()=>{sel=null;box.hidden=true};
+  const p=box.querySelector("[data-pick]");if(p)p.onclick=()=>{const u=W.byId.get(sel.u);if(!u)return;if(held.length>=8){toast("Your hand is full (8).");return}
+    endTask(W,u);u.held=true;u.st=null;u.path=null;u.tgt=0;held.push(u);sel=null;box.hidden=true;setTool("hand");toast("Tap your own floor to drop it.")};
+}
+function openRealm(){
+  const K=W.k[1],c=K.c,s=$("sheet");s.textContent="";
+  const mine=W.units.filter(u=>u.o===1&&u.hp>0);
+  const by={};for(const u of mine){(by[u.k]=by[u.k]||[]).push(u)}
+  const food=c.tiles[RM.FARM].reduce((a,i)=>a+W.food[i],0),wages=mine.reduce((a,u)=>a+wage(u),0);
+  let h=`<div class="row"><h2>Your realm</h2><button class="btn sm" data-c>Close</button></div><div class="list">`;
+  const line=(a,b)=>h+=`<div><span>${a}</span><b>${b}</b></div>`;
+  line("🪙 Gold",`${fmt(K.gold)} of ${fmt(K.cap)}`);
+  line("💰 Next payday",`${mmss(K.payT)} · ${fmt(wages)} gold`);
+  line("❤ Heart",`${Math.ceil(K.hp)} / ${K.maxhp}`);
+  line("🚪 Gates",c.gates.length);
+  line("🛏 Beds",`${c.fighters} used of ${c.rooms[RM.LAIR]}`);
+  line("🍄 Mushrooms ready",food);
+  for(const k of ["digger",...FIGHTERS]){const L=by[k]||[];if(!L.length&&k!=="digger")continue;
+    const avg=L.length?L.reduce((a,u)=>a+u.lvl,0)/L.length:0,happy=L.filter(u=>u.mood>40).length;
+    line(`${KINDS[k].name}s`,`${L.length}${k!=="digger"&&L.length?` · level ${avg.toFixed(1)} · ${happy} happy`:""}`)}
+  const next=FIGHTERS.filter(k=>!canCome(K,k));
+  h+=`</div>`;
+  if(next.length)h+=`<div class="muted" style="font-size:.88rem">To attract more kinds: ${next.map(k=>`${KINDS[k].name}s need ${Object.entries(KINDS[k].need).map(([r,n])=>`${n} ${ROOMS[RI[r]].name}`).join(", ")}`).join(". ")}.</div>`;
+  const rv=W.k.filter((R,o)=>R&&o>1).map(R=>`${R.name}: ${R.alive?(W.known[R.hy*W.w+R.hx]?`Heart ${Math.ceil(R.hp/R.maxhp*100)}%`:"not found yet"):"beaten ✓"}`);
+  h+=`<div class="list">${rv.map(x=>`<div><span>${x}</span></div>`).join("")}</div>`;
+  s.innerHTML=h;s.hidden=false;s.querySelector("[data-c]").onclick=()=>{s.hidden=true};
+}
+$("hudCrit").onclick=openRealm;$("hudGold").onclick=openRealm;$("hudPay").onclick=openRealm;
+
+/* ---------- goals for the first realm ---------- */
+const GOALS=[
+  [W=>W.k[1].c.gates.length>0,"Dig a tunnel to the Gate (the purple swirl): tap ⛏ Dig, then the rock in between. Your diggers will claim the Gate."],
+  [W=>W.k[1].c.rooms[RM.LAIR]>=4,"Build a Lair of 4 tiles or more on your floor (🧱 Build). Beetles will start to come."],
+  [W=>W.k[1].c.rooms[RM.FARM]>=4,"Build a Mushroom farm of 4 tiles so your creatures can eat."],
+  [W=>W.k[1].c.rooms[RM.TRAINING]>=4,"Mine gold (yellow rock), then build a Training pit of 4 tiles. Goblins will come, and everyone can level up."],
+  [W=>W.k[1].c.fighters>=5,"Grow to 5 creatures. Add Lair tiles for more beds."],
+  [W=>!W.k[2].alive,"Dig towards Lord Grimble (top right). When you find his Heart, tap 🚩 Flag and then his Heart."]];
+function renderGoal(){
+  const g=$("goal");
+  if(!W.spec.tips){g.hidden=true;return}
+  const n=GOALS.findIndex(x=>!x[0](W));
+  if(n<0){g.hidden=true;return}
+  g.hidden=false;g.innerHTML=`<b>Goal ${n+1} of ${GOALS.length}:</b> `;g.append(GOALS[n][1]);
+}
+
+/* ---------- toasts ---------- */
+function toast(txt,cls,at){
+  const box=$("toasts"),d=document.createElement("div");d.className="toast "+(cls||"");d.textContent=txt;
+  if(at!=null&&at>=0){d.onclick=()=>{cam.x=at%W.w+.5;cam.y=(at/W.w|0)+.5};d.textContent+=" ›"}
+  box.prepend(d);while(box.children.length>2)box.lastChild.remove();
+  setTimeout(()=>{d.style.opacity="0";setTimeout(()=>d.remove(),450)},at!=null&&at>=0?6000:3800);
+}
+
+/* ---------- top bar, menu, speed ---------- */
+function renderHud(){
+  const K=W.k[1],c=K.c;
+  $("hudGold").innerHTML=`🪙 ${fmt(K.gold)} <small>/ ${fmt(K.cap)}</small>`;
+  $("hudCrit").innerHTML=`👾 ${c.fighters} <small>🛏 ${c.rooms[RM.LAIR]}</small>`;
+  $("hudPay").innerHTML=`💰 ${mmss(K.payT)}`;
+  $("speedBtn").textContent=paused?"▶":speed+"×";
+}
+$("speedBtn").onclick=()=>{if(paused){paused=false}else speed=speed===1?2:speed===2?3:1;renderHud()};
+$("menuBtn").onclick=()=>pauseMenu();
+function pauseMenu(){
+  paused=true;renderHud();
+  const c=$("ovCard");c.innerHTML=`<h2>Paused</h2><span class="muted">${W.spec.camp?CAMPAIGN[W.spec.camp-1].name:"Quick game"} · ${mmss(W.t)}</span>
+  <div class="row"><button class="btn pri" data-r>Carry on</button><button class="btn" data-h>How to play</button></div>
+  <div class="row"><button class="btn" data-q>Save and leave</button><button class="btn" data-s>Start again</button></div>`;
+  c.querySelector("[data-r]").onclick=()=>{paused=false;$("ov").hidden=true;renderHud()};
+  c.querySelector("[data-q]").onclick=()=>{$("ov").hidden=true;quitToMenu()};
+  c.querySelector("[data-h]").onclick=()=>{$("ov").hidden=true;quitToMenu();$("howto").open=true;$("howto").scrollIntoView()};
+  c.querySelector("[data-s]").onclick=()=>{if(!confirm("Start this map again from the beginning?"))return;const sp=W.spec;LS.del("hd.game");W=newWorld(sp);updVis(W);enterGame()};
+  $("ov").hidden=false;
+}
+function gameOver(){
+  paused=true;const won=W.over===1,sp=W.spec;
+  if(won&&sp.camp){const pr=progress(),old=pr.won[sp.camp];if(!old||W.t<old.time)pr.won[sp.camp]={time:Math.round(W.t),at:Date.now()};LS.set("hd.progress",pr)}
+  if(won){const pr=progress();pr.quick=(pr.quick||0)+(sp.camp?0:1);LS.set("hd.progress",pr)}
+  LS.del("hd.game");
+  const next=won&&sp.camp&&sp.camp<CAMPAIGN.length?sp.camp+1:0;
+  const c=$("ovCard");
+  c.innerHTML=`<h2>${won?"Realm conquered!":"Your Heart has fallen"}</h2>
+  <span class="muted">${won?`Every rival is beaten, in ${mmss(W.t)}.`:"Your rivals overran you. Have another go: build up a guard before they come."}</span>
+  <div class="list"><div><span>Creatures you defeated</span><b>${W.stats.kills}</b></div><div><span>Creatures you lost</span><b>${W.stats.lost}</b></div></div>
+  <div class="row">${next?`<button class="btn pri" data-n>Next realm: ${CAMPAIGN[next-1].name}</button>`:""}<button class="btn${next?"":" pri"}" data-a>${won?"Play again":"Try again"}</button><button class="btn" data-m>Menu</button></div>`;
+  const n=c.querySelector("[data-n]");if(n)n.onclick=()=>{W=newWorld(Object.assign({camp:next},CAMPAIGN[next-1]));updVis(W);enterGame()};
+  c.querySelector("[data-a]").onclick=()=>{const s2=Object.assign({},sp);if(!s2.camp)s2.seed=Math.floor(Math.random()*1e9);W=newWorld(s2);updVis(W);enterGame()};
+  c.querySelector("[data-m]").onclick=()=>{W=null;renderMenu();show("menu")};
+  $("ov").hidden=false;
+}
+
+/* ---------- input: drag to pan, pinch to zoom, tap, hold-and-drag to mark an area ---------- */
+const ptrs=new Map();let gest=null,rect=null;
+function clampCam(){if(!W)return;cam.z=Math.max(16,Math.min(72,cam.z));cam.x=Math.max(0,Math.min(W.w,cam.x));cam.y=Math.max(0,Math.min(W.h,cam.y))}
+cv.addEventListener("pointerdown",e=>{
+  cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){gest={k:"maybe",x0:e.clientX,y0:e.clientY,lx:e.clientX,ly:e.clientY};
+    const g=gest;g.hold=setTimeout(()=>{if(gest===g&&g.k==="maybe"&&(tool==="dig"||tool==="build")){g.k="rect";const a=tileAtScreen(g.x0,g.y0);if(a<0){g.k="pan";return}rect={a,b:a};if(navigator.vibrate)try{navigator.vibrate(15)}catch(_){}}},330)}
+  else if(ptrs.size===2){if(gest&&gest.hold)clearTimeout(gest.hold);rect=null;const [a,b]=[...ptrs.values()];gest={k:"pinch",d0:Math.hypot(a.x-b.x,a.y-b.y),z0:cam.z,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,cx:cam.x,cy:cam.y}}
+});
+cv.addEventListener("pointermove",e=>{
+  const p=ptrs.get(e.pointerId);if(!p||!gest)return;p.x=e.clientX;p.y=e.clientY;
+  if(gest.k==="maybe"&&Math.hypot(e.clientX-gest.x0,e.clientY-gest.y0)>9){gest.k="pan";clearTimeout(gest.hold)}
+  if(gest.k==="pan"){cam.x-=(e.clientX-gest.lx)/cam.z;cam.y-=(e.clientY-gest.ly)/cam.z;gest.lx=e.clientX;gest.ly=e.clientY;clampCam()}
+  else if(gest.k==="rect"){const b=tileAtScreen(e.clientX,e.clientY);if(b>=0)rect.b=b}
+  else if(gest.k==="pinch"&&ptrs.size===2){const [a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    const wx=(gest.mx-VW/2)/gest.z0+gest.cx,wy=(gest.my-VH/2)/gest.z0+gest.cy;
+    cam.z=Math.max(16,Math.min(72,gest.z0*d/gest.d0));cam.x=wx-(mx-VW/2)/cam.z;cam.y=wy-(my-VH/2)/cam.z;clampCam()}
+  if(gest.k==="maybe")gest.lx=e.clientX,gest.ly=e.clientY;
+});
+function ptrEnd(e){
+  if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);
+  if(!gest)return;clearTimeout(gest.hold);
+  if(gest.k==="maybe"&&ptrs.size===0&&e.type==="pointerup")tap(gest.x0,gest.y0);
+  else if(gest.k==="rect"&&rect){rectApply(rect.a,rect.b)}
+  if(ptrs.size===0){gest=null;rect=null}else if(gest.k==="pinch"){gest={k:"done"}}
+}
+cv.addEventListener("pointerup",ptrEnd);cv.addEventListener("pointercancel",ptrEnd);
+cv.addEventListener("wheel",e=>{e.preventDefault();const wx=(e.clientX-VW/2)/cam.z+cam.x,wy=(e.clientY-VH/2)/cam.z+cam.y;cam.z*=e.deltaY<0?1.12:1/1.12;clampCam();cam.x=wx-(e.clientX-VW/2)/cam.z;cam.y=wy-(e.clientY-VH/2)/cam.z;clampCam()},{passive:false});
+function miniJump(e){const r=mini.getBoundingClientRect();cam.x=(e.clientX-r.left)/r.width*W.w;cam.y=(e.clientY-r.top)/r.height*W.h;clampCam()}
+mini.addEventListener("pointerdown",e=>{mini.setPointerCapture(e.pointerId);miniJump(e)});
+mini.addEventListener("pointermove",e=>{if(e.buttons||e.pointerType==="touch")miniJump(e)});
+
+function resize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=cv.clientWidth;VH=cv.clientHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR)}
+window.addEventListener("resize",()=>{if(view==="game")resize()});
+
+/* ---------- drawing ---------- */
+function hash(i){let x=i*374761393+668265263;x=(x^(x>>>13))*1274126177;return(x^(x>>>16))>>>0}
+function shade(hex,a){return hex+Math.round(a*255).toString(16).padStart(2,"0")}
+function drawTile(i,sx,sy,s){
+  const c=ctx,t=W.tile[i],w=W.w,S=s+.6;
+  if(!W.known[i]){c.fillStyle="#0A0908";c.fillRect(sx,sy,S,S);return}
+  const h=hash(i);
+  if(isRock(t)||t===T.HARD){
+    const hard=t===T.HARD,below=i+w<W.tile.length?i+w:-1,front=below>=0&&walkT(W.tile[below])&&W.known[below];
+    c.fillStyle=hard?"#24242E":"#3A2C21";c.fillRect(sx,sy,S,S);
+    c.fillStyle=hard?"#3C3E4C":"#67503B";c.fillRect(sx,sy,S,front?s*.74:S);
+    c.fillStyle=hard?"#4A4D5E":"#755C45";
+    c.fillRect(sx+(h%7)/7*s*.7,sy+((h>>3)%7)/7*s*.5,s*.16,s*.12);c.fillRect(sx+((h>>6)%7)/7*s*.7,sy+((h>>9)%7)/7*s*.5+s*.1,s*.12,s*.1);
+    if(t===T.GOLD){c.fillStyle="#F2C94C";for(let k=0;k<3;k++){const ox=((h>>(k*4))%5)/5*s*.6+s*.15,oy=((h>>(k*4+2))%5)/5*s*.45+s*.1;c.beginPath();c.arc(sx+ox,sy+oy,s*.08,0,7);c.fill()}
+      c.fillStyle="#FFF1B0";c.fillRect(sx+s*.3,sy+s*.2,s*.05,s*.05)}
+    if(t===T.GEM){c.fillStyle="#7FE3F0";c.beginPath();c.moveTo(sx+s*.5,sy+s*.12);c.lineTo(sx+s*.72,sy+s*.38);c.lineTo(sx+s*.5,sy+s*.64);c.lineTo(sx+s*.28,sy+s*.38);c.fill();
+      c.fillStyle="#E8FDFF";c.fillRect(sx+s*.44,sy+s*.24,s*.07,s*.07)}
+    if(W.mark[i]&2){c.fillStyle="rgba(255,214,90,.25)";c.fillRect(sx,sy,S,S);c.strokeStyle="#FFD65A";c.lineWidth=Math.max(1.5,s*.06);c.setLineDash([s*.15,s*.1]);c.strokeRect(sx+s*.1,sy+s*.1,s*.8,s*.8);c.setLineDash([])}
+    return;
+  }
+  const o=W.own[i];
+  c.fillStyle=(h&3)?"#7A644A":"#776047";c.fillRect(sx,sy,S,S);
+  if(o){c.fillStyle=shade(OWN_COL[o],.26);c.fillRect(sx,sy,S,S);
+    c.strokeStyle="rgba(0,0,0,.22)";c.lineWidth=1;c.strokeRect(sx+.5,sy+.5,s-1,s-1);
+    c.fillStyle=shade(OWN_COL[o],.5);c.fillRect(sx+s*.45,sy+s*.45,s*.1,s*.1)}
+  else{c.fillStyle="#6A553D";c.fillRect(sx+(h%9)/9*s*.8,sy+((h>>4)%9)/9*s*.8,s*.1,s*.08)}
+  if(i>=w&&(isRock(W.tile[i-w])||W.tile[i-w]===T.HARD)){c.fillStyle="rgba(0,0,0,.28)";c.fillRect(sx,sy,S,s*.16)}
+  const r=W.room[i];
+  if(r){
+    c.fillStyle=["","#6E2F2B","#3E2E1E","#5A4A2A","#9A7F57","#3A3150"][r];c.fillRect(sx+s*.08,sy+s*.08,s*.84,s*.84);
+    if(r===RM.LAIR){c.fillStyle="#A64B3F";c.fillRect(sx+s*.18,sy+s*.2,s*.64,s*.64);c.fillStyle="#EADBC4";c.fillRect(sx+s*.24,sy+s*.24,s*.52,s*.16)}
+    else if(r===RM.FARM){for(let k=0;k<W.food[i];k++){const mx=sx+s*(.32+k*.36),my=sy+s*(.55-k*.12);c.fillStyle="#EFE6D6";c.fillRect(mx-s*.04,my,s*.08,s*.18);c.fillStyle="#D24A3A";c.beginPath();c.arc(mx,my,s*.14,Math.PI,0);c.fill();c.fillStyle="#fff";c.fillRect(mx-s*.06,my-s*.08,s*.04,s*.04)}
+      if(!W.food[i]){c.fillStyle="#5C4630";c.fillRect(sx+s*.3,sy+s*.6,s*.4,s*.06)}}
+    else if(r===RM.TREASURY){const K=W.k[o],f=K?Math.min(1,K.gold/K.cap):0,n=Math.round(f*4);c.fillStyle="#F2C94C";for(let k=0;k<n;k++){c.beginPath();c.ellipse(sx+s*(.3+(k%2)*.4),sy+s*(.35+(k>>1)*.33),s*.15,s*.1,0,0,7);c.fill()}}
+    else if(r===RM.TRAINING){c.fillStyle="#6B4A2A";c.fillRect(sx+s*.46,sy+s*.3,s*.08,s*.5);c.fillStyle="#C9A97A";c.beginPath();c.arc(sx+s*.5,sy+s*.3,s*.13,0,7);c.fill();c.fillRect(sx+s*.28,sy+s*.44,s*.44,s*.07)}
+    else if(r===RM.LIBRARY){c.fillStyle="#2A2033";c.fillRect(sx+s*.16,sy+s*.18,s*.68,s*.5);const cols=["#C0504D","#4F81BD","#9BBB59","#F2C94C","#8064A2"];for(let k=0;k<5;k++){c.fillStyle=cols[(h+k)%5];c.fillRect(sx+s*(.2+k*.12),sy+s*.24,s*.09,s*.38)}}
+    if(o){c.strokeStyle=shade(OWN_COL[o],.8);c.lineWidth=Math.max(1,s*.04);c.strokeRect(sx+s*.08,sy+s*.08,s*.84,s*.84)}
+  }
+}
+function w2s(x,y){return [(x-cam.x)*cam.z+VW/2,(y-cam.y)*cam.z+VH/2]}
+function circle(x,y,r,f){ctx.beginPath();ctx.arc(x,y,Math.max(.5,r),0,7);ctx.fillStyle=f;ctx.fill()}
+function drawUnit(u){
+  const c=ctx,s=cam.z,[x,y0]=w2s(u.x,u.y),k=u.k,f=u.face,col=OWN_COL[u.o];
+  const bob=(u.st==="go"||u.st==="rally"||(u.path&&u.pi<u.path.length))?Math.abs(Math.sin(u.anim*9))*s*.05:0,y=y0-bob;
+  c.fillStyle="rgba(0,0,0,.35)";c.beginPath();c.ellipse(x,y0+s*.16,s*.24,s*.09,0,0,7);c.fill();
+  c.strokeStyle=col;c.lineWidth=Math.max(1.5,s*.055);c.beginPath();c.ellipse(x,y0+s*.16,s*.25,s*.1,0,0,7);c.stroke();
+  const atk=W.t-u.atkT<.2;
+  if(k==="digger"){
+    const working=u.task&&(u.task.t==="dig"||u.task.t==="claim")&&(!u.path||u.pi>=u.path.length);
+    if(u.carry>0)circle(x-f*s*.16,y-s*.02,s*.11,"#E2B33C");
+    c.fillStyle="#8E6140";c.beginPath();c.ellipse(x,y,s*.15,s*.17,0,0,7);c.fill();
+    circle(x+f*s*.03,y-s*.2,s*.12,"#C99467");
+    c.fillStyle="#C99467";c.beginPath();c.moveTo(x-s*.1,y-s*.24);c.lineTo(x-s*.2,y-s*.36);c.lineTo(x-s*.03,y-s*.3);c.moveTo(x+s*.1,y-s*.24);c.lineTo(x+s*.2,y-s*.36);c.lineTo(x+s*.03,y-s*.3);c.fill();
+    circle(x+f*s*.07,y-s*.22,s*.025,"#1a1210");
+    if(working){const a=Math.sin(u.anim*12)*.8;c.save();c.translate(x+f*s*.12,y-s*.06);c.rotate(f*(a-.4));c.strokeStyle="#6B4A2A";c.lineWidth=Math.max(1,s*.04);c.beginPath();c.moveTo(0,0);c.lineTo(f*s*.22,-s*.08);c.stroke();
+      c.strokeStyle="#B9C0C8";c.beginPath();c.moveTo(f*s*.16,-s*.18);c.lineTo(f*s*.26,0);c.stroke();c.restore()}
+  }else if(k==="beetle"){
+    for(let j=-1;j<=1;j++){c.strokeStyle="#1E2B2A";c.lineWidth=Math.max(1,s*.035);c.beginPath();c.moveTo(x-s*.28,y+j*s*.1);c.lineTo(x+s*.28,y+j*s*.1+Math.sin(u.anim*14+j)*s*.03);c.stroke()}
+    c.fillStyle="#2E6B64";c.beginPath();c.ellipse(x,y,s*.28,s*.22,0,0,7);c.fill();
+    c.strokeStyle="#163C38";c.lineWidth=Math.max(1,s*.03);c.beginPath();c.moveTo(x-s*.04*f,y-s*.2);c.lineTo(x-s*.04*f,y+s*.2);c.stroke();
+    c.fillStyle="rgba(255,255,255,.25)";c.beginPath();c.ellipse(x-s*.1,y-s*.08,s*.08,s*.05,-.5,0,7);c.fill();
+    circle(x+f*s*.27,y,s*.1,"#1E2B2A");circle(x+f*s*.31,y-s*.03,s*.025,"#E8F070");
+  }else if(k==="goblin"){
+    c.strokeStyle="#7A5A36";c.lineWidth=Math.max(1,s*.04);const sp=atk?s*.12:0;c.beginPath();c.moveTo(x-f*s*.05,y+s*.1);c.lineTo(x+f*(s*.36+sp),y-s*.22);c.stroke();
+    circle(x+f*(s*.36+sp),y-s*.22,s*.04,"#C8CED6");
+    circle(x,y+s*.02,s*.15,"#4C7F35");circle(x,y-s*.17,s*.14,"#7CC25A");
+    c.fillStyle="#7CC25A";c.beginPath();c.moveTo(x-s*.1,y-s*.2);c.lineTo(x-s*.3,y-s*.27);c.lineTo(x-s*.08,y-s*.12);c.moveTo(x+s*.1,y-s*.2);c.lineTo(x+s*.3,y-s*.27);c.lineTo(x+s*.08,y-s*.12);c.fill();
+    circle(x+f*s*.05,y-s*.19,s*.03,"#FFE45C");circle(x-f*s*.03,y-s*.19,s*.03,"#FFE45C");
+  }else if(k==="hexer"){
+    c.fillStyle="#5B3A8C";c.beginPath();c.moveTo(x,y-s*.22);c.lineTo(x+s*.2,y+s*.16);c.lineTo(x-s*.2,y+s*.16);c.fill();
+    circle(x,y-s*.2,s*.1,"#E2CDB3");
+    c.fillStyle="#3A2160";c.beginPath();c.moveTo(x-s*.16,y-s*.24);c.lineTo(x+s*.16,y-s*.24);c.lineTo(x+f*s*.06,y-s*.52);c.fill();
+    c.strokeStyle="#8A6A40";c.lineWidth=Math.max(1,s*.03);c.beginPath();c.moveTo(x+f*s*.22,y+s*.14);c.lineTo(x+f*s*.22,y-s*.28);c.stroke();
+    circle(x+f*s*.22,y-s*.3,s*(atk?.09:.06),"#C59BFF");
+  }else if(k==="ogre"){
+    c.save();c.translate(x+f*s*.28,y-s*.05);c.rotate(f*(atk?.9:.2));c.fillStyle="#6B4A2A";c.fillRect(-s*.05,-s*.4,s*.1,s*.4);circle(0,-s*.4,s*.09,"#6B4A2A");c.restore();
+    circle(x,y,s*.3,"#C29A72");c.fillStyle="#6B4A2A";c.fillRect(x-s*.24,y+s*.06,s*.48,s*.12);
+    circle(x+f*s*.05,y-s*.3,s*.16,"#D3AE86");circle(x+f*s*.1,y-s*.32,s*.03,"#1a1210");circle(x,y-s*.32,s*.03,"#1a1210");
+    c.fillStyle="#fff";c.fillRect(x+f*s*.03-s*.04,y-s*.22,s*.03,s*.04);
+  }else if(k==="spider"){
+    c.strokeStyle="#111";c.lineWidth=Math.max(1,s*.03);for(let j=0;j<4;j++){const a=Math.sin(u.anim*12+j)*.1;c.beginPath();c.moveTo(x-s*.28,y-s*.15+j*s*.1+a*s);c.lineTo(x,y);c.lineTo(x+s*.28,y-s*.15+j*s*.1-a*s);c.stroke()}
+    circle(x,y,s*.14,"#1D1A1F");circle(x+f*s*.12,y-s*.04,s*.08,"#2A262C");circle(x+f*s*.15,y-s*.06,s*.02,"#FF4040");circle(x+f*s*.1,y-s*.06,s*.02,"#FF4040");
+  }else if(k==="troll"){
+    circle(x,y,s*.31,"#7D8088");circle(x-s*.1,y-s*.1,s*.12,"#8D9098");c.fillStyle="#5E8A4A";c.fillRect(x-s*.2,y-s*.3,s*.2,s*.06);
+    circle(x+f*s*.12,y-s*.06,s*.035,"#FFB347");circle(x+f*s*.02,y-s*.06,s*.035,"#FFB347");
+  }
+  const mh=maxHp(u);
+  if(u.hp<mh){c.fillStyle="rgba(0,0,0,.6)";c.fillRect(x-s*.25,y0-s*.56,s*.5,s*.07);c.fillStyle=u.hp/mh>.4?"#7CD67C":"#E0503C";c.fillRect(x-s*.25,y0-s*.56,s*.5*Math.max(0,u.hp/mh),s*.07)}
+  if(u.lvl>1&&s>22){c.fillStyle=col;c.font=`700 ${Math.round(s*.24)}px system-ui`;c.textAlign="center";c.fillText(u.lvl,x+s*.26,y0-s*.26)}
+  if(u.st==="sleep"&&s>20){c.fillStyle="#cfe";c.font=`700 ${Math.round(s*.26)}px system-ui`;c.textAlign="center";c.fillText("z",x+s*.2+Math.sin(W.t*2)*s*.05,y0-s*.4-((W.t*20)%10)/10*s*.15)}
+  if(u.o===1&&u.k!=="digger"&&u.mood<30&&s>20){c.font=`${Math.round(s*.26)}px system-ui`;c.textAlign="center";c.fillText("💢",x-s*.24,y0-s*.36)}
+  if(sel&&sel.u===u.id){c.strokeStyle="#fff";c.lineWidth=2;c.beginPath();c.ellipse(x,y0+s*.16,s*.34,s*.15,0,0,7);c.stroke()}
+}
+function draw(){
+  const c=ctx,s=cam.z,w=W.w;
+  c.setTransform(DPR,0,0,DPR,0,0);c.fillStyle="#0A0908";c.fillRect(0,0,VW,VH);
+  const x0=Math.max(0,Math.floor(cam.x-VW/2/s)),x1=Math.min(w-1,Math.ceil(cam.x+VW/2/s)),y0=Math.max(0,Math.floor(cam.y-VH/2/s)),y1=Math.min(W.h-1,Math.ceil(cam.y+VH/2/s));
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const [sx,sy]=w2s(x,y);drawTile(y*w+x,Math.floor(sx),Math.floor(sy),s)}
+  // gates
+  for(const g of W.gates){if(!W.known[g])continue;const [gx,gy]=w2s(g%w+.5,(g/w|0)+.5);if(gx<-2*s||gy<-2*s||gx>VW+2*s||gy>VH+2*s)continue;
+    const o=W.own[g];circle(gx,gy,s*1.25,"#1A1424");
+    c.lineWidth=Math.max(2,s*.08);for(let k=0;k<3;k++){c.strokeStyle=k%2?"#7A4FCC":"#B58CFF";c.beginPath();c.arc(gx,gy,s*(.3+k*.28),W.t*(1.5+k*.4)+k,W.t*(1.5+k*.4)+k+3.6);c.stroke()}
+    c.strokeStyle=o?OWN_COL[o]:"#6B6157";c.lineWidth=Math.max(2,s*.1);c.beginPath();c.arc(gx,gy,s*1.3,0,7);c.stroke()}
+  // hearts
+  for(const K of W.k){if(!K||!K.alive)continue;const hi=K.hy*w+K.hx;if(!W.known[hi])continue;const [hx,hy]=w2s(K.hx+.5,K.hy+.5);
+    c.fillStyle="#2A2420";c.beginPath();c.roundRect?c.roundRect(hx-s*1.4,hy-s*1.4,s*2.8,s*2.8,s*.4):c.rect(hx-s*1.4,hy-s*1.4,s*2.8,s*2.8);c.fill();
+    c.strokeStyle=OWN_COL[K.o];c.lineWidth=Math.max(2,s*.08);c.stroke();
+    const pr=s*(.78+.05*Math.sin(W.t*3)),g=c.createRadialGradient(hx-pr*.3,hy-pr*.3,pr*.1,hx,hy,pr);g.addColorStop(0,"#fff");g.addColorStop(.35,OWN_COL[K.o]);g.addColorStop(1,shade(OWN_COL[K.o],.25));
+    c.shadowColor=OWN_COL[K.o];c.shadowBlur=s*.8;circle(hx,hy,pr,g);c.shadowBlur=0;
+    c.strokeStyle="rgba(0,0,0,.5)";c.lineWidth=Math.max(3,s*.12);c.beginPath();c.arc(hx,hy,s*1.08,0,7);c.stroke();
+    c.strokeStyle=K.hp/K.maxhp>.35?"#7CD67C":"#E0503C";c.beginPath();c.arc(hx,hy,s*1.08,-Math.PI/2,-Math.PI/2+6.283*K.hp/K.maxhp);c.stroke()}
+  // flag
+  const P=W.k[1];
+  if(P.rally>=0){const [fx2,fy2]=w2s(P.rally%w+.5,(P.rally/w|0)+.5);c.strokeStyle="#ddd";c.lineWidth=Math.max(1.5,s*.05);c.beginPath();c.moveTo(fx2,fy2+s*.3);c.lineTo(fx2,fy2-s*.6);c.stroke();
+    c.fillStyle=OWN_COL[1];c.beginPath();c.moveTo(fx2,fy2-s*.6);c.lineTo(fx2+s*.45,fy2-s*.45+Math.sin(W.t*5)*s*.04);c.lineTo(fx2,fy2-s*.3);c.fill()}
+  // creatures, back to front
+  const vis=W.units.filter(u=>!u.held&&u.hp>0&&(u.o===1||W.vis[tileOf(W,u)])&&u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2).sort((a,b)=>a.y-b.y);
+  for(const u of vis)drawUnit(u);
+  // effects
+  W.fx=W.fx.filter(e=>W.t-e.t0<1.2);
+  for(const e of W.fx){const a=W.t-e.t0;
+    if(e.k==="bolt"&&a<.25){const [ax,ay]=w2s(e.x1,e.y1),[bx,by]=w2s(e.x2,e.y2);c.strokeStyle=e.c;c.globalAlpha=1-a*4;c.lineWidth=Math.max(2,s*.08);c.beginPath();c.moveTo(ax,ay);c.lineTo((ax+bx)/2+(Math.random()-.5)*s*.3,(ay+by)/2+(Math.random()-.5)*s*.3);c.lineTo(bx,by);c.stroke();c.globalAlpha=1}
+    else if(e.k==="hit"&&a<.2){const [hx,hy]=w2s(e.x,e.y);circle(hx,hy-s*.1,s*.14*(1-a*4),"#fff")}
+    else if((e.k==="poof"||e.k==="claim")&&a<.6){const [px,py]=w2s(e.x,e.y);c.strokeStyle=e.c;c.globalAlpha=1-a/.6;c.lineWidth=2;c.beginPath();c.arc(px,py,s*(.2+a*1.1),0,7);c.stroke();c.globalAlpha=1}
+    else if(e.k==="dust"&&a<.6){const [px,py]=w2s(e.x,e.y);c.globalAlpha=.6*(1-a/.6);for(let k=0;k<5;k++)circle(px+Math.cos(k*1.3)*s*a*.9,py+Math.sin(k*1.3)*s*a*.9,s*.1,"#9C8466");c.globalAlpha=1}
+    else if(e.k==="boom"){const [px,py]=w2s(e.x,e.y);c.globalAlpha=Math.max(0,1-a/1.2);c.strokeStyle=e.c;c.lineWidth=s*.2;c.beginPath();c.arc(px,py,s*(.5+a*3),0,7);c.stroke();c.globalAlpha=1}
+    else if(e.k==="txt"&&a<1){const [px,py]=w2s(e.x,e.y-a*.6);c.globalAlpha=1-a;c.fillStyle=e.c;c.font=`800 ${Math.round(Math.max(11,s*.32))}px system-ui`;c.textAlign="center";c.fillText(e.s,px,py);c.globalAlpha=1}}
+  if(rect){const a=rect.a,b=rect.b,[ax,ay]=w2s(Math.min(a%w,b%w),Math.min(a/w|0,b/w|0)),[bx,by]=w2s(Math.max(a%w,b%w)+1,Math.max(a/w|0,b/w|0)+1);
+    c.fillStyle="rgba(255,214,90,.15)";c.fillRect(ax,ay,bx-ax,by-ay);c.strokeStyle="#FFD65A";c.lineWidth=2;c.strokeRect(ax,ay,bx-ax,by-ay)}
+  if(sel&&sel.i!=null){const [sx,sy]=w2s(sel.i%w,sel.i/w|0);c.strokeStyle="#fff";c.lineWidth=2;c.strokeRect(sx+1,sy+1,s-2,s-2)}
+}
+let miniT=0;
+const miniImg=document.createElement("canvas");
+function drawMini(){
+  const w=W.w,h=W.h;if(miniImg.width!==w){miniImg.width=w;miniImg.height=h}
+  const g=miniImg.getContext("2d"),img=g.createImageData(w,h),d=img.data;
+  const hex=s=>[parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)];
+  const OC=OWN_COL.map(x=>x&&hex(x));
+  for(let i=0;i<w*h;i++){let r=10,gg=9,b=8;
+    if(W.known[i]){const t=W.tile[i],o=W.own[i];
+      if(t===T.HARD)[r,gg,b]=[52,53,66];else if(t===T.GOLD)[r,gg,b]=[200,160,50];else if(t===T.GEM)[r,gg,b]=[110,210,225];else if(t===T.ROCK)[r,gg,b]=[84,64,48];
+      else if(t===T.HEART)[r,gg,b]=[255,255,255];else if(o&&OC[o])[r,gg,b]=OC[o].map(v=>v*.7);else[r,gg,b]=[122,100,74];
+      if(t===T.GATE)[r,gg,b]=[181,140,255];
+      if(W.mark[i]&2)[r,gg,b]=[255,214,90]}
+    d[i*4]=r;d[i*4+1]=gg;d[i*4+2]=b;d[i*4+3]=255}
+  for(const u of W.units){if(u.held||u.hp<=0||(u.o!==1&&!W.vis[tileOf(W,u)]))continue;const i=tileOf(W,u),cc=u.o===WILD?[230,230,230]:OC[u.o];d[i*4]=cc[0];d[i*4+1]=cc[1];d[i*4+2]=cc[2]}
+  g.putImageData(img,0,0);
+}
+function renderMini(){
+  const m=mctx,S=mini.width;m.imageSmoothingEnabled=false;m.clearRect(0,0,S,S);m.drawImage(miniImg,0,0,S,S);
+  const k=S/W.w;m.strokeStyle="#fff";m.lineWidth=1;m.strokeRect((cam.x-VW/2/cam.z)*k,(cam.y-VH/2/cam.z)*k,VW/cam.z*k,VH/cam.z*k);
+}
+
+/* ---------- main loop ---------- */
+let lastFrame=performance.now(),hudT=0;
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.1,(now-lastFrame)/1000);lastFrame=now;
+  if(view!=="game"||!W)return;
+  if(!paused&&!W.over){let sim=dt*speed;while(sim>1e-6){const d=Math.min(.05,sim);step(W,d);sim-=d}}
+  if(W.events.length){for(const e of W.events)toast(e.txt,e.cls,e.i);W.events.length=0}
+  held=held.filter(u=>W.byId.has(u.id)&&u.hp>0);
+  draw();
+  if((miniT-=dt)<=0){miniT=.5;drawMini()}
+  renderMini();
+  if((hudT-=dt)<=0){hudT=.25;renderHud();renderGoal();if(sel)showInfo()}
+  if(W.t-lastSave>20)save();
+  if(W.over&&$("ov").hidden)gameOver();
+}
+requestAnimationFrame(frame);
+
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&W&&view==="game")save()});
+window.addEventListener("pagehide",()=>{if(W&&view==="game")save()});
+
+window.SG_BACK=()=>{
+  if(view!=="game")return false;
+  if(!$("sheet").hidden){$("sheet").hidden=true;return true}
+  if(!$("info").hidden){$("info").hidden=true;sel=null;return true}
+  if(!$("ov").hidden){if(W&&!W.over){paused=false;$("ov").hidden=true;renderHud()}else{W=null;renderMenu();show("menu")}return true}
+  if(tool!=="look"){setTool("look");return true}
+  pauseMenu();return true;
+};
+window.HD={get W(){return W},step:(dt)=>step(W,dt),newWorld,saveWorld,loadWorld,tap,setTool,setBuild:r=>{buildSel=r}};
+renderMenu();
+</script>
+<script src="../../shell.js"></script>
+</body>
+</html>
