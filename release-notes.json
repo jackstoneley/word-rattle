@@ -216,6 +216,18 @@
         "Seven generals to unlock, each with a strength and a weakness: the Builder, the Raider, the Sage, the Mender and more.",
         "Balance: healers can no longer stack on one troop, shooters now aim for enemy healers first, Hard is a bit tougher and Brutal a bit kinder."
       ]
+    },
+    {
+      "id": 21,
+      "type": "features",
+      "headline": "Epoch Siege: three lanes, a longer campaign and general levels",
+      "details": [
+        "Three-lane battles: tap a lane and it glows, and everything you train marches down it until you pick another. Defences cover all three lanes. Turn it on in Battle, and many new missions use it.",
+        "Map view: a button on the battlefield switches to a view from above, with your base at the bottom.",
+        "The campaign now has 30 missions, then splits into three roads (the Iron Road, the Wild Frontier and the Three Fronts) before a final battle.",
+        "Generals now level up to 5 by leading battles, getting stronger and losing their weakness. Three new generals, plus three more waiting at the end of each road.",
+        "Four new perks: Long Bows, Repair Crews, Bargain Hunter and Heavy Drill."
+      ]
     }
   ]
 }

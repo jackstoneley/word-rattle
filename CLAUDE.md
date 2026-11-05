@@ -196,6 +196,12 @@ Campaign, generals and perks live in CORE too: `MISSIONS` (battle options `o`, t
 Each side carries its modifiers in `P.m` (`md(P)`, defaulting to `MOD0` for old saves). Missions are keyed by index,
 generals and perks by id: append only. The Star Lance charges in the last age a battle allows (`topEra`), so missions
 capped below the Future still end. Healing: a troop can be healed once per `HEAL_GAP`; shooters target healers in reach.
+Lanes: battle option `lanes` (1 or 3). Each unit has `ln` (missing = 0); troops only meet, block, heal and splash
+within their lane; defences and specials cover every lane. Queue items carry the lane chosen when they were bought
+(`P.lane`, set by tapping a lane; the computer picks with `aiLane`). Bases are `LANE_BASE` times tougher with lanes,
+crowds stand two deep. `opts.top` switches the page to the map view (`renderTop`), lanes running up the screen.
+Generals level 1-5 from battle points in `es.meta.gx` (`GEN_PTS`; each general's `lv` lists what levels 2-5 add).
+Missions 31-49 are three roads (`br`: iron, wild, fronts) that open after mission 30 (`req`), and a finale (`any`).
 Saves hold era and kind numbers, so append to the tables, never reorder them.
 Difficulty (`DIFF`): `inc`/`xp` multiply the computer's gold and experience, `pxp` is experience it earns each second,
 and a computer side an age behind earns experience three times as fast (`xpMult`). Normal is meant to beat a good player
