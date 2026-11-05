@@ -287,7 +287,7 @@ function renderStats(){
   {const es=load("es.stats",null)||{},esv=load("es.save",null),esw=(es.wins||[]).reduce((a,b)=>a+b,0),ESD=["Easy","Normal","Hard","Brutal"];
     let top=-1;(es.wins||[]).forEach((w,i)=>{if(w)top=i});
     const esm=load("es.meta",null)||{},esc=Object.values(esm.camp||{}),esCl=esc.filter(c=>c&&c.won).length,esSt=esc.reduce((a,c)=>a+((c&&c.st)||[]).filter(Boolean).length,0);
-    if(es.played||esv||esc.length)setHTML("stES",[esCl?"":"",{b:String(esCl)}," of 12 missions · ",{b:String(esSt)}," ★",esw?` · ${esw} battle win${esw===1?"":"s"}`:"",top>=0?` · beaten ${ESD[top]}`:"",esv&&esv.sd?` · battle in progress`:""])}
+    if(es.played||esv||esc.length)setHTML("stES",[esCl?"":"",{b:String(esCl)}," missions cleared · ",{b:String(esSt)}," ★",esw?` · ${esw} battle win${esw===1?"":"s"}`:"",top>=0?` · beaten ${ESD[top]}`:"",esv&&esv.sd?` · battle in progress`:""])}
   {const hd=load("hd.progress",null),hdg=load("hd.game",null),won=hd&&hd.won?Object.keys(hd.won).length:0;
     if(won||hdg)setHTML("stHD",[{b:String(won)}," of 6 realms conquered",hdg?" · a game in progress":""])}
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
