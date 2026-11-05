@@ -216,6 +216,18 @@
         "Seven generals to unlock, each with a strength and a weakness: the Builder, the Raider, the Sage, the Mender and more.",
         "Balance: healers can no longer stack on one troop, shooters now aim for enemy healers first, Hard is a bit tougher and Brutal a bit kinder."
       ]
+    },
+    {
+      "id": 21,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: campaign, worktops and easier tapping",
+      "details": [
+        "New campaign: 25 days from a corner café to a restaurant, each teaching one thing, with three stars to earn.",
+        "Tapping is more precise: tap anywhere near a station and Lee Lee goes to it, with a dashed outline showing where she's heading.",
+        "Put anything down on the six counter spots or a worktop, and pick it up again. Each new place starts with a worktop.",
+        "The office is simpler: four tabs (Today, Menu, Team, Upgrades), and stock is topped up for you each night.",
+        "People already queueing at closing time now stay to be served."
+      ]
     }
   ]
 }

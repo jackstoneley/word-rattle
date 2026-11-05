@@ -166,7 +166,12 @@ leave dirty plates; dishes are recipes of station steps (`RECIPES[].s`, ending i
 `/*CORE-START*/` and `/*CORE-END*/`. Five save slots, `ll.slot.0`-`ll.slot.4` (whole save object per slot; `migrate()` fills
 missing fields, so new fields need a default in `newSave`), plus `ll.opts` (`mini`). A day is not saved until it ends. Lists
 like `RECIPES`, `STATIONS`, `CAMPAIGNS`, `DECOR` are keyed by id or index in saves (`owned`, `stations`, `decor` level):
-append, never reorder or rename ids. `window.LL` exposes the day for Playwright bots (`step(dt)`, `leeTap(target)`).
+append, never reorder or rename ids. `window.LL` exposes the day for Playwright bots (`step(dt)`, `leeTap(target)`,
+`playLevel(i)`). The counter has six put-down spots (`G.spots`) and `top` (worktop) stations hold one item; free play tops up
+stock automatically (`autoStock`). **Campaign**: `CHAPTERS` and `LEVELS` (in CORE) define fixed days (menu, stations, tables,
+staff, `people`, goals `[kind, n]`, the first must be met); arrivals come from `levelArrivals(i)` with a seeded random, so a
+level is the same every time. Progress is `ll.camp` `{s: {level index: stars}}`, so append levels only. A campaign day uses a
+throwaway save (`slot = -1`, `LV` set) and never touches the free-play slots.
 
 ### Gravity Well (`games/gravity-well`)
 

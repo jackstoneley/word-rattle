@@ -280,7 +280,8 @@ function renderStats(){
   const bsl=load("slide.levels",{}),bsd=load("slide.daily",{}),bsn=Object.keys(bsl).length,bsS=Object.values(bsl).reduce((a,r)=>a+(r&&r.stars||0),0),bsToday=Object.values(bsd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now())),bsT=load("slide.tracks",[]).length;
   if(bsn||Object.keys(bsd).length||bsT)setHTML("stBS",[{b:String(bsn)}," of 15 challenges · ",{b:String(bsS)}," stars",bsToday?" · today's slide done":bsT?` · ${bsT} track${bsT===1?"":"s"} drawn`:""]);
   {let best=null;for(let i=0;i<5;i++){const s=load("ll.slot."+i,null);if(s&&s.day&&(!best||s.day>best.day))best=s}
-    if(best)setHTML("stLL",[String(best.name||"")," · day ",{b:String(best.day)}," · ",{b:"★".repeat([0,60,250,700,1600,3200].filter(x=>(best.rep||0)>=x).length-1)||"no stars yet"}])}
+    const llc=Object.values((load("ll.camp",{})||{}).s||{}),llDone=llc.filter(x=>x>0).length;
+    if(best||llDone)setHTML("stLL",[...(llDone?["Campaign ",{b:llDone+" of 25"},best?" · ":""]:[]),...(best?[String(best.name||"")," day ",{b:String(best.day)}]:[])])}
   const gwl=load("gw.levels",{}),gwd=load("gw.daily",{}),gwn=Object.keys(gwl).length,gwS=Object.values(gwl).reduce((a,r)=>a+(r&&r.stars||0),0),gwToday=Object.values(gwd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now()));
   if(gwn||Object.keys(gwd).length)setHTML("stGW",[{b:String(gwn)}," of 30 levels · ",{b:String(gwS)}," stars",gwToday?" · today's orbit done":""]);
   {const es=load("es.stats",null)||{},esv=load("es.save",null),esw=(es.wins||[]).reduce((a,b)=>a+b,0),ESD=["Easy","Normal","Hard","Brutal"];
