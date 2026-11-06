@@ -166,7 +166,12 @@ leave dirty plates; dishes are recipes of station steps (`RECIPES[].s`, ending i
 `/*CORE-START*/` and `/*CORE-END*/`. Five save slots, `ll.slot.0`-`ll.slot.4` (whole save object per slot; `migrate()` fills
 missing fields, so new fields need a default in `newSave`), plus `ll.opts` (`mini`). A day is not saved until it ends. Lists
 like `RECIPES`, `STATIONS`, `CAMPAIGNS`, `DECOR` are keyed by id or index in saves (`owned`, `stations`, `decor` level):
-append, never reorder or rename ids. `window.LL` exposes the day for Playwright bots (`step(dt)`, `leeTap(target)`).
+append, never reorder or rename ids. `window.LL` exposes the day for Playwright bots (`step(dt)`, `leeTap(target)`,
+`playLevel(i)`). The counter has six put-down spots (`G.spots`) and `top` (worktop) stations hold one item; free play tops up
+stock automatically (`autoStock`). **Campaign**: `CHAPTERS` and `LEVELS` (in CORE) define fixed days (menu, stations, tables,
+staff, `people`, goals `[kind, n]`, the first must be met); arrivals come from `levelArrivals(i)` with a seeded random, so a
+level is the same every time. Progress is `ll.camp` `{s: {level index: stars}}`, so append levels only. A campaign day uses a
+throwaway save (`slot = -1`, `LV` set) and never touches the free-play slots.
 
 ### Gravity Well (`games/gravity-well`)
 
@@ -188,7 +193,20 @@ Rules, unit tables (`ERAS`, `KIND`, `TWEAK`, `TURK`, `UPG`), the fixed-step batt
 (`warEconomy`), upgrades to level 10 with a 20-unit army cap, and in the last age the Star Lance (experience charges a
 hit for a fifth of the enemy base). `tools/epoch-siege-check.js` (seeded, run by build.py) plays a Normal computer against
 each difficulty and fails on any battle that lasts an hour. Saved data: `es.save` (the battle in progress, plain JSON of
-the state minus projectiles), `es.stats` (`played`, `wins`/`losses`/`fast` per difficulty, `kills`), `es.opts`.
+the state minus projectiles), `es.stats` (`played`, `wins`/`losses`/`fast` per difficulty, `kills`), `es.opts`,
+`es.meta` (`medals`, `earned`, `perks` {id: level 1-3}, `equip` [up to 3 ids], `gen` id, `camp` {mission index: {won,
+st: [3 stars], best, tries}}).
+Campaign, generals and perks live in CORE too: `MISSIONS` (battle options `o`, two star goals `g`: time / hp / lost),
+`GENERALS` and `PERKS` (modifier sets, see `MOD0`; `addMods` stacks them, `loadoutMods` builds the player's side).
+Each side carries its modifiers in `P.m` (`md(P)`, defaulting to `MOD0` for old saves). Missions are keyed by index,
+generals and perks by id: append only. The Star Lance charges in the last age a battle allows (`topEra`), so missions
+capped below the Future still end. Healing: a troop can be healed once per `HEAL_GAP`; shooters target healers in reach.
+Lanes: battle option `lanes` (1 or 3). Each unit has `ln` (missing = 0); troops only meet, block, heal and splash
+within their lane; defences and specials cover every lane. Queue items carry the lane chosen when they were bought
+(`P.lane`, set by tapping a lane; the computer picks with `aiLane`). Bases are `LANE_BASE` times tougher with lanes,
+crowds stand two deep. `opts.top` switches the page to the map view (`renderTop`), lanes running up the screen.
+Generals level 1-5 from battle points in `es.meta.gx` (`GEN_PTS`; each general's `lv` lists what levels 2-5 add).
+Missions 31-49 are three roads (`br`: iron, wild, fronts) that open after mission 30 (`req`), and a finale (`any`).
 Saves hold era and kind numbers, so append to the tables, never reorder them.
 Difficulty (`DIFF`): `inc`/`xp` multiply the computer's gold and experience, `pxp` is experience it earns each second,
 and a computer side an age behind earns experience three times as fast (`xpMult`). Normal is meant to beat a good player

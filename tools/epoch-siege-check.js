@@ -1,5 +1,6 @@
 // Checks Epoch Siege: the battle rules run, and the computer playing the player's side at Normal settles every
-// battle (no stalemates) against each enemy difficulty, with and without crowd fighting. Randomness is seeded so the check gives the same answer
+// battle (no stalemates) against each enemy difficulty, with and without crowd fighting, and every campaign
+// mission finishes. Randomness is seeded so the check gives the same answer
 // every time. Run by tools/build.py: node tools/epoch-siege-check.js [games per difficulty] [-v]
 const fs = require("fs"), path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "..", "games", "epoch-siege", "index.html"), "utf8");
@@ -8,7 +9,7 @@ if (!core) { console.error("epoch-siege: CORE not found"); process.exit(1); }
 let seed = 1;
 const SeededMath = Object.create(Math);
 SeededMath.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-const C = new Function("Math", core[1] + ";return {newGame, step, DIFF, STAT, KIND};")(SeededMath);
+const C = new Function("Math", core[1] + ";return {newGame, step, DIFF, STAT, KIND, MISSIONS, missionGame, GENERALS, PERKS, loadoutMods};")(SeededMath);
 const N = +process.argv[2] || 2, verbose = process.argv.includes("-v");
 let bad = 0;
 if (C.STAT.length !== 6 || C.STAT.some(r => r.length !== C.KIND.length || r.some(u => !(u.cost > 0 && u.hp > 0 && u.n)))) { console.error("epoch-siege: unit table is malformed"); bad++; }
@@ -26,5 +27,20 @@ for (let d = 0; d < 4; d++) {
   }
   out.push(`${C.DIFF[d].n} won ${wins}/${N + 1} (${times.join(", ")} min)`);
 }
+// every campaign mission finishes (survive and time-limit missions end on the clock)
+const mres = [];
+C.MISSIONS.forEach((M, i) => {
+  if (!M.n || !M.b || !M.o || !Array.isArray(M.g) || M.g.length !== 2) { bad++; console.error(`epoch-siege: mission ${i + 1} is malformed`); return; }
+  seed = 7000 + i;
+  const S = C.missionGame(i, null); S.sd[0].ai = true; S.sd[0].diff = 1;
+  while (S.over < 0 && S.t < 3600) { C.step(S, 1 / 15); S.ev.length = 0; }
+  if (S.over < 0) { bad++; console.error(`epoch-siege: mission ${i + 1} (${M.n}) did not finish in an hour`); }
+  mres.push((S.over === 0 ? "W" : "L") + Math.round(S.t / 60));
+  if (verbose) console.log(`mission ${i + 1} ${M.n}: ${S.over === 0 ? "won" : "lost"} ${Math.round(S.t / 60)} min`);
+});
+for (const g of C.GENERALS) if (!g.id || !g.n || !g.good || !g.bad) { bad++; console.error("epoch-siege: general malformed " + g.id); }
+for (const p of C.PERKS) if (!p.id || p.d.length !== 3 || p.m.length !== 3) { bad++; console.error("epoch-siege: perk malformed " + p.id); }
+const all = C.loadoutMods("brann", C.PERKS.map(p => [p.id, 3]));
+if (!(all.dmg > 1 && all.cost.length === 5)) { bad++; console.error("epoch-siege: loadout mods broken"); }
 if (bad) process.exit(1);
-console.log("epoch-siege: Normal computer vs " + out.join("; "));
+console.log("epoch-siege: Normal computer vs " + out.join("; ") + `; missions ${mres.join(" ")}`);

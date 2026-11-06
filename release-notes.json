@@ -209,6 +209,41 @@
     {
       "id": 20,
       "type": "features",
+      "headline": "Epoch Siege: campaign, generals and perks",
+      "details": [
+        "A 12-mission campaign, each battle with its own twist: heavies only, survive the clock, no gold over time, a fortress with double walls, and more. Every mission has three stars to earn.",
+        "Stars and battle wins earn medals. Spend them in the new Barracks on 13 perks, each going up to level 3, and take three into any battle.",
+        "Seven generals to unlock, each with a strength and a weakness: the Builder, the Raider, the Sage, the Mender and more.",
+        "Balance: healers can no longer stack on one troop, shooters now aim for enemy healers first, Hard is a bit tougher and Brutal a bit kinder."
+      ]
+    },
+    {
+      "id": 21,
+      "type": "features",
+      "headline": "Epoch Siege: three lanes, a longer campaign and general levels",
+      "details": [
+        "Three-lane battles: tap a lane and it glows, and everything you train marches down it until you pick another. Defences cover all three lanes. Turn it on in Battle, and many new missions use it.",
+        "Map view: a button on the battlefield switches to a view from above, with your base at the bottom.",
+        "The campaign now has 30 missions, then splits into three roads (the Iron Road, the Wild Frontier and the Three Fronts) before a final battle.",
+        "Generals now level up to 5 by leading battles, getting stronger and losing their weakness. Three new generals, plus three more waiting at the end of each road.",
+        "Four new perks: Long Bows, Repair Crews, Bargain Hunter and Heavy Drill."
+      ]
+    },
+    {
+      "id": 22,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: campaign, worktops and easier tapping",
+      "details": [
+        "New campaign: 25 days from a corner café to a restaurant, each teaching one thing, with three stars to earn.",
+        "Tapping is more precise: tap anywhere near a station and Lee Lee goes to it, with a dashed outline showing where she's heading.",
+        "Put anything down on the six counter spots or a worktop, and pick it up again. Each new place starts with a worktop.",
+        "The office is simpler: four tabs (Today, Menu, Team, Upgrades), and stock is topped up for you each night.",
+        "People already queueing at closing time now stay to be served."
+      ]
+    },
+    {
+      "id": 23,
+      "type": "features",
       "headline": "Hollowdeep: room shapes, a Workshop, traps and doors",
       "details": [
         "Shapes matter: a 2×2 or 3×3 square of a room becomes something special, like a Book stand, a Vault, a Big nest, a Sparring ring or a Great forge. Tap a room to see what its shapes do.",

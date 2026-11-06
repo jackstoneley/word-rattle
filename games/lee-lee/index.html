@@ -58,6 +58,17 @@ p{margin:0;line-height:1.45}
 .slot .info b{display:block;font-family:var(--display);font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .info span{font-size:.84rem;color:var(--muted)}
 .slot.empty{border-style:dashed;background:transparent}
+.camp-card{background:linear-gradient(135deg,#FFE7D8,#FFF7EE)}
+.lvls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.lv{aspect-ratio:1;border:1px solid var(--line);background:var(--panel2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;font-weight:800}
+.lv b{font-family:var(--display);font-size:1.2rem}
+.lv span{font-size:.62rem;color:var(--gold);letter-spacing:.04em;min-height:.8em;line-height:1}
+.lv.done{background:#FFF0E2}
+.lv.next{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.lv:disabled{opacity:.35}
+.goals{display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.goals div{display:flex;gap:8px;align-items:flex-start}
+.tips{margin:0;padding-left:18px;font-size:.92rem;line-height:1.45;display:flex;flex-direction:column;gap:4px}
 .howto{font-size:.92rem;line-height:1.5}
 .howto summary{font-family:var(--display);font-weight:700;font-size:1.05rem;cursor:pointer}
 .howto ul{padding-left:18px;margin:8px 0 0}
@@ -154,7 +165,13 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
       <a class="sg-home" href="../../index.html">← All games</a>
       <header class="hero"><canvas id="heroCv" width="168" height="192" aria-hidden="true"></canvas>
         <div><h1>Lee Lee's Kitchen</h1><p class="muted">Take orders, cook, serve and clean up. Grow a little café or a busy pub into the best in town.</p></div></header>
-      <h2>Save slots</h2>
+      <div class="card camp-card">
+        <div class="row spread"><div class="grow"><h2>Campaign</h2><p class="small muted" id="campSub">25 days that teach you everything, from a corner café to a restaurant.</p></div>
+          <button class="btn pri" id="campBtn">Play</button></div>
+        <div class="meter"><i id="campBar" style="width:0"></i></div>
+      </div>
+      <h2>Free play</h2>
+      <p class="small muted" style="margin-top:-6px">Run your own place, day after day. Five save slots.</p>
       <div id="slots" style="display:flex;flex-direction:column;gap:10px"></div>
       <details class="card howto">
         <summary>How to play</summary>
@@ -162,11 +179,13 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
           <li><b>Tap</b> anything and Lee Lee walks over and uses it. She carries one thing at a time.</li>
           <li>Customers sit down. When a table shows a <b>notepad</b>, tap it to take their order. The order appears on the strip at the top.</li>
           <li>Tap the station a dish starts at (usually the <b>fridge</b>). Then follow the glowing stations: chop, mix, cook. Food on the toaster, grill, hob, fryer and oven <b>burns</b> if you leave it too long.</li>
-          <li>Finished food is <b>plated up at the counter</b> (it needs a clean plate), then tap the table to serve it.</li>
+          <li>Finished food is <b>plated up</b> by tapping the plates 🍽 on the counter, then tap the table to serve it.</li>
+          <li>Hands full? Put anything down on one of the <b>counter spots</b> or a <b>worktop</b>, and tap it again to pick it up.</li>
           <li>When people leave, tap the table to clear the dirty plates and take them to the <b>sink</b>. No clean plates, no food!</li>
           <li>Customers who wait too long walk out without paying, and your reputation drops. Happy customers tip and bring more people.</li>
           <li>In a pub, late nights bring <b>rowdy</b> customers (red face). Tap their table to calm them; the second time they're shown the door. Mop up any spills.</li>
-          <li>After each day you're in the office: buy stock for tomorrow, learn recipes, hire and promote staff, buy equipment, advertise, and one day move somewhere bigger.</li>
+          <li>After each day you're in the office: learn recipes, hire and promote staff, buy equipment and decor, advertise, and one day move somewhere bigger. Stock is topped up for you (you can turn that off).</li>
+          <li>New to it? Start with the <b>campaign</b>: each day teaches one thing, from a café to a restaurant.</li>
           <li>The game saves at the end of each day. Leaving in the middle of a day starts that day again.</li>
         </ul>
       </details>
@@ -174,6 +193,15 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
         <div class="row spread"><div class="grow"><b>Cooking mini-games</b><p class="small muted">Chop, stir and pour yourself. Turn off to let Lee Lee do them on her own (a little slower).</p></div>
           <button class="btn sm" id="miniBtn"></button></div>
       </div>
+    </div>
+  </section>
+
+  <section id="camp" class="screen scroll" hidden>
+    <div class="wrap">
+      <button class="sg-home" id="campBack" style="border:none;background:none;padding:0">← Back</button>
+      <h1>Campaign</h1>
+      <p class="muted">Each day teaches something new. Meet the first goal to pass; the other two earn extra stars.</p>
+      <div id="chapters" style="display:flex;flex-direction:column;gap:12px"></div>
     </div>
   </section>
 
@@ -227,18 +255,18 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
 /*CORE-START*/
 /* Game data and the economy. No page dependencies. */
 const DAY_LEN = 210;              // seconds of opening hours per day
-const PASS_MAX = 5, DW_CAP = 10, DW_TIME = 11;
+const PASS_MAX = 6, DW_CAP = 10, DW_TIME = 11;
 const STAR_AT = [0, 60, 250, 700, 1600, 3200];
 const VENUES = {
   cafe: { n: "Café, bakery & deli", short: "Café", open: 9, close: 15, peaks: [[.22, .1], [.58, .12]], icon: "🧁",
-    start: ["fridge", "kettle", "toaster", "board", "sink"], menu: ["tea", "toast", "salad"],
-    stations: ["fridge", "board", "bowl", "kettle", "coffee", "toaster", "grill", "hob", "oven", "sink", "dishwasher"],
+    start: ["fridge", "kettle", "toaster", "board", "sink", "top"], menu: ["tea", "toast", "salad"],
+    stations: ["fridge", "board", "bowl", "kettle", "coffee", "toaster", "grill", "hob", "oven", "sink", "dishwasher", "top"],
     names: ["The Copper Kettle", "Lee Lee's Café", "Crumbs & Co.", "The Little Bakehouse", "Sunny Side Deli"],
     places: ["Corner café", "High Street café", "The Old Bakery", "Riverside café & deli"],
     drinks: "Barista", floor: "Cleaner" },
   pub: { n: "Restaurant & pub", short: "Pub", open: 17, close: 24, peaks: [[.2, .1], [.66, .14]], icon: "🍺",
-    start: ["fridge", "tap", "fryer", "board", "sink"], menu: ["lager", "chips", "ploughmans"],
-    stations: ["fridge", "board", "bowl", "tap", "fryer", "grill", "hob", "oven", "sink", "dishwasher"],
+    start: ["fridge", "tap", "fryer", "board", "sink", "top"], menu: ["lager", "chips", "ploughmans"],
+    stations: ["fridge", "board", "bowl", "tap", "fryer", "grill", "hob", "oven", "sink", "dishwasher", "top"],
     names: ["The Red Lion", "The Rose & Crown", "The Fox & Hound", "The Golden Pint", "Lee Lee's Bar & Kitchen"],
     places: ["Back-street local", "Market Square pub", "The Coaching Inn", "Riverside gastropub"],
     drinks: "Bartender", floor: "Bouncer" }
@@ -270,7 +298,8 @@ const STATIONS = {
   oven: { n: "Oven", e: "🔥", k: "pas", d: 16, b: 12, c: 500, col: "#C9B6A6" },
   fryer: { n: "Fryer", e: "🍟", k: "pas", d: 8, b: 8, c: 350, col: "#E2CF9C" },
   sink: { n: "Sink", e: "🚰", k: "sink", c: 150, col: "#CFE3EC" },
-  dishwasher: { n: "Dishwasher", e: "🧼", k: "dw", c: 900, col: "#D6E6EE" }
+  dishwasher: { n: "Dishwasher", e: "🧼", k: "dw", c: 900, col: "#D6E6EE" },
+  top: { n: "Worktop", e: "", k: "top", c: 40, col: "#D9B98F" }
 };
 // s: steps ("plate" = plate up at the counter), i: ingredients, p: price, c: cost to learn, st: stars needed, d: a drink
 const RECIPES = {
@@ -329,6 +358,115 @@ const DECOR = [
 const SHOES = [{ n: "Comfy trainers", c: 120 }, { n: "Running shoes", c: 400 }, { n: "Roller skates", c: 1200 }];
 const FIRST = ["Sam", "Priya", "Tom", "Aisha", "Jake", "Mei", "Ollie", "Zara", "Ben", "Nina", "Kofi", "Ruby", "Dan", "Leah", "Raj", "Ella", "Max", "Sofia", "Joe", "Hana", "Luca", "Grace", "Omar", "Ivy", "Finn", "Tia", "Ade", "Molly", "Kai", "Rosa"];
 
+/* Campaign: a fixed day per level, each teaching one thing, across five settings. Saved as ll.camp {s: {level index: stars}}.
+   Append levels only (progress is keyed by index). Goals: [kind, n]; the first is always "served" and must be met. */
+const CHAPTERS = [
+  { n: "The Corner Café", v: "cafe", pal: 0, e: "☕", d: "Learn the basics: orders, cooking, plates and washing up." },
+  { n: "The Bakery", v: "cafe", pal: 1, e: "🧁", d: "Mixing, the oven, perfect coffee and your first member of staff." },
+  { n: "The Deli", v: "cafe", pal: 2, e: "🥪", d: "Grills, long recipes, a waiter, a cook, and a food critic." },
+  { n: "The Pub", v: "pub", pal: 0, e: "🍺", d: "Pulling pints, rowdy nights, pub grub and a bar team." },
+  { n: "The Restaurant", v: "pub", pal: 3, e: "🍽️", d: "Roasts and steaks, a full team, and the grand opening.", calm: 1 }
+];
+const LEVELS = [
+  { ch: 0, n: "First customers", menu: ["tea"], st: ["kettle", "sink", "top"], tables: [2, 2], people: 3, size: 1, len: 100,
+    goals: [["served", 3], ["out", 0], ["earn", 9]],
+    tip: ["Customers sit down and show a 📝. Tap their table to take the order.", "Tea is made on the kettle 🫖. Tap it, wait for the ✅, then tap it again to pick the tea up.", "Tap the plates 🍽 on the counter to plate it up, then tap the table to serve it."] },
+  { ch: 0, n: "Toast", menu: ["tea", "toast"], st: ["fridge", "kettle", "toaster", "sink", "top"], tables: [2, 2, 2], people: 5, size: 2, len: 130,
+    goals: [["served", 5], ["burnt", 0], ["out", 0]],
+    tip: ["Toast starts at the fridge 🧊, then goes on the toaster.", "Food on the toaster burns if you leave it there. When you see ⚠️, grab it quickly!", "Burnt food goes in the bin 🗑 at the end of the counter."] },
+  { ch: 0, n: "Washing up", menu: ["tea", "toast"], st: ["fridge", "kettle", "toaster", "sink", "top"], tables: [2, 2, 2], plates: 3, people: 7, size: 2, len: 160,
+    goals: [["served", 6], ["out", 1], ["earn", 26]],
+    tip: ["Only 3 plates today! When people leave, tap their table to collect the dirty plates.", "Take them to the sink 🚰. Lee Lee washes up while she stands there.", "No clean plates means no food can go out."] },
+  { ch: 0, n: "Chop chop", menu: ["tea", "toast", "salad"], st: ["fridge", "kettle", "toaster", "board", "sink", "top"], tables: [2, 2, 2], people: 9, size: 2, len: 170,
+    goals: [["served", 8], ["out", 1], ["earn", 40]],
+    tip: ["Salad needs chopping: tap the chopping board 🔪, then tap quickly to chop.", "Start slow things first: toast can cook while you chop a salad.", "The strip at the top lists every order. Faded ones are already being made."] },
+  { ch: 0, n: "Lunch rush", menu: ["tea", "toast", "salad"], st: ["fridge", "kettle", "toaster", "toaster", "board", "sink", "top"], tables: [2, 2, 4, 2], plates: 8, people: 14, size: 3, len: 210,
+    goals: [["served", 11], ["out", 2], ["earn", 60]],
+    tip: ["A busy lunchtime! Take orders as soon as people sit down. Their patience bar is under the bubble.", "Hands full? Put things down on the counter spots or the worktop, then come back for them.", "Two toasters today."] },
+
+  { ch: 1, n: "Into the oven", menu: ["tea", "muffin"], st: ["fridge", "bowl", "oven", "kettle", "sink", "top"], tables: [2, 2, 2], people: 6, size: 2, len: 170,
+    goals: [["served", 6], ["burnt", 0], ["out", 0]],
+    tip: ["Muffins: fridge, then the mixing bowl 🥣, then the oven.", "In the bowl, stir round and round with your finger.", "The oven is slow, but it keeps food good for a long time before it burns."] },
+  { ch: 1, n: "Coffee time", menu: ["latte", "muffin", "toast"], st: ["fridge", "coffee", "bowl", "oven", "toaster", "sink", "top"], tables: [2, 2, 2], people: 9, size: 2, len: 190,
+    goals: [["served", 8], ["perfect", 3], ["out", 1]],
+    tip: ["Lattes use the coffee machine ☕. Hold your finger down to pour, and let go in the green band.", "A perfect pour earns a bigger tip. Hold too long and it overflows."] },
+  { ch: 1, n: "Worktops", menu: ["muffin", "croissant", "latte"], st: ["fridge", "bowl", "oven", "oven", "coffee", "sink", "top", "top"], tables: [2, 2, 4], people: 10, size: 3, len: 200,
+    goals: [["served", 9], ["burnt", 0], ["out", 1]],
+    tip: ["Two ovens and lots of baking.", "Finished something but busy? Put it on a worktop or the counter and come back for it.", "Holding a dish for a station that has finished food on it? Tap the station to swap them over."] },
+  { ch: 1, n: "A helping hand", menu: ["tea", "toast", "muffin", "croissant"], st: ["fridge", "kettle", "toaster", "bowl", "oven", "oven", "sink", "top"], tables: [2, 2, 4, 4], plates: 5, staff: [["porter", 1]], people: 13, size: 3, len: 210,
+    goals: [["served", 11], ["out", 1], ["earn", 60]],
+    tip: ["Meet your kitchen porter. They clear tables and wash up all by themselves.", "Staff get on with their own job, so you can concentrate on cooking."] },
+  { ch: 1, n: "Bake sale", menu: ["tea", "latte", "muffin", "croissant", "pancakes"], st: ["fridge", "kettle", "coffee", "bowl", "oven", "oven", "hob", "sink", "top", "top"], tables: [2, 2, 4, 4, 2], staff: [["porter", 2]], people: 16, size: 3, len: 230,
+    goals: [["served", 13], ["out", 2], ["earn", 100]],
+    tip: ["The whole town wants cake today!", "Pancakes go from the mixing bowl to the hob 🍳."] },
+
+  { ch: 2, n: "On the grill", menu: ["toastie", "wrap", "latte"], st: ["fridge", "board", "grill", "toaster", "coffee", "sink", "top"], tables: [2, 2, 2, 2], plates: 10, people: 10, size: 2, len: 200,
+    goals: [["served", 9], ["burnt", 0], ["earn", 70]],
+    tip: ["The grill ♨️ cooks fast, and burns fast too. Stay close.", "Toasties: chop the cheese on the board, then into the toaster."] },
+  { ch: 2, n: "Soup and quiche", menu: ["soup", "quiche", "salad", "tea"], st: ["fridge", "board", "bowl", "hob", "oven", "kettle", "sink", "top", "top"], tables: [2, 2, 4, 2], plates: 10, people: 12, size: 3, len: 220,
+    goals: [["served", 10], ["out", 1], ["burnt", 0]],
+    tip: ["Quiche takes four steps: fridge, bowl, board, oven.", "Get the slow dishes cooking first, then make quick ones while you wait."] },
+  { ch: 2, n: "Front of house", menu: ["toastie", "wrap", "soup", "latte"], st: ["fridge", "board", "board", "grill", "toaster", "hob", "coffee", "sink", "top"], tables: [2, 2, 4, 4, 2, 2], staff: [["waiter", 2]], plates: 10, people: 14, size: 3, len: 220,
+    goals: [["served", 11], ["out", 1], ["earn", 110]],
+    tip: ["Meet your waiter. They take orders, carry food from the counter and clear tables.", "Leave finished, plated food on the counter spots and they'll take it out."] },
+  { ch: 2, n: "The critic", menu: ["quiche", "wrap", "sponge", "latte", "tea"], st: ["fridge", "board", "bowl", "grill", "oven", "oven", "coffee", "kettle", "sink", "top"], tables: [2, 2, 4, 4, 2], staff: [["waiter", 2], ["porter", 1]], critic: 1, people: 14, size: 3, len: 230,
+    goals: [["served", 12], ["critic", 1], ["out", 1]],
+    tip: ["A food critic is coming today. Look for 🧐 by their table.", "Serve them quickly to keep them happy."] },
+  { ch: 2, n: "Deli rush", menu: ["toastie", "wrap", "soup", "quiche", "latte", "tea"], st: ["fridge", "board", "board", "bowl", "grill", "toaster", "hob", "oven", "coffee", "kettle", "sink", "top"], tables: [2, 2, 4, 4, 4, 2], staff: [["waiter", 2], ["porter", 2], ["cook", 2]], people: 22, size: 4, len: 240,
+    goals: [["served", 18], ["out", 2], ["earn", 180]],
+    tip: ["The whole team is in. Your cook makes food orders by themselves.", "Lee Lee can help wherever things pile up."] },
+
+  { ch: 3, n: "Pulling pints", menu: ["lager", "chips"], st: ["tap", "fridge", "fryer", "sink", "top"], tables: [2, 2, 2], people: 8, size: 2, len: 170,
+    goals: [["served", 7], ["perfect", 4], ["out", 0]],
+    tip: ["Pints come straight from the beer taps 🍺. Hold to pour, and let go in the green.", "Chips go in the fryer. It's quick, and burns quickly too."] },
+  { ch: 3, n: "Last orders", menu: ["lager", "wine", "chips"], st: ["tap", "fridge", "fryer", "sink", "top"], tables: [2, 2, 2, 2], rowdy: 1, plates: 8, people: 11, size: 2, len: 190,
+    goals: [["served", 9], ["mess", 0], ["out", 2]],
+    tip: ["Late at night some customers get rowdy: red faces and 😡.", "Tap their table to calm them down. The second time, they're shown the door.", "Spills make the tables nearby grumpy. Tap a puddle to mop it up."] },
+  { ch: 3, n: "Pub grub", menu: ["lager", "burger", "fishchips", "chips"], st: ["fridge", "tap", "board", "board", "grill", "fryer", "sink", "top"], tables: [2, 2, 4, 4], plates: 10, people: 13, size: 3, len: 220,
+    goals: [["served", 11], ["burnt", 0], ["earn", 100]],
+    tip: ["Burgers: fridge, board, grill. Fish & chips: fridge, board, fryer.", "Two things cooking at once? Keep an eye out for the ⚠️."] },
+  { ch: 3, n: "Behind the bar", menu: ["lager", "wine", "cocktail", "burger", "chips"], st: ["fridge", "tap", "bowl", "board", "grill", "fryer", "sink", "top"], tables: [2, 2, 4, 4, 2], staff: [["drinks", 1], ["floor", 1]], rowdy: 1, plates: 12, people: 18, size: 3, len: 230,
+    goals: [["served", 15], ["out", 1], ["mess", 0]],
+    tip: ["Your bartender makes the drinks, and the bouncer calms rowdy customers and mops up.", "You look after the food."] },
+  { ch: 3, n: "Quiz night", menu: ["lager", "wine", "cocktail", "burger", "fishchips", "chips", "ploughmans"], st: ["fridge", "tap", "tap", "bowl", "board", "board", "grill", "fryer", "sink", "top"], tables: [2, 2, 4, 4, 4, 2], staff: [["waiter", 2], ["drinks", 2], ["floor", 1], ["cook", 1]], rowdy: 1, plates: 14, people: 26, size: 4, len: 240,
+    goals: [["served", 22], ["out", 2], ["earn", 200]],
+    tip: ["The busiest night of the week! A cook is in to help with the food.", "Keep things moving: your team will handle the rest."] },
+
+  { ch: 4, n: "Sunday roast", menu: ["roast", "pudding", "wine"], st: ["fridge", "board", "bowl", "oven", "oven", "sink", "top", "top"], tables: [2, 2, 4], plates: 8, people: 10, size: 3, len: 220,
+    goals: [["served", 9], ["burnt", 0], ["earn", 110]],
+    tip: ["Roasts and puddings both need the oven, and there are two.", "Plan ahead: start the next dish before the last one comes out."] },
+  { ch: 4, n: "Steak night", menu: ["steak", "bangers", "wine"], st: ["fridge", "board", "grill", "hob", "sink", "top", "top"], tables: [2, 2, 2, 2], plates: 8, people: 11, size: 2, len: 220,
+    goals: [["served", 9], ["burnt", 0], ["out", 0]],
+    tip: ["Steak goes on the grill first, then the board. The grill burns fast, so stay close.", "Bangers & mash: hob, then mash on the board."] },
+  { ch: 4, n: "Full team", menu: ["roast", "pie", "curry", "pudding", "wine"], st: ["fridge", "board", "board", "bowl", "hob", "oven", "oven", "sink", "top", "top"], tables: [2, 2, 4, 4, 2, 2], staff: [["cook", 2], ["waiter", 2], ["porter", 1]], people: 20, size: 3, len: 240,
+    goals: [["served", 17], ["out", 1], ["earn", 250]],
+    tip: ["Cook, waiter and porter all on shift.", "Work alongside your cook: two dishes at a time keeps everyone happy."] },
+  { ch: 4, n: "The critic returns", menu: ["steak", "roast", "curry", "pudding", "cocktail", "wine"], st: ["fridge", "board", "board", "bowl", "grill", "hob", "oven", "oven", "sink", "top"], tables: [2, 2, 4, 4, 2], staff: [["cook", 2], ["waiter", 2], ["porter", 1]], critic: 1, people: 18, size: 3, len: 240,
+    goals: [["served", 15], ["critic", 1], ["burnt", 0]],
+    tip: ["The critic is back, and this time it's a proper restaurant.", "Nothing burnt for the third star."] },
+  { ch: 4, n: "Grand opening", menu: ["fizz", "roast", "steak", "curry", "pie", "pudding", "wine", "lager"], st: ["fridge", "tap", "board", "board", "bowl", "grill", "hob", "oven", "oven", "dishwasher", "sink", "top", "top"], tables: [2, 2, 4, 4, 4, 4, 2, 2, 4], plates: 14, staff: [["cook", 3], ["cook", 2], ["waiter", 3], ["waiter", 2], ["porter", 2], ["drinks", 2]], people: 34, size: 4, len: 260,
+    goals: [["served", 29], ["out", 2], ["earn", 450]],
+    tip: ["Opening night of Lee Lee's own restaurant!", "Everyone you've trained is here. Run the kitchen like a pro."] }
+];
+const GOAL_TEXT = { served: n => `Serve ${n} customers`, out: n => n ? `No more than ${n} walk out` : "Nobody walks out", burnt: n => n ? `No more than ${n} burnt` : "Nothing burnt",
+  earn: n => `Take £${n} (with tips)`, perfect: n => `${n} perfect pours`, critic: () => "Make the critic happy", mess: n => "No mess left at closing" };
+function goalMet(kind, n, r) {
+  return kind === "served" ? r.served >= n : kind === "out" ? r.angry <= n : kind === "burnt" ? r.burnt <= n : kind === "earn" ? r.rev + r.tips >= n
+    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : false;
+}
+function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function levelArrivals(i) {
+  const L = LEVELS[i], r = seeded(1000 + i * 7919), big = Math.max(...L.tables), sizes = [];
+  let left = L.people;
+  while (left > 0) { const sz = Math.min(left, big, 1 + Math.floor(Math.pow(r(), 1.7) * (L.size || 2))); sizes.push(sz); left -= sz; }
+  const n = sizes.length, arr = sizes.map((size, k) => {
+    const u = .02 + .82 * (k + .5 + (r() - .5) * .8) / n, late = CHAPTERS[L.ch].v === "pub" && u > .55;
+    return { t: u * L.len, size, late, rowdy: !!L.rowdy && late && size <= 3 && r() < .5 };
+  });
+  if (L.critic) { const a = arr[Math.floor(n * .45)]; a.critic = 1; a.rowdy = false; }
+  return arr.sort((a, b) => a.t - b.t);
+}
+
 function starsOf(rep) { let s = 0; while (s < 5 && rep >= STAR_AT[s + 1]) s++; return s; }
 function starsF(rep) { const s = starsOf(rep); return s >= 5 ? 5 : s + (rep - STAR_AT[s]) / (STAR_AT[s + 1] - STAR_AT[s]); }
 function roleName(save, r) { return r === "drinks" ? VENUES[save.venue].drinks : r === "floor" ? VENUES[save.venue].floor : ROLES[r].n; }
@@ -344,7 +482,7 @@ function newSave(venue, name) {
   for (const r of V.menu) for (const k in RECIPES[r].i) stock[k] = 14;
   return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
     owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], plates: 6,
-    decor: 0, shoes: 0, prem: 0, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
+    decor: 0, shoes: 0, prem: 0, autoStock: true, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
     stats: { served: 0, angry: 0, earned: 0, best: 0 } };
 }
 /*CORE-END*/
@@ -371,7 +509,7 @@ function migrate(s) {
   return s;
 }
 function saveGame() { if (S && slot >= 0) { S.at = Date.now(); store(slotKey(slot), S); } }
-function show(id) { for (const s of ["title", "newgame", "play", "manage"]) $(s).hidden = s !== id; view = id; }
+function show(id) { for (const s of ["title", "camp", "newgame", "play", "manage"]) $(s).hidden = s !== id; view = id; }
 
 /* ---------- drawing people ---------- */
 const SKINS = ["#F3CFAE", "#E6B48C", "#D19A6E", "#B57A50", "#8A5636", "#5E3A24", "#FADCC5"];
@@ -418,7 +556,7 @@ function drawHero() {
 
 /* ---------- title / slots ---------- */
 function renderTitle() {
-  drawHero();
+  drawHero(); renderCampCard();
   $("miniBtn").textContent = opts.mini ? "On" : "Off";
   const box = $("slots"); box.innerHTML = "";
   for (let i = 0; i < SLOTS; i++) {
@@ -437,7 +575,7 @@ function renderTitle() {
 $("slots").onclick = e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.new) { newGameScreen(+b.dataset.new); return; }
-  if (b.dataset.go) { slot = +b.dataset.go; S = migrate(load(slotKey(slot), null)); if (S) openManage(S.last && !S.last.seen ? "day" : "day"); return; }
+  if (b.dataset.go) { LV = null; slot = +b.dataset.go; S = migrate(load(slotKey(slot), null)); if (S) openManage(S.last && !S.last.seen ? "day" : "day"); return; }
   if (b.dataset.del) {
     const i = +b.dataset.del, s = load(slotKey(i), null);
     dialog(`<h3>Delete this save?</h3><p class="muted" style="text-align:center">${esc(s && s.name || "")}, day ${s && s.day}. This can't be undone.</p>
@@ -462,9 +600,70 @@ document.querySelectorAll(".venue").forEach(b => b.onclick = () => { ngVenue = b
 $("ngBack").onclick = () => { renderTitle(); show("title"); };
 $("ngGo").onclick = () => {
   const name = $("ngName").value.trim() || VENUES[ngVenue].names[0];
-  slot = ngSlot; S = newSave(ngVenue, name); S.cands = makeCands(); saveGame();
+  LV = null; slot = ngSlot; S = newSave(ngVenue, name); S.cands = makeCands(); saveGame();
   startDay();
 };
+
+/* ---------- campaign ---------- */
+let LV = null; // level index while a campaign day is being played
+const campData = () => Object.assign({ s: {} }, load("ll.camp", {}));
+function campUnlocked(i, d) { return i === 0 || (d.s[i - 1] || 0) > 0; }
+function renderCampCard() {
+  const d = campData(), done = Object.values(d.s).filter(x => x > 0).length, stars = Object.values(d.s).reduce((a, b) => a + b, 0);
+  $("campBar").style.width = done / LEVELS.length * 100 + "%";
+  if (done) $("campSub").textContent = `${done} of ${LEVELS.length} days done · ${stars} of ${LEVELS.length * 3} stars`;
+  $("campBtn").textContent = done ? (done < LEVELS.length ? "Continue" : "Play") : "Start";
+}
+function renderCamp() {
+  const d = campData(), box = $("chapters"); box.innerHTML = "";
+  let next = LEVELS.findIndex((_, i) => !(d.s[i] > 0));
+  CHAPTERS.forEach((C, ci) => {
+    const idx = LEVELS.map((L, i) => L.ch === ci ? i : -1).filter(i => i >= 0);
+    const got = idx.reduce((a, i) => a + (d.s[i] || 0), 0);
+    const el = document.createElement("div"); el.className = "card";
+    el.innerHTML = `<div class="row spread"><div class="grow"><h2>${C.e} ${esc(C.n)}</h2><p class="small muted">${esc(C.d)}</p></div><span class="stars" style="font-size:.85rem">★ ${got}/${idx.length * 3}</span></div>
+      <div class="lvls">${idx.map(i => `<button class="lv ${d.s[i] > 0 ? "done" : ""} ${i === next ? "next" : ""}" data-lv="${i}" ${campUnlocked(i, d) ? "" : "disabled"}><b>${i + 1}</b><span>${d.s[i] ? "★".repeat(d.s[i]) : ""}</span></button>`).join("")}</div>`;
+    box.append(el);
+  });
+}
+function openCamp() { renderCamp(); show("camp"); const n = $("chapters").querySelector(".lv.next"); if (n) n.scrollIntoView({ block: "center" }); }
+$("campBtn").onclick = openCamp;
+$("campBack").onclick = () => { renderTitle(); show("title"); };
+$("chapters").onclick = e => { const b = e.target.closest("[data-lv]"); if (b && !b.disabled) levelIntro(+b.dataset.lv); };
+function goalList(L, res) {
+  return `<div class="goals">${L.goals.map(([k, n], j) => `<div><span>${res ? (res[j] ? "⭐" : "✖️") : j === 0 ? "🎯" : "☆"}</span><span>${GOAL_TEXT[k](n)}${j === 0 ? ` <span class='muted small'>(to pass${L.rowdy ? "; rowdy people shown out count too" : ""})</span>` : ""}</span></div>`).join("")}</div>`;
+}
+function levelIntro(i) {
+  const L = LEVELS[i], C = CHAPTERS[L.ch], best = campData().s[i] || 0;
+  const staff = (L.staff || []).map(([r]) => ROLES[r].e + " " + (r === "drinks" ? VENUES[C.v].drinks : r === "floor" ? VENUES[C.v].floor : ROLES[r].n).toLowerCase());
+  dialog(`<div class="small muted" style="text-align:center">${C.e} ${esc(C.n)} · Day ${i + 1}${best ? ` · best ${"★".repeat(best)}` : ""}</div><h3>${esc(L.n)}</h3>
+    <ul class="tips">${L.tip.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
+    <p class="small muted">Menu: ${L.menu.map(r => RECIPES[r].e).join(" ")}${staff.length ? ` · Team: ${staff.join(", ")}` : ""}</p>
+    ${goalList(L)}
+    <div class="acts"><button class="btn pri" data-a="go">Start</button><button class="btn" data-a="">Not now</button></div>`, a => { if (a === "go") playLevel(i); });
+}
+function levelSave(i) {
+  const L = LEVELS[i], C = CHAPTERS[L.ch], s = newSave(C.v, C.n + ": " + L.n);
+  s.owned = L.menu.slice(); s.stations = L.st.slice(0, 13); s.tables = L.tables.slice(0, 9); s.plates = L.plates || 6; s.prem = C.pal;
+  s.stock = {}; for (const r of L.menu) for (const k in RECIPES[r].i) s.stock[k] = 999;
+  s.staff = (L.staff || []).map(([role, lvl], k) => ({ id: "c" + k, name: FIRST[(i * 7 + k * 5) % FIRST.length], role, lvl, wage: 0, morale: 70, days: 0 }));
+  s.rep = 0; s.camp = [];
+  return s;
+}
+function playLevel(i) { LV = i; slot = -1; S = levelSave(i); startDay(); }
+function levelEnd() {
+  const L = LEVELS[LV], g = G; g.ended = true; closeMini();
+  const r = { served: g.served + g.thrown, angry: g.angry, burnt: g.burnt, rev: g.rev, tips: g.tips, perfect: g.perfect, critic: g.critic, messes: g.messes.length };
+  const res = L.goals.map(([k, n]) => goalMet(k, n, r)), pass = res[0], stars = pass ? res.filter(Boolean).length : 0;
+  const d = campData(); if (stars > (d.s[LV] || 0)) { d.s[LV] = stars; store("ll.camp", d); }
+  const i = LV; G = null; LV = null; S = null;
+  renderCamp(); show("camp");
+  dialog(`<h3>${pass ? "Day passed!" : "Not quite…"}</h3><div class="stars" style="text-align:center;font-size:2rem">${"★".repeat(stars)}${"☆".repeat(3 - stars)}</div>
+    ${goalList(L, res)}
+    <div class="lines small"><div><span>Served</span><b>${r.served}</b></div><div><span>Walked out</span><b>${r.angry}</b></div><div><span>Takings + tips</span><b>${money(r.rev + r.tips)}</b></div></div>
+    <div class="acts">${pass && i + 1 < LEVELS.length ? `<button class="btn pri" data-a="next">Next day</button>` : ""}<button class="btn ${pass ? "" : "pri"}" data-a="again">Try again</button><button class="btn" data-a="">All days</button></div>`,
+    a => { if (a === "next") levelIntro(i + 1); else if (a === "again") levelIntro(i); });
+}
 
 /* ---------- dialogs ---------- */
 let dlgCb = null;
@@ -486,7 +685,7 @@ function slotPos(i) {
   const k = i - 9, left = k % 2 === 0, y = 1.75 + Math.floor(k / 2) * 1.0;
   return left ? { x: .55, y, sx: 1.35, sy: y } : { x: 8.45, y, sx: 7.65, sy: y };
 }
-const COUNTER = { bin: .55, plates: 1.55, pass: [2.55, 3.45, 5.55, 6.5, 7.45] };
+const COUNTER = { bin: .55, plates: 1.55, pass: [2.55, 3.45, 5.55, 6.5, 7.45, 8.45] };
 const zone = y => y < 3.95 ? 0 : 1;
 const PALETTE = {
   cafe: [{ floor: "#F2E2CB", floor2: "#ECD8BC", wall: "#C96E54", kit: "#E7EEF0", kit2: "#DCE4E7", counter: "#B9875A", top: "#D9AC7B", table: "#C08A55", chair: "#8E5E36" },
@@ -509,10 +708,11 @@ function startDay() {
     stock: Object.assign({}, S.stock), used: {},
     tables: S.tables.map((seats, i) => ({ i, x: TABLE_POS[i][0], y: TABLE_POS[i][1], seats, group: null, dirty: 0, claim: null })),
     stations: S.stations.map((t, i) => Object.assign({ i, t, item: null, user: null, claim: null, load: 0, run: 0 }, slotPos(i))),
-    pass: [], clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
+    spots: [null, null, null, null, null, null], taps: [], clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
   // arrivals
-  const n = Math.max(3, Math.round(expectedGroups(S) * rnd(.9, 1.1)));
-  const big = Math.max(...S.tables), critic = (S.camp || []).some(c => c.id === "critic");
+  if (LV != null) { G.len = LEVELS[LV].len; G.arr = levelArrivals(LV); }
+  const n = LV != null ? 0 : Math.max(3, Math.round(expectedGroups(S) * rnd(.9, 1.1)));
+  const big = Math.max(...S.tables), critic = LV == null && (S.camp || []).some(c => c.id === "critic");
   for (let i = 0; i < n; i++) {
     let u;
     if (Math.random() < .3) u = rnd(0, 1); else { const [mu, sd] = pickOne(V.peaks); u = mu + sd * (rnd(-1, 1) + rnd(-1, 1) + rnd(-1, 1)) / 1.5; }
@@ -520,7 +720,7 @@ function startDay() {
     let size = Math.random() < .42 ? 1 : Math.random() < .7 ? 2 : Math.random() < .6 ? 3 : 4;
     size = Math.min(size, big);
     const late = S.venue === "pub" && u > .6;
-    G.arr.push({ t: u * DAY_LEN, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep), late });
+    G.arr.push({ t: u * G.len, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep), late });
   }
   G.arr.sort((a, b) => a.t - b.t);
   if (critic) { const a = G.arr[Math.floor(G.arr.length * .4)]; if (a) { a.critic = 1; a.size = 1; a.rowdy = false; } }
@@ -534,7 +734,7 @@ function startDay() {
     G.actors.push(a);
   }
   paused = false; closeDialog(); closeMini();
-  $("pName").textContent = S.name;
+  $("pName").textContent = LV != null ? LEVELS[LV].n : S.name;
   show("play"); resize();
   toastMsg(S.venue === "pub" ? "Doors open! The first customers are on their way." : "Doors open! Kettle's on.", 2.4);
   lastT = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
@@ -583,7 +783,7 @@ function allDishes() {
   const out = [];
   for (const a of G.actors) if (a.hand && a.hand.k === "dish") out.push(a.hand);
   for (const s of G.stations) if (s.item) out.push(s.item);
-  for (const d of G.pass) out.push(d);
+  for (const d of G.spots) if (d) out.push(d);
   return out.filter(d => !d.burnt);
 }
 function need(r) { return openTickets(r).length - allDishes().filter(d => d.r === r).length; }
@@ -656,7 +856,7 @@ function trySeat() {
   G.queue.forEach((g, qi) => g.people.forEach((p, i) => { p.tx = 1.2 + qi * 1.3 + i * .32; p.ty = 13.4 + (i % 2) * .15; }));
 }
 function patMul(g) {
-  let m = 1 - .06 * S.decor;
+  let m = (1 - .06 * S.decor) * (LV != null ? .85 : 1);
   if (g.table && G.messes.some(ms => Math.hypot(ms.x - g.table.x, ms.y - g.table.y) < 2.2)) m *= 1.25;
   return m;
 }
@@ -743,7 +943,7 @@ function startDish(a, r, s) {
 }
 function stationsStep(dt) {
   for (const s of G.stations) {
-    if (s.item) {
+    if (s.item && STATIONS[s.t].k === "pas") {
       const d = s.item; d.t += dt;
       if (!d.ready && d.t >= d.dur) { d.ready = true; d.s++; }
       if (!d.burnt && d.t >= d.burnAt) { d.burnt = true; G.burnt++; fx(s.x, s.y + .5, "Burnt! 💨", "#3A2A22"); }
@@ -767,8 +967,9 @@ function loadDishwasher(a, s) {
 function leeTap(o) {
   if (mg) { toastMsg("Finish this first, or tap ✕"); return; }
   interrupt(lee);
+  lee.goal = o;
   const [x, y] = standFor(o, lee);
-  goTo(lee, x, y, () => leeArrive(o));
+  goTo(lee, x, y, () => { lee.goal = null; leeArrive(o); });
 }
 function leeArrive(o) {
   const L = lee, h = L.hand;
@@ -793,6 +994,13 @@ function leeStation(s) {
     if (h && h.k === "dirty") { if (!loadDishwasher(L, s)) toastMsg(s.run > 0 ? "The dishwasher is running" : "It's full"); }
     else toastMsg(s.run > 0 ? "Washing… " + Math.ceil(s.run) + "s" : "Bring dirty plates to load it");
     return;
+  }
+  if (def.k === "top") {
+    if (h && s.item) { toastMsg("Something's already on this worktop"); return; }
+    if (h && h.k === "dirty") { toastMsg("Dirty plates go to the sink"); return; }
+    if (h) { s.item = h; L.hand = null; return; }
+    if (s.item) { L.hand = s.item; s.item = null; return; }
+    toastMsg("A worktop: put anything down here"); return;
   }
   if (s.item) {
     if (h && h.k === "dish" && !h.burnt && RECIPES[h.r].s[h.s] === s.t && (s.item.ready || s.item.burnt)) {
@@ -834,22 +1042,29 @@ function leeCounter(o) {
     if (!h.burnt) G.binned++;
     L.hand = null; return;
   }
-  if (h && h.k === "dish" && !h.burnt) {
-    const R = RECIPES[h.r];
-    if (R.s[h.s] === "plate") {
+  if (o.what === "plates") {
+    if (h && h.k === "dish" && !h.burnt && RECIPES[h.r].s[h.s] === "plate") {
       if (G.clean <= 0) { toastMsg("No clean plates! Wash some at the sink."); return; }
       work(L, .35, () => { if (G.clean > 0) { G.clean--; h.s++; } }, null, "plate"); return;
     }
-    if (o.what === "pass" || o.what === "plates") { if (G.pass.length >= PASS_MAX) { toastMsg("The counter is full"); return; } G.pass.push(h); L.hand = null; return; }
-    return;
+    if (h && h.k === "dirty") { toastMsg("Dirty plates go to the sink"); return; }
+    if (h && h.burnt) { toastMsg("That's burnt. The bin is at the end of the counter"); return; }
+    toastMsg(G.clean + " clean plate" + (G.clean === 1 ? "" : "s") + (h ? ". Put it down on the counter spots" : "")); return;
   }
-  if (h && h.burnt) { toastMsg("That's burnt. The bin is at the end of the counter"); return; }
-  if (h && h.k === "dirty") { toastMsg("Dirty plates go to the sink"); return; }
+  // one of the counter spots: put down or pick up exactly here
+  const i = o.i, here = G.spots[i];
   if (!h) {
-    if (!G.pass.length) { toastMsg(o.what === "plates" ? G.clean + " clean plates" : "Nothing on the counter"); return; }
-    const i = o.what === "pass" && o.i < G.pass.length ? o.i : 0;
-    L.hand = G.pass.splice(i, 1)[0]; L.hand.claim = null;
+    if (!here) { toastMsg("Nothing here. You can put things down on the counter"); return; }
+    L.hand = here; G.spots[i] = null; here.claim = null; return;
   }
+  if (h.k === "dirty") { toastMsg("Dirty plates go to the sink"); return; }
+  if (h.burnt) { toastMsg("That's burnt. The bin is at the end of the counter"); return; }
+  if (here) {
+    // swap what's held with what's on this spot
+    G.spots[i] = h; L.hand = here; here.claim = null; return;
+  }
+  G.spots[i] = h; L.hand = null;
+  if (RECIPES[h.r].s[h.s] === "plate") toastMsg("Put down. Tap the plates 🍽 to plate it up");
 }
 function leeTable(t) {
   const L = lee, h = L.hand, g = t.group;
@@ -896,9 +1111,9 @@ function tryOrder(a) {
   return true;
 }
 function tryDeliver(a) {
-  const d = G.pass.find(d => !d.claim && d.s >= RECIPES[d.r].s.length && openTickets(d.r).length); if (!d) return false;
+  const d = G.spots.find(d => d && !d.claim && !d.burnt && d.s >= RECIPES[d.r].s.length && openTickets(d.r).length); if (!d) return false;
   d.claim = a;
-  goTo(a, COUNTER.pass[Math.min(G.pass.indexOf(d), 4)], 4.85, () => { d.claim = null; const i = G.pass.indexOf(d); if (i >= 0 && !a.hand) { a.hand = G.pass.splice(i, 1)[0]; } });
+  goTo(a, COUNTER.pass[G.spots.indexOf(d)], 4.85, () => { d.claim = null; const i = G.spots.indexOf(d); if (i >= 0 && !a.hand) { a.hand = d; G.spots[i] = null; } });
   return true;
 }
 function tryClear(a) {
@@ -959,8 +1174,10 @@ function staffDish(a) {
       const o = openTickets(d.r).find(x => x.g.table);
       if (o) { const [x, y] = standFor({ k: "table", t: o.g.table }, a); goTo(a, x, y, () => { const tk = o.g.table && o.g.state === "wait" && o.g.tickets.find(k => !k.done && k.r === d.r); if (tk && a.hand === d) { serve(o.g, tk, d); a.hand = null; } }); return; }
     }
-    if (G.pass.length >= PASS_MAX) { a.wait = .6; return; }
-    goTo(a, COUNTER.pass[Math.min(G.pass.length, 4)], zone(a.y) === 0 ? 3.42 : 4.85, () => { if (G.pass.length < PASS_MAX && a.hand === d) { G.pass.push(d); a.hand = null; } });
+    const free = G.spots.map((x, i) => x ? -1 : i).filter(i => i >= 0).sort((p, q) => Math.abs(COUNTER.pass[p] - a.x) - Math.abs(COUNTER.pass[q] - a.x));
+    if (!free.length) { a.wait = .6; return; }
+    const i = free[0];
+    goTo(a, COUNTER.pass[i], zone(a.y) === 0 ? 3.42 : 4.85, () => { if (a.hand !== d) return; const j = G.spots[i] ? G.spots.indexOf(null) : i; if (j >= 0) { G.spots[j] = d; a.hand = null; } });
     return;
   }
   const next = R.s[d.s];
@@ -1054,10 +1271,11 @@ function loop(now) {
 function step(dt) {
   if (G.ended) return;
   G.t += dt;
-  if (G.open && G.t >= G.len) { G.open = false; toastMsg("Closing time! Finish serving everyone.", 2.5); for (const g of G.queue.slice()) { fx(g.people[0].x, g.people[0].y - 1, "Closed? Aww.", "#8C7563"); groupLeave(g, false); } }
+  if (G.open && G.t >= G.len) { G.open = false; toastMsg("Closing time! Finish serving everyone.", 2.5); }
   groupsStep(dt); stationsStep(dt); mgStep(dt);
   for (const a of G.actors) { actorStep(a, dt); if (a !== lee) staffThink(a, dt); }
   for (const f of G.fx) f.t += dt; G.fx = G.fx.filter(f => f.t < 1.8);
+  for (const tp of G.taps) tp.t += dt; G.taps = G.taps.filter(tp => tp.t < .45);
   if (!G.open && !G.groups.length) { G.endT += dt; if (G.endT > 1.2) endDay(); }
 }
 function fx(x, y, text, col) { G.fx.push({ x, y, text, col, t: 0 }); }
@@ -1098,7 +1316,6 @@ function draw() {
     c.fillStyle = P.counter; rr(c, PX(a), PY(3.75), (b - a) * T, .7 * T, .12 * T); c.fill();
     c.fillStyle = P.top; rr(c, PX(a + .04), PY(3.78), (b - a - .08) * T, .5 * T, .1 * T); c.fill();
   }
-  emoji("🛎️", PX(8.45), PY(CY), T * .4);
   const need = nextNeed(), pulse = .55 + .45 * Math.sin(G.t * 6);
   // bin, plates, pass
   emoji("🗑️", PX(COUNTER.bin), PY(CY), T * .55);
@@ -1106,18 +1323,22 @@ function draw() {
   for (let i = 0; i < nPl; i++) { c.fillStyle = "#FFFFFF"; c.strokeStyle = "#BFB5A8"; c.lineWidth = 1; c.beginPath(); c.ellipse(PX(COUNTER.plates), PY(CY + .12) - i * T * .045, T * .3, T * .13, 0, 0, Math.PI * 2); c.fill(); c.stroke(); }
   text(String(G.clean), PX(COUNTER.plates + .32), PY(CY - .2), T * .3, G.clean ? "#3A2A22" : "#D2483A", 800);
   if (need === "plate") { c.strokeStyle = `rgba(232,102,74,${pulse})`; c.lineWidth = 3; rr(c, PX(COUNTER.plates - .45), PY(3.72), .9 * T, .76 * T, 8); c.stroke(); }
-  G.pass.forEach((d, i) => { if (i >= 5) return; const done = d.s >= RECIPES[d.r].s.length;
-    if (done) { c.fillStyle = "#fff"; c.beginPath(); c.ellipse(PX(COUNTER.pass[i]), PY(CY + .12), T * .3, T * .12, 0, 0, Math.PI * 2); c.fill(); }
-    c.globalAlpha = d.burnt ? .4 : done ? 1 : .7; emoji(d.burnt ? "💨" : RECIPES[d.r].e, PX(COUNTER.pass[i]), PY(CY - .02), T * (done ? .5 : .4)); c.globalAlpha = 1; });
+  COUNTER.pass.forEach((x, i) => {
+    c.fillStyle = "rgba(255,255,255,.22)"; rr(c, PX(x - .42), PY(CY - .3), .84 * T, .52 * T, 6); c.fill();
+    c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = 1.5; c.setLineDash([3, 3]); rr(c, PX(x - .42), PY(CY - .3), .84 * T, .52 * T, 6); c.stroke(); c.setLineDash([]);
+    const d = G.spots[i]; if (d) drawItem(d, PX(x), PY(CY - .02), T);
+  });
   // stations
   for (const s of G.stations) {
     const def = STATIONS[s.t], x = PX(s.x), y = PY(s.y), w = T * .9;
     c.fillStyle = "rgba(0,0,0,.12)"; rr(c, x - w / 2, y - w / 2 + 3, w, w, 8); c.fill();
     c.fillStyle = def.col; rr(c, x - w / 2, y - w / 2, w, w, 8); c.fill();
     if (need && need === s.t) { c.strokeStyle = `rgba(232,102,74,${pulse})`; c.lineWidth = 3.5; rr(c, x - w / 2 - 2, y - w / 2 - 2, w + 4, w + 4, 10); c.stroke(); }
-    emoji(def.e, x, y - T * .06, T * .5);
+    if (def.k === "top") { c.fillStyle = "rgba(255,255,255,.25)"; rr(c, x - w / 2 + 4, y - w / 2 + 4, w - 8, w * .5, 5); c.fill(); }
+    else emoji(def.e, x, y - T * .06, T * .5);
     text(def.n.split(" ")[0], x, y + T * .32, T * .2, "rgba(40,28,20,.75)", 700);
-    if (s.item) {
+    if (s.item && def.k === "top") drawItem(s.item, x, y - T * .08, T * 1.05);
+    else if (s.item) {
       const d = s.item;
       emoji(RECIPES[d.r].e, x + T * .26, y - T * .26, T * .32);
       if (d.burnt) { c.fillStyle = "rgba(30,20,15,.6)"; rr(c, x - w / 2, y - w / 2, w, w, 8); c.fill(); emoji("💨", x, y - T * .5 - Math.sin(G.t * 3) * 3, T * .4); }
@@ -1142,12 +1363,22 @@ function draw() {
   // bubbles
   for (const g of G.groups) drawBubble(g);
   for (const g of G.queue) { const p = g.people[0]; ringProg(PX(p.x), PY(p.y - 1.25), T * .14, g.pat, patCol(g.pat)); }
+  // where Lee Lee is heading, and where the finger landed
+  const gb = lee.path.length ? goalBox(lee.goal) : null;
+  if (gb) { c.strokeStyle = "#E8664A"; c.lineWidth = 3; c.setLineDash([6, 4]); c.lineDashOffset = -G.t * 20; rr(c, PX(gb[0]) - 3, PY(gb[1]) - 3, gb[2] * T + 6, gb[3] * T + 6, 10); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0; }
+  for (const tp of G.taps) { c.strokeStyle = `rgba(232,102,74,${1 - tp.t / .45})`; c.lineWidth = 2.5; circ(c, PX(tp.x), PY(tp.y), T * (.15 + tp.t)); c.stroke(); }
   // fx
   for (const f of G.fx) { c.globalAlpha = 1 - f.t / 1.8; text(f.text, PX(f.x), PY(f.y) - f.t * T * .6, T * .32, f.col, 800); c.globalAlpha = 1; }
   // night (pub)
   if (S.venue === "pub") { const a = clamp((G.t / G.len - .45) * .45, 0, .2); if (a > 0) { c.fillStyle = `rgba(20,10,50,${a})`; c.fillRect(PX(0), PY(4.4), W * T, (H - 4.4) * T); } }
 }
 const patCol = p => p > .55 ? "#3E9B6B" : p > .28 ? "#E9A93A" : "#D2483A";
+function drawItem(d, x, y, s) {
+  const c = ctx, done = d.s >= RECIPES[d.r].s.length;
+  if (done && !d.burnt) { c.fillStyle = "#fff"; c.beginPath(); c.ellipse(x, y + s * .14, s * .3, s * .12, 0, 0, Math.PI * 2); c.fill(); }
+  c.globalAlpha = d.burnt ? .5 : 1; emoji(d.burnt ? "💨" : RECIPES[d.r].e, x, y, s * (done ? .48 : .4)); c.globalAlpha = 1;
+  if (!done && !d.burnt) { const n = RECIPES[d.r].s.length; for (let i = 0; i < n; i++) { c.fillStyle = i < d.s ? "#3E9B6B" : "rgba(0,0,0,.3)"; circ(c, x - (n - 1) * s * .06 + i * s * .12, y + s * .28, s * .035); c.fill(); } }
+}
 function drawTable(t, P) {
   const c = ctx, x = PX(t.x), y = PY(t.y);
   c.fillStyle = P.chair;
@@ -1198,20 +1429,50 @@ function drawActor(a) {
 cv.addEventListener("pointerdown", e => {
   if (!G || paused || G.ended) return;
   const r = cv.getBoundingClientRect(), wx = (e.clientX - r.left - OX) / T, wy = (e.clientY - r.top - OY) / T;
+  if (wx < -.3 || wx > W + .3 || wy < -.3 || wy > H + .3) return;
+  G.taps.push({ x: wx, y: wy, t: 0 });
   const o = hitTest(wx, wy);
-  if (o) leeTap(o);
-  else if (wx > 0 && wx < W && wy > 1.2 && wy < H) { if (mg) return toastMsg("Finish this first, or tap ✕"); interrupt(lee); const ty = wy > 3.6 && wy < 4.6 ? (zone(lee.y) ? 4.85 : 3.42) : wy; goTo(lee, clamp(wx, .4, 8.6), clamp(ty, 1.3, 14)); }
+  if (o) { leeTap(o); return; }
+  if (mg) return toastMsg("Finish this first, or tap ✕");
+  interrupt(lee); lee.goal = null;
+  goTo(lee, clamp(wx, .4, 8.6), clamp(wy, 4.85, 13.6));
 });
+/* What did the finger mean? First anything whose (generous) area it landed in; otherwise, in the kitchen,
+   the nearest thing at all (there's nowhere useful to just stand), and in the dining room anything close. */
+function targets() {
+  const out = [];
+  for (const s of G.stations) {
+    if (s.i < 9) out.push({ o: { k: "st", s }, x: s.x, y: s.y + .4, rx: .52, ry: .95 });
+    else out.push({ o: { k: "st", s }, x: s.x + (s.x < 4 ? .4 : -.4), y: s.y, rx: .95, ry: .5 });
+  }
+  out.push({ o: { k: "counter", what: "bin", x: COUNTER.bin }, x: COUNTER.bin, y: CY, rx: .52, ry: .8 });
+  out.push({ o: { k: "counter", what: "plates", x: COUNTER.plates }, x: COUNTER.plates, y: CY, rx: .52, ry: .8 });
+  COUNTER.pass.forEach((x, i) => out.push({ o: { k: "counter", what: "pass", i, x }, x, y: CY, rx: .5, ry: .8 }));
+  for (const t of G.tables) out.push({ o: { k: "table", t }, x: t.x, y: t.y + .1, rx: 1.35, ry: 1.25 });
+  for (const m of G.messes) out.push({ o: { k: "mess", m }, x: m.x, y: m.y, rx: .7, ry: .55, bias: .3 });
+  return out;
+}
 function hitTest(wx, wy) {
+  const all = targets();
   let best = null, bd = 1e9;
-  const con = (o, x, y, r) => { const d = Math.hypot(wx - x, wy - y); if (d < r && d < bd) { bd = d; best = o; } };
-  for (const s of G.stations) con({ k: "st", s }, s.x, s.y, .62);
-  con({ k: "counter", what: "bin", x: COUNTER.bin }, COUNTER.bin, CY, .55);
-  con({ k: "counter", what: "plates", x: COUNTER.plates }, COUNTER.plates, CY, .55);
-  COUNTER.pass.forEach((x, i) => con({ k: "counter", what: "pass", i, x }, x, CY, .55));
-  for (const t of G.tables) con({ k: "table", t }, t.x, t.y, 1.15);
-  for (const m of G.messes) { const d = Math.hypot(wx - m.x, wy - m.y) - .35; if (d < .5 && d < bd) { bd = d; best = { k: "mess", m }; } }
+  for (const t of all) { const d = Math.hypot((wx - t.x) / t.rx, (wy - t.y) / t.ry) - (t.bias || 0); if (d < 1 && d < bd) { bd = d; best = t.o; } }
+  if (best) return best;
+  const kitchen = wy < CY + .3;
+  for (const t of all) {
+    const inK = t.o.k === "st" || t.o.k === "counter";
+    if (inK !== kitchen) continue;
+    const d = Math.hypot(wx - t.x, wy - t.y);
+    if ((kitchen || d < 2) && d < bd) { bd = d; best = t.o; }
+  }
   return best;
+}
+function goalBox(o) {
+  if (!o) return null;
+  if (o.k === "st") return [o.s.x - .5, o.s.y - .5, 1, 1];
+  if (o.k === "counter") return [o.x - .45, CY - .35, .9, .7];
+  if (o.k === "table") return [o.t.x - .75, o.t.y - .5, 1.5, 1];
+  if (o.k === "mess") return [o.m.x - .5, o.m.y - .3, 1, .6];
+  return null;
 }
 
 /* ---------- HUD ---------- */
@@ -1221,9 +1482,9 @@ function clock() { const V = VENUES[S.venue], h = V.open + (V.close - V.open) * 
 function uiTick(dt) {
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $("toast").style.opacity = 0; }
   uiT -= dt; if (uiT > 0) return; uiT = .2;
-  $("pClock").textContent = `Day ${S.day} · ${G.open ? clock() : "Closing up"}`;
+  $("pClock").textContent = `${LV != null ? CHAPTERS[LEVELS[LV].ch].e + " Day " + (LV + 1) : "Day " + S.day} · ${G.open ? clock() : "Closing up"}`;
   $("pCash").textContent = money(G.rev + G.tips);
-  $("pServed").textContent = `${G.served} served${G.angry ? " · " + G.angry + " walked out" : ""}`;
+  $("pServed").textContent = LV != null ? `${G.served + G.thrown}/${LEVELS[LV].goals[0][1]} served${G.angry ? " · " + G.angry + " out" : ""}` : `${G.served} served${G.angry ? " · " + G.angry + " walked out" : ""}`;
   // tickets
   const by = new Map();
   for (const g of G.groups) if (g.table && g.state === "wait") by.set(g, g.tickets.filter(k => !k.done));
@@ -1252,18 +1513,20 @@ $("pauseBtn").onclick = () => pauseMenu();
 function pauseMenu() {
   if (paused) return;
   paused = true;
-  dialog(`<h3>Paused</h3><p class="muted" style="text-align:center">Day ${S.day} at ${esc(S.name)}</p>
+  dialog(`<h3>Paused</h3><p class="muted" style="text-align:center">${LV != null ? esc(LEVELS[LV].n) : `Day ${S.day} at ${esc(S.name)}`}</p>
     <div class="acts"><button class="btn pri" data-a="go">Carry on</button><button class="btn" data-a="mini">Cooking mini-games: ${opts.mini ? "on" : "off"}</button>
-    <button class="btn" data-a="quit">Leave (this day starts again next time)</button></div>`, a => {
+    <button class="btn" data-a="restart">${LV != null ? "Start this day again" : "Leave (this day starts again next time)"}</button></div>`, a => {
     if (a === "mini") { opts.mini = !opts.mini; store("ll.opts", opts); paused = false; pauseMenu(); return; }
-    if (a === "quit") { paused = false; G = null; closeMini(); renderTitle(); show("title"); return; }
+    if (a === "restart") { paused = false; G = null; closeMini(); if (LV != null) { const i = LV; LV = null; S = null; renderCamp(); show("camp"); levelIntro(i); } else { renderTitle(); show("title"); } return; }
     paused = false; lastT = performance.now();
   });
 }
 
 /* ---------- end of the day ---------- */
 function endDay() {
-  if (G.ended) return; G.ended = true; closeMini();
+  if (G.ended) return;
+  if (LV != null) return levelEnd();
+  G.ended = true; closeMini();
   const wages = S.staff.reduce((a, s) => a + s.wage, 0), rent = PREMISES[S.prem].rent;
   let fee = S.cash < 0 ? 4 : 0;
   // leftover messes and dirty plates count against you
@@ -1327,7 +1590,8 @@ function endDay() {
    THE OFFICE (between days)
    ====================================================================== */
 let tab = "day";
-const TABS = [["day", "Today"], ["stock", "Stock"], ["menu", "Menu"], ["staff", "Staff"], ["kitchen", "Kitchen"], ["room", "Dining room"], ["ads", "Marketing"]];
+const TABS = [["day", "Today"], ["menu", "Menu"], ["staff", "Team"], ["up", "Upgrades"]];
+let stockOpen = false;
 function openManage(t) { show("manage"); renderManage(t || "day"); }
 function canAfford(c) { return S.cash >= c; }
 function spend(c) { S.cash = Math.round((S.cash - c) * 100) / 100; }
@@ -1360,17 +1624,26 @@ function renderManage(t) {
   $("mStars").innerHTML = `<span class="stars" style="font-size:.85rem">${starStr(st)}</span>`;
   $("tabs").innerHTML = TABS.map(([id, n]) => `<button class="${id === tab ? "on" : ""}" data-tab="${id}">${n}</button>`).join("");
   $("openBtn").textContent = `Open for day ${S.day} →`;
-  const f = { day: tabDay, stock: tabStock, menu: tabMenu, staff: tabStaff, kitchen: tabKitchen, room: tabRoom, ads: tabAds }[tab];
-  const sc = $("mbody").scrollTop;
+  if (!TABS.some(x => x[0] === tab)) tab = "day";
+  const f = { day: tabDay, menu: tabMenu, staff: tabStaff, up: tabUp }[tab];
+  const sc = $("mbody").scrollTop, openIds = [...$("mwrap").querySelectorAll("details[id]")].filter(d => d.open).map(d => d.id);
   $("mwrap").innerHTML = f();
+  for (const id of openIds) { const d = $(id); if (d) d.open = true; }
+  if (stockOpen && $("stockBox")) { $("stockBox").open = true; stockOpen = false; }
   $("mbody").scrollTop = sc;
 }
 $("tabs").onclick = e => { const b = e.target.closest("[data-tab]"); if (b) { renderManage(b.dataset.tab); $("mbody").scrollTop = 0; } };
+function topUpCost() { const sug = suggested(); let c = 0; for (const k in sug) c += Math.max(0, sug[k] - (S.stock[k] || 0)) * INGS[k].c; return Math.round(c * 100) / 100; }
+function autoStock() {
+  const sug = suggested();
+  for (const k in sug) { const want = sug[k] - (S.stock[k] || 0); if (want <= 0) continue; const can = Math.min(want, Math.floor((S.cash + 150) / INGS[k].c)); if (can <= 0) continue; spend(can * INGS[k].c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
+}
 $("openBtn").onclick = () => {
+  if (S.autoStock !== false) { autoStock(); saveGame(); }
   const sug = suggested(), short = Object.keys(sug).filter(k => (S.stock[k] || 0) < sug[k] * .5);
   if (short.length) {
     dialog(`<h3>Low on stock</h3><p class="muted" style="text-align:center">You're low on ${short.map(k => INGS[k].n.toLowerCase()).join(", ")}. Customers who can't get what they want will leave.</p>
-      <div class="acts"><button class="btn pri" data-a="stock">Buy stock</button><button class="btn" data-a="go">Open anyway</button></div>`, a => { if (a === "go") startDay(); else renderManage("stock"); });
+      <div class="acts"><button class="btn pri" data-a="stock">Buy stock</button><button class="btn" data-a="go">Open anyway</button></div>`, a => { if (a === "go") startDay(); else { stockOpen = true; renderManage("day"); } });
   } else startDay();
 };
 function tabDay() {
@@ -1378,139 +1651,120 @@ function tabDay() {
   const prog = next ? (S.rep - STAR_AT[st]) / (next - STAR_AT[st]) : 1;
   let h = "";
   if (L && L.news.length) h += `<div class="news">${L.news.map(esc).join("<br>")}</div>`;
-  h += `<div class="card"><div class="row spread"><h2>Reputation</h2><span class="stars">${starStr(st)}</span></div><div class="meter"><i style="width:${prog * 100}%"></i></div>
-    <p class="small muted">${next ? `${Math.round(S.rep)} / ${next} to the next star. Happy customers raise it; walk-outs, spills left on the floor and bad critics lower it.` : "Five stars: the best in town!"}</p>
-    <p class="small">About <b>${Math.round(expectedGroups(S))}</b> groups of customers expected tomorrow.</p></div>`;
   if (L) {
-    h += `<div class="card"><h2>Day ${L.day}</h2><div class="lines">
-      <div><span>Customers</span><b>${L.served} served of ${L.people}</b></div>
-      ${L.angry ? `<div><span>Walked out</span><b class="neg">${L.angry}</b></div>` : ""}${L.turned ? `<div><span>Turned away (out of stock)</span><b class="neg">${L.turned}</b></div>` : ""}
-      ${L.thrown ? `<div><span>Rowdy ones shown the door</span><b>${L.thrown}</b></div>` : ""}${L.burnt ? `<div><span>Burnt dishes</span><b class="neg">${L.burnt}</b></div>` : ""}
-      ${L.spills ? `<div><span>Spills while pouring</span><b class="neg">${L.spills}</b></div>` : ""}${L.messes ? `<div><span>Messes left on the floor</span><b class="neg">${L.messes}</b></div>` : ""}
+    h += `<div class="card"><div class="row spread"><h2>Day ${L.day}</h2><b class="${L.net >= 0 ? "pos" : "neg"}">${L.net >= 0 ? "+" : ""}${money(L.net)}</b></div>
+      <p class="small">${L.served} of ${L.people} customers served${L.angry ? `, <b class="neg">${L.angry} walked out</b>` : ""}${L.turned ? `, <b class="neg">${L.turned} found nothing in stock</b>` : ""}${L.burnt ? `, ${L.burnt} burnt` : ""}.</p>
+      <details class="small" id="moneyBox"><summary class="muted">Money in and out</summary><div class="lines" style="margin-top:6px">
       <div><span>Takings</span><b>${money(L.rev)}</b></div><div><span>Tips</span><b>${money(L.tips)}</b></div>
       <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
-      <div class="tot"><span>Profit</span><b class="${L.net >= 0 ? "pos" : "neg"}">${money(L.net)}</b></div></div>
-      ${Object.keys(L.spoiled).length ? `<p class="small muted">Went off overnight: ${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].n.toLowerCase()).join(", ")}.</p>` : ""}</div>`;
-  } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Check your stock and menu, then open the doors.</p></div>`;
-  const hist = S.hist.slice(-14);
-  if (hist.length > 1) {
-    const mx = Math.max(1, ...hist.map(x => Math.abs(x.net)));
-    h += `<div class="card"><h3>Profit, last ${hist.length} days</h3><div style="display:flex;align-items:center;gap:3px;height:70px">${hist.map(x => `<div title="Day ${x.d}" style="flex:1;display:flex;flex-direction:column;justify-content:${x.net >= 0 ? "flex-end" : "flex-start"};height:100%"><div style="height:${Math.max(3, Math.abs(x.net) / mx * 50)}%;background:${x.net >= 0 ? "var(--good)" : "var(--bad)"};border-radius:3px;${x.net >= 0 ? "" : "margin-top:50%"}"></div></div>`).join("")}</div></div>`;
-  }
-  h += `<div class="card"><div class="row spread"><div class="grow"><b>${esc(S.name)}</b><div class="small muted">${esc(VENUES[S.venue].n)} · ${S.stats.served} customers served in total</div></div><button class="btn sm" data-act="rename">Rename</button></div></div>`;
+      ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
+  } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
+  h += `<div class="card"><div class="row spread"><h2>Reputation</h2><span class="stars">${starStr(st)}</span></div><div class="meter"><i style="width:${prog * 100}%"></i></div>
+    <p class="small muted">${next ? `${Math.round(S.rep)} of ${next} for the next star.` : "Five stars: the best in town!"} About <b>${Math.round(expectedGroups(S))}</b> groups expected tomorrow.</p></div>`;
+  const auto = S.autoStock !== false, cost = topUpCost();
+  h += `<div class="card"><div class="row spread"><div class="grow"><h2>Stock</h2><p class="small muted">${auto ? (cost > 0 ? `Topped up automatically when you open: about ${money(cost)}.` : "You have enough for tomorrow.") : "You buy stock yourself."}</p></div>
+      <button class="btn sm ${auto ? "good" : ""}" data-act="autotoggle">${auto ? "Auto: on" : "Auto: off"}</button></div>
+    <details id="stockBox"><summary class="small muted">Choose amounts myself</summary>${stockList()}</details></div>`;
+  h += `<div class="card"><div class="row spread"><div class="grow"><b>${esc(S.name)}</b><div class="small muted">${esc(VENUES[S.venue].n)} · ${S.stats.served} customers in total</div></div><button class="btn sm" data-act="rename">Rename</button></div></div>`;
   h += `<button class="btn" data-act="title">Back to save slots</button>`;
   return h;
 }
-function tabStock() {
+function stockList() {
   const sug = suggested();
-  let h = `<div class="card"><div class="row spread"><div class="grow"><h2>Stock for tomorrow</h2><p class="small muted">Suggested amounts are for the customers you expect. Fresh food (marked 🌱) loses half of what's left each night.</p></div></div>
-    <button class="btn good" data-act="autostock">Top up to suggested</button>`;
+  let h = `<p class="small muted" style="margin-top:8px">Fresh food (🌱) loses half of what's left each night.</p>`;
   for (const k of usedIngs()) {
-    const I = INGS[k], have = S.stock[k] || 0, s = sug[k] || 0, bought = (S.bt || {})[k] || 0;
-    h += `<div class="item"><div class="ic">${I.e}</div><div class="grow"><b>${I.n}${I.f ? " 🌱" : ""}</b><span>Have <b>${have}</b>${s ? ` · suggested ${s}` : ""} · ${money(I.c)} each</span></div>
-      <div class="qty"><button class="btn sm" data-act="stk" data-k="${k}" data-n="-5" ${bought <= 0 ? "disabled" : ""}>−</button><b>${have}</b><button class="btn sm" data-act="stk" data-k="${k}" data-n="5">+5</button><button class="btn sm" data-act="stk" data-k="${k}" data-n="20">+20</button></div></div>`;
+    const I = INGS[k], have = S.stock[k] || 0, sg = sug[k] || 0, bought = (S.bt || {})[k] || 0;
+    h += `<div class="item"><div class="ic">${I.e}</div><div class="grow"><b>${I.n}${I.f ? " 🌱" : ""}</b><span>${sg ? `Need about ${sg}` : "Not needed"} · ${money(I.c)} each</span></div>
+      <div class="qty"><button class="btn sm" data-act="stk" data-k="${k}" data-n="-5" ${bought <= 0 ? "disabled" : ""}>−</button><b>${have}</b><button class="btn sm" data-act="stk" data-k="${k}" data-n="5">+</button></div></div>`;
   }
-  return h + `</div>`;
+  return h;
 }
 function tabMenu() {
   const st = starsOf(S.rep), V = S.venue;
-  let h = `<div class="card"><h2>On the menu</h2><p class="small muted">Customers only order what's on the menu, in stock, and that your kitchen has the equipment for.</p>`;
+  let h = `<div class="card"><h2>On the menu</h2>`;
   for (const r of S.owned) {
     const R = RECIPES[r], on = !S.off.includes(r), missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t));
-    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">${money(R.p)}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")} → plate${missing.length ? ` · <b class="neg">needs ${missing.map(t => STATIONS[t].n.toLowerCase()).join(", ")}</b>` : ""}</span></div>
+    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">${money(R.p)}</span></b>${missing.length ? `<span class="neg">Needs a ${missing.map(t => STATIONS[t].n.toLowerCase()).join(" and ")} (Upgrades)</span>` : ""}</div>
       <button class="btn sm ${on ? "good" : ""}" data-act="toggle" data-r="${r}">${on ? "On" : "Off"}</button></div>`;
   }
-  h += `</div>`;
   const opts2 = onMenuS();
-  h += `<div class="card"><h2>Tomorrow's special</h2><p class="small muted">Put one dish on offer. More people order it and a few more come in, but it earns less each.</p>
-    <div class="row"><select id="discR"><option value="">No special</option>${opts2.map(r => `<option value="${r}" ${S.disc && S.disc.r === r ? "selected" : ""}>${RECIPES[r].e} ${esc(RECIPES[r].n)}</option>`).join("")}</select>
-    <select id="discP">${[.1, .25, .5].map(p => `<option value="${p}" ${S.disc && S.disc.pct === p ? "selected" : ""}>${p * 100}% off</option>`).join("")}</select></div></div>`;
-  h += `<div class="card"><h2>Learn new recipes</h2>`;
+  h += `<div class="row" style="margin-top:6px"><span class="small"><b>Tomorrow's special</b></span><select id="discR"><option value="">None</option>${opts2.map(r => `<option value="${r}" ${S.disc && S.disc.r === r ? "selected" : ""}>${RECIPES[r].e} ${esc(RECIPES[r].n)}</option>`).join("")}</select>
+    <select id="discP">${[.1, .25, .5].map(p => `<option value="${p}" ${S.disc && S.disc.pct === p ? "selected" : ""}>${p * 100}% off</option>`).join("")}</select></div>
+    <p class="small muted">A special brings a few more people in and they order it more, but it earns less.</p></div>`;
   const locked = Object.keys(RECIPES).filter(r => RECIPES[r].v === V && !S.owned.includes(r)).sort((a, b) => RECIPES[a].c - RECIPES[b].c);
+  const now = locked.filter(r => RECIPES[r].st <= st), later = locked.filter(r => RECIPES[r].st > st);
+  h += `<div class="card"><h2>Learn a recipe</h2>`;
   if (!locked.length) h += `<p class="muted">You know every recipe!</p>`;
-  for (const r of locked) {
-    const R = RECIPES[r], missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t)), ok = st >= R.st;
-    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">sells for ${money(R.p)}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")}${missing.length ? ` · needs ${missing.map(t => STATIONS[t].n.toLowerCase()).join(", ")}` : ""}${ok ? "" : ` · <b>${R.st}★ reputation</b>`}</span></div>
-      <button class="btn sm pri" data-act="learn" data-r="${r}" ${ok && canAfford(R.c) ? "" : "disabled"}>${money(R.c)}</button></div>`;
+  for (const r of now) {
+    const R = RECIPES[r], missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t));
+    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">sells for ${money(R.p)}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")}${missing.length ? ` · <b>also needs a ${missing.map(t => STATIONS[t].n.toLowerCase()).join(" and ")}</b>` : ""}</span></div>
+      <button class="btn sm pri" data-act="learn" data-r="${r}" ${canAfford(R.c) ? "" : "disabled"}>${money(R.c)}</button></div>`;
   }
+  if (later.length) h += `<p class="small muted">More with a better reputation: ${later.map(r => `${RECIPES[r].e} ${RECIPES[r].st}★`).join(" · ")}</p>`;
   return h + `</div>`;
 }
 function tabStaff() {
   const prem = PREMISES[S.prem];
-  let h = `<div class="card"><div class="row spread"><h2>Your team</h2><span class="muted small">${S.staff.length} of ${prem.staff} (bigger places hold more)</span></div>`;
-  if (!S.staff.length) h += `<p class="muted small">It's just Lee Lee for now. Staff do jobs on their own all day, and are paid at the end of each day.</p>`;
+  let h = `<div class="card"><div class="row spread"><h2>Your team</h2><span class="muted small">${S.staff.length} of ${prem.staff} places</span></div>`;
+  if (!S.staff.length) h += `<p class="muted small">It's just Lee Lee for now. Staff get on with their job by themselves and are paid each night.</p>`;
   for (const s of S.staff) {
-    const fair = fairWage(s.role, s.lvl), canPromote = s.lvl < 5 && (s.days || 0) >= s.lvl * 4, pcost = 60 * s.lvl * s.lvl;
-    const mc = s.morale > 60 ? "var(--good)" : s.morale > 30 ? "var(--gold)" : "var(--bad)";
+    const canPromote = s.lvl < 5 && (s.days || 0) >= s.lvl * 4, pcost = 60 * s.lvl * s.lvl;
+    const mood = s.morale > 60 ? "😊 happy" : s.morale > 30 ? "😐 okay" : "☹️ unhappy";
     h += `<div class="item"><div class="ic">${ROLES[s.role].e}</div><div class="grow"><b>${esc(s.name)} <span class="muted small">${roleName(S, s.role)} · level ${s.lvl}</span></b>
-      <span>${money(s.wage)}/day (fair is ${money(fair)}) · mood <span class="mor"><i style="width:${s.morale}%;background:${mc}"></i></span> · ${s.days || 0} day${s.days === 1 ? "" : "s"}</span>
-      <span class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-act="raise" data-id="${s.id}">Pay rise +${money(Math.max(2, Math.round(s.wage * .1)))}</button>
-      <button class="btn sm" data-act="promote" data-id="${s.id}" ${canPromote && canAfford(pcost) ? "" : "disabled"}>${s.lvl >= 5 ? "Top level" : canPromote ? `Promote (${money(pcost)} training)` : `Promote in ${s.lvl * 4 - (s.days || 0)} day${s.lvl * 4 - (s.days || 0) === 1 ? "" : "s"}`}</button>
+      <span>${money(s.wage)} a day · ${mood}</span>
+      <span class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-act="raise" data-id="${s.id}">Pay rise</button>
+      ${s.lvl < 5 ? `<button class="btn sm" data-act="promote" data-id="${s.id}" ${canPromote && canAfford(pcost) ? "" : "disabled"}>${canPromote ? `Promote ${money(pcost)}` : `Promote in ${s.lvl * 4 - (s.days || 0)}d`}</button>` : ""}
       <button class="btn sm" data-act="fire" data-id="${s.id}">Let go</button></span></div></div>`;
   }
-  h += `</div><div class="card"><h2>Looking for work</h2><p class="small muted">New people apply every day. Higher levels work faster but want more pay.</p>`;
+  h += `</div><div class="card"><h2>Looking for work</h2>`;
+  const full = S.staff.length >= prem.staff;
+  if (full) h += `<p class="small muted">No room for more staff here. A bigger place holds more (Upgrades).</p>`;
   S.cands.forEach((c, i) => {
-    h += `<div class="item"><div class="ic">${ROLES[c.role].e}</div><div class="grow"><b>${esc(c.name)} <span class="muted small">${roleName(S, c.role)} · level ${c.lvl}</span></b><span>${esc(ROLES[c.role].job)}${c.role === "floor" && S.venue === "pub" ? " Handy late at night." : ""}</span><span>Wants <b>${money(c.wage)}</b> a day</span></div>
-      <button class="btn sm pri" data-act="hire" data-i="${i}" ${S.staff.length < prem.staff ? "" : "disabled"}>Hire</button></div>`;
+    h += `<div class="item"><div class="ic">${ROLES[c.role].e}</div><div class="grow"><b>${esc(c.name)} <span class="muted small">${roleName(S, c.role)} · level ${c.lvl}</span></b><span>${esc(ROLES[c.role].job)} ${money(c.wage)} a day.</span></div>
+      <button class="btn sm pri" data-act="hire" data-i="${i}" ${full ? "disabled" : ""}>Hire</button></div>`;
   });
   return h + `</div>`;
 }
-function tabKitchen() {
-  const prem = PREMISES[S.prem], V = VENUES[S.venue];
-  let h = `<div class="card"><div class="row spread"><h2>Kitchen</h2><span class="muted small">${S.stations.length} of ${prem.slots} spaces used</span></div>`;
-  S.stations.forEach((t, i) => {
-    h += `<div class="item"><div class="ic">${STATIONS[t].e}</div><div class="grow"><b>${STATIONS[t].n}</b></div><button class="btn sm" data-act="sell" data-i="${i}">Sell ${money(Math.round(STATIONS[t].c / 2))}</button></div>`;
-  });
-  h += `</div><div class="card"><h2>Buy equipment</h2>`;
-  for (const t of V.stations) {
-    const D = STATIONS[t], have = S.stations.filter(x => x === t).length;
-    const desc = D.k === "pas" ? `Cooks on its own (${D.d}s)${D.b ? ", burns if left" : ""}` : D.k === "act" ? "Hands-on" : D.k === "dw" ? `Washes ${DW_CAP} plates at a time by itself` : D.k === "sink" ? "Wash plates by hand" : "Ingredients";
-    h += `<div class="item"><div class="ic">${D.e}</div><div class="grow"><b>${D.n}${have ? ` <span class="pill g">have ${have}</span>` : ""}</b><span>${desc}</span></div>
-      <button class="btn sm pri" data-act="buyst" data-t="${t}" ${S.stations.length < prem.slots && canAfford(D.c) ? "" : "disabled"}>${money(D.c)}</button></div>`;
-  }
-  h += `</div><div class="card"><h2>Upgrades</h2>`;
-  const types = [...new Set(S.stations)].filter(t => STATIONS[t].k !== "get");
-  for (const t of types) {
-    const l = S.lvl[t] || 0, c = Math.round(STATIONS[t].c * [1, 2, 4][l] || 0);
-    h += `<div class="item"><div class="ic">${STATIONS[t].e}</div><div class="grow"><b>Faster ${STATIONS[t].n.toLowerCase()} <span class="muted small">level ${l}/3</span></b><span>${STATIONS[t].k === "pas" ? "Cooks quicker and stays good for longer before burning" : "Work goes quicker here"}</span></div>
-      <button class="btn sm pri" data-act="lvl" data-t="${t}" ${l < 3 && canAfford(c) ? "" : "disabled"}>${l < 3 ? money(c) : "Max"}</button></div>`;
-  }
-  const pc = 30 + 10 * Math.max(0, S.plates - 6);
-  h += `<div class="item"><div class="ic">🍽️</div><div class="grow"><b>Two more plates <span class="muted small">have ${S.plates}</span></b><span>More plates means washing up can wait a little</span></div><button class="btn sm pri" data-act="plates" ${S.plates < 30 && canAfford(pc) ? "" : "disabled"}>${S.plates < 30 ? money(pc) : "Max"}</button></div>`;
-  const sh = SHOES[S.shoes];
-  h += `<div class="item"><div class="ic">👟</div><div class="grow"><b>${sh ? sh.n : "Fastest shoes"} for Lee Lee</b><span>She walks ${12}% faster</span></div><button class="btn sm pri" data-act="shoes" ${sh && canAfford(sh.c) ? "" : "disabled"}>${sh ? money(sh.c) : "Max"}</button></div>`;
-  return h + `</div>`;
+function upRow(ic, name, desc, act, cost, ok, extra) {
+  return `<div class="item"><div class="ic">${ic}</div><div class="grow"><b>${name}</b>${desc ? `<span>${desc}</span>` : ""}</div><button class="btn sm pri" data-act="${act}" ${extra || ""} ${ok && canAfford(cost) ? "" : "disabled"}>${cost == null ? "Max" : money(cost)}</button></div>`;
 }
-function tabRoom() {
+function tabUp() {
   const prem = PREMISES[S.prem], V = VENUES[S.venue], st = starsOf(S.rep);
-  let h = `<div class="card"><div class="row spread"><h2>Tables</h2><span class="muted small">${S.tables.length} of ${prem.tables}</span></div>`;
-  S.tables.forEach((n, i) => {
-    h += `<div class="item"><div class="ic">🪑</div><div class="grow"><b>Table ${i + 1}</b><span>Seats ${n}</span></div>${n < 4 ? `<button class="btn sm pri" data-act="bigtable" data-i="${i}" ${canAfford(150) ? "" : "disabled"}>Seat 4: ${money(150)}</button>` : `<span class="pill g">Seats 4</span>`}</div>`;
-  });
-  const tc = 100 + 60 * S.tables.length;
-  h += `<button class="btn pri" data-act="table" ${S.tables.length < prem.tables && canAfford(tc) ? "" : "disabled"}>${S.tables.length < prem.tables ? `Add a table: ${money(tc)}` : "No more room: move somewhere bigger"}</button></div>`;
-  const d = DECOR[S.decor];
-  h += `<div class="card"><h2>Decor</h2><p class="small muted">A nicer room keeps people patient and makes them tip more.</p>
-    ${DECOR.slice(0, S.decor).map(x => `<div class="small">✓ ${esc(x.n)}</div>`).join("")}
-    ${d ? `<div class="item"><div class="ic">🪴</div><div class="grow"><b>${esc(d.n)}</b><span>Level ${S.decor + 1} of ${DECOR.length}</span></div><button class="btn sm pri" data-act="decor" ${canAfford(d.c) ? "" : "disabled"}>${money(d.c)}</button></div>` : `<p class="pos"><b>Fully decorated!</b></p>`}</div>`;
-  h += `<div class="card"><h2>Premises</h2><p class="small">You're at <b>${esc(V.places[S.prem])}</b>: rent ${money(prem.rent)} a day, room for ${prem.tables} tables, ${prem.slots} pieces of kitchen equipment and ${prem.staff} staff.</p>`;
-  const nx = PREMISES[S.prem + 1];
-  if (nx) {
-    const ok = st >= nx.st && canAfford(nx.cost);
-    h += `<div class="item"><div class="ic">🏠</div><div class="grow"><b>Move to ${esc(V.places[S.prem + 1])}</b><span>Rent ${money(nx.rent)}/day · ${nx.tables} tables · ${nx.slots} kitchen spaces · ${nx.staff} staff · more passing trade. Needs ${nx.st}★. You keep everything you own.</span></div>
-      <button class="btn sm pri" data-act="move" ${ok ? "" : "disabled"}>${money(nx.cost)}</button></div>`;
-  } else h += `<p class="pos"><b>This is the finest spot in town.</b></p>`;
-  return h + `</div>`;
-}
-function tabAds() {
-  const st = starsOf(S.rep);
-  let h = `<div class="card"><h2>Marketing</h2><p class="small muted">Bring in more customers for a few days. Several can run at once. Make sure you have the tables, stock and staff for the extra people!</p>`;
-  if ((S.camp || []).length) h += `<div class="news">${S.camp.map(c => { const C = CAMPAIGNS.find(x => x.id === c.id); return `${C.e} ${esc(C.n)}: ${c.days} day${c.days > 1 ? "s" : ""} left`; }).join("<br>")}</div>`;
-  for (const C of CAMPAIGNS) {
-    const running = (S.camp || []).some(c => c.id === C.id), ok = st >= C.st && canAfford(C.c) && !running;
-    h += `<div class="item"><div class="ic">${C.e}</div><div class="grow"><b>${esc(C.n)}</b><span>${C.job ? esc(C.job) : `About ${Math.round(C.b * 100)}% more customers for ${C.days} days`}${st < C.st ? ` · <b>needs ${C.st}★</b>` : ""}</span></div>
-      <button class="btn sm pri" data-act="camp" data-id="${C.id}" ${ok ? "" : "disabled"}>${running ? "Running" : money(C.c)}</button></div>`;
+  const free = prem.slots - S.stations.length;
+  let h = `<div class="card"><div class="row spread"><h2>Kitchen</h2><span class="muted small">${free} free space${free === 1 ? "" : "s"}</span></div>`;
+  // equipment the menu (or a learnable recipe) needs comes first
+  const wanted = new Set(); for (const r of Object.keys(RECIPES)) if (RECIPES[r].v === S.venue && RECIPES[r].st <= st) for (const t of RECIPES[r].s) if (t !== "plate") wanted.add(t);
+  const list = V.stations.slice().sort((a, b) => (S.stations.includes(a) - S.stations.includes(b)) || (wanted.has(b) - wanted.has(a)) || STATIONS[a].c - STATIONS[b].c);
+  for (const t of list) {
+    const D = STATIONS[t], have = S.stations.filter(x => x === t).length;
+    const desc = (have ? `You have ${have}. ` : "") + (D.k === "pas" ? `Cooks on its own${D.b ? ", burns if left" : ""}` : D.k === "act" ? "Hands-on" : D.k === "dw" ? `Washes ${DW_CAP} plates by itself` : D.k === "sink" ? "Wash plates by hand" : D.k === "top" ? "Somewhere to put things down" : "Ingredients");
+    h += upRow(D.e || "🟫", have ? "Another " + D.n.toLowerCase() : D.n, desc, "buyst", D.c, free > 0, `data-t="${t}"`);
   }
+  const types = [...new Set(S.stations)].filter(t => ["pas", "act", "sink", "dw"].includes(STATIONS[t].k));
+  for (const t of types) {
+    const l = S.lvl[t] || 0, c = l < 3 ? Math.round(STATIONS[t].c * [1, 2, 4][l]) : null;
+    h += upRow(STATIONS[t].e, `Faster ${STATIONS[t].n.toLowerCase()}`, `Level ${l} of 3${STATIONS[t].k === "pas" ? ", and slower to burn" : ""}`, "lvl", c, l < 3, `data-t="${t}"`);
+  }
+  const pc = S.plates < 30 ? 30 + 10 * Math.max(0, S.plates - 6) : null;
+  h += upRow("🍽️", "Two more plates", `You have ${S.plates}`, "plates", pc, S.plates < 30);
+  const sh = SHOES[S.shoes];
+  h += upRow("👟", sh ? sh.n + " for Lee Lee" : "Lee Lee's shoes", sh ? "She walks faster" : "Already the fastest", "shoes", sh ? sh.c : null, !!sh);
+  if (S.stations.length) h += `<details class="small" id="sellBox"><summary class="muted">Sell equipment</summary>${S.stations.map((t, i) => `<div class="item"><div class="ic">${STATIONS[t].e || "🟫"}</div><div class="grow"><b>${STATIONS[t].n}</b></div><button class="btn sm" data-act="sell" data-i="${i}">Sell ${money(Math.round(STATIONS[t].c / 2))}</button></div>`).join("")}</details>`;
+  h += `</div><div class="card"><h2>Dining room</h2>`;
+  const tc = 100 + 60 * S.tables.length, small = S.tables.indexOf(2), d = DECOR[S.decor];
+  h += upRow("🪑", "Another table", `${S.tables.length} of ${prem.tables} here`, "table", S.tables.length < prem.tables ? tc : null, S.tables.length < prem.tables);
+  h += upRow("🍽", "Make a table seat four", small >= 0 ? `${S.tables.filter(n => n < 4).length} tables seat two` : "Every table seats four", "bigtable", small >= 0 ? 150 : null, small >= 0, `data-i="${small}"`);
+  h += upRow("🪴", d ? esc(d.n) : "Decor", d ? `Nicer room: more patient customers, bigger tips (${S.decor} of ${DECOR.length})` : "Fully decorated!", "decor", d ? d.c : null, !!d);
+  h += `</div><div class="card"><h2>Advertise</h2>`;
+  if ((S.camp || []).length) h += `<p class="small pos">${S.camp.map(c => { const C = CAMPAIGNS.find(x => x.id === c.id); return `${C.e} ${esc(C.n)}: ${c.days} day${c.days > 1 ? "s" : ""} left`; }).join("<br>")}</p>`;
+  for (const C of CAMPAIGNS.filter(C => C.st <= st)) {
+    const running = (S.camp || []).some(c => c.id === C.id);
+    h += upRow(C.e, esc(C.n), C.job ? esc(C.job) : `About ${Math.round(C.b * 100)}% more customers for ${C.days} days`, "camp", running ? null : C.c, !running, `data-id="${C.id}"`).replace(">Max<", running ? ">Running<" : ">Max<");
+  }
+  h += `</div><div class="card"><h2>Somewhere bigger</h2>`;
+  const nx = PREMISES[S.prem + 1];
+  if (nx) h += upRow("🏠", `Move to ${esc(V.places[S.prem + 1])}`, `${nx.tables} tables, ${nx.slots} kitchen spaces, ${nx.staff} staff, more passing trade. Rent ${money(nx.rent)} a day.${st < nx.st ? ` <b>Needs ${nx.st}★.</b>` : ""} You keep everything.`, "move", nx.cost, st >= nx.st);
+  else h += `<p class="pos"><b>This is the finest spot in town.</b></p>`;
   return h + `</div>`;
 }
 $("mwrap").addEventListener("change", e => {
@@ -1535,6 +1789,7 @@ $("mwrap").onclick = e => {
     if (n > 0) { const can = Math.min(n, Math.floor((S.cash + 150) / I.c)); if (can <= 0) return; spend(can * I.c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
     else { const back = Math.min(-n, S.bt[k] || 0, S.stock[k] || 0); spend(-back * I.c); S.stock[k] -= back; S.bt[k] -= back; }
   }
+  if (a === "autotoggle") { S.autoStock = S.autoStock === false; }
   if (a === "autostock") {
     const sug = suggested();
     for (const k in sug) { const want = sug[k] - (S.stock[k] || 0); if (want <= 0) continue; const can = Math.min(want, Math.floor((S.cash + 150) / INGS[k].c)); if (can <= 0) continue; spend(can * INGS[k].c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
@@ -1573,10 +1828,10 @@ function toastOffice(m) { dialog(`<h3>${esc(m)}</h3><div class="acts"><button cl
 window.SG_BACK = () => {
   if (!$("ov").hidden) { if (view === "play" && paused) { closeDialog(); paused = false; lastT = performance.now(); } else { const cb = dlgCb; closeDialog(); if (view === "play" && cb && !paused) cb(""); } return true; }
   if (view === "play") { if (mg) { mg.s.user = null; closeMini(); return true; } pauseMenu(); return true; }
-  if (view === "manage" || view === "newgame") { renderTitle(); show("title"); return true; }
+  if (view === "manage" || view === "newgame" || view === "camp") { renderTitle(); show("title"); return true; }
   return false;
 };
-window.LL = { get G() { return G; }, get S() { return S; }, get lee() { return lee; }, leeTap, hitTest, endDay, startDay, step: dt => step(dt) };
+window.LL = { get G() { return G; }, get S() { return S; }, get lee() { return lee; }, leeTap, hitTest, endDay, startDay, playLevel, LEVELS, step: dt => step(dt) };
 renderTitle();
 </script>
 <script src="../../shell.js"></script>

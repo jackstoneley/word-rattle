@@ -280,12 +280,14 @@ function renderStats(){
   const bsl=load("slide.levels",{}),bsd=load("slide.daily",{}),bsn=Object.keys(bsl).length,bsS=Object.values(bsl).reduce((a,r)=>a+(r&&r.stars||0),0),bsToday=Object.values(bsd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now())),bsT=load("slide.tracks",[]).length;
   if(bsn||Object.keys(bsd).length||bsT)setHTML("stBS",[{b:String(bsn)}," of 15 challenges · ",{b:String(bsS)}," stars",bsToday?" · today's slide done":bsT?` · ${bsT} track${bsT===1?"":"s"} drawn`:""]);
   {let best=null;for(let i=0;i<5;i++){const s=load("ll.slot."+i,null);if(s&&s.day&&(!best||s.day>best.day))best=s}
-    if(best)setHTML("stLL",[String(best.name||"")," · day ",{b:String(best.day)}," · ",{b:"★".repeat([0,60,250,700,1600,3200].filter(x=>(best.rep||0)>=x).length-1)||"no stars yet"}])}
+    const llc=Object.values((load("ll.camp",{})||{}).s||{}),llDone=llc.filter(x=>x>0).length;
+    if(best||llDone)setHTML("stLL",[...(llDone?["Campaign ",{b:llDone+" of 25"},best?" · ":""]:[]),...(best?[String(best.name||"")," day ",{b:String(best.day)}]:[])])}
   const gwl=load("gw.levels",{}),gwd=load("gw.daily",{}),gwn=Object.keys(gwl).length,gwS=Object.values(gwl).reduce((a,r)=>a+(r&&r.stars||0),0),gwToday=Object.values(gwd).some(r=>r&&r.at&&dayKey(r.at)===dayKey(Date.now()));
   if(gwn||Object.keys(gwd).length)setHTML("stGW",[{b:String(gwn)}," of 30 levels · ",{b:String(gwS)}," stars",gwToday?" · today's orbit done":""]);
   {const es=load("es.stats",null)||{},esv=load("es.save",null),esw=(es.wins||[]).reduce((a,b)=>a+b,0),ESD=["Easy","Normal","Hard","Brutal"];
     let top=-1;(es.wins||[]).forEach((w,i)=>{if(w)top=i});
-    if(es.played||esv)setHTML("stES",[{b:String(esw)},` win${esw===1?"":"s"} in ${es.played||0} battle${es.played===1?"":"s"}`,top>=0?` · beaten ${ESD[top]}`:"",esv&&esv.sd?` · battle in progress`:""])}
+    const esm=load("es.meta",null)||{},esc=Object.values(esm.camp||{}),esCl=esc.filter(c=>c&&c.won).length,esSt=esc.reduce((a,c)=>a+((c&&c.st)||[]).filter(Boolean).length,0);
+    if(es.played||esv||esc.length)setHTML("stES",[esCl?"":"",{b:String(esCl)}," missions cleared · ",{b:String(esSt)}," ★",esw?` · ${esw} battle win${esw===1?"":"s"}`:"",top>=0?` · beaten ${ESD[top]}`:"",esv&&esv.sd?` · battle in progress`:""])}
   {const hd=load("hd.progress",null),hdg=load("hd.game",null),won=hd&&hd.won?Object.keys(hd.won).length:0;
     if(won||hdg)setHTML("stHD",[{b:String(won)}," of 6 realms conquered",hdg?" · a game in progress":""])}
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
