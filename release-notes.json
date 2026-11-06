@@ -252,6 +252,18 @@
         "Rival lords now build their own doors and traps, so bring something heavy.",
         "Every room looks different now: beds, mushrooms, bookshelves, candles and bones vary from tile to tile."
       ]
+    },
+    {
+      "id": 24,
+      "type": "features",
+      "headline": "Gravity Well: Deep Space, Star Run and Voyage",
+      "details": [
+        "30 new Deep Space levels (31-60): crowded systems where there is never a simple way round.",
+        "New things in space: black holes that pull hard and swallow the ball, and wormholes that send it out of a matching one.",
+        "Star Run: 30 levels where you pick up every gold star in one shot before the target opens.",
+        "Voyage: an endless run of systems, each harder, from a shared tank of 10 shots. A hole in one earns 3 more.",
+        "From tomorrow the daily orbit is a crowded system too, and some days have stars to collect."
+      ]
     }
   ]
 }

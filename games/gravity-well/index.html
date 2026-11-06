@@ -43,6 +43,9 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
 .btn{border:1px solid var(--line2);background:var(--bg2);border-radius:10px;padding:10px 16px;font-weight:700}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn:disabled{opacity:.4;cursor:default}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{border:0;background:none;border-radius:9px;padding:9px 4px;font-weight:700;color:var(--muted)}
+.tabs button.on{background:var(--accent);color:var(--accent-ink)}
 .levels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .lv{aspect-ratio:1;border:1px solid var(--line);background:var(--bg2);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0}
 .lv b{font-size:1.2rem;font-weight:800;font-variant-numeric:tabular-nums}
@@ -94,9 +97,23 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
       <a class="sg-home" href="../../index.html">← All games</a>
       <header class="head"><div class="logo" aria-hidden="true"></div><div><h1>Gravity Well</h1><p>Launch the ball. Let the planets bend it to the target.</p></div></header>
       <div class="card daily" id="dailyCard"></div>
-      <div class="card">
-        <div class="row spread"><h2>Levels</h2><span class="muted" id="lvNote"></span></div>
-        <div class="levels" id="levelGrid"></div>
+      <div class="tabs" role="tablist"><button data-m="lv">Levels</button><button data-m="sr">Star Run</button><button data-m="voy">Voyage</button></div>
+      <div class="card" id="modeLv">
+        <div class="row spread"><h2>Classic</h2><span class="muted" id="lvNote"></span></div>
+        <div class="levels" id="gridClassic"></div>
+        <div class="row spread" style="margin-top:6px"><h2>Deep Space</h2></div>
+        <p class="muted" id="deepNote" style="margin:0"></p>
+        <div class="levels" id="gridDeep"></div>
+      </div>
+      <div class="card" id="modeSr" hidden>
+        <div class="row spread"><h2>Star Run</h2><span class="muted" id="srNote"></span></div>
+        <p class="muted" style="margin:0">Pick up every gold star in a single shot, then reach the target. The target stays shut until you have them all.</p>
+        <div class="levels" id="gridSr"></div>
+      </div>
+      <div class="card" id="modeVoy" hidden>
+        <h2>Voyage</h2>
+        <p class="muted" style="margin:0">One system after another, each harder than the last, from a shared tank of 10 shots. A hole in one earns 3 more shots, two shots earns 1. How far can you get?</p>
+        <div id="voyBody" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
       <details class="card howto">
         <summary>How to play</summary>
@@ -106,7 +123,9 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
           <li>Tap <b>Launch</b>. Every planet pulls on the ball, harder the closer it gets, and several planets pull at once. Pink planets push it away instead.</li>
           <li>The dashed rings round a planet show where its pull is strong. Moons go round their planet once you launch, and start from the same place every shot.</li>
           <li>Hit a planet, fly off the edge of space (the faint dashed box) or loop for too long and the shot is over. Your last two shots stay drawn so you can adjust.</li>
+          <li><b>Black holes</b> are small and black with an orange swirl: their pull is fierce close up, and they swallow the ball. <b>Wormholes</b> come in pairs of the same colour: go into one and you come out of the other, still moving.</li>
           <li><b>Map</b> zooms out to the whole level. One shot earns three stars, up to three shots earns two.</li>
+          <li><b>Deep Space</b> levels are crowded: there is never a simple way round. <b>Star Run</b>: collect every gold star in one shot before the target opens. <b>Voyage</b>: an endless run of systems with a limited number of shots.</li>
         </ul>
       </details>
     </div>
@@ -166,62 +185,142 @@ h2{font-weight:700;font-size:1.15rem;margin:0}
 {"n":"Clockwork","s":[0,0],"t":[1298,1125,26],"p":[[804,700,72,2868158],[1082,-456,29,447376],[568,980,92,-3211809],[-35,1468,58,1580161],[2056,479,71,2044319],[-21,285,56,1309756],[1622,529,94,-3295889]],"o":[[3,129,14,58800,0.63,1.25],[4,147,11,36300,0.59,1.81]]},
 {"n":"Needle","s":[0,0],"t":[1070,1596,26],"p":[[513,749,106,5520367],[-88,1711,30,594561],[1027,578,79,3582395],[-510,1467,71,2388196],[-88,2167,38,-652715],[1242,-699,43,1037620],[-906,1183,35,745171]],"o":[[3,148,14,58800,0.6,3.47],[0,172,13,50700,0.82,2.94]]},
 {"n":"Event Horizon","s":[0,0],"t":[1787,-228,26],"p":[[806,-114,60,1954221],[1813,38,38,-682284],[1483,772,32,578113],[1392,-1466,65,2075324],[833,485,80,2955069],[-168,624,66,2093049],[2001,-1296,46,1135896]],"o":[[0,116,14,58800,0.47,5.83]]},
-{"n":"Last Light","s":[0,0],"t":[1509,262,26],"p":[[684,140,103,4869078],[1719,701,44,-854075],[1522,537,74,3767760],[1762,-131,91,4632776],[400,257,54,-1189466],[378,1037,75,3321026],[1548,-47,67,2239585]],"o":[[2,140,14,58800,0.79,1.67]]}
+{"n":"Last Light","s":[0,0],"t":[1509,262,26],"p":[[684,140,103,4869078],[1719,701,44,-854075],[1522,537,74,3767760],[1762,-131,91,4632776],[400,257,54,-1189466],[378,1037,75,3321026],[1548,-47,67,2239585]],"o":[[2,140,14,58800,0.79,1.67]]},
+{"n":"Crowded Sky","s":[0,0],"t":[302,-700,28],"p":[[513,245,68,2623738],[75,688,77,3280293],[474,-205,27,382153],[354,-554,77,4017641],[119,341,75,3614581],[-537,209,57,1844895]],"h":[963,49]},
+{"n":"Switchback","s":[0,0],"t":[-756,-224,28],"p":[[224,213,51,1409226],[569,-323,45,1145730],[-337,377,49,1391693],[35,-609,29,473539],[-477,-112,54,1995244],[268,30,45,1348862]],"h":[1849,43]},
+{"n":"Hairpin","s":[0,0],"t":[821,64,28],"p":[[277,-88,62,-1806726],[532,-72,70,2779017],[-313,621,69,-2315027],[173,204,63,2441292],[694,127,83,3175594],[-148,222,76,3873591]],"h":[1603,41]},
+{"n":"Back Door","s":[0,0],"t":[-473,-133,28],"p":[[88,510,27,446214],[-60,-230,55,1465102],[177,-451,59,1751499],[-605,132,29,459533],[-337,-124,40,749076],[-409,-373,46,-950163]],"h":[1638,41]},
+{"n":"Pinball","s":[0,0],"t":[-792,51,28],"p":[[475,157,66,1831208],[-327,50,30,-359666],[336,-556,75,3297066],[430,548,67,2395492],[221,-354,37,578278],[453,-128,73,3040329],[-484,135,46,1344245]],"h":[1972,45]},
+{"n":"Dark Star","s":[0,0],"t":[-501,205,28],"p":[[-450,-428,18,1078867],[128,-412,68,-1552813],[-293,-216,60,-1434846],[-273,220,73,3393398],[225,326,75,3050977],[-499,-39,58,-1055916],[-300,-639,75,-1883461],[322,87,39,915217]],"h":[1588,64]},
+{"n":"The Maze","s":[0,0],"t":[285,-728,28],"p":[[758,-15,18,905316],[-339,-621,73,-2538001],[276,-492,50,1247313],[-444,340,43,884425],[-541,-45,53,1204163],[-371,-324,61,-1738840],[-24,589,70,2544205],[278,644,51,1100023]],"h":[1235,72]},
+{"n":"Long Loop","s":[0,0],"t":[-607,319,28],"p":[[-373,8,16,787290],[-63,-241,70,2695813],[-309,-729,75,3709883],[116,-487,65,1903195],[-459,380,72,-2448085],[-170,209,35,579805],[16,759,62,2620533],[-565,206,62,2375443]],"h":[1842,51]},
+{"n":"Needle's Eye","s":[0,0],"t":[202,1130,28],"p":[[-365,-99,17,996073],[217,773,45,1284116],[-360,80,48,1077982],[-657,325,30,575343],[239,-467,33,648710],[-592,-321,45,1171030],[27,411,27,333623],[-58,740,79,3966031]],"h":[2515,43]},
+{"n":"Moonrise","s":[0,0],"t":[1089,247,28],"p":[[302,-674,17,828363],[425,620,49,-817105],[233,412,53,1934529],[506,-326,53,1455031],[-320,462,51,1750932],[-244,-672,48,-937830],[-574,33,77,3595083],[703,89,73,2843787],[47,680,80,2696948]],"h":[3423,40]},
+{"n":"Rebound","s":[0,0],"t":[522,-546,28],"p":[[209,-463,17,816202],[-485,-409,47,1390734],[-16,-320,82,4100201],[404,-261,82,-1998392],[252,682,41,745486],[-379,716,85,3304803],[-442,-131,33,475758],[633,455,81,4057193],[-632,-508,46,1370789]],"h":[1244,47]},
+{"n":"Wormhole","s":[0,0],"t":[745,-243,28],"p":[[-763,299,17,1009820],[-12,304,62,2076096],[171,-612,29,461537],[308,-477,36,900161],[785,302,78,3783179],[-256,71,67,3138347],[146,569,83,4136392],[-461,-606,58,1658776],[514,-75,68,2980704]],"o":[[3,103,11,36300,-0.51,0.3]],"w":[[551,-571,-350,244]],"h":[46,48]},
+{"n":"Gauntlet","s":[0,0],"t":[-44,647,28],"p":[[633,332,15,648026],[62,-626,38,-536992],[-305,-335,68,3174224],[-736,-214,72,3588290],[161,-248,47,1135655],[306,-463,68,2811410],[24,483,83,4760841],[-526,29,48,-796495],[749,-178,75,3924729]],"w":[[-674,-380,-114,-721]],"h":[2985,46]},
+{"n":"Tunnel Vision","s":[0,0],"t":[-562,-894,28],"p":[[380,471,18,1018846],[474,-201,82,4073455],[-301,31,47,1537845],[-619,-575,70,3067050],[-296,-438,56,1598377],[845,-179,41,777288],[-55,-346,64,-1752090],[154,343,83,3261620],[-592,15,35,845003]],"o":[[2,112,11,36300,0.61,6.23]],"w":[[2,521,566,448]],"h":[1276,49]},
+{"n":"Spiral Arm","s":[0,0],"t":[-596,695,26],"p":[[7,221,14,659813],[413,-323,27,505279],[251,-37,63,2720975],[-357,365,75,-2065718],[383,516,36,674960],[-449,-450,60,1563607],[581,-573,63,-1757609],[-450,627,85,4410112],[73,-860,70,3415772],[599,448,83,2916495]],"h":[2734,54]},
+{"n":"Backwash","s":[0,0],"t":[1006,261,26],"p":[[142,428,17,791832],[-688,316,61,2365494],[-629,-533,51,1501705],[-475,291,47,1239769],[-215,188,46,1354192],[730,-37,41,716750],[573,359,61,1985680],[-570,438,48,1294061],[579,78,82,3916810],[-396,649,50,1727454]],"h":[3173,46]},
+{"n":"Labyrinth","s":[0,0],"t":[245,562,26],"p":[[21,425,18,929034],[731,253,46,968461],[-731,-200,77,-2896032],[467,139,57,1868854],[-256,795,39,-559462],[-297,-60,30,458375],[112,312,60,2219585],[-418,-779,73,-1903962],[145,739,74,-1768682],[131,545,57,1847640]],"w":[[-662,10,-170,440]],"h":[2446,54]},
+{"n":"Twin Sinks","s":[0,0],"t":[170,996,26],"p":[[-548,-705,15,675968],[-146,736,17,796044],[137,-162,60,-1344322],[-353,597,83,4795822],[92,792,84,-2079675],[451,-70,80,4449236],[-62,582,85,3851209],[-487,-342,41,848514],[716,-451,56,1860437],[-584,-550,78,-2450684],[469,-581,62,2017384]],"o":[[7,103,12,43200,0.46,2.38]],"w":[[-41,898,-141,-176]],"h":[2010,44]},
+{"n":"Rabbit Hole","s":[0,0],"t":[448,-596,26],"p":[[372,585,16,688758],[-24,397,18,1126091],[701,531,80,-2189499],[-63,-456,40,1014045],[448,-459,60,-1733780],[-254,49,65,2598233],[268,-605,60,2509909],[907,-97,81,4377366],[-537,-312,64,2244915],[451,717,82,2934662],[-231,751,74,3790611]],"o":[[3,109,13,50700,-0.59,1.55]],"w":[[709,-582,-457,498]],"h":[554,47]},
+{"n":"Slalom","s":[0,0],"t":[312,-603,26],"p":[[-471,-174,18,955565],[-750,98,16,757937],[259,527,82,-3026214],[838,335,68,2765422],[-44,-368,31,594275],[399,-221,39,987424],[528,-527,30,-378144],[269,-441,65,2237578],[432,328,71,2943972],[74,742,43,1096646],[238,824,60,-1406434],[799,-187,53,-900306]],"w":[[-358,-83,2,463]],"h":[127,40]},
+{"n":"Knot","s":[0,0],"t":[-336,707,26],"p":[[-558,511,17,891812],[-341,614,16,731507],[-460,-749,75,3521185],[-30,-292,70,3405751],[549,-2,83,2968563],[-926,130,67,2802466],[-206,-659,41,752348],[96,-559,81,3257803],[-12,-817,72,-1771570],[917,154,80,2929998],[292,613,37,832220],[-72,478,52,1759236]],"o":[[10,102,11,36300,0.57,4.91]],"w":[[401,105,-440,147]],"h":[2807,51]},
+{"n":"Undercurrent","s":[0,0],"t":[-723,-877,26],"p":[[426,447,16,888806],[319,879,14,590574],[408,-157,75,2647904],[551,283,38,947301],[-400,518,65,2031082],[-552,-678,62,2023240],[-94,-258,84,3931746],[654,183,36,625569],[-636,2,48,1076178],[-624,-380,56,-1353583],[-214,916,60,2183458],[229,97,84,4484813]],"o":[[6,127,14,58800,-0.51,5.41],[10,104,14,58800,0.48,0.39]],"w":[[739,-343,-741,-90]],"h":[1591,75]},
+{"n":"Cat's Cradle","s":[0,0],"t":[587,572,26],"p":[[-468,-70,18,1043799],[-450,697,16,821598],[57,402,78,3286606],[376,463,46,925719],[-164,-370,51,1256656],[-852,-439,52,1274408],[-87,-832,85,4163790],[759,612,39,-600833],[-225,-569,82,-2738977],[-409,449,77,3330453],[-577,-463,65,2559596],[-270,-107,65,-1523746]],"o":[[2,145,11,36300,-0.44,4.05]],"w":[[-817,455,363,-748]],"h":[2570,40]},
+{"n":"Ghost Lane","s":[0,0],"t":[991,211,26],"p":[[-490,133,18,1015651],[-763,31,14,630044],[167,-240,41,997209],[870,320,41,1054602],[595,59,73,-1676907],[210,-432,84,3115726],[-188,-890,27,324423],[201,622,72,3532232],[150,-766,83,3701987],[627,599,31,408697],[225,62,77,3746845],[-646,-347,36,823754]],"o":[[7,140,13,50700,0.43,3.04]],"w":[[-267,250,-262,869]],"h":[2943,61]},
+{"n":"Riptide","s":[0,0],"t":[-143,682,26],"p":[[359,739,17,848478],[453,502,16,789002],[94,-650,41,-533217],[136,-373,36,719645],[300,-318,82,3527375],[-799,-396,70,3115649],[284,657,46,1237135],[548,639,54,-1068083],[-282,700,84,4598425],[-168,-722,53,1405877],[588,-579,59,1484384],[-69,526,40,-495123],[-545,175,62,1708828]],"h":[1849,42]},
+{"n":"Thread the Stars","s":[0,0],"t":[1035,477,26],"p":[[210,501,16,770059],[-202,-511,15,720541],[791,57,36,727168],[478,522,68,2042179],[496,-470,64,1972069],[184,-379,71,2247340],[493,-200,63,2770795],[-877,319,43,1169904],[20,538,76,2970087],[802,300,40,-532487],[832,560,55,1746076],[-666,257,81,3565418],[-391,906,57,1520676]],"o":[[4,112,16,76800,-0.66,1.89]],"w":[[-185,341,-92,-331]],"h":[3290,46]},
+{"n":"Hall of Mirrors","s":[0,0],"t":[-865,418,26],"p":[[-237,254,15,598170],[-110,432,14,575394],[86,975,49,1274198],[707,550,48,1422176],[200,68,51,-968694],[-796,254,82,3826452],[-571,312,55,1315067],[429,140,84,3084720],[-144,988,45,904935],[290,797,65,2256741],[543,-338,65,2648759],[535,-730,42,744813],[927,-278,49,1479779]],"o":[[12,100,12,43200,0.4,1.04],[10,112,14,58800,0.75,2.97]],"w":[[202,-1000,572,240]],"h":[1499,40]},
+{"n":"Blind Corner","s":[0,0],"t":[-859,414,26],"p":[[203,524,14,676234],[189,96,14,559966],[-287,53,47,1222836],[-860,-133,82,3489839],[-516,-400,63,2766939],[716,710,84,-2248334],[-591,-44,57,2134214],[-222,-795,48,1366017],[86,864,63,2198310],[-68,510,82,4625719],[-645,-492,50,1706127],[-281,502,51,-1182227],[793,-146,75,2685260]],"w":[[-138,-631,552,51]],"h":[2846,50]},
+{"n":"Singularity","s":[0,0],"t":[785,281,26],"p":[[-396,293,15,758238],[-443,-730,16,808048],[95,-211,76,2685253],[-542,-36,29,393128],[-291,777,42,1098065],[-110,-919,27,449832],[-550,-411,61,2433164],[458,-126,78,3786038],[324,405,56,1465604],[85,869,62,1812716],[814,141,44,939986],[580,257,35,-459940],[-839,-472,41,907734]],"o":[[2,127,17,86700,-0.76,6]],"w":[[97,-762,474,-432]],"h":[95,46]},
+{"n":"Edge of Night","s":[0,0],"t":[-150,-686,26],"p":[[685,657,17,902324],[-32,357,16,831951],[-1024,-73,45,-718160],[593,-693,63,-1873367],[-94,-404,47,-758359],[-387,-390,76,3883419],[287,-917,47,1498748],[-165,-147,49,1605839],[-875,-235,72,2259003],[78,976,41,912730],[-161,991,50,1333433],[143,-193,45,1115571],[-925,296,83,3937355],[661,147,43,1269625]],"o":[[8,130,12,43200,0.37,5.3],[6,97,16,76800,-0.57,0.11]],"w":[[594,838,1001,-291]],"h":[1876,45]}
+]
+</script>
+<script type="application/json" id="starrun">
+[
+{"n":"First Light","s":[0,0],"t":[467,146,28],"p":[[-608,-89,78,2659444],[277,-25,77,3676823],[593,-232,35,745345],[-130,-583,73,3323118]],"c":[[208,190]],"h":[2967,44]},
+{"n":"Pick-up","s":[0,0],"t":[-280,-545,28],"p":[[-172,-243,69,2997404],[63,-290,29,483433],[-97,-454,41,1048976],[269,-568,39,856229]],"c":[[-276,-200]],"h":[1607,53]},
+{"n":"Detour","s":[0,0],"t":[61,-750,28],"p":[[105,-423,63,2091597],[207,173,48,1541792],[329,71,39,1055521],[-600,-138,63,1670148]],"c":[[228,-399]],"h":[608,44]},
+{"n":"Lantern Walk","s":[0,0],"t":[-236,-553,28],"p":[[459,-427,49,1097865],[-168,-333,76,2814571],[554,-272,28,426157],[-176,664,36,674094],[20,-534,67,2083270]],"c":[[-238,-187]],"h":[1535,42]},
+{"n":"Two Step","s":[0,0],"t":[-546,-295,28],"p":[[-532,440,68,2792267],[-414,108,60,1678062],[-57,696,68,2602456],[467,356,42,1072169],[-368,-204,69,3147560]],"c":[[-180,-263]],"h":[1122,46]},
+{"n":"Firefly","s":[0,0],"t":[-362,391,28],"p":[[-231,330,57,1708945],[-446,-423,80,3647206],[-506,-80,72,2780733],[347,-194,74,2818733],[-113,-544,55,1340794]],"c":[[-81,271]],"h":[2595,48]},
+{"n":"Join the Dots","s":[0,0],"t":[-578,674,28],"p":[[227,133,64,2070400],[-223,117,39,744371],[50,448,69,3185138],[301,-372,76,3339071],[-392,588,71,2412109]],"c":[[-284,229],[-523,408]],"h":[2187,52]},
+{"n":"Scenic Route","s":[0,0],"t":[370,250,28],"p":[[-467,-118,64,2069645],[-309,-424,33,547329],[381,368,55,1654532],[231,-184,78,-2343747],[-416,488,68,2819893],[118,206,75,3415812]],"c":[[173,-61],[291,35]],"h":[310,62]},
+{"n":"Treasure Hunt","s":[0,0],"t":[-779,215,28],"p":[[-442,184,42,886466],[216,50,28,401720],[-599,-314,56,-1248533],[241,547,53,1537363],[168,720,58,1529705],[-686,314,67,2487313]],"c":[[-346,-171],[-606,-159]],"h":[1488,50]},
+{"n":"Milk Run","s":[0,0],"t":[-395,-267,28],"p":[[48,206,58,1523417],[92,549,69,-1840448],[-218,-94,74,3471581],[232,-42,43,1190818],[576,-21,79,3069354],[232,705,46,1353275]],"c":[[-217,28],[-379,-109]],"h":[1958,57]},
+{"n":"Gleaners","s":[0,0],"t":[537,232,28],"p":[[652,-302,31,-341988],[44,-569,35,540454],[-398,469,30,472770],[-564,-115,77,3389406],[305,27,38,910603],[394,247,67,3031816]],"c":[[101,155],[273,307]],"h":[2997,40]},
+{"n":"Paper Chase","s":[0,0],"t":[259,-637,28],"p":[[484,-18,14,644744],[-271,-170,70,2828861],[258,-179,51,1267178],[217,-352,64,2405083],[495,306,35,787996],[-400,-43,53,1501643],[142,146,47,1343367],[-533,494,69,-1455317]],"c":[[166,-198],[331,-512]],"h":[521,47]},
+{"n":"Constellation","s":[0,0],"t":[-636,429,28],"p":[[-683,-293,15,703421],[-482,421,56,1759836],[-215,-712,26,348938],[231,-251,46,983025],[-102,-593,68,2929675],[634,420,75,3231365],[-309,131,31,-330138],[-8,275,75,-1924005]],"c":[[-119,176],[-354,211]],"h":[2490,47]},
+{"n":"Scavenger","s":[0,0],"t":[-780,-281,28],"p":[[-737,-221,16,717655],[276,-114,65,2345466],[81,283,55,2103540],[-407,487,60,1628030],[787,-149,69,3289387],[161,515,42,875818],[-209,575,54,1468334],[705,-407,70,2725783]],"c":[[-377,-90],[-642,-92]],"h":[1612,50]},
+{"n":"Zigzag","s":[0,0],"t":[698,77,28],"p":[[509,99,14,587763],[114,429,28,499052],[-201,-147,33,-359476],[-171,143,29,-263593],[-203,-363,66,2411702],[348,272,76,3138531],[-469,-22,77,3132349],[-59,432,57,1978339]],"c":[[345,-173],[610,-143]],"h":[347,42]},
+{"n":"Magpie","s":[0,0],"t":[-647,-36,28],"p":[[-350,-93,18,1122955],[447,-369,30,612758],[767,-162,63,2768172],[181,511,60,2073937],[543,528,32,673301],[-314,-414,75,2850763],[-556,41,61,2166726],[510,349,62,2056226],[-554,615,54,-1396912]],"o":[[5,120,16,76800,-0.4,6.27]],"c":[[-162,120],[-342,201],[-541,189]],"h":[2199,41]},
+{"n":"Postman","s":[0,0],"t":[481,409,28],"p":[[427,-196,18,889148],[-657,539,29,-270669],[148,-748,44,-940186],[313,-577,59,2431909],[-89,531,40,-553316],[606,-215,56,-1386893],[666,217,36,574412],[-812,-141,28,344435],[247,91,73,2239053]],"c":[[-37,274],[47,440],[244,475]],"h":[2473,40]},
+{"n":"Long Haul","s":[0,0],"t":[-690,-358,28],"p":[[422,660,14,600964],[-490,612,74,-2041192],[-127,-847,72,2586094],[-362,-167,67,1991916],[-608,-250,65,2653957],[301,-362,54,-870253],[815,29,44,1285306],[685,-426,43,-823506],[-346,-411,78,3584570]],"o":[[6,98,12,43200,0.47,2.12]],"c":[[-180,76],[-395,75],[-614,-55]],"h":[2124,40]},
+{"n":"Night Shift","s":[0,0],"t":[760,603,28],"p":[[-345,-72,18,1127095],[92,-231,42,790232],[-165,-495,38,907598],[-472,186,70,2859609],[-387,-402,42,753776],[-715,53,35,821076],[-694,-204,44,1348601],[511,549,77,3822517],[-474,586,46,1074224]],"o":[[7,126,15,67500,0.49,4.62]],"c":[[113,285],[223,567],[495,759]],"h":[2966,44]},
+{"n":"Collector","s":[0,0],"t":[527,-568,28],"p":[[-370,-758,15,671538],[-594,-624,27,346137],[466,-433,61,2127355],[-477,-90,43,948892],[-548,542,68,2267255],[798,-293,48,-820683],[83,-588,66,2394927],[-770,20,26,409450],[536,437,72,-2379675],[-115,747,40,707468]],"w":[[-402,319,127,523]],"c":[[286,-11],[530,-106],[681,-295]],"h":[3565,44]},
+{"n":"Glow Worm","s":[0,0],"t":[341,-653,28],"p":[[-198,-333,14,608059],[208,-261,36,-452709],[503,272,62,2514009],[490,-68,39,1034847],[-200,772,68,2363927],[796,-34,76,3155054],[190,789,33,541913],[-624,-621,39,669139],[66,-808,61,-1653918],[342,-428,53,1246671]],"o":[[6,80,13,50700,0.48,0.52]],"w":[[462,444,-527,-401]],"c":[[123,-212],[147,-405],[193,-600]],"h":[647,41]},
+{"n":"Paper Trail","s":[0,0],"t":[155,-781,28],"p":[[540,386,15,621488],[410,68,61,1913450],[-730,379,34,677267],[-148,-498,64,2770621],[-554,236,68,2962692],[-264,719,77,3205163],[417,-741,32,586166],[183,-631,63,2314519],[-843,-135,75,-2199009],[-566,10,34,-475999]],"o":[[1,118,15,67500,0.77,1.49]],"w":[[-60,610,-683,-57]],"c":[[-211,-194],[-332,-472],[-163,-737]],"h":[1412,42]},
+{"n":"Errands","s":[0,0],"t":[201,-654,28],"p":[[525,268,17,835888],[891,179,34,723430],[830,-13,29,450209],[142,809,61,1718423],[-109,-436,68,2066221],[-598,517,58,2145053],[-168,710,47,1300737],[273,390,38,621515],[150,-424,80,4131918],[747,-482,75,2654854]],"o":[[6,105,11,36300,-0.45,1.34]],"w":[[-228,-87,483,-117]],"c":[[-160,-163],[-238,-414],[-66,-636]],"h":[1426,43]},
+{"n":"Grand Tour","s":[0,0],"t":[-148,-598,28],"p":[[-283,679,17,769389],[380,-62,78,-2206995],[143,-642,57,-1236053],[-519,-200,65,2618617],[-183,-786,67,2776507],[-280,-526,76,2697417],[-823,-310,32,580870],[-3,-410,78,4175602],[591,726,56,-1456804],[-860,100,65,-1489488],[-357,-4,49,1049118]],"o":[[3,112,12,43200,0.45,2.77]],"w":[[255,-820,176,-324]],"c":[[195,-83],[252,-240],[161,-479]],"h":[137,56]},
+{"n":"Shooting Stars","s":[0,0],"t":[401,-518,28],"p":[[121,419,15,721033],[-198,305,57,1812614],[-488,-153,43,997831],[-605,566,61,2421495],[-56,-294,54,1875304],[181,153,44,-765758],[-857,299,75,3780908],[-38,-846,48,1105716],[374,-368,75,3766566],[-909,-163,58,1708152],[-726,109,38,914055]],"o":[[10,106,15,67500,0.37,0.45]],"w":[[-389,375,500,455]],"c":[[163,39],[311,-10],[426,-109],[511,-298]],"h":[3416,49]},
+{"n":"Pathfinder","s":[0,0],"t":[228,-388,28],"p":[[202,-295,17,826941],[317,-670,66,2442578],[-296,-176,41,816884],[105,-499,29,468389],[-258,41,64,2133127],[334,-235,68,2127402],[-137,313,74,3285869],[315,388,68,1970817],[-63,-742,54,-1386703],[687,618,58,1986233],[-486,-344,78,3017836]],"o":[[2,107,11,36300,-0.43,3.27]],"w":[[140,-692,-685,-376]],"c":[[144,-19],[294,-56],[410,-154],[365,-340]],"h":[80,46]},
+{"n":"Stardust","s":[0,0],"t":[-966,-41,28],"p":[[812,-193,14,624237],[-470,-100,50,1497331],[-412,-745,61,1594974],[53,-213,52,1655184],[301,49,50,1513918],[590,444,71,2700562],[871,300,45,945682],[-26,955,66,-1945676],[898,121,48,1392079],[-827,-235,32,586510],[-879,-124,34,672192]],"w":[[-320,-216,-836,310]],"c":[[-205,-86],[-417,-195],[-659,-111],[-820,-9]],"h":[1684,42]},
+{"n":"Odyssey","s":[0,0],"t":[144,-725,28],"p":[[-946,-154,17,921642],[-326,-854,69,3076618],[-215,-643,49,1440858],[-733,14,32,676088],[-578,90,34,650246],[164,-967,35,569366],[-201,-174,55,1817193],[215,924,74,-1992870],[322,647,41,721079],[566,245,69,-2106931],[140,-575,73,2731749],[-77,-591,41,1082579]],"o":[[4,99,14,58800,0.54,3.02]],"w":[[-359,-662,-92,566]],"c":[[248,59],[394,17],[439,-145],[397,-406]],"h":[3389,48]},
+{"n":"Full House","s":[0,0],"t":[550,-36,28],"p":[[-291,893,14,670296],[182,744,37,646800],[161,411,60,1698606],[-90,-554,40,694194],[254,-87,77,3097721],[235,-492,63,-1219367],[-191,-324,59,1841122],[47,636,31,653456],[-697,269,54,1957004],[235,-752,44,857625],[-357,546,72,-1601161],[430,-212,69,2544270]],"o":[[1,86,12,43200,0.56,2.83]],"w":[[-27,-429,774,25]],"c":[[74,-187],[206,-339],[367,-373],[539,-243]],"h":[760,53]},
+{"n":"Supernova","s":[0,0],"t":[632,25,28],"p":[[636,-52,18,934553],[-525,743,74,2952038],[-46,799,41,1043074],[357,-595,64,-1476657],[-960,46,60,1717284],[468,53,65,2436980],[624,761,33,560772],[157,516,60,1539116],[-219,-915,26,-325174],[-317,155,62,1858036],[197,-409,57,1653162],[-523,-719,74,3227344]],"w":[[871,-474,6,972]],"c":[[191,-145],[397,-271],[561,-310],[683,-219]],"h":[403,40]}
 ]
 </script>
 <script>
 "use strict";
 /*CORE-START*/
-/* Physics, solver and level generator. No page dependencies, so a Node script can run this part.
-   A level: s [x,y] start, t [x,y,r] target, p planets [x,y,r,m] (m is the pull: acceleration m/d^2; negative pushes),
-   o moons [planet index, orbit distance, r, m, angular speed, phase]. Moons start at their phase on every shot.
-   The daily level is made from its day number by dailyLevel: changing it, or the physics, changes every future daily. */
-const DT=1/120, TMAX=30, VMAX=340, BALL=6, MARGIN=650;
+/* Physics, solver and level generators. No page dependencies, so a Node script can run this part.
+   A level: s [x,y] start, t [x,y,r] target, p planets [x,y,r,m] (m is the pull: acceleration m/d^2; negative pushes;
+   small and very heavy ones are drawn as black holes), o moons [planet index, orbit distance, r, m, angular speed, phase]
+   (moons start at their phase on every shot), c stars to collect before the target counts [[x,y],...], w wormhole
+   pairs [[x1,y1,x2,y2],...] (entering one end comes out of the other at the same speed), h a known winning aim [a,pw].
+   Daily orbits and voyage systems are made on the phone from their number: changing the physics, generate, genField,
+   findRoute, dailyLevel or voyageLevel changes them, so don't, without a plan. */
+const DT=1/120, TMAX=30, VMAX=340, BALL=6, MARGIN=650, CR=16, WR=20;
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function bounds(L){let x0=Math.min(L.s[0],L.t[0]),x1=Math.max(L.s[0],L.t[0]),y0=Math.min(L.s[1],L.t[1]),y1=Math.max(L.s[1],L.t[1]);
   for(const p of L.p){x0=Math.min(x0,p[0]-p[2]);x1=Math.max(x1,p[0]+p[2]);y0=Math.min(y0,p[1]-p[2]);y1=Math.max(y1,p[1]+p[2])}
   for(const o of L.o||[]){const p=L.p[o[0]],e=o[1]+o[2];x0=Math.min(x0,p[0]-e);x1=Math.max(x1,p[0]+e);y0=Math.min(y0,p[1]-e);y1=Math.max(y1,p[1]+e)}
+  for(const c of L.c||[]){x0=Math.min(x0,c[0]);x1=Math.max(x1,c[0]);y0=Math.min(y0,c[1]);y1=Math.max(y1,c[1])}
+  for(const w of L.w||[])for(let e=0;e<4;e+=2){x0=Math.min(x0,w[e]);x1=Math.max(x1,w[e]);y0=Math.min(y0,w[e+1]);y1=Math.max(y1,w[e+1])}
   return [x0,y0,x1,y1]}
+const isHole=p=>p[3]>0&&p[2]<=22&&p[3]>p[2]*p[2]*1800;
 // every body at time t: [x,y,r,m]
 function bodies(L,t){const out=L.p.map(p=>p);for(const o of L.o||[]){const p=L.p[o[0]],a=o[4]*t+o[5];out.push([p[0]+o[1]*Math.cos(a),p[1]+o[1]*Math.sin(a),o[2],o[3]])}return out}
-// Fly a shot. vx,vy in units/s. Returns {r:"hit"|"crash"|"lost"|"time", t, path (every 2nd step, flat [x,y,...]), at (body index hit)}
+// Fly a shot. vx,vy in units/s. Returns {r:"hit"|"crash"|"lost"|"time", t, turn (radians the heading has swung through),
+// got (bits of stars collected), and with keepPath: path (every 2nd step, flat [x,y,...]), tu (turn at each point),
+// jumps (point indexes where a wormhole moved the ball), cs (time each star was collected, -1 if not)}
 function fly(L,vx,vy,keepPath,tmax){
   const B=bounds(L),bx0=B[0]-MARGIN,by0=B[1]-MARGIN,bx1=B[2]+MARGIN,by1=B[3]+MARGIN,P=L.p,O=L.o||[],np=P.length,no=O.length;
+  const C=L.c||[],nc=C.length,ALL=(1<<nc)-1,Wh=L.w||[],nw=Wh.length,cr=(CR+BALL)*(CR+BALL),wr=WR*WR;
   const tx=L.t[0],ty=L.t[1],tr=(L.t[2]+BALL)*(L.t[2]+BALL),lim=tmax||TMAX;
-  let x=L.s[0],y=L.s[1],t=0,i=0;const path=keepPath?[x,y]:null;
+  let x=L.s[0],y=L.s[1],t=0,i=0,turn=0,got=0,cool=-1,jump=false;
+  const path=keepPath?[x,y]:null,tu=keepPath?[0]:null,jumps=keepPath?[]:null,cs=keepPath?C.map(()=>-1):null;
   const mx=new Float64Array(no),my=new Float64Array(no);
+  const out=r=>{if(keepPath){if(jump)jumps.push(path.length/2);path.push(x,y);tu.push(turn)}return {r,t,turn,got,path,tu,jumps,cs}};
   while(t<lim){
     let ax=0,ay=0;
     for(let k=0;k<no;k++){const o=O[k],p=P[o[0]],a=o[4]*t+o[5];mx[k]=p[0]+o[1]*Math.cos(a);my[k]=p[1]+o[1]*Math.sin(a);
       const dx=mx[k]-x,dy=my[k]-y,d2=dx*dx+dy*dy,f=o[3]/(d2*Math.sqrt(d2));ax+=dx*f;ay+=dy*f}
     for(let k=0;k<np;k++){const p=P[k],dx=p[0]-x,dy=p[1]-y,d2=dx*dx+dy*dy,f=p[3]/(d2*Math.sqrt(d2));ax+=dx*f;ay+=dy*f}
+    turn+=Math.abs(vx*ay-vy*ax)/(vx*vx+vy*vy+1e-9)*DT;
     vx+=ax*DT;vy+=ay*DT;x+=vx*DT;y+=vy*DT;t+=DT;i++;
-    if(keepPath&&!(i&1))path.push(x,y);
-    let dx=x-tx,dy=y-ty;if(dx*dx+dy*dy<tr){if(keepPath)path.push(x,y);return {r:"hit",t,path}}
-    for(let k=0;k<np;k++){const p=P[k];dx=x-p[0];dy=y-p[1];const rr=p[2]+BALL;if(dx*dx+dy*dy<rr*rr){if(keepPath)path.push(x,y);return {r:"crash",t,path,at:k}}}
-    for(let k=0;k<no;k++){dx=x-mx[k];dy=y-my[k];const rr=O[k][2]+BALL;if(dx*dx+dy*dy<rr*rr){if(keepPath)path.push(x,y);return {r:"crash",t,path,at:np+k}}}
-    if(x<bx0||x>bx1||y<by0||y>by1){if(keepPath)path.push(x,y);return {r:"lost",t,path}}
+    if(nw){if(cool>=0){const e=Wh[cool>>1],k=(cool&1)*2,dx=x-e[k],dy=y-e[k+1];if(dx*dx+dy*dy>wr)cool=-1}
+      if(cool<0)for(let k=0;k<nw;k++){const e=Wh[k];let dx=x-e[0],dy=y-e[1];
+        if(dx*dx+dy*dy<wr){x=e[2]+dx;y=e[3]+dy;cool=k*2+1;jump=true;break}
+        dx=x-e[2];dy=y-e[3];if(dx*dx+dy*dy<wr){x=e[0]+dx;y=e[1]+dy;cool=k*2;jump=true;break}}}
+    for(let k=0;k<nc;k++)if(!(got>>k&1)){const dx=x-C[k][0],dy=y-C[k][1];if(dx*dx+dy*dy<cr){got|=1<<k;if(cs)cs[k]=t}}
+    if(keepPath&&!(i&1)){if(jump){jumps.push(path.length/2);jump=false}path.push(x,y);tu.push(turn)}
+    let dx=x-tx,dy=y-ty;if(got===ALL&&dx*dx+dy*dy<tr)return out("hit");
+    for(let k=0;k<np;k++){const p=P[k];dx=x-p[0];dy=y-p[1];const rr=p[2]+BALL;if(dx*dx+dy*dy<rr*rr){const o=out("crash");o.at=k;return o}}
+    for(let k=0;k<no;k++){dx=x-mx[k];dy=y-my[k];const rr=O[k][2]+BALL;if(dx*dx+dy*dy<rr*rr){const o=out("crash");o.at=np+k;return o}}
+    if(x<bx0||x>bx1||y<by0||y>by1)return out("lost");
   }
-  return {r:"time",t,path};
+  const o={r:"time",t,turn,got,path,tu,jumps,cs};return o;
 }
 // aim: angle in tenths of a degree (0 = right, 900 = up), power 1-100 (% of VMAX)
 function aimVel(a,pw){const r=a/1800*Math.PI,v=VMAX*pw/100;return [v*Math.cos(r),-v*Math.sin(r)]}
-function shoot(L,a,pw,keep){const v=aimVel(a,pw);return fly(L,v[0],v[1],keep)}
-// Searches a grid of aims; returns the hits [a,pw] (stops after `want` hits if given)
+function shoot(L,a,pw,keep,tmax){const v=aimVel(a,pw);return fly(L,v[0],v[1],keep,tmax)}
+// Searches a grid of aims; returns the hits [a,pw,turn] (stops after `want` hits if given)
 function solve(L,da,powers,want){const hits=[];
-  for(const pw of powers)for(let a=0;a<3600;a+=da){if(shoot(L,a,pw).r==="hit"){hits.push([a,pw]);if(want&&hits.length>=want)return hits}}
+  for(const pw of powers)for(let a=0;a<3600;a+=da){const r=shoot(L,a,pw);if(r.r==="hit"){hits.push([a,pw,r.turn]);if(want&&hits.length>=want)return hits}}
   return hits}
 // true if the straight line from start to target passes through (or near) a body
 function blocked(L){const [sx,sy]=L.s,[tx,ty]=L.t,ux=tx-sx,uy=ty-sy,len2=ux*ux+uy*uy;
   return bodies(L,0).some(b=>{let u=((b[0]-sx)*ux+(b[1]-sy)*uy)/len2;u=Math.max(0,Math.min(1,u));const dx=sx+ux*u-b[0],dy=sy+uy*u-b[1];return dx*dx+dy*dy<(b[2]+30)*(b[2]+30)})}
-// opts: n planets, dist (start to target), repel (chance a planet pushes), moons, spread
+// The first generator (levels 1-30 and the daily orbits before day 4). opts: n planets, dist (start to target), repel, moons, spread
 function generate(rng,opts){
   const D=opts.dist*(0.85+rng()*0.3),ang=(rng()*2-1)*Math.PI*(opts.wide||0.35);
   const L={s:[0,0],t:[Math.round(D*Math.cos(ang)),Math.round(-D*Math.sin(ang)),opts.tr||28],p:[],o:[]};
   const ok=(x,y,r)=>{if(Math.hypot(x-L.s[0],y-L.s[1])<r+110)return false;if(Math.hypot(x-L.t[0],y-L.t[1])<r+L.t[2]+70)return false;
     for(const p of L.p)if(Math.hypot(x-p[0],y-p[1])<r+p[2]+(opts.gap||70))return false;return true};
-  // a blocker near the middle of the straight line
   {const u=0.4+rng()*0.25,r=Math.round(60+rng()*50),x=L.t[0]*u+(rng()*2-1)*30,y=L.t[1]*u+(rng()*2-1)*30;L.p.push([Math.round(x),Math.round(y),r,Math.round(r*r*(opts.g||1)*(450+rng()*250))])}
   let tries=0;
   while(L.p.length<opts.n&&tries++<400){
@@ -237,12 +336,84 @@ function generate(rng,opts){
   if(!L.o.length)delete L.o;
   return L;
 }
+/* The crowded-field generator: a field of bodies round the start (o: n planets, R field radius, rmin/rmax, gap between
+   bodies, rep chance a planet pushes, bh black holes, moons, wh wormhole pairs). findRoute then fires random aims until one
+   winds a long way through the field, puts the target where that path has turned at least o.turn radians, and keeps the
+   level only if the shot still works with small aiming errors and no easy shot (one that turns less than o.easy) gets there. */
+function genField(rng,o){
+  const L={s:[0,0],t:[0,0,-BALL],p:[],o:[],w:[]},R=o.R;
+  const free=(x,y,r,g)=>{if(x*x+y*y<(r+150)*(r+150))return false;for(const p of L.p)if(Math.hypot(x-p[0],y-p[1])<r+p[2]+g)return false;
+    for(const w of L.w)for(let e=0;e<4;e+=2)if(Math.hypot(x-w[e],y-w[e+1])<r+WR+g)return false;return true};
+  const spot=(r,g)=>{for(let k=0;k<200;k++){const a=rng()*Math.PI*2,d=Math.sqrt(rng())*R,x=Math.round(d*Math.cos(a)),y=Math.round(d*Math.sin(a));if(free(x,y,r,g))return [x,y]}return null};
+  for(let k=0;k<(o.bh||0);k++){const r=14+(rng()*5|0),s=spot(r,o.gap+40);if(s)L.p.push([s[0],s[1],r,Math.round(r*r*(2600+rng()*900))])}
+  for(let tries=0;L.p.length<o.n+(o.bh||0)&&tries<60;tries++){const r=Math.round(o.rmin+rng()*(o.rmax-o.rmin)),s=spot(r,o.gap);if(!s)continue;
+    const neg=rng()<(o.rep||0);L.p.push([s[0],s[1],r,Math.round((neg?-0.7:1)*r*r*(420+rng()*280))])}
+  for(let k=0;k<(o.moons||0);k++){const pi=rng()*L.p.length|0,p=L.p[pi];if(p[3]<0||isHole(p))continue;
+    const d=Math.round(p[2]+40+rng()*30),r=Math.round(10+rng()*7);
+    if(L.p.some((q,j)=>j!==pi&&Math.hypot(q[0]-p[0],q[1]-p[1])<d+r+q[2]+25)||Math.hypot(p[0],p[1])<d+r+60||L.o.some(m=>m[0]===pi))continue;
+    L.o.push([pi,d,r,Math.round(r*r*300),Math.round((rng()<.5?-1:1)*(35+rng()*45))/100,Math.round(rng()*628)/100])}
+  for(let k=0;k<(o.wh||0);k++){const a=spot(WR,60),b=a&&spot(WR,60);if(a&&b&&Math.hypot(a[0]-b[0],a[1]-b[1])>400)L.w.push([a[0],a[1],b[0],b[1]])}
+  if(!L.o.length)delete L.o;if(!L.w.length)delete L.w;
+  return L;
+}
+// is (x,y) a fair place for something of radius r: clear of every body, moon orbit and wormhole by `gap`
+function clearAt(L,x,y,r,gap){
+  for(const p of L.p)if(Math.hypot(x-p[0],y-p[1])<p[2]+r+gap)return false;
+  for(const m of L.o||[]){const p=L.p[m[0]];if(Math.abs(Math.hypot(x-p[0],y-p[1])-m[1])<m[2]+r+gap)return false}
+  for(const w of L.w||[])for(let e=0;e<4;e+=2)if(Math.hypot(x-w[e],y-w[e+1])<WR+r+gap)return false;
+  return true}
+// o: turn, easy, tmin/tmax (seconds the winning shot takes), dmin (target from start), pmin, trials, tol (of the aims tolA tenths of a degree
+// and tolP % of power either side, how many must also win), grid (aim step for the easy-shot search, 0 to skip), stars (how many to collect)
+function findRoute(L,rng,o){
+  const TR=o.tr||26;
+  for(let k=0;k<o.trials;k++){
+    const a=rng()*3600|0,pw=o.pmin+(rng()*(101-o.pmin)|0),res=shoot(L,a,pw,true,o.tmax+.1),P=res.path,n=P.length/2;
+    if(res.r==="hit")continue;
+    let pick=-1;
+    for(let i=Math.round(o.tmin*60);i<n&&i<=o.tmax*60;i++){
+      if(res.tu[i]<o.turn)continue;
+      const x=P[i*2],y=P[i*2+1];
+      if(Math.hypot(x-L.s[0],y-L.s[1])<o.dmin||!clearAt(L,x,y,TR,30)||res.jumps.some(j=>j>i-6&&j<=i))continue;
+      L.t=[Math.round(x),Math.round(y),TR];if(!blocked(L)){L.t=[0,0,-BALL];continue}
+      pick=i;break}
+    if(pick<0){L.t=[0,0,-BALL];continue}
+    if(o.stars){const C=[],step=pick/(o.stars+1);
+      for(let s=1;s<=o.stars;s++){let ok=false;
+        for(let d=0;d<step*.4&&!ok;d+=3)for(const sg of [1,-1]){const i=Math.round(step*s+sg*d),x=P[i*2],y=P[i*2+1];
+          if(i>20&&i<pick-20&&clearAt(L,x,y,CR,25)&&Math.hypot(x-L.s[0],y-L.s[1])>140&&Math.hypot(x-L.t[0],y-L.t[1])>140&&C.every(c=>Math.hypot(x-c[0],y-c[1])>150)){C.push([Math.round(x),Math.round(y)]);ok=true;break}}
+        if(!ok)break}
+      if(C.length<o.stars){L.t=[0,0,-BALL];continue}
+      L.c=C}
+    const win=(aa,pp)=>shoot(L,aa,pp).r==="hit";
+    if(!win(a,pw)){L.t=[0,0,-BALL];delete L.c;continue}
+    const ta=o.tolA||1,tp=o.tolP||1;let near=0;for(const d of [[-ta,0],[ta,0],[0,-tp],[0,tp]])if(win(a+d[0],pw+d[1]))near++;
+    if(near<o.tol){L.t=[0,0,-BALL];delete L.c;continue}
+    if(o.grid){let easy=false;
+      for(let pp=100;pp>=o.pmin&&!easy;pp-=10)for(let aa=0;aa<3600;aa+=o.grid){const r=shoot(L,aa,pp,false,o.tmax+3);if(r.r==="hit"&&r.turn<o.easy){easy=true;break}}
+      if(easy){L.t=[0,0,-BALL];delete L.c;continue}}
+    L.h=[a,pw];return L;
+  }
+  return null;
+}
+function makeField(seed,f,r){
+  for(let k=0;k<30;k++){const rng=mulberry(hashStr(seed+"|"+k)),L=findRoute(genField(rng,f),rng,k<20?r:{...r,turn:r.turn*.7,grid:0});if(L)return L}
+  return null}
+// Daily orbit: the first generator before day 4, a crowded field from day 4 (every third day has stars to collect)
 const DAILY_OPTS=day=>({n:4+day%3,dist:1100+(day%5)*120,repel:day%4===3?0.25:0,moons:day%7===5?1:0,spread:0.7,wide:0.5});
 function dailyLevel(day){
+  if(day>=4){const L=makeField("gw-daily2|"+day,{n:7+day%3,R:850,rmin:28,rmax:80,gap:60,rep:.2,bh:day%4===1?1:0,moons:day%5===2?1:0,wh:day%6===3?1:0},
+      {turn:2.2+(day%4)*.3,easy:1.6,tmin:2,tmax:12,dmin:450,pmin:45,trials:250,tol:3,tolA:3,tolP:1,grid:30,stars:day%3===0?2:0});
+    if(L){L.n="Daily orbit";return L}}
   for(let k=0;k<40;k++){const L=generate(mulberry(hashStr("gw-daily|"+day+"|"+k)),DAILY_OPTS(day));
     if(!blocked(L))continue;
     if(solve(L,10,[100,85,70,55],2).length>=2){L.n="Daily orbit";return L}}
   return null;
+}
+// Voyage: system k of an endless run, harder as k grows (the same systems for everyone)
+function voyageLevel(k){
+  const f={n:Math.min(10,4+(k>>1)),R:Math.min(1000,650+k*25),rmin:26,rmax:80,gap:Math.max(45,75-k*2),rep:k>=3?.2:0,bh:k>=6?1+(k>=14):0,moons:k>=4?1:0,wh:k>=9?1:0};
+  const r={turn:Math.min(4,1.2+k*.18),easy:Math.min(1.8,.9+k*.06),tmin:1.5,tmax:12,dmin:Math.min(550,350+k*15),pmin:45,trials:250,tol:3,tolA:Math.max(2,6-(k>>2)),tolP:k<12?2:1,grid:k<3?0:30,stars:k>=5&&k%4===1?1+(k>=13):0};
+  const L=makeField("gw-voyage|"+k,f,r);if(L)L.n="System "+k;return L;
 }
 const starsFor=shots=>shots<=1?3:shots<=3?2:1;
 /*CORE-END*/
@@ -251,18 +422,45 @@ const starsFor=shots=>shots<=1?3:shots<=3?2:1;
 const $=id=>document.getElementById(id);
 const loadJSON=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
 const saveJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-const getLv=()=>loadJSON("gw.levels",{});
-const getDaily=()=>loadJSON("gw.daily",{});
+const getLv=()=>loadJSON("gw.levels",{});      // level number -> {stars, shots, at}
+const getSr=()=>loadJSON("gw.stars",{});       // Star Run level number -> {stars, shots, at}
+const getDaily=()=>loadJSON("gw.daily",{});    // day number -> {stars, shots, at}
+const getVoy=()=>Object.assign({best:0,runs:0,run:null},loadJSON("gw.voyage",{})); // run: {k system, left shots}
 const starTxt=n=>"★".repeat(n)+"☆".repeat(3-n);
-const LEVELS=JSON.parse($("levels").textContent),NL=LEVELS.length;
+const LEVELS=JSON.parse($("levels").textContent),NL=LEVELS.length,CLASSIC=30;
+const STARRUN=JSON.parse($("starrun").textContent),NS=STARRUN.length;
 const DAY_MS=864e5, EPOCH=Date.UTC(2026,10,4); // daily #1 is 4 November 2026
 const dayNum=(d=new Date())=>Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-EPOCH)/DAY_MS)+1;
 const fmt=n=>Math.round(n).toLocaleString("en-GB");
+const VOY_START=10, voyBonus=shots=>shots===1?3:shots===2?1:0;
+
+/* ===== daily orbits and voyage systems are made in a background worker (they can take a second on a phone) ===== */
+const made={},waiting={};
+let worker=null;
+try{const src=[...document.scripts].map(s=>s.textContent).find(t=>t.includes("/*CORE-START*/"));
+  const core=src.slice(src.indexOf("/*CORE-START*/"),src.indexOf("/*CORE-END*/"));
+  worker=new Worker(URL.createObjectURL(new Blob([core+';onmessage=e=>{const [k,n]=e.data;postMessage([k,n,k==="d"?dailyLevel(n):voyageLevel(n)])}'],{type:"text/javascript"})));
+  worker.onmessage=e=>{const [k,n,L]=e.data,key=k+n;made[key]=L;(waiting[key]||[]).forEach(f=>f(L));delete waiting[key]};
+  worker.onerror=()=>{worker=null;for(const key in waiting){const L=build(key[0],+key.slice(1));made[key]=L;waiting[key].forEach(f=>f(L));delete waiting[key]}};
+}catch(e){worker=null}
+const build=(k,n)=>k==="d"?dailyLevel(n):voyageLevel(n);
+function getMade(k,n,cb){const key=k+n;
+  if(key in made){cb&&cb(made[key]);return}
+  if(waiting[key]){if(cb)waiting[key].push(cb);return}
+  waiting[key]=cb?[cb]:[];
+  if(worker)worker.postMessage([k,n]);
+  else setTimeout(()=>{const L=build(k,n);made[key]=L;(waiting[key]||[]).forEach(f=>f(L));delete waiting[key]},30);
+}
 
 /* ================= menu ================= */
-let view="menu";
+let view="menu",tab=loadJSON("gw.tab","lv");
 function show(v){view=v;$("menu").hidden=v!=="menu";$("play").hidden=v!=="play";if(v==="play")requestAnimationFrame(resize);else renderMenu()}
 function streak(){const d=getDaily();let t=dayNum();if(!d[t])t--;let n=0;while(d[t]){n++;t--}return n}
+function gridOf(el,count,offset,done,onPick){
+  el.innerHTML="";let next=0;while(next<count&&done[offset+next+1])next++;
+  for(let i=0;i<count;i++){const n=offset+i+1,r=done[n],b=document.createElement("button");b.className="lv"+(r?" done":"")+(i===next?" next":"");
+    b.disabled=!r&&i>next+1;b.innerHTML=`<b>${n}</b><span class="st">${r?starTxt(r.stars):""}</span>`;b.onclick=()=>onPick(n);el.append(b)}
+  return next}
 function renderMenu(){
   const done=getLv(),dd=getDaily(),today=dayNum(),td=dd[today];
   const date=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}),sk=streak();
@@ -270,82 +468,122 @@ function renderMenu(){
     <h2>${td?"Done today in "+td.shots+" shot"+(td.shots===1?"":"s")+" "+starTxt(td.stars):"A new star system every day"}</h2>
     <p class="muted" style="margin:0">${td?"Come back tomorrow for the next one.":"The same system for everyone today."}</p>
     <div class="row"><button class="btn pri" id="dailyBtn">${td?"Play again":"Play today's orbit"}</button>${sk>1?`<span class="muted">${sk} day streak</span>`:""}</div>`;
-  $("dailyBtn").onclick=()=>startDaily(today);
-  const grid=$("levelGrid");grid.innerHTML="";
-  let next=0;while(next<NL&&done[next+1])next++;
-  let nDone=0,stars=0;for(let i=1;i<=NL;i++)if(done[i]){nDone++;stars+=done[i].stars}
-  $("lvNote").textContent=`${nDone} of ${NL} · ${stars} ★`;
-  for(let i=0;i<NL;i++){const r=done[i+1],b=document.createElement("button");b.className="lv"+(r?" done":"")+(i===next?" next":"");
-    b.disabled=!r&&i>next+1;b.innerHTML=`<b>${i+1}</b><span class="st">${r?starTxt(r.stars):""}</span>`;b.onclick=()=>startLevel({n:i+1});grid.append(b)}
+  $("dailyBtn").onclick=()=>{const b=$("dailyBtn");b.disabled=true;b.textContent="Plotting today's orbit…";getMade("d",today,()=>startLevel({daily:today}))};
+  getMade("d",today);
+  for(const b of document.querySelectorAll(".tabs button"))b.classList.toggle("on",b.dataset.m===tab);
+  $("modeLv").hidden=tab!=="lv";$("modeSr").hidden=tab!=="sr";$("modeVoy").hidden=tab!=="voy";
+  // levels: classic 1-30, deep space 31-60 (opens once 25 Classic levels are done)
+  let st=0,nd=0;for(let i=1;i<=NL;i++)if(done[i]){nd++;st+=done[i].stars}
+  $("lvNote").textContent=`${nd} of ${NL} · ${st} ★`;
+  gridOf($("gridClassic"),CLASSIC,0,done,n=>startLevel({n}));
+  const deepOpen=Object.keys(done).filter(k=>+k<=CLASSIC).length>=25;
+  gridOf($("gridDeep"),NL-CLASSIC,CLASSIC,done,n=>startLevel({n}));
+  if(!deepOpen)for(const b of $("gridDeep").children)b.disabled=true;
+  $("deepNote").textContent=deepOpen?"Crowded systems, black holes and wormholes. The way in is never straight.":"Opens when you've finished 25 Classic levels.";
+  // star run
+  const sr=getSr();let ss=0,sn=0;for(let i=1;i<=NS;i++)if(sr[i]){sn++;ss+=sr[i].stars}
+  $("srNote").textContent=`${sn} of ${NS} · ${ss} ★`;
+  gridOf($("gridSr"),NS,0,sr,n=>startLevel({sr:n}));
+  // voyage
+  const v=getVoy();
+  $("voyBody").innerHTML=`<div class="row spread"><span class="label">Best: ${v.best} system${v.best===1?"":"s"}</span><span class="label">${v.runs} voyage${v.runs===1?"":"s"}</span></div>
+    ${v.run?`<h2>System ${v.run.k} · ${v.run.left} shot${v.run.left===1?"":"s"} left</h2>`:""}
+    <div class="row"><button class="btn pri" id="voyGo">${v.run?"Carry on":"Set off"}</button>${v.run?`<button class="btn" id="voyNew">Start again</button>`:""}</div>`;
+  $("voyGo").onclick=()=>startVoyage(false);
+  if(v.run){getMade("v",v.run.k);$("voyNew").onclick=()=>{if(confirm("Give up this voyage and start again from system 1?"))startVoyage(true)}}
+  else getMade("v",1);
 }
-const dailyCache={};
-function startDaily(day){
-  if(dailyCache[day]){startLevel({daily:day});return}
-  const b=$("dailyBtn");b.disabled=true;b.textContent="Plotting today's orbit…";
-  setTimeout(()=>{dailyCache[day]=dailyLevel(day);startLevel({daily:day})},30);
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.m;saveJSON("gw.tab",tab);renderMenu()});
+function startVoyage(fresh){
+  const v=getVoy();
+  if(fresh&&v.run){v.runs++;v.run=null}
+  if(!v.run)v.run={k:1,left:VOY_START};
+  saveJSON("gw.voyage",v);
+  const b=$("voyGo");if(b){b.disabled=true;b.textContent="Plotting a course…"}
+  getMade("v",v.run.k,()=>startLevel({voy:v.run.k}));
 }
 
 /* ================= play ================= */
 const FLY_SPEED=1.4, ARROW=110, PREVIEW=1;
-const COLS=["#FF8B5E","#FFC65A","#6E8BFF","#4FD1C5","#C08BFF","#F2E9D8","#7ED957"];
+const COLS=["#FF8B5E","#FFC65A","#6E8BFF","#4FD1C5","#C08BFF","#F2E9D8","#7ED957"],WCOLS=["#C08BFF","#4FD1C5","#FFC65A"];
 let S=null;
+const levelOf=src=>src.daily!=null?made["d"+src.daily]:src.voy!=null?made["v"+src.voy]:src.sr!=null?STARRUN[src.sr-1]:LEVELS[src.n-1];
 function startLevel(src){
-  const L=src.daily!=null?dailyCache[src.daily]:LEVELS[src.n-1];
+  const L=levelOf(src);
   if(!L){toMenu();return}
-  const B=bounds(L),ang=Math.round(Math.atan2(-(L.t[1]-L.s[1]),L.t[0]-L.s[0])/Math.PI*1800);
+  const B=bounds(L),ang=Math.round(Math.atan2(-(L.t[1]-L.s[1]),L.t[0]-L.s[0])/Math.PI*1800),seed=src.n||src.sr||src.daily||src.voy||0;
   S={src,L,B,a:(ang+3600)%3600,pw:60,shots:0,trails:[],fl:null,done:false,map:false,fx:[],prev:null,
-     cam:{x:L.s[0],y:L.s[1],z:0},hold:0,col:L.p.map((p,i)=>COLS[(i*3+(src.n||src.daily||0))%COLS.length])};
-  $("pTitle").textContent=src.daily!=null?`Daily orbit #${src.daily}`:`${src.n}. ${L.n}`;
+     cam:{x:L.s[0],y:L.s[1],z:0},hold:0,col:L.p.map((p,i)=>COLS[(i*3+seed)%COLS.length])};
+  $("pTitle").textContent=src.daily!=null?`Daily orbit #${src.daily}`:src.voy!=null?`Voyage · system ${src.voy}`:src.sr!=null?`Star Run ${src.sr}. ${L.n}`:`${src.n}. ${L.n}`;
   $("ov").hidden=true;$("toast").style.opacity=0;$("mapBtn").classList.remove("on");
   show("play");hud();
+  if(L.c&&L.c.length)toast(`Collect ${L.c.length===1?"the star":"all "+L.c.length+" stars"} in one shot, then reach the target`,2600);
 }
 function toMenu(){S=null;$("ov").hidden=true;show("menu")}
+function record(){const s=S.src;return s.daily!=null?getDaily()[s.daily]:s.sr!=null?getSr()[s.sr]:s.n!=null?getLv()[s.n]:null}
 function hud(){
   if(!S)return;
   const deg=(S.a/10).toFixed(1).padStart(5,"0");
   $("angRead").innerHTML=`${deg}°<small>Angle</small>`;$("pwRead").innerHTML=`${S.pw}%<small>Power</small>`;
-  const best=S.src.daily!=null?getDaily()[S.src.daily]:getLv()[S.src.n];
-  $("pSub").textContent=(S.done?`Done in ${S.shots}`:`Shot ${S.shots+1}`)+(best?` · best ${best.shots} ${starTxt(best.stars)}`:" · 1 shot for ★★★");
-  const fl=!!S.fl;$("goBtn").textContent=fl?"STOP":"LAUNCH";$("goBtn").classList.toggle("stop",fl);$("goBtn").disabled=S.done&&!fl;
-  for(const id of ["angL","angR","pwM","pwP"])$(id).disabled=fl||S.done;
+  if(S.src.voy!=null){const v=getVoy(),left=v.run?v.run.left:0;$("pSub").textContent=S.done?`System cleared in ${S.shots}`:`${left} shot${left===1?"":"s"} left · 1 shot earns +${voyBonus(1)}`}
+  else{const best=record();$("pSub").textContent=(S.done?`Done in ${S.shots}`:`Shot ${S.shots+1}`)+(best?` · best ${best.shots} ${starTxt(best.stars)}`:" · 1 shot for ★★★")}
+  const fl=!!S.fl;$("goBtn").textContent=fl?"STOP":"LAUNCH";$("goBtn").classList.toggle("stop",fl);$("goBtn").disabled=(S.done||S.over)&&!fl;
+  for(const id of ["angL","angR","pwM","pwP"])$(id).disabled=fl||S.done||S.over;
   S.prev=null;
 }
 let toastT=0;
 function toast(msg,ms=1600){const t=$("toast");t.textContent=msg;t.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>t.style.opacity=0,ms)}
-function setAim(a,pw){if(!S||S.fl||S.done)return;S.a=((Math.round(a)%3600)+3600)%3600;S.pw=Math.max(5,Math.min(100,Math.round(pw)));hud()}
+function setAim(a,pw){if(!S||S.fl||S.done||S.over)return;S.a=((Math.round(a)%3600)+3600)%3600;S.pw=Math.max(5,Math.min(100,Math.round(pw)));hud()}
 function launch(){
-  if(!S||S.done)return;
+  if(!S||S.done||S.over)return;
   if(S.fl){endFlight(true);return}
+  if(S.src.voy!=null){const v=getVoy();if(!v.run||v.run.left<=0)return;v.run.left--;saveJSON("gw.voyage",v)}
   const v=aimVel(S.a,S.pw),res=fly(S.L,v[0],v[1],true);
-  S.shots++;S.fl={res,t:0,end:0};S.hold=0;hud();
+  S.shots++;S.fl={res,t:0,got:0};S.hold=0;hud();
 }
 function endFlight(stopped){
   const f=S.fl,res=f.res;
-  if(stopped){const n=Math.min(res.path.length/2-1,Math.floor(f.t*60));res.path=res.path.slice(0,n*2+2);res.r="stop"}
-  S.trails.push({path:res.path,r:res.r});if(S.trails.length>2)S.trails.shift();
+  if(stopped){const n=Math.min(res.path.length/2-1,Math.floor(f.t*60));res.path=res.path.slice(0,n*2+2);res.jumps=res.jumps.filter(j=>j<=n);res.r="stop"}
+  S.trails.push({path:res.path,jumps:res.jumps,r:res.r});if(S.trails.length>2)S.trails.shift();
   const end=[res.path[res.path.length-2],res.path[res.path.length-1]];
   S.fl=null;
   if(res.r==="hit"){
     S.done=true;S.fx.push({k:"win",x:S.L.t[0],y:S.L.t[1],t:0});
-    const stars=starsFor(S.shots),rec={stars,shots:S.shots,at:Date.now()};
-    if(S.src.daily!=null){const d=getDaily(),o=d[S.src.daily];if(!o||o.shots>S.shots)d[S.src.daily]=rec;else o.at=rec.at;saveJSON("gw.daily",d)}
-    else{const d=getLv(),o=d[S.src.n];if(!o||o.shots>S.shots)d[S.src.n]=rec;saveJSON("gw.levels",d)}
+    const stars=starsFor(S.shots),rec={stars,shots:S.shots,at:Date.now()},src=S.src;
+    const keep=(key,id)=>{const d=loadJSON(key,{}),o=d[id];if(!o||o.shots>S.shots)d[id]=rec;else o.at=rec.at;saveJSON(key,d)};
+    if(src.daily!=null)keep("gw.daily",src.daily);else if(src.sr!=null)keep("gw.stars",src.sr);else if(src.n!=null)keep("gw.levels",src.n);
+    else{const v=getVoy();if(v.run){v.run.left+=voyBonus(S.shots);v.run.k=src.voy+1;v.best=Math.max(v.best,src.voy);saveJSON("gw.voyage",v);getMade("v",v.run.k)}}
     hud();setTimeout(()=>{if(S&&S.done)winOverlay(stars)},900);
   }else{
     if(res.r==="crash")S.fx.push({k:"boom",x:end[0],y:end[1],t:0});
-    toast(res.r==="crash"?(res.at>=S.L.p.length?"Hit a moon":"Crashed into a planet"):res.r==="lost"?"Lost in space":res.r==="time"?"Stuck in orbit":"Shot stopped");
-    S.hold=0.9;S.holdAt=end;hud();
+    const nc=(S.L.c||[]).length,got=res.cs?res.cs.filter(x=>x>=0).length:0;
+    toast(res.r==="crash"?(res.at>=S.L.p.length?"Hit a moon":isHole(S.L.p[res.at])?"Swallowed by a black hole":"Crashed into a planet"):res.r==="lost"?"Lost in space":res.r==="time"?"Stuck in orbit":"Shot stopped",nc?1400:1600);
+    if(nc&&res.r!=="stop")setTimeout(()=>{if(S&&!S.fl)toast(`${got} of ${nc} star${nc===1?"":"s"} collected`,1400)},1450);
+    S.hold=0.9;S.holdAt=end;
+    if(S.src.voy!=null){const v=getVoy();if(v.run&&v.run.left<=0){S.over=true;v.best=Math.max(v.best,v.run.k-1);v.runs++;const k=v.run.k;v.run=null;saveJSON("gw.voyage",v);setTimeout(()=>voyOver(k,v.best),1200)}}
+    hud();
   }
 }
+function voyOver(k,best){
+  $("ovc").innerHTML=`<h3>Out of shots</h3><p>You cleared ${k-1} system${k===2?"":"s"} on this voyage.${k-1>=best&&k>1?" That's your best yet!":` Your best is ${best}.`}</p>
+    <div class="acts"><button class="btn pri" id="ovAgain">New voyage</button><button class="btn" id="ovMenu">Back</button></div>`;
+  $("ov").hidden=false;$("ovAgain").onclick=()=>{$("ov").hidden=true;startVoyage(true)};$("ovMenu").onclick=toMenu;
+}
 function winOverlay(stars){
-  const d=S.src.daily!=null,next=!d&&S.src.n<NL;
+  const s=S.src,d=s.daily!=null;
+  if(s.voy!=null){const v=getVoy(),b=voyBonus(S.shots);
+    $("ovc").innerHTML=`<h3>System ${s.voy} cleared</h3><p>${S.shots} shot${S.shots===1?"":"s"}.${b?` Bonus: +${b} shot${b===1?"":"s"}.`:""} You have ${v.run?v.run.left:0} shot${v.run&&v.run.left===1?"":"s"} for system ${s.voy+1}.</p>
+      <div class="acts"><button class="btn pri" id="ovNext">Next system</button><button class="btn" id="ovMenu">Back</button></div>`;
+    $("ov").hidden=false;$("ovNext").onclick=()=>{const n=$("ovNext");n.disabled=true;n.textContent="Plotting a course…";getMade("v",s.voy+1,()=>startLevel({voy:s.voy+1}))};$("ovMenu").onclick=toMenu;return}
+  const nextSrc=s.n!=null&&s.n<NL?{n:s.n+1}:s.sr!=null&&s.sr<NS?{sr:s.sr+1}:null;
+  const what=d?`Daily orbit #${s.daily}`:s.sr!=null?`Star Run ${s.sr}`:`Level ${s.n}`;
   $("ovc").innerHTML=`<div class="stars">${starTxt(stars)}</div><h3>${S.shots===1?"Hole in one!":"Target reached"}</h3>
-    <p>${d?`Daily orbit #${S.src.daily}`:`Level ${S.src.n}`} in ${S.shots} shot${S.shots===1?"":"s"}.${stars<3?" Do it in one shot for three stars.":""}</p>
-    <div class="acts">${next?`<button class="btn pri" id="ovNext">Next level</button>`:""}${d?`<button class="btn pri" id="ovShare">Share result</button>`:""}
+    <p>${what} in ${S.shots} shot${S.shots===1?"":"s"}.${stars<3?" Do it in one shot for three stars.":""}</p>
+    <div class="acts">${nextSrc?`<button class="btn pri" id="ovNext">Next level</button>`:""}${d?`<button class="btn pri" id="ovShare">Share result</button>`:""}
     <button class="btn" id="ovAgain">Play again</button><button class="btn" id="ovMenu">${d?"Back":"All levels"}</button></div>`;
   $("ov").hidden=false;
-  if(next)$("ovNext").onclick=()=>startLevel({n:S.src.n+1});
-  if(d)$("ovShare").onclick=()=>{const txt=`Gravity Well daily #${S.src.daily}: ${S.shots} shot${S.shots===1?"":"s"} ${starTxt(stars)}`;
+  if(nextSrc)$("ovNext").onclick=()=>startLevel(nextSrc);
+  if(d)$("ovShare").onclick=()=>{const txt=`Gravity Well daily #${s.daily}: ${S.shots} shot${S.shots===1?"":"s"} ${starTxt(stars)}`;
     if(navigator.share)navigator.share({text:txt}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Copied"),()=>{})};
   $("ovAgain").onclick=()=>startLevel(S.src);$("ovMenu").onclick=toMenu;
 }
@@ -356,7 +594,7 @@ let W=0,H=0,DPR=1;
 function resize(){const r=stage.getBoundingClientRect();DPR=Math.min(3,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR)}
 window.addEventListener("resize",resize);
 let drag=null;
-stage.addEventListener("pointerdown",e=>{if(!S||S.fl||S.done)return;stage.setPointerCapture(e.pointerId);
+stage.addEventListener("pointerdown",e=>{if(!S||S.fl||S.done||S.over)return;stage.setPointerCapture(e.pointerId);
   const r=S.a/1800*Math.PI,len=S.pw/100*ARROW;drag={id:e.pointerId,x:e.clientX,y:e.clientY,tx:Math.cos(r)*len,ty:-Math.sin(r)*len}});
 stage.addEventListener("pointermove",e=>{if(!drag||e.pointerId!==drag.id)return;
   const k=.6;drag.tx+=(e.clientX-drag.x)*k;drag.ty+=(e.clientY-drag.y)*k;drag.x=e.clientX;drag.y=e.clientY;
@@ -375,7 +613,7 @@ repeater("angL",s=>S&&setAim(S.a+s,S.pw));repeater("angR",s=>S&&setAim(S.a-s,S.p
 repeater("pwM",s=>S&&setAim(S.a,S.pw-Math.min(s,5)));repeater("pwP",s=>S&&setAim(S.a,S.pw+Math.min(s,5)));
 $("goBtn").onclick=launch;
 $("backBtn").onclick=toMenu;
-$("restartBtn").onclick=()=>{if(S)startLevel(S.src)};
+$("restartBtn").onclick=()=>{if(S&&!S.over&&!S.fl)startLevel(S.src)};
 $("mapBtn").onclick=()=>{if(!S)return;S.map=!S.map;$("mapBtn").classList.toggle("on",S.map)};
 window.addEventListener("keydown",e=>{if(view!=="play"||!S)return;
   const s=e.shiftKey?10:1;
@@ -393,12 +631,15 @@ function frame(now){
 }
 function ballPos(){
   if(S.fl){const p=S.fl.res.path,n=p.length/2-1,f=Math.min(n,S.fl.t*60),i=Math.floor(f),u=f-i,j=Math.min(n,i+1);
+    if(S.fl.res.jumps.includes(j))return [p[i*2],p[i*2+1]];
     return [p[i*2]+(p[j*2]-p[i*2])*u,p[i*2+1]+(p[j*2+1]-p[i*2+1])*u]}
   if(S.hold>0)return S.holdAt;
   return S.L.s;
 }
 function step(dt){
-  if(S.fl){S.fl.t+=dt*FLY_SPEED;if(S.fl.t>=S.fl.res.t)endFlight(false)}
+  if(S.fl){S.fl.t+=dt*FLY_SPEED;
+    const cs=S.fl.res.cs||[];cs.forEach((t,k)=>{if(t>=0&&t<=S.fl.t&&!(S.fl.got>>k&1)){S.fl.got|=1<<k;S.fx.push({k:"star",x:S.L.c[k][0],y:S.L.c[k][1],t:0})}});
+    if(S.fl.t>=S.fl.res.t)endFlight(false)}
   else if(S.hold>0)S.hold-=dt;
   for(const f of S.fx)f.t+=dt;S.fx=S.fx.filter(f=>f.t<(f.k==="win"?2.4:.9));
   // camera
@@ -410,8 +651,18 @@ function step(dt){
   const k=1-Math.exp(-dt*(S.fl?6:4));c.x+=(tx-c.x)*k;c.y+=(ty-c.y)*k;c.z*=Math.pow(tz/c.z,k);
 }
 const sx=x=>W/2+(x-S.cam.x)*S.cam.z, sy=y=>H/2+(y-S.cam.y)*S.cam.z;
+function starShape(g,X,Y,R){g.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k&1?R*.45:R;g.lineTo(X+Math.cos(a)*r,Y+Math.sin(a)*r)}g.closePath()}
+function edgeMark(g,x,y,col,label){
+  const X=sx(x),Y=sy(y),m=28;if(X>=m&&X<=W-m&&Y>=m&&Y<=H-m)return;
+  const cx=W/2,cy=H/2,dx=X-cx,dy=Y-cy,s=Math.min((W/2-m)/Math.abs(dx||1e-9),(H/2-m)/Math.abs(dy||1e-9)),ix=cx+dx*s,iy=cy+dy*s,a=Math.atan2(dy,dx),big=!!label;
+  g.fillStyle=col;g.beginPath();g.moveTo(ix+Math.cos(a)*(big?12:8),iy+Math.sin(a)*(big?12:8));g.lineTo(ix+Math.cos(a+2.4)*(big?10:7),iy+Math.sin(a+2.4)*(big?10:7));g.lineTo(ix+Math.cos(a-2.4)*(big?10:7),iy+Math.sin(a-2.4)*(big?10:7));g.fill();
+  if(!label)return;
+  g.font="600 12px "+getComputedStyle(document.body).fontFamily;g.textAlign="center";g.textBaseline="middle";
+  const lx=ix-Math.cos(a)*24,ly=iy-Math.sin(a)*16;g.fillStyle="rgba(5,7,13,.8)";const tw=g.measureText(label).width+10;g.fillRect(lx-tw/2,ly-9,tw,18);
+  g.fillStyle=col;g.fillText(label,lx,ly)}
 function draw(){
-  const g=ctx,c=S.cam,z=c.z,L=S.L,t=S.fl?S.fl.t:0;
+  const g=ctx,c=S.cam,z=c.z,L=S.L,t=S.fl?S.fl.t:0,now=performance.now()/1000;
+  const C=L.c||[],got=S.fl?S.fl.got:0,open=got===(1<<C.length)-1;
   g.setTransform(DPR,0,0,DPR,0,0);g.fillStyle="#05070D";g.fillRect(0,0,W,H);
   // distant stars (slight parallax)
   g.fillStyle="#fff";
@@ -430,7 +681,7 @@ function draw(){
   g.strokeRect(sx(S.B[0]-MARGIN),sy(S.B[1]-MARGIN),(S.B[2]-S.B[0]+MARGIN*2)*z,(S.B[3]-S.B[1]+MARGIN*2)*z);
   // gravity rings
   g.setLineDash([3,5]);
-  L.p.forEach((p,i)=>{const m=Math.abs(p[3]);g.strokeStyle=p[3]<0?"rgba(255,79,163,.32)":"rgba(170,190,255,.22)";
+  L.p.forEach((p,i)=>{const m=Math.abs(p[3]);g.strokeStyle=p[3]<0?"rgba(255,79,163,.32)":isHole(p)?"rgba(255,170,90,.3)":"rgba(170,190,255,.22)";
     for(const a of [120,40]){const R=Math.sqrt(m/a);if(R>p[2]+6){g.beginPath();g.arc(sx(p[0]),sy(p[1]),R*z,0,7);g.stroke()}}});
   // moon orbits
   g.setLineDash([2,4]);g.strokeStyle="rgba(200,210,230,.25)";
@@ -439,28 +690,46 @@ function draw(){
   // trails
   S.trails.forEach((tr,i)=>{const fresh=i===S.trails.length-1;
     g.strokeStyle=tr.r==="hit"?"#7CFFB2":tr.r==="crash"?"#FF8B5E":"#9AA8C4";g.globalAlpha=fresh?.6:.22;g.lineWidth=fresh?1.6:1.2;
-    path(tr.path,tr.path.length/2)});
+    path(tr.path,tr.path.length/2,tr.jumps)});
   g.globalAlpha=1;
-  // target
-  {const X=sx(L.t[0]),Y=sy(L.t[1]),R=Math.max(4,L.t[2]*z),now=performance.now()/1000;
-    g.strokeStyle="#7CFFB2";g.lineWidth=2;g.beginPath();g.arc(X,Y,R,0,7);g.stroke();
+  // wormholes: both ends of a pair share a colour
+  (L.w||[]).forEach((w,k)=>{const col=WCOLS[k%WCOLS.length];
+    for(let e=0;e<4;e+=2){const X=sx(w[e]),Y=sy(w[e+1]),R=Math.max(5,WR*z);
+      g.fillStyle="#0A0614";g.beginPath();g.arc(X,Y,R,0,7);g.fill();g.strokeStyle=col;g.lineWidth=2;g.stroke();
+      g.lineWidth=1.2;for(let j=0;j<3;j++){const a=now*(e?-2:2)+j*2.09;g.beginPath();g.arc(X,Y,R*.62,a,a+1.3);g.stroke()}
+      g.beginPath();g.arc(X,Y,R*.25,0,7);g.stroke()}});
+  // target (dimmed while stars are still to collect)
+  {const X=sx(L.t[0]),Y=sy(L.t[1]),R=Math.max(4,L.t[2]*z);
+    g.globalAlpha=open?1:.45;
+    g.strokeStyle="#7CFFB2";g.lineWidth=2;g.setLineDash(open?[]:[5,4]);g.beginPath();g.arc(X,Y,R,0,7);g.stroke();g.setLineDash([]);
     g.fillStyle="rgba(124,255,178,.12)";g.fill();
     g.lineWidth=1;g.setLineDash([4,6]);g.lineDashOffset=-now*10;g.beginPath();g.arc(X,Y,R+8,0,7);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
-    g.beginPath();g.moveTo(X-R*.45,Y);g.lineTo(X+R*.45,Y);g.moveTo(X,Y-R*.45);g.lineTo(X,Y+R*.45);g.stroke()}
+    if(open){g.beginPath();g.moveTo(X-R*.45,Y);g.lineTo(X+R*.45,Y);g.moveTo(X,Y-R*.45);g.lineTo(X,Y+R*.45);g.stroke()}
+    else{g.fillStyle="#FFD25E";starShape(g,X,Y,R*.42);g.fill()}
+    g.globalAlpha=1}
+  // stars to collect
+  C.forEach((s,k)=>{const X=sx(s[0]),Y=sy(s[1]),R=Math.max(6,CR*z),has=got>>k&1;
+    if(has){g.strokeStyle="rgba(255,210,94,.35)";g.lineWidth=1;starShape(g,X,Y,R);g.stroke();return}
+    g.fillStyle="#FFD25E";starShape(g,X,Y,R*(1+.06*Math.sin(now*4+k)));g.fill();
+    g.strokeStyle="rgba(255,210,94,.4)";g.lineWidth=1;g.beginPath();g.arc(X,Y,R+6,0,7);g.stroke()});
   // start pad
   {const X=sx(L.s[0]),Y=sy(L.s[1]);g.strokeStyle="rgba(92,200,255,.55)";g.lineWidth=1;g.beginPath();g.arc(X,Y,14,0,7);g.stroke();
     g.beginPath();g.moveTo(X-20,Y);g.lineTo(X-16,Y);g.moveTo(X+16,Y);g.lineTo(X+20,Y);g.moveTo(X,Y-20);g.lineTo(X,Y-16);g.moveTo(X,Y+16);g.lineTo(X,Y+20);g.stroke()}
-  // planets and moons
+  // planets, black holes and moons
   bodies(L,t).forEach((b,i)=>{const X=sx(b[0]),Y=sy(b[1]),R=Math.max(2,b[2]*z),moon=i>=L.p.length;
     if(b[3]<0){g.fillStyle="#170A15";g.beginPath();g.arc(X,Y,R,0,7);g.fill();g.strokeStyle="#FF4FA3";g.lineWidth=2;g.stroke();
       g.lineWidth=1.5;g.beginPath();for(let k=0;k<12;k++){const a=k/12*Math.PI*2;g.moveTo(X+Math.cos(a)*(R+4),Y+Math.sin(a)*(R+4));g.lineTo(X+Math.cos(a)*(R+9),Y+Math.sin(a)*(R+9))}g.stroke();
       g.beginPath();g.arc(X,Y,R*.45,0,7);g.stroke();return}
+    if(!moon&&isHole(b)){
+      g.strokeStyle="rgba(255,170,90,.55)";g.lineWidth=1.5;g.setLineDash([6,5]);g.lineDashOffset=-now*20;g.beginPath();g.arc(X,Y,R*1.9,0,7);g.stroke();
+      g.strokeStyle="rgba(255,120,60,.35)";g.lineDashOffset=now*14;g.beginPath();g.arc(X,Y,R*2.6,0,7);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
+      g.fillStyle="#000";g.beginPath();g.arc(X,Y,R,0,7);g.fill();g.strokeStyle="#FFD9A8";g.lineWidth=1.5;g.stroke();return}
     const col=moon?"#B9C2D3":S.col[i];
     g.fillStyle=col;g.beginPath();g.arc(X,Y,R,0,7);g.fill();
     g.save();g.clip();g.fillStyle="rgba(0,0,0,.28)";g.beginPath();g.arc(X+R*.35,Y+R*.35,R,0,7);g.fill();g.restore();
     g.strokeStyle="rgba(255,255,255,.55)";g.lineWidth=1;g.beginPath();g.arc(X,Y,R+.5,0,7);g.stroke()});
   // aim arrow and preview
-  if(!S.fl&&!S.done&&S.hold<=0){
+  if(!S.fl&&!S.done&&!S.over&&S.hold<=0){
     const X=sx(L.s[0]),Y=sy(L.s[1]),r=S.a/1800*Math.PI,len=12+S.pw/100*ARROW,ex=X+Math.cos(r)*len,ey=Y-Math.sin(r)*len;
     if(!S.prev){const v=aimVel(S.a,S.pw);S.prev=fly(L,v[0],v[1],true,PREVIEW).path}
     g.fillStyle="rgba(234,240,250,.7)";const P=S.prev;for(let i=4;i<P.length;i+=6){g.beginPath();g.arc(sx(P[i]),sy(P[i+1]),1.4,0,7);g.fill()}
@@ -468,13 +737,13 @@ function draw(){
     g.fillStyle="#5CC8FF";g.beginPath();g.moveTo(ex+Math.cos(r)*9,ey-Math.sin(r)*9);
     g.lineTo(ex+Math.cos(r+2.5)*8,ey-Math.sin(r+2.5)*8);g.lineTo(ex+Math.cos(r-2.5)*8,ey-Math.sin(r-2.5)*8);g.fill();
     g.strokeStyle="rgba(92,200,255,.25)";g.lineWidth=1;g.beginPath();g.arc(X,Y,12+ARROW,0,7);g.stroke()}
-  // flight path so far
   // flight so far: a faint line for the whole path, and a glowing tail behind the ball that fades out over about a second
-  if(S.fl){const P=S.fl.res.path,n=Math.min(P.length/2,Math.floor(S.fl.t*60)+1),b=ballPos(),TAIL=60;
-    g.strokeStyle="#EAF0FA";g.globalAlpha=.2;g.lineWidth=1.2;path(P,n);
+  if(S.fl){const P=S.fl.res.path,J=S.fl.res.jumps,n=Math.min(P.length/2,Math.floor(S.fl.t*60)+1),b=ballPos(),TAIL=60;
+    g.strokeStyle="#EAF0FA";g.globalAlpha=.2;g.lineWidth=1.2;path(P,n,J);
     g.lineCap="round";g.strokeStyle="#5CC8FF";
     let px=b[0],py=b[1];
     for(let k=0;k<TAIL&&n-1-k>=0;k++){const i=n-1-k,u=1-k/TAIL;
+      if(J.includes(i+1)&&k>0)break;
       g.globalAlpha=u*u*.9;g.lineWidth=1+u*Math.max(2,BALL*z*1.2);
       g.beginPath();g.moveTo(sx(px),sy(py));g.lineTo(sx(P[i*2]),sy(P[i*2+1]));g.stroke();px=P[i*2];py=P[i*2+1]}
     g.globalAlpha=1;g.lineCap="butt"}
@@ -485,15 +754,12 @@ function draw(){
   for(const f of S.fx){const X=sx(f.x),Y=sy(f.y);
     if(f.k==="boom"){const u=f.t/.9;g.strokeStyle=`rgba(255,139,94,${1-u})`;g.lineWidth=1.5;g.beginPath();
       for(let k=0;k<10;k++){const a=k/10*Math.PI*2+.3,r0=6+u*30,r1=r0+6;g.moveTo(X+Math.cos(a)*r0,Y+Math.sin(a)*r0);g.lineTo(X+Math.cos(a)*r1,Y+Math.sin(a)*r1)}g.stroke()}
+    else if(f.k==="star"){const u=f.t/.9;g.strokeStyle=`rgba(255,210,94,${1-u})`;g.lineWidth=1.5;g.beginPath();g.arc(X,Y,CR*z+u*40,0,7);g.stroke()}
     else for(let k=0;k<3;k++){const u=(f.t-k*.3)/1.6;if(u<0||u>1)continue;g.strokeStyle=`rgba(124,255,178,${1-u})`;g.lineWidth=1.5;g.beginPath();g.arc(X,Y,L.t[2]*z+u*90,0,7);g.stroke()}}
-  // target indicator at the screen edge
-  {const X=sx(L.t[0]),Y=sy(L.t[1]),m=28;
-    if(X<m||X>W-m||Y<m||Y>H-m){const cx=W/2,cy=H/2,dx=X-cx,dy=Y-cy,s=Math.min((W/2-m)/Math.abs(dx||1e-9),(H/2-m)/Math.abs(dy||1e-9)),ix=cx+dx*s,iy=cy+dy*s,a=Math.atan2(dy,dx);
-      g.fillStyle="#7CFFB2";g.beginPath();g.moveTo(ix+Math.cos(a)*12,iy+Math.sin(a)*12);g.lineTo(ix+Math.cos(a+2.4)*10,iy+Math.sin(a+2.4)*10);g.lineTo(ix+Math.cos(a-2.4)*10,iy+Math.sin(a-2.4)*10);g.fill();
-      const p=ballPos(),d=Math.hypot(L.t[0]-p[0],L.t[1]-p[1]);g.font="600 12px "+getComputedStyle(document.body).fontFamily;g.textAlign="center";g.textBaseline="middle";
-      const lx=ix-Math.cos(a)*24,ly=iy-Math.sin(a)*16;g.fillStyle="rgba(5,7,13,.8)";const tw=g.measureText(fmt(d)+" km").width+10;g.fillRect(lx-tw/2,ly-9,tw,18);
-      g.fillStyle="#7CFFB2";g.fillText(fmt(d)+" km",lx,ly)}}
-  function path(P,n){if(n<2)return;g.beginPath();g.moveTo(sx(P[0]),sy(P[1]));for(let i=1;i<n;i++)g.lineTo(sx(P[i*2]),sy(P[i*2+1]));g.stroke()}
+  // markers at the screen edge: stars still to collect, and the target with its distance
+  C.forEach((s,k)=>{if(!(got>>k&1))edgeMark(g,s[0],s[1],"#FFD25E")});
+  {const p=ballPos();edgeMark(g,L.t[0],L.t[1],"#7CFFB2",fmt(Math.hypot(L.t[0]-p[0],L.t[1]-p[1]))+" km")}
+  function path(P,n,J){if(n<2)return;g.beginPath();g.moveTo(sx(P[0]),sy(P[1]));for(let i=1;i<n;i++){if(J&&J.includes(i))g.moveTo(sx(P[i*2]),sy(P[i*2+1]));else g.lineTo(sx(P[i*2]),sy(P[i*2+1]))}g.stroke()}
 }
 requestAnimationFrame(frame);
 window.SG_BACK=()=>{if(!$("ov").hidden){toMenu();return true}if(view==="play"){toMenu();return true}return false};

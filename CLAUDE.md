@@ -176,13 +176,19 @@ throwaway save (`slot = -1`, `LV` set) and never touches the free-play slots.
 ### Gravity Well (`games/gravity-well`)
 
 A gravity golf puzzle: aim (angle in tenths of a degree, power 1-100%), launch, and every planet pulls the ball (acceleration
-`m/d²`, negative `m` pushes) towards a target that is usually off screen. Physics, solver and level generator sit between
-`/*CORE-START*/` and `/*CORE-END*/` (fixed step `DT`, the same flight on every phone). Levels live in the
-`<script type="application/json" id="levels">` block: `n` name, `s` start, `t` target `[x,y,r]`, `p` planets `[x,y,r,m]`,
-optional `o` moons `[planet, distance, r, m, speed, phase]` (they restart from their phase on every shot). The levels were
-made with `generate` and picked by how many aims hit; `tools/gravity-well-check.js` (run by build.py) checks each can be won.
-**Append** levels only: progress (`gw.levels`) is keyed by level number. The daily orbit (`gw.daily`, day 1 is 4 November
-2026) is generated from the day by `dailyLevel`: changing it, `generate` or the physics changes every future daily.
+`m/d²`, negative `m` pushes) towards a target that is usually off screen. Physics, solver and level generators sit between
+`/*CORE-START*/` and `/*CORE-END*/` (fixed step `DT`, the same flight on every phone). A level: `n` name, `s` start, `t` target
+`[x,y,r]`, `p` planets `[x,y,r,m]` (small and very heavy ones are black holes, `isHole`), optional `o` moons `[planet, distance,
+r, m, speed, phase]` (they restart from their phase on every shot), `c` stars to collect before the target counts, `w` wormhole
+pairs `[x1,y1,x2,y2]`, `h` a known winning aim `[a, pw]`. Levels 1-30 (Classic, made with `generate`) and 31-60 (Deep Space)
+live in the `id="levels"` block; Star Run levels in `id="starrun"`. Deep Space, Star Run, the daily orbit from day 4 and Voyage
+systems come from `genField` + `findRoute`: a crowded field, then random aims until one winds a long way through it, the target
+(and stars) placed on that path, kept only if near-miss aims also win and no easy (little-turning) shot gets there.
+`tools/gravity-well-check.js` (run by build.py) checks every stored level's `h` still wins, and the first daily and voyage boards.
+**Append** levels only: progress is keyed by number (`gw.levels`, `gw.stars`). The daily orbit (`gw.daily`, day 1 is 4 November
+2026; days 1-3 use the old generator) and Voyage systems (`gw.voyage`: `best`, `runs`, `run: {k, left}`) are made on the phone
+(in a Web Worker) from their number: changing the physics, `genField`, `findRoute`, `dailyLevel` or `voyageLevel` changes them.
+`gw.tab` remembers the menu tab.
 
 ### Epoch Siege (`games/epoch-siege`)
 
