@@ -205,8 +205,14 @@ Rival lords (owners 2-4, wild creatures are owner 5) use the same rules plus `ai
 to the player and raid in growing waves). Rules, map maker and AI sit between `/*CORE-START*/` and `/*CORE-END*/` with no page
 dependencies, so a Node script can play whole games. Maps are made from `spec.seed`; campaign realms are `CAMPAIGN`
 (append only: progress `hd.progress.won` is keyed by realm number). The game in progress is `hd.game` (`saveWorld`:
-tile arrays as base64 plus units and lords; `loadWorld` must keep reading old saves). `window.HD` exposes the world for
-Playwright.
+tile arrays as base64 plus units and lords; `loadWorld` must keep reading old saves, so new arrays default to empty). `window.HD` exposes the world for
+Playwright. **Shapes**: `findFeats` turns 2x2 and 3x3 squares of one room into features (`FEATS[room][n-2]`: Big nest, Book stand,
+Sparring ring, Workbench, Great forge, ...) that change what the room does; creature needs can name them (`"f:5"` any Library
+feature, `"f:4:3"` a 3x3 Training feature). **Workshop**: blueprints `K.bp` (`{id,i,t:"t"|"d",k,st,p,at,by}`) are paid for when
+planned, made by Tinkers and idle diggers (`craftAdd`), then fetched from a Workshop tile and fitted by a digger. Traps (`W.trap`,
+`TRAPS`) and doors (`W.door`, `W.dhp`, `DOORS`) belong to the tile's owner and vanish if the tile is claimed. Doors block rivals'
+movement (`moveAlong` sets `u.blocked`; creatures smash them), while searches for one owner pass `bo` so its own doors are open.
+`ROOMS`, `TRAPS`, `DOORS` and `KINDS` are saved by index or key: append only.
 
 ### Adding a new game
 

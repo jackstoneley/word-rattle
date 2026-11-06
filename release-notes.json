@@ -205,6 +205,18 @@
         "Plant a flag to send your creatures to fight, or pick them up and drop them where you want them.",
         "Six realms to conquer, plus quick games against 1 to 3 rivals. Your game saves itself."
       ]
+    },
+    {
+      "id": 20,
+      "type": "features",
+      "headline": "Hollowdeep: room shapes, a Workshop, traps and doors",
+      "details": [
+        "Shapes matter: a 2×2 or 3×3 square of a room becomes something special, like a Book stand, a Vault, a Big nest, a Sparring ring or a Great forge. Tap a room to see what its shapes do.",
+        "Four new rooms: Workshop, Shrine, Guard room and Crypt. They bring Tinkers, healing Spirits and Skeletons who need no pay.",
+        "The Workshop makes doors (wood, iron, warded) and traps (spike pits, rolling boulders, flame vents, lightning runes and alarm bells). Plan them, and your diggers make and fit them.",
+        "Rival lords now build their own doors and traps, so bring something heavy.",
+        "Every room looks different now: beds, mushrooms, bookshelves, candles and bones vary from tile to tile."
+      ]
     }
   ]
 }
