@@ -264,6 +264,19 @@
         "Voyage: an endless run of systems, each harder, from a shared tank of 10 shots. A hole in one earns 3 more.",
         "From tomorrow the daily orbit is a crowded system too, and some days have stars to collect."
       ]
+    },
+    {
+      "id": 25,
+      "type": "features",
+      "headline": "Hollowdeep: spells, possession, prisoners, heroes and 15 realms",
+      "details": [
+        "Spells: Lightning and Possess from the start, and your Library researches Heal, Sight, Haste, Call to arms and Cave-in. Mana flows in faster the more floor you own.",
+        "Possess a creature and fight with it yourself, with a thumb stick and an attack button.",
+        "Build a Jail and beaten enemies are knocked out, not killed. Your diggers lock them up, and a Persuasion room wins them over to your side: heroes and wild beasts too.",
+        "Heroes now come down from the surface in waves, with a Dwarf digging the way and a Hero Champion at the end.",
+        "15 realms with three stars each, bigger maps, lava rivers, underground lakes, crystal caverns, natural tunnels, lost creatures to recruit, wild beasts and treasure hidden in the rock.",
+        "Diggers work together: up to three on each side of a rock. They claim floor in neat rows now."
+      ]
     }
   ]
 }

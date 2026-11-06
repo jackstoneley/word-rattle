@@ -237,6 +237,16 @@ planned, made by Tinkers and idle diggers (`craftAdd`), then fetched from a Work
 `TRAPS`) and doors (`W.door`, `W.dhp`, `DOORS`) belong to the tile's owner and vanish if the tile is claimed. Doors block rivals'
 movement (`moveAlong` sets `u.blocked`; creatures smash them), while searches for one owner pass `bo` so its own doors are open.
 `ROOMS`, `TRAPS`, `DOORS` and `KINDS` are saved by index or key: append only.
+**Land**: tiles also include `LAVA` (impassable), `WATER` (walkable at half speed, never claimed) and `STAIR` (heroes' way in);
+`spec.theme` (earth, fire, deep, crystal) picks the palette and how much lava or water `newWorld` makes. Treasure hides in rock
+(`W.treas`, paid out by `collapse(W,i,owner)`). Owner 6 is `HERO` (waves from `W.hero`, `spawnWave`, `heroThink`; Dwarves tunnel
+with `digRouteFrom`), owner 7 is `NEUTRAL` (lost creatures that join whoever's floor or creature reaches them). `foe(u,o)` is the one
+test for "can be fought". **Spells** (`SPELLS`, `castSpell`): mana `K.mana`, research `K.rp` from Library tiles and studying Hexers;
+a spell is known once `K.rp >= rp`. **Possession**: `W.poss {id,dx,dy,atk}` set by the page, run by `possessTick`; never saved.
+**Prisoners**: with a free Jail cell a beaten enemy gets `ko` instead of dying; diggers `drag` it to the Jail (`jail` = captor),
+then to the Persuasion room, where `pers` reaching 50 converts it. Diggers: up to `DIG_SIDE` (3) per side of a rock (`W.digN`,
+rebuilt each `recount`), and claims chain along lines (`chainClaim`). **Campaign**: 15 realms with `par` minutes and a third star
+`s3`; `hd.progress.won[n]` is `{time, at, stars:[3]}` (old entries without `stars` count as one star).
 
 ### Adding a new game
 
