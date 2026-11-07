@@ -713,6 +713,8 @@ $("nameIn").addEventListener("input",e=>setName(e.target.value));$("nameIn2").ad
 /* ================= home ================= */
 function renderDaily(){
   const box=$("dailyCard");box.innerHTML="";const today=dayNum(),seed=dailySeed(today),p=parseSeed(seed),h=getHist(seed);
+  /* for the home page's Today's puzzles: today's daily seed, by local date (done = that seed is in wr.history) */
+  {const d=new Date();saveJSON("wr.today",{day:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),seed})}
   const head=el("div","row spread");head.append(el("span","label",`Daily board · ${dayLabel(today)}`),el("span","label",fmtSeed(seed)));box.append(head);
   box.append(el("h2",null,h?"Today's done":"Today's board"));
   const ch=el("div","chips");[`${p.settings.size}×${p.settings.size}`,timeLabel(p.settings.time),p.settings.scoring==="letters"?(p.settings.pmask?"Power-ups":"Letter points"):"Word length"].forEach(t=>ch.append(el("span","chip",t)));box.append(ch);

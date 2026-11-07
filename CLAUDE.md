@@ -75,7 +75,8 @@ list is injected at `__WORDS__`).
   `wr.` (Word Rattle), `kk.` (Cross Sums), `gembastion.` (Gem Bastion). A new game needs its own prefix,
   added to `PREFIXES` in the hub's backup code and, if useful, a progress line in `renderStats()` there.
 - The hub lays games out as: **Today's puzzles** (`TODAY` in the hub script: each daily game's done-today check, keyed
-  by that game's own day number), **Carry on** (the two most recent entries of `sg.recent`, `{game folder: time}`,
+  by that game's own day number; Word Rattle and Kakuro instead note today's daily in `wr.today` / `kk.today` when
+  their menu shows), **Carry on** (the two most recent entries of `sg.recent`, `{game folder: time}`,
   which `shell.js` writes whenever a game page opens; the hub owns the `sg.` prefix), then tiles in four groups
   (Words & numbers, Puzzles, Strategy, Action & easy-going). Backup and app updates sit in a folded section at the bottom.
 - **Never break saved data.** Keep reading old shapes; migrate on load if a format must change.

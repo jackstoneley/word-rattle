@@ -640,6 +640,7 @@ function renderHome(){
   } else cs.innerHTML = '';
   // today
   const tid = todayId(), tp = parsePuzzle(tid), L = S.stats.levels[tid];
+  LS.set('kk.today', {day: todayKey(), id: tid}); // for the home page's Today's puzzles
   const doneToday = L && L.times.some(x=>localDay(x.d)===todayKey());
   const d = new Date();
   document.getElementById('todaySlot').innerHTML = `<button class="card feature" data-play="${tid}"><div class="today-badge"><b>${d.getDate()}</b><small>${d.toLocaleDateString(undefined,{month:'short'})}</small></div><div class="txt"><span class="eyebrow">Today's puzzle</span><h3>${tp.col.name} · #${tp.n}</h3><span class="meta">${doneToday ? 'Solved today in '+fmt(L.times.filter(x=>localDay(x.d)===todayKey()).slice(-1)[0].t) : d.toLocaleDateString(undefined,{weekday:'long'})+"'s grid, "+tp.N+'×'+tp.N}</span></div><span class="go">${doneToday?'Replay':S.saves[tid]?'Resume':'Play'}</span></button>`;

@@ -101,7 +101,8 @@ section{display:flex;flex-direction:column;gap:10px}
 .today h3{margin:0}
 .today .count{font-size:.8rem;font-weight:700;color:var(--muted)}
 .today .count.all{color:var(--good)}
-.chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (min-width:520px){.chips{grid-template-columns:repeat(7,minmax(0,1fr))}}
 .chip{display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:8px 2px 7px;border-radius:12px;border:1px solid var(--line);background:var(--bg);text-decoration:none;color:inherit;font-weight:700;font-size:.74rem;line-height:1.15}
 .chip:active{transform:scale(.96)}
 .chip .sw{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:1.05rem;font-weight:800}
@@ -369,8 +370,13 @@ function renderStats(){
 /* ---------- Today's puzzles: has each daily game's puzzle for today been finished? ----------
    Each game keys its daily saves by its own day number (see the dayNum/todayNo code in each game). */
 const dayNo=(epoch,first)=>{const d=new Date();return Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-epoch)/864e5)+first};
+/* Word Rattle and Kakuro work out their daily puzzle with their own code, so each notes today's one when its menu
+   shows (wr.today {day, seed}, kk.today {day, id}); not opened today means not played today. */
 const TODAY=[
+  {id:"word-rattle",name:"Word Rattle",sw:"background:#1F3A93;color:#FBF8F1",ic:"W",done:()=>{const t=load("wr.today",null);return !!(t&&t.day===dayKey(Date.now())&&(load("wr.history",[])||[]).some(h=>h&&h.seed===t.seed))}},
   {id:"link-up",name:"Link Up",sw:"background:#1B2430;color:#F4D35E",ic:"▦",done:()=>{const g=load("lu.games",{})[dayNo(Date.UTC(2026,9,28),1)];return !!(g&&g.done)}},
+  {id:"cross-sums",name:"Kakuro",sw:"background:#0F7A70;color:#fff",ic:"9",done:()=>{const t=load("kk.today",null),today=dayKey(Date.now());if(!t||t.day!==today)return false;
+    const L=((load("kk.stats",null)||{}).levels||{})[t.id];return !!(L&&(L.times||[]).some(x=>x&&dayKey(x.d)===today))}},
   {id:"topple",name:"Topple",sw:"background:#15233B;color:#F2A541",ic:"▮",done:()=>!!load("tp.daily",{})[dayNo(Date.UTC(2026,9,30),0)]},
   {id:"gravity-well",name:"Gravity Well",sw:"background:#05070D;color:#FFC65A",ic:"●",done:()=>!!load("gw.daily",{})[dayNo(Date.UTC(2026,10,4),1)]},
   {id:"echo-cartographer",full:"Echo Cartographer",name:"Echo",sw:"background:#000;color:#96F0FF",ic:"◎",done:()=>!!load("ec.daily",{})[dayNo(Date.UTC(2026,9,30),0)]},

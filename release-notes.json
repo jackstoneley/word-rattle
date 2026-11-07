@@ -301,6 +301,15 @@
         "Games are now in smaller tiles, grouped into Words & numbers, Puzzles, Strategy, and Action & easy-going.",
         "Backup and Check for updates are folded away at the bottom: tap Backup & app updates to open them."
       ]
+    },
+    {
+      "id": 28,
+      "type": "features",
+      "headline": "Word Rattle and Kakuro in Today's puzzles",
+      "details": [
+        "Today's puzzles on the games list now includes the Word Rattle daily board and Kakuro's puzzle of the day.",
+        "If you'd already played them today, open each game once and the tick appears."
+      ]
     }
   ]
 }
