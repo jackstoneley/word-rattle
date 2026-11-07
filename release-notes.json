@@ -277,6 +277,19 @@
         "15 realms with three stars each, bigger maps, lava rivers, underground lakes, crystal caverns, natural tunnels, lost creatures to recruit, wild beasts and treasure hidden in the rock.",
         "Diggers work together: up to three on each side of a rock. They claim floor in neat rows now."
       ]
+    },
+    {
+      "id": 26,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: a helping hand, goals and difficulty",
+      "details": [
+        "A green arrow shows what to do next while you learn, and pops up later if you seem stuck (Settings: Auto, Always or Off).",
+        "Tap an order on the strip at the top and Lee Lee goes straight to it.",
+        "After every day: a tip on what would help most next time.",
+        "Free play: choose Relaxed, Normal or Busy, and each day has two goals worth a bonus.",
+        "Happy tables in a row build a 🔥 streak with bigger tips. Rush warnings, and sounds (including beeps before food burns).",
+        "Campaign: stuck on a day? After two tries you can have an easier go. Finishing a chapter earns a certificate worth £75 in free play."
+      ]
     }
   ]
 }

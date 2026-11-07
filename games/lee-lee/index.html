@@ -80,6 +80,10 @@ p{margin:0;line-height:1.45}
 .venue b{font-family:var(--display);font-size:1.05rem}
 .venue span{font-size:.82rem;color:var(--muted);line-height:1.35}
 .venue.on{border-color:var(--accent);background:#FFF0E8}
+.diffs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.diffs button{border:2px solid var(--line);background:var(--panel);border-radius:12px;padding:8px 4px;font-weight:800;display:flex;flex-direction:column;align-items:center;gap:2px}
+.diffs button span{font-size:22px}
+.diffs button.on{border-color:var(--accent);background:#FFF0E8}
 input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;font-weight:600;-webkit-user-select:text;user-select:text}
 /* play */
 #play{display:flex;flex-direction:column;gap:6px;padding:6px 8px;max-width:620px;width:100%;margin:0 auto}
@@ -93,7 +97,7 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padd
 .cashbox span{font-size:.75rem;color:var(--muted)}
 .rail{display:flex;gap:6px;overflow-x:auto;flex:none;min-height:40px;scrollbar-width:none;align-items:center}
 .rail::-webkit-scrollbar{display:none}
-.tk{flex:none;display:flex;align-items:center;gap:4px;background:#FFFDF8;border:2px solid var(--good);border-radius:10px;padding:3px 7px;font-size:.8rem;font-weight:800;height:36px;box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.tk{cursor:pointer;flex:none;display:flex;align-items:center;gap:4px;background:#FFFDF8;border:2px solid var(--good);border-radius:10px;padding:3px 7px;font-size:.8rem;font-weight:800;height:36px;box-shadow:0 2px 0 rgba(0,0,0,.06)}
 .tk .e{font-size:18px;line-height:1}
 .tk .e.go{opacity:.45}
 .tk.mid{border-color:var(--gold)}.tk.low{border-color:var(--bad);background:#FFF0EE}
@@ -177,21 +181,30 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
         <summary>How to play</summary>
         <ul>
           <li><b>Tap</b> anything and Lee Lee walks over and uses it. She carries one thing at a time.</li>
+          <li>Not sure what to do? Follow the <b>green arrow</b>: it points at the next useful thing (change it in Settings).</li>
           <li>Customers sit down. When a table shows a <b>notepad</b>, tap it to take their order. The order appears on the strip at the top.</li>
           <li>Tap the station a dish starts at (usually the <b>fridge</b>). Then follow the glowing stations: chop, mix, cook. Food on the toaster, grill, hob, fryer and oven <b>burns</b> if you leave it too long.</li>
           <li>Finished food is <b>plated up</b> by tapping the plates 🍽 on the counter, then tap the table to serve it.</li>
+          <li>Tap an order on the <b>strip at the top</b> and Lee Lee goes to start it (or serves it, if she's holding it).</li>
+          <li>Keep tables happy one after another for a <b>🔥 streak</b>: every happy table in a row adds to the tips.</li>
           <li>Hands full? Put anything down on one of the <b>counter spots</b> or a <b>worktop</b>, and tap it again to pick it up.</li>
           <li>When people leave, tap the table to clear the dirty plates and take them to the <b>sink</b>. No clean plates, no food!</li>
           <li>Customers who wait too long walk out without paying, and your reputation drops. Happy customers tip and bring more people.</li>
           <li>In a pub, late nights bring <b>rowdy</b> customers (red face). Tap their table to calm them; the second time they're shown the door. Mop up any spills.</li>
-          <li>After each day you're in the office: learn recipes, hire and promote staff, buy equipment and decor, advertise, and one day move somewhere bigger. Stock is topped up for you (you can turn that off).</li>
-          <li>New to it? Start with the <b>campaign</b>: each day teaches one thing, from a café to a restaurant.</li>
+          <li>In free play each day has <b>two goals</b> worth a bonus, and you can choose how busy it gets: <b>Relaxed</b>, <b>Normal</b> or <b>Busy</b>.</li>
+          <li>After each day you get a tip for next time, then you're in the office: learn recipes, hire and promote staff, buy equipment and decor, advertise, and one day move somewhere bigger. Stock is topped up for you (you can turn that off).</li>
+          <li>New to it? Start with the <b>campaign</b>: each day teaches one thing, from a café to a restaurant. Stuck on a day? After two tries you can have an easier go. Finishing a chapter earns a certificate worth £75 in free play.</li>
           <li>The game saves at the end of each day. Leaving in the middle of a day starts that day again.</li>
         </ul>
       </details>
-      <div class="card">
-        <div class="row spread"><div class="grow"><b>Cooking mini-games</b><p class="small muted">Chop, stir and pour yourself. Turn off to let Lee Lee do them on her own (a little slower).</p></div>
+      <div class="card" id="setCard">
+        <h2>Settings</h2>
+        <div class="row spread"><div class="grow"><b>Cooking mini-games</b><p class="small muted">Chop, stir and pour yourself. Off: Lee Lee does them on her own, a little slower.</p></div>
           <button class="btn sm" id="miniBtn"></button></div>
+        <div class="row spread"><div class="grow"><b>Helper arrow</b><p class="small muted">A green arrow shows what to do next. Auto: always while you're learning, then only when you seem stuck.</p></div>
+          <button class="btn sm" id="helpBtn"></button></div>
+        <div class="row spread"><div class="grow"><b>Sounds</b><p class="small muted">Bells, dings, and a warning before food burns.</p></div>
+          <button class="btn sm" id="soundBtn"></button></div>
       </div>
     </div>
   </section>
@@ -214,6 +227,12 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
         <button class="venue" data-v="cafe"><span class="big">🧁</span><b>Café, bakery &amp; deli</b><span>Daytime. Tea, coffee, toast, salads, cakes and sandwiches. Calmer, with a lunchtime rush.</span></button>
         <button class="venue" data-v="pub"><span class="big">🍺</span><b>Restaurant &amp; pub</b><span>Evenings. Pour pints, fry chips, cook pub dinners. Late nights get busy and a bit rowdy.</span></button>
       </div>
+      <div class="card">
+        <span class="label">How busy?</span>
+        <div class="diffs" id="ngDiffs"></div>
+        <p class="small muted" id="ngDiffD"></p>
+      </div>
+      <p class="news" id="ngCert" hidden></p>
       <div class="card">
         <label class="label" for="ngName">Name of the place</label>
         <input type="text" id="ngName" maxlength="28" autocomplete="off">
@@ -380,7 +399,7 @@ const LEVELS = [
   { ch: 0, n: "Chop chop", menu: ["tea", "toast", "salad"], st: ["fridge", "kettle", "toaster", "board", "sink", "top"], tables: [2, 2, 2], people: 9, size: 2, len: 170,
     goals: [["served", 8], ["out", 1], ["earn", 40]],
     tip: ["Salad needs chopping: tap the chopping board 🔪, then tap quickly to chop.", "Start slow things first: toast can cook while you chop a salad.", "The strip at the top lists every order. Faded ones are already being made."] },
-  { ch: 0, n: "Lunch rush", menu: ["tea", "toast", "salad"], st: ["fridge", "kettle", "toaster", "toaster", "board", "sink", "top"], tables: [2, 2, 4, 2], plates: 8, people: 14, size: 3, len: 210,
+  { ch: 0, n: "Lunch rush", menu: ["tea", "toast", "salad"], st: ["fridge", "kettle", "toaster", "toaster", "board", "sink", "top"], tables: [2, 2, 4, 2, 2], plates: 8, people: 14, size: 3, len: 250,
     goals: [["served", 11], ["out", 2], ["earn", 60]],
     tip: ["A busy lunchtime! Take orders as soon as people sit down. Their patience bar is under the bubble.", "Hands full? Put things down on the counter spots or the worktop, then come back for them.", "Two toasters today."] },
 
@@ -393,24 +412,24 @@ const LEVELS = [
   { ch: 1, n: "Worktops", menu: ["muffin", "croissant", "latte"], st: ["fridge", "bowl", "oven", "oven", "coffee", "sink", "top", "top"], tables: [2, 2, 4], people: 10, size: 3, len: 200,
     goals: [["served", 9], ["burnt", 0], ["out", 1]],
     tip: ["Two ovens and lots of baking.", "Finished something but busy? Put it on a worktop or the counter and come back for it.", "Holding a dish for a station that has finished food on it? Tap the station to swap them over."] },
-  { ch: 1, n: "A helping hand", menu: ["tea", "toast", "muffin", "croissant"], st: ["fridge", "kettle", "toaster", "bowl", "oven", "oven", "sink", "top"], tables: [2, 2, 4, 4], plates: 5, staff: [["porter", 1]], people: 13, size: 3, len: 210,
+  { ch: 1, n: "A helping hand", menu: ["tea", "toast", "muffin", "croissant"], st: ["fridge", "kettle", "toaster", "bowl", "oven", "oven", "sink", "top"], tables: [2, 2, 4, 4], plates: 5, staff: [["porter", 1]], people: 13, size: 3, len: 250,
     goals: [["served", 11], ["out", 1], ["earn", 60]],
     tip: ["Meet your kitchen porter. They clear tables and wash up all by themselves.", "Staff get on with their own job, so you can concentrate on cooking."] },
-  { ch: 1, n: "Bake sale", menu: ["tea", "latte", "muffin", "croissant", "pancakes"], st: ["fridge", "kettle", "coffee", "bowl", "oven", "oven", "hob", "sink", "top", "top"], tables: [2, 2, 4, 4, 2], staff: [["porter", 2]], people: 16, size: 3, len: 230,
-    goals: [["served", 13], ["out", 2], ["earn", 100]],
+  { ch: 1, n: "Bake sale", menu: ["tea", "latte", "muffin", "croissant", "pancakes"], st: ["fridge", "kettle", "coffee", "bowl", "oven", "oven", "hob", "sink", "top", "top"], tables: [2, 2, 4, 4, 2], staff: [["porter", 2]], people: 15, size: 3, len: 290,
+    goals: [["served", 12], ["out", 2], ["earn", 100]],
     tip: ["The whole town wants cake today!", "Pancakes go from the mixing bowl to the hob 🍳."] },
 
-  { ch: 2, n: "On the grill", menu: ["toastie", "wrap", "latte"], st: ["fridge", "board", "grill", "toaster", "coffee", "sink", "top"], tables: [2, 2, 2, 2], plates: 10, people: 10, size: 2, len: 200,
-    goals: [["served", 9], ["burnt", 0], ["earn", 70]],
+  { ch: 2, n: "On the grill", menu: ["toastie", "wrap", "latte"], st: ["fridge", "board", "grill", "toaster", "coffee", "sink", "top"], tables: [2, 2, 2, 2, 2], plates: 10, people: 9, size: 2, len: 240,
+    goals: [["served", 8], ["burnt", 0], ["earn", 70]],
     tip: ["The grill ♨️ cooks fast, and burns fast too. Stay close.", "Toasties: chop the cheese on the board, then into the toaster."] },
   { ch: 2, n: "Soup and quiche", menu: ["soup", "quiche", "salad", "tea"], st: ["fridge", "board", "bowl", "hob", "oven", "kettle", "sink", "top", "top"], tables: [2, 2, 4, 2], plates: 10, people: 12, size: 3, len: 220,
     goals: [["served", 10], ["out", 1], ["burnt", 0]],
     tip: ["Quiche takes four steps: fridge, bowl, board, oven.", "Get the slow dishes cooking first, then make quick ones while you wait."] },
-  { ch: 2, n: "Front of house", menu: ["toastie", "wrap", "soup", "latte"], st: ["fridge", "board", "board", "grill", "toaster", "hob", "coffee", "sink", "top"], tables: [2, 2, 4, 4, 2, 2], staff: [["waiter", 2]], plates: 10, people: 14, size: 3, len: 220,
-    goals: [["served", 11], ["out", 1], ["earn", 110]],
+  { ch: 2, n: "Front of house", menu: ["toastie", "wrap", "soup", "latte"], st: ["fridge", "board", "board", "grill", "toaster", "hob", "coffee", "sink", "top"], tables: [2, 2, 4, 4, 2, 2], staff: [["waiter", 2]], plates: 10, people: 12, size: 3, len: 260,
+    goals: [["served", 10], ["out", 1], ["earn", 110]],
     tip: ["Meet your waiter. They take orders, carry food from the counter and clear tables.", "Leave finished, plated food on the counter spots and they'll take it out."] },
-  { ch: 2, n: "The critic", menu: ["quiche", "wrap", "sponge", "latte", "tea"], st: ["fridge", "board", "bowl", "grill", "oven", "oven", "coffee", "kettle", "sink", "top"], tables: [2, 2, 4, 4, 2], staff: [["waiter", 2], ["porter", 1]], critic: 1, people: 14, size: 3, len: 230,
-    goals: [["served", 12], ["critic", 1], ["out", 1]],
+  { ch: 2, n: "The critic", menu: ["quiche", "wrap", "sponge", "latte", "tea"], st: ["fridge", "board", "bowl", "grill", "oven", "oven", "coffee", "kettle", "sink", "top"], tables: [2, 2, 4, 4, 2], staff: [["waiter", 2], ["porter", 1]], critic: 1, people: 12, size: 3, len: 280,
+    goals: [["served", 10], ["critic", 1], ["out", 1]],
     tip: ["A food critic is coming today. Look for 🧐 by their table.", "Serve them quickly to keep them happy."] },
   { ch: 2, n: "Deli rush", menu: ["toastie", "wrap", "soup", "quiche", "latte", "tea"], st: ["fridge", "board", "board", "bowl", "grill", "toaster", "hob", "oven", "coffee", "kettle", "sink", "top"], tables: [2, 2, 4, 4, 4, 2], staff: [["waiter", 2], ["porter", 2], ["cook", 2]], people: 22, size: 4, len: 240,
     goals: [["served", 18], ["out", 2], ["earn", 180]],
@@ -422,17 +441,17 @@ const LEVELS = [
   { ch: 3, n: "Last orders", menu: ["lager", "wine", "chips"], st: ["tap", "fridge", "fryer", "sink", "top"], tables: [2, 2, 2, 2], rowdy: 1, plates: 8, people: 11, size: 2, len: 190,
     goals: [["served", 9], ["mess", 0], ["out", 2]],
     tip: ["Late at night some customers get rowdy: red faces and 😡.", "Tap their table to calm them down. The second time, they're shown the door.", "Spills make the tables nearby grumpy. Tap a puddle to mop it up."] },
-  { ch: 3, n: "Pub grub", menu: ["lager", "burger", "fishchips", "chips"], st: ["fridge", "tap", "board", "board", "grill", "fryer", "sink", "top"], tables: [2, 2, 4, 4], plates: 10, people: 13, size: 3, len: 220,
-    goals: [["served", 11], ["burnt", 0], ["earn", 100]],
+  { ch: 3, n: "Pub grub", menu: ["lager", "burger", "fishchips", "chips"], st: ["fridge", "tap", "board", "board", "grill", "fryer", "sink", "top"], tables: [2, 2, 4, 4, 2], plates: 10, people: 12, size: 3, len: 260,
+    goals: [["served", 10], ["burnt", 0], ["earn", 100]],
     tip: ["Burgers: fridge, board, grill. Fish & chips: fridge, board, fryer.", "Two things cooking at once? Keep an eye out for the ⚠️."] },
-  { ch: 3, n: "Behind the bar", menu: ["lager", "wine", "cocktail", "burger", "chips"], st: ["fridge", "tap", "bowl", "board", "grill", "fryer", "sink", "top"], tables: [2, 2, 4, 4, 2], staff: [["drinks", 1], ["floor", 1]], rowdy: 1, plates: 12, people: 18, size: 3, len: 230,
-    goals: [["served", 15], ["out", 1], ["mess", 0]],
+  { ch: 3, n: "Behind the bar", menu: ["lager", "wine", "cocktail", "burger", "chips"], st: ["fridge", "tap", "bowl", "board", "grill", "fryer", "sink", "top"], tables: [2, 2, 4, 4, 2, 2], staff: [["drinks", 1], ["floor", 1]], rowdy: 1, plates: 12, people: 16, size: 3, len: 230,
+    goals: [["served", 13], ["out", 1], ["mess", 0]],
     tip: ["Your bartender makes the drinks, and the bouncer calms rowdy customers and mops up.", "You look after the food."] },
   { ch: 3, n: "Quiz night", menu: ["lager", "wine", "cocktail", "burger", "fishchips", "chips", "ploughmans"], st: ["fridge", "tap", "tap", "bowl", "board", "board", "grill", "fryer", "sink", "top"], tables: [2, 2, 4, 4, 4, 2], staff: [["waiter", 2], ["drinks", 2], ["floor", 1], ["cook", 1]], rowdy: 1, plates: 14, people: 26, size: 4, len: 240,
     goals: [["served", 22], ["out", 2], ["earn", 200]],
     tip: ["The busiest night of the week! A cook is in to help with the food.", "Keep things moving: your team will handle the rest."] },
 
-  { ch: 4, n: "Sunday roast", menu: ["roast", "pudding", "wine"], st: ["fridge", "board", "bowl", "oven", "oven", "sink", "top", "top"], tables: [2, 2, 4], plates: 8, people: 10, size: 3, len: 220,
+  { ch: 4, n: "Sunday roast", menu: ["roast", "pudding", "wine"], st: ["fridge", "board", "bowl", "oven", "oven", "sink", "top", "top"], tables: [2, 2, 4], plates: 8, people: 10, size: 3, len: 260,
     goals: [["served", 9], ["burnt", 0], ["earn", 110]],
     tip: ["Roasts and puddings both need the oven, and there are two.", "Plan ahead: start the next dish before the last one comes out."] },
   { ch: 4, n: "Steak night", menu: ["steak", "bangers", "wine"], st: ["fridge", "board", "grill", "hob", "sink", "top", "top"], tables: [2, 2, 2, 2], plates: 8, people: 11, size: 2, len: 220,
@@ -448,11 +467,19 @@ const LEVELS = [
     goals: [["served", 29], ["out", 2], ["earn", 450]],
     tip: ["Opening night of Lee Lee's own restaurant!", "Everyone you've trained is here. Run the kitchen like a pro."] }
 ];
-const GOAL_TEXT = { served: n => `Serve ${n} customers`, out: n => n ? `No more than ${n} walk out` : "Nobody walks out", burnt: n => n ? `No more than ${n} burnt` : "Nothing burnt",
+/* Free-play difficulty (S.diff index): pat multiplies how fast patience drains, crowd the number of customers,
+   burn the time before food burns, tips and rep what good service earns. */
+const DIFFS = [
+  { n: "Relaxed", e: "🌿", pat: .68, crowd: .85, burn: 1.4, tips: 1, rep: 1, d: "Patient customers and slower burning. A calm day at work." },
+  { n: "Normal", e: "🍳", pat: 1, crowd: 1, burn: 1, tips: 1, rep: 1, d: "Busy at times, with a little pressure." },
+  { n: "Busy", e: "🔥", pat: 1.22, crowd: 1.2, burn: .85, tips: 1.25, rep: 1.25, d: "More customers, less patience. Bigger tips and faster fame." }
+];
+const diffOf = save => DIFFS[save && save.diff != null ? save.diff : 1] || DIFFS[1];
+const GOAL_TEXT = { streak: n => `A streak of ${n} happy tables`, served: n => `Serve ${n} customers`, out: n => n ? `No more than ${n} walk out` : "Nobody walks out", burnt: n => n ? `No more than ${n} burnt` : "Nothing burnt",
   earn: n => `Take £${n} (with tips)`, perfect: n => `${n} perfect pours`, critic: () => "Make the critic happy", mess: n => "No mess left at closing" };
 function goalMet(kind, n, r) {
   return kind === "served" ? r.served >= n : kind === "out" ? r.angry <= n : kind === "burnt" ? r.burnt <= n : kind === "earn" ? r.rev + r.tips >= n
-    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : false;
+    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : kind === "streak" ? r.streak >= n : false;
 }
 function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function levelArrivals(i) {
@@ -474,7 +501,7 @@ function fairWage(role, lvl) { return Math.round(ROLES[role].w * (1 + .35 * (lvl
 function boost(save) { return Math.min(1.5, (save.camp || []).reduce((a, c) => a + ((CAMPAIGNS.find(x => x.id === c.id) || {}).b || 0), 0)); }
 function expectedGroups(save) {
   const prem = PREMISES[save.prem];
-  let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * prem.demand * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1);
+  let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * prem.demand * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1) * diffOf(save).crowd;
   return Math.min(g, save.tables.length * 3.2 + 2);
 }
 function newSave(venue, name) {
@@ -482,7 +509,7 @@ function newSave(venue, name) {
   for (const r of V.menu) for (const k in RECIPES[r].i) stock[k] = 14;
   return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
     owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], plates: 6,
-    decor: 0, shoes: 0, prem: 0, autoStock: true, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
+    decor: 0, shoes: 0, prem: 0, autoStock: true, diff: 1, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
     stats: { served: 0, angry: 0, earned: 0, best: 0 } };
 }
 /*CORE-END*/
@@ -499,7 +526,7 @@ const load = (k, d) => { try { const v = localStorage.getItem(k); return v == nu
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const SLOTS = 5;
 const slotKey = i => "ll.slot." + i;
-let opts = Object.assign({ mini: true }, load("ll.opts", {}));
+let opts = Object.assign({ mini: true, sound: true, help: "auto" }, load("ll.opts", {}));
 let S = null, slot = -1, view = "title";
 
 function migrate(s) {
@@ -554,10 +581,42 @@ function drawHero() {
   drawPerson(c, 84, 180, LEE, 150);
 }
 
+/* ---------- sound: tiny synthesised cues, no files ---------- */
+let AC = null;
+const lastSnd = {};
+function snd(name) {
+  if (!opts.sound) return;
+  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); } catch (e) { return; }
+  const a = AC, now = a.currentTime;
+  if (lastSnd[name] && now - lastSnd[name] < .15) return; lastSnd[name] = now;
+  const tone = (f, t0, dur, type, vol, f2) => {
+    const o = a.createOscillator(), g = a.createGain(); o.type = type || "sine";
+    o.frequency.setValueAtTime(f, now + t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, now + t0 + dur);
+    g.gain.setValueAtTime(.0001, now + t0); g.gain.exponentialRampToValueAtTime(vol || .12, now + t0 + .01); g.gain.exponentialRampToValueAtTime(.0001, now + t0 + dur);
+    o.connect(g); g.connect(a.destination); o.start(now + t0); o.stop(now + t0 + dur + .03);
+  };
+  switch (name) {
+    case "order": tone(880, 0, .2, "sine", .11); tone(1175, .13, .28, "sine", .11); break;
+    case "ready": tone(1320, 0, .25, "triangle", .09); break;
+    case "warn": tone(700, 0, .09, "square", .04); tone(700, .15, .09, "square", .04); tone(700, .3, .09, "square", .04); break;
+    case "burnt": tone(190, 0, .5, "sawtooth", .06, 90); break;
+    case "coin": tone(1046, 0, .08, "square", .045); tone(1568, .07, .18, "square", .045); break;
+    case "out": tone(440, 0, .35, "triangle", .1, 200); break;
+    case "serve": tone(784, 0, .12, "sine", .09); tone(988, .06, .12, "sine", .07); break;
+    case "chop": tone(260, 0, .05, "square", .04, 110); break;
+    case "spill": tone(520, 0, .3, "sine", .07, 180); break;
+    case "streak": tone(784, 0, .1, "triangle", .09); tone(988, .08, .1, "triangle", .09); tone(1319, .16, .22, "triangle", .09); break;
+    case "bell": tone(1568, 0, .5, "sine", .08); tone(2093, 0, .4, "sine", .04); break;
+  }
+}
+document.addEventListener("pointerdown", () => { if (opts.sound && AC && AC.state === "suspended") AC.resume(); }, true);
+
 /* ---------- title / slots ---------- */
 function renderTitle() {
   drawHero(); renderCampCard();
   $("miniBtn").textContent = opts.mini ? "On" : "Off";
+  $("helpBtn").textContent = { auto: "Auto", on: "Always", off: "Off" }[helpMode()];
+  $("soundBtn").textContent = opts.sound ? "On" : "Off";
   const box = $("slots"); box.innerHTML = "";
   for (let i = 0; i < SLOTS; i++) {
     const s = migrate(load(slotKey(i), null)), el = document.createElement("div");
@@ -575,7 +634,7 @@ function renderTitle() {
 $("slots").onclick = e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.new) { newGameScreen(+b.dataset.new); return; }
-  if (b.dataset.go) { LV = null; slot = +b.dataset.go; S = migrate(load(slotKey(slot), null)); if (S) openManage(S.last && !S.last.seen ? "day" : "day"); return; }
+  if (b.dataset.go) { LV = null; EASY = false; slot = +b.dataset.go; S = migrate(load(slotKey(slot), null)); if (S) openManage(S.last && !S.last.seen ? "day" : "day"); return; }
   if (b.dataset.del) {
     const i = +b.dataset.del, s = load(slotKey(i), null);
     dialog(`<h3>Delete this save?</h3><p class="muted" style="text-align:center">${esc(s && s.name || "")}, day ${s && s.day}. This can't be undone.</p>
@@ -585,27 +644,35 @@ $("slots").onclick = e => {
   }
 };
 $("miniBtn").onclick = () => { opts.mini = !opts.mini; store("ll.opts", opts); renderTitle(); };
+const HELP_NEXT = { auto: "on", on: "off", off: "auto" };
+$("helpBtn").onclick = () => { opts.help = HELP_NEXT[helpMode()]; store("ll.opts", opts); renderTitle(); };
+$("soundBtn").onclick = () => { opts.sound = !opts.sound; store("ll.opts", opts); renderTitle(); if (opts.sound) snd("ready"); };
 
-let ngVenue = "cafe", ngSlot = 0;
+let ngVenue = "cafe", ngSlot = 0, ngDiff = 1;
+function certs() { const d = campData(); return CHAPTERS.filter((C, ci) => LEVELS.every((L, i) => L.ch !== ci || (d.s[i] || 0) > 0)).length; }
 function newGameScreen(i) {
-  ngSlot = i; ngVenue = "cafe";
+  ngSlot = i; ngVenue = "cafe"; ngDiff = 1;
   $("ngName").value = "";
   renderNG(); show("newgame");
 }
 function renderNG() {
   document.querySelectorAll(".venue").forEach(b => b.classList.toggle("on", b.dataset.v === ngVenue));
+  $("ngDiffs").innerHTML = DIFFS.map((D, i) => `<button class="${i === ngDiff ? "on" : ""}" data-d="${i}"><span>${D.e}</span>${D.n}</button>`).join("");
+  $("ngDiffD").textContent = DIFFS[ngDiff].d + " You can change this later in the office.";
+  const c = certs(); $("ngCert").hidden = !c; $("ngCert").textContent = `🎓 ${c} campaign certificate${c > 1 ? "s" : ""}: Lee Lee starts with an extra ${money(75 * c)}.`;
   $("ngName").placeholder = VENUES[ngVenue].names[0];
 }
 document.querySelectorAll(".venue").forEach(b => b.onclick = () => { ngVenue = b.dataset.v; renderNG(); });
+$("ngDiffs").onclick = e => { const b = e.target.closest("[data-d]"); if (b) { ngDiff = +b.dataset.d; renderNG(); } };
 $("ngBack").onclick = () => { renderTitle(); show("title"); };
 $("ngGo").onclick = () => {
   const name = $("ngName").value.trim() || VENUES[ngVenue].names[0];
-  LV = null; slot = ngSlot; S = newSave(ngVenue, name); S.cands = makeCands(); saveGame();
+  LV = null; EASY = false; slot = ngSlot; S = newSave(ngVenue, name); S.diff = ngDiff; S.cash += 75 * certs(); S.cands = makeCands(); saveGame();
   startDay();
 };
 
 /* ---------- campaign ---------- */
-let LV = null; // level index while a campaign day is being played
+let LV = null, EASY = false; // level index while a campaign day is being played; EASY = an easier retry
 const campData = () => Object.assign({ s: {} }, load("ll.camp", {}));
 function campUnlocked(i, d) { return i === 0 || (d.s[i - 1] || 0) > 0; }
 function renderCampCard() {
@@ -621,7 +688,8 @@ function renderCamp() {
     const idx = LEVELS.map((L, i) => L.ch === ci ? i : -1).filter(i => i >= 0);
     const got = idx.reduce((a, i) => a + (d.s[i] || 0), 0);
     const el = document.createElement("div"); el.className = "card";
-    el.innerHTML = `<div class="row spread"><div class="grow"><h2>${C.e} ${esc(C.n)}</h2><p class="small muted">${esc(C.d)}</p></div><span class="stars" style="font-size:.85rem">★ ${got}/${idx.length * 3}</span></div>
+    const cert = idx.every(i => (d.s[i] || 0) > 0);
+    el.innerHTML = `<div class="row spread"><div class="grow"><h2>${C.e} ${esc(C.n)}${cert ? " 🎓" : ""}</h2><p class="small muted">${esc(C.d)}${cert ? " <b>Certificate earned: +£75 when you start a free-play place.</b>" : ""}</p></div><span class="stars" style="font-size:.85rem">★ ${got}/${idx.length * 3}</span></div>
       <div class="lvls">${idx.map(i => `<button class="lv ${d.s[i] > 0 ? "done" : ""} ${i === next ? "next" : ""}" data-lv="${i}" ${campUnlocked(i, d) ? "" : "disabled"}><b>${i + 1}</b><span>${d.s[i] ? "★".repeat(d.s[i]) : ""}</span></button>`).join("")}</div>`;
     box.append(el);
   });
@@ -640,29 +708,35 @@ function levelIntro(i) {
     <ul class="tips">${L.tip.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
     <p class="small muted">Menu: ${L.menu.map(r => RECIPES[r].e).join(" ")}${staff.length ? ` · Team: ${staff.join(", ")}` : ""}</p>
     ${goalList(L)}
-    <div class="acts"><button class="btn pri" data-a="go">Start</button><button class="btn" data-a="">Not now</button></div>`, a => { if (a === "go") playLevel(i); });
+    <div class="acts"><button class="btn pri" data-a="go">Start</button>${failsOf(i) >= 2 && !(best > 0) ? `<button class="btn" data-a="easy">Easier try (patient customers, up to 2 stars)</button>` : ""}<button class="btn" data-a="">Not now</button></div>`, a => { if (a === "go") playLevel(i); else if (a === "easy") playLevel(i, true); });
 }
 function levelSave(i) {
   const L = LEVELS[i], C = CHAPTERS[L.ch], s = newSave(C.v, C.n + ": " + L.n);
-  s.owned = L.menu.slice(); s.stations = L.st.slice(0, 13); s.tables = L.tables.slice(0, 9); s.plates = L.plates || 6; s.prem = C.pal;
+  s.owned = L.menu.slice(); s.stations = L.st.slice(0, 13); s.tables = L.tables.slice(0, 9); s.plates = Math.max(L.plates || 6, Math.ceil(L.people * .45)); s.prem = C.pal;
   s.stock = {}; for (const r of L.menu) for (const k in RECIPES[r].i) s.stock[k] = 999;
   s.staff = (L.staff || []).map(([role, lvl], k) => ({ id: "c" + k, name: FIRST[(i * 7 + k * 5) % FIRST.length], role, lvl, wage: 0, morale: 70, days: 0 }));
   s.rep = 0; s.camp = [];
   return s;
 }
-function playLevel(i) { LV = i; slot = -1; S = levelSave(i); startDay(); }
+function playLevel(i, easy) { LV = i; EASY = !!easy; slot = -1; S = levelSave(i); startDay(); if (EASY) toastMsg("Easier try: patient customers, slower burning. Up to 2 stars.", 3); }
+const failsOf = i => (campData().f || {})[i] || 0;
 function levelEnd() {
   const L = LEVELS[LV], g = G; g.ended = true; closeMini();
-  const r = { served: g.served + g.thrown, angry: g.angry, burnt: g.burnt, rev: g.rev, tips: g.tips, perfect: g.perfect, critic: g.critic, messes: g.messes.length };
-  const res = L.goals.map(([k, n]) => goalMet(k, n, r)), pass = res[0], stars = pass ? res.filter(Boolean).length : 0;
-  const d = campData(); if (stars > (d.s[LV] || 0)) { d.s[LV] = stars; store("ll.camp", d); }
-  const i = LV; G = null; LV = null; S = null;
+  const r = progress(), advice = dayTips(g);
+  const res = L.goals.map(([k, n]) => goalMet(k, n, r)), pass = res[0], stars = pass ? Math.min(EASY ? 2 : 3, res.filter(Boolean).length) : 0;
+  const d = campData(); d.f = d.f || {};
+  if (stars > (d.s[LV] || 0)) d.s[LV] = stars;
+  if (!pass) d.f[LV] = (d.f[LV] || 0) + 1;
+  store("ll.camp", d);
+  const i = LV, wasEasy = EASY, offerEasy = !pass && d.f[i] >= 2 && !wasEasy; G = null; LV = null; EASY = false; S = null;
   renderCamp(); show("camp");
   dialog(`<h3>${pass ? "Day passed!" : "Not quite…"}</h3><div class="stars" style="text-align:center;font-size:2rem">${"★".repeat(stars)}${"☆".repeat(3 - stars)}</div>
     ${goalList(L, res)}
-    <div class="lines small"><div><span>Served</span><b>${r.served}</b></div><div><span>Walked out</span><b>${r.angry}</b></div><div><span>Takings + tips</span><b>${money(r.rev + r.tips)}</b></div></div>
-    <div class="acts">${pass && i + 1 < LEVELS.length ? `<button class="btn pri" data-a="next">Next day</button>` : ""}<button class="btn ${pass ? "" : "pri"}" data-a="again">Try again</button><button class="btn" data-a="">All days</button></div>`,
-    a => { if (a === "next") levelIntro(i + 1); else if (a === "again") levelIntro(i); });
+    <div class="lines small"><div><span>Served</span><b>${r.served}</b></div><div><span>Walked out</span><b>${r.angry}</b></div><div><span>Takings + tips</span><b>${money(r.rev + r.tips)}</b></div>${r.streak >= 3 ? `<div><span>Best streak</span><b>🔥 ${r.streak}</b></div>` : ""}</div>
+    ${stars < 3 ? `<div class="news small"><b>${pass ? "For three stars" : "Next time"}</b><br>${advice.map(esc).join("<br>")}${wasEasy && pass ? "<br>Play it again normally for the third star." : ""}</div>` : ""}
+    <div class="acts">${pass && i + 1 < LEVELS.length ? `<button class="btn pri" data-a="next">Next day</button>` : ""}<button class="btn ${pass || offerEasy ? "" : "pri"}" data-a="again">Try again</button>
+    ${offerEasy ? `<button class="btn pri" data-a="easy">Easier try (up to 2 stars)</button>` : ""}<button class="btn" data-a="">All days</button></div>`,
+    a => { if (a === "next") levelIntro(i + 1); else if (a === "again") levelIntro(i); else if (a === "easy") playLevel(i, true); });
 }
 
 /* ---------- dialogs ---------- */
@@ -708,7 +782,7 @@ function startDay() {
     stock: Object.assign({}, S.stock), used: {},
     tables: S.tables.map((seats, i) => ({ i, x: TABLE_POS[i][0], y: TABLE_POS[i][1], seats, group: null, dirty: 0, claim: null })),
     stations: S.stations.map((t, i) => Object.assign({ i, t, item: null, user: null, claim: null, load: 0, run: 0 }, slotPos(i))),
-    spots: [null, null, null, null, null, null], taps: [], clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
+    spots: [null, null, null, null, null, null], taps: [], idle: 0, coach: null, slack: 0, outBy: { queue: 0, order: 0, food: 0 }, plateless: 0, streak: 0, bestStreak: 0, clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
   // arrivals
   if (LV != null) { G.len = LEVELS[LV].len; G.arr = levelArrivals(LV); }
   const n = LV != null ? 0 : Math.max(3, Math.round(expectedGroups(S) * rnd(.9, 1.1)));
@@ -734,10 +808,39 @@ function startDay() {
     G.actors.push(a);
   }
   paused = false; closeDialog(); closeMini();
-  $("pName").textContent = LV != null ? LEVELS[LV].n : S.name;
+  G.goals = LV == null ? dailyGoals() : [];
+  G.rush = LV == null ? V.peaks.map(([mu], i) => ({ t: Math.max(4, (mu - .09) * G.len), say: RUSH[S.venue][i] })) : [];
+  $("pName").textContent = LV != null ? LEVELS[LV].n + (EASY ? " (easier)" : "") : S.name;
   show("play"); resize();
   toastMsg(S.venue === "pub" ? "Doors open! The first customers are on their way." : "Doors open! Kettle's on.", 2.4);
   lastT = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
+  if (LV == null) briefing();
+}
+/* Two goals each free-play day, the same if the day is restarted. */
+function dailyGoals() {
+  const r = seeded((S.created % 1000003) * 31 + S.day * 977), people = expectedGroups(S) * 1.7, menu = onMenu().filter(canMakeS);
+  const avg = menu.reduce((a, x) => a + RECIPES[x].p, 0) / Math.max(1, menu.length), expRev = people * avg * 1.12;
+  const pool = [["served", Math.max(3, Math.round(people * .72))], ["earn", Math.max(10, Math.round(expRev * .75 / 5) * 5)],
+    ["streak", Math.min(8, 3 + Math.floor(starsOf(S.rep) / 2) + (S.diff === 2 ? 1 : 0))]];
+  if (S.day >= 2) pool.push(["out", 0]);
+  if (S.stations.some(t => STATIONS[t].b) && menu.some(x => RECIPES[x].s.some(t => STATIONS[t] && STATIONS[t].b))) pool.push(["burnt", 0]);
+  if (S.venue === "pub") pool.push(["mess", 0]);
+  if (opts.mini && menu.some(x => RECIPES[x].s.some(t => STATIONS[t] && STATIONS[t].g === "pour"))) pool.push(["perfect", 3]);
+  const out = [];
+  while (out.length < 2 && pool.length) { const [k, n] = pool.splice(Math.floor(r() * pool.length), 1)[0]; out.push({ k, n, cash: Math.round(3 + expRev * .06), rep: 6 }); }
+  return out;
+}
+function canMakeS(r) { return RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t)); }
+const RUSH = { cafe: ["Breakfast rush coming! ☕", "Lunch rush coming! 🥪"], pub: ["After-work crowd coming! 🍺", "Late-night crowd coming! 🎵"] };
+function clockAt(u) { const V = VENUES[S.venue], h = V.open + (V.close - V.open) * u, hh = Math.floor(h), mm = Math.floor((h - hh) * 4) * 15; return String(hh % 24).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
+function briefing() {
+  const D = diffOf(S), tip = S.last && S.last.advice && S.last.advice[0];
+  paused = true;
+  dialog(`<div class="small muted" style="text-align:center">${esc(S.name)} · ${D.e} ${D.n}</div><h3>Day ${S.day}</h3>
+    <div class="goals">${G.goals.map(g => `<div><span>☆</span><span>${GOAL_TEXT[g.k](g.n)} <span class="muted small">+${money(g.cash)}</span></span></div>`).join("")}</div>
+    <p class="small muted">About ${Math.round(expectedGroups(S))} groups expected. Busiest around ${VENUES[S.venue].peaks.map(([mu]) => clockAt(mu)).join(" and ")}.</p>
+    ${tip ? `<p class="news small">💡 ${esc(tip)}</p>` : S.day === 1 ? `<p class="news small">💡 New here? Follow the green arrow: it shows what to do next.</p>` : ""}
+    <div class="acts"><button class="btn pri" data-a="open">Open the doors</button></div>`, () => { paused = false; lastT = performance.now(); });
 }
 function staffHome(role) { return role === "waiter" ? [5.6, 5.2] : role === "floor" ? [2.5, 13.2] : role === "porter" ? [3, 2.6] : role === "drinks" ? [6, 2.6] : [4, 2.6]; }
 function mkActor(o) { return Object.assign({ path: [], then: null, work: null, hand: null, wait: 0, watch: null, skill: 1, bob: 0, moving: false }, o); }
@@ -831,6 +934,7 @@ function takeOrder(g) {
 function serve(g, tk, dish) {
   tk.done = true; g.servedN++; g.pat = Math.min(1, g.pat + .12);
   if (dish.perfect) g.bonus += .6;
+  snd("serve");
   fx(g.table.x, g.table.y - .9, RECIPES[dish.r].e + " ✓", "#3E9B6B");
   if (g.tickets.every(k => k.done)) { g.state = "eat"; g.timer = rnd(7, 10); }
 }
@@ -856,7 +960,7 @@ function trySeat() {
   G.queue.forEach((g, qi) => g.people.forEach((p, i) => { p.tx = 1.2 + qi * 1.3 + i * .32; p.ty = 13.4 + (i % 2) * .15; }));
 }
 function patMul(g) {
-  let m = (1 - .06 * S.decor) * (LV != null ? .85 : 1);
+  let m = (1 - .06 * S.decor) * (LV != null ? (EASY ? .6 : .78) : diffOf(S).pat);
   if (g.table && G.messes.some(ms => Math.hypot(ms.x - g.table.x, ms.y - g.table.y) < 2.2)) m *= 1.25;
   return m;
 }
@@ -870,11 +974,17 @@ function groupLeave(g, happy) {
 function payAndLeave(g) {
   let total = 0;
   for (const k of g.tickets) { const R = RECIPES[k.r]; total += R.p * (S.disc && S.disc.r === k.r ? 1 - S.disc.pct : 1); }
-  const tip = Math.round((total * (.04 + .22 * g.pat) * (1 + .06 * S.decor) + g.bonus) * 10) / 10;
+  const D = diffOf(S), glad = g.pat > .55;
+  const tip = Math.round((total * (.04 + .22 * g.pat) * (1 + .06 * S.decor) * (1 + .05 * Math.min(G.streak, 10)) * D.tips + g.bonus) * 10) / 10;
   G.rev += total; G.tips += tip; G.served += g.size;
   const happy = g.pat > .45;
   if (happy) G.happy += g.size;
-  G.repD += happy ? 3 * g.size : g.size;
+  G.repD += (happy ? 3 * g.size : g.size) * D.rep;
+  if (glad) {
+    G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
+    if ([3, 5, 8, 10, 15, 20, 30].includes(G.streak)) { fx(g.table.x, g.table.y - 1.8, `🔥 ${G.streak} happy tables in a row!`, "#E8664A"); snd("streak"); }
+  }
+  snd("coin");
   if (g.critic) { G.critic = happy ? "loved" : "meh"; G.repD += happy ? 150 : 10; fx(g.table.x, g.table.y - 1.4, happy ? "The critic loved it! ⭐" : "The critic shrugs…", happy ? "#3E9B6B" : "#8C7563"); }
   fx(g.table.x, g.table.y - .6, "+" + money(total + tip), "#B07A10");
   if (Math.random() < (S.venue === "cafe" ? .07 : .1)) addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.6, 1.2));
@@ -882,6 +992,9 @@ function payAndLeave(g) {
 }
 function angryLeave(g, why) {
   G.angry += g.size; G.repD -= 5 * g.size;
+  const stage = g.state === "queue" ? "queue" : g.state === "order" ? "order" : "food"; G.outBy[stage] += g.size;
+  if (G.streak >= 3) fx(4.5, 9, "Streak lost", "#8C7563");
+  G.streak = 0; snd("out");
   if (g.critic) { G.critic = "angry"; G.repD -= 90; }
   const x = g.table ? g.table.x : g.people[0].x, y = g.table ? g.table.y : g.people[0].y;
   fx(x, y - 1, why || "Too slow! 😠", "#D2483A");
@@ -906,9 +1019,9 @@ function groupsStep(dt) {
     for (const p of g.people) { const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy), st = 1.7 * dt; if (d > st) { p.x += dx / d * st; p.y += dy / d * st; moving = true; } else { p.x = p.tx; p.y = p.ty; } }
     const pm = patMul(g);
     switch (g.state) {
-      case "queue": g.pat -= dt / 55 * pm; if (g.pat <= 0) angryLeave(g, "No tables! 😠"); break;
+      case "queue": g.pat -= dt / 75 * pm; if (g.pat <= 0) angryLeave(g, "No tables! 😠"); break;
       case "walk": if (!moving) { g.state = "think"; g.timer = rnd(2, 3.5); } break;
-      case "think": g.timer -= dt; if (g.timer <= 0) g.state = "order"; break;
+      case "think": g.timer -= dt; if (g.timer <= 0) { g.state = "order"; snd("order"); } break;
       case "order": g.pat -= dt / 60 * pm; if (g.pat <= 0) angryLeave(g, "Nobody took our order! 😠"); break;
       case "wait": { const left = g.tickets.filter(k => !k.done).length; g.pat -= dt / (85 + 10 * left) * pm; if (g.pat <= 0) angryLeave(g); break; }
       case "eat": g.timer -= dt; if (g.timer <= 0) payAndLeave(g); break;
@@ -931,7 +1044,7 @@ function doStep(a, s) {
     if (a === lee && opts.mini) openMini(def.g, d, s);
     else work(a, def.d * (a === lee ? 1.35 : 1) / speedOf(s.t), () => { s.user = null; d.s++; }, () => { s.user = null; }, "prep");
   } else if (def.k === "pas") {
-    s.item = d; d.t = 0; d.dur = def.d / speedOf(s.t); d.burnAt = def.b ? d.dur + def.b * (1 + .3 * (S.lvl[s.t] || 0)) : Infinity; d.ready = false;
+    s.item = d; d.t = 0; d.dur = def.d / speedOf(s.t); d.burnAt = def.b ? d.dur + def.b * (1 + .3 * (S.lvl[s.t] || 0)) * (LV != null ? (EASY ? 1.35 : 1) : diffOf(S).burn) : Infinity; d.ready = false;
     a.hand = null;
   }
 }
@@ -945,8 +1058,9 @@ function stationsStep(dt) {
   for (const s of G.stations) {
     if (s.item && STATIONS[s.t].k === "pas") {
       const d = s.item; d.t += dt;
-      if (!d.ready && d.t >= d.dur) { d.ready = true; d.s++; }
-      if (!d.burnt && d.t >= d.burnAt) { d.burnt = true; G.burnt++; fx(s.x, s.y + .5, "Burnt! 💨", "#3A2A22"); }
+      if (!d.ready && d.t >= d.dur) { d.ready = true; d.s++; if (!watched(s)) snd("ready"); }
+      if (d.ready && !d.warned && !d.burnt && d.burnAt - d.t < 3.5) { d.warned = true; if (!watched(s)) snd("warn"); }
+      if (!d.burnt && d.t >= d.burnAt) { d.burnt = true; G.burnt++; G.streak = 0; fx(s.x, s.y + .5, "Burnt! 💨", "#3A2A22"); snd("burnt"); }
     }
     if (s.t === "dishwasher" && s.run > 0) { s.run -= dt * speedOf("dishwasher"); if (s.run <= 0) { s.run = 0; G.clean += s.load; s.load = 0; } }
   }
@@ -967,13 +1081,13 @@ function loadDishwasher(a, s) {
 function leeTap(o) {
   if (mg) { toastMsg("Finish this first, or tap ✕"); return; }
   interrupt(lee);
-  lee.goal = o;
+  lee.goal = o; G.idle = 0;
   const [x, y] = standFor(o, lee);
   goTo(lee, x, y, () => { lee.goal = null; leeArrive(o); });
 }
 function leeArrive(o) {
   const L = lee, h = L.hand;
-  if (o.k === "st") return leeStation(o.s);
+  if (o.k === "st") return leeStation(o.s, o.pref);
   if (o.k === "mess") {
     if (!G.messes.includes(o.m)) return;
     work(L, 1.3, () => { const i = G.messes.indexOf(o.m); if (i >= 0) G.messes.splice(i, 1); }, null, "mop"); return;
@@ -981,7 +1095,7 @@ function leeArrive(o) {
   if (o.k === "counter") return leeCounter(o);
   if (o.k === "table") return leeTable(o.t);
 }
-function leeStation(s) {
+function leeStation(s, pref) {
   const L = lee, h = L.hand, def = STATIONS[s.t];
   if (def.k === "sink") {
     if (h && h.k === "dirty") { G.sink += h.n; L.hand = null; }
@@ -1022,7 +1136,8 @@ function leeStation(s) {
       else toastMsg(RECIPES[any[0].k.r].n + " starts at the " + STATIONS[RECIPES[any[0].k.r].s[0]].n.toLowerCase());
       return;
     }
-    if (opts2.length === 1) startDish(L, opts2[0], s);
+    if (pref && opts2.includes(pref)) startDish(L, pref, s);
+    else if (opts2.length === 1) startDish(L, opts2[0], s);
     else chooser(opts2, r => { if (L.x === s.sx && L.y === s.sy && !L.hand && !s.item && (!s.user || s.user === L)) startDish(L, r, s); });
     return;
   }
@@ -1088,6 +1203,89 @@ function leeTable(t) {
   else if (g && g.state === "eat") toastMsg("Enjoying their food");
 }
 
+/* ---------- the coach: what would a good player do next? ----------
+   Returns { o: a tap target (same shape as hitTest gives), say: a short instruction }, or null. */
+const stObj = s => ({ k: "st", s }), spotObj = i => ({ k: "counter", what: "pass", i, x: COUNTER.pass[i] });
+const sn = t => STATIONS[t].n.toLowerCase(), rn = r => RECIPES[r].n.toLowerCase();
+function wantedBy(r) { const o = openTickets(r).filter(x => x.g.state === "wait" && x.g.table).sort((a, b) => a.g.pat - b.g.pat)[0]; return o ? o.g : null; }
+const watched = s => G.actors.some(a => a !== lee && a.watch === s);
+const cookTime = r => RECIPES[r].s.reduce((a, t) => a + (t === "plate" ? .4 : STATIONS[t].d || 1), 0);
+function coachNext() {
+  if (!G || mg || G.ended) return null;
+  const h = lee.hand, st = G.stations, staffHas = role => G.actors.some(a => a.role === role);
+  const sink = st.find(s => s.t === "sink"), dw = st.find(s => s.t === "dishwasher" && s.run <= 0 && s.load < DW_CAP);
+  const putDown = why => {
+    const top = st.find(s => s.t === "top" && !s.item); if (top) return { o: stObj(top), say: why + ": put it on the worktop" };
+    const i = G.spots.indexOf(null); if (i >= 0) return { o: spotObj(i), say: why + ": put it down on the counter" };
+    return null;
+  };
+  const burning = st.filter(s => s.item && STATIONS[s.t].k === "pas" && s.item.ready && !s.item.burnt && s.item.burnAt - s.item.t < 4.5 && !watched(s));
+  if (h) {
+    if (h.k === "dirty") return dw ? { o: stObj(dw), say: "Load the dirty plates into the dishwasher" } : sink ? { o: stObj(sink), say: "Take the dirty plates to the sink" } : null;
+    if (h.burnt) return { o: { k: "counter", what: "bin", x: COUNTER.bin }, say: "That's burnt: throw it in the bin" };
+    const R = RECIPES[h.r];
+    if (burning.length && R.s[h.s] !== burning[0].t) { const p = putDown("Something's about to burn"); if (p) return p; }
+    if (h.s >= R.s.length) {
+      const g = wantedBy(h.r); if (g) return { o: { k: "table", t: g.table }, say: `Serve the ${rn(h.r)} to table ${g.table.i + 1}` };
+      if (G.clean <= 1 && need(h.r) < 0) return { o: { k: "counter", what: "bin", x: COUNTER.bin }, say: "Nobody wants this now: bin it to free up the plate" };
+      return putDown("Nobody needs this right now");
+    }
+    const nx = R.s[h.s];
+    if (nx === "plate") return G.clean > 0 ? { o: { k: "counter", what: "plates", x: COUNTER.plates }, say: `Plate up the ${rn(h.r)}` } : putDown("No clean plates");
+    const s = st.find(s => s.t === nx && !s.item && (!s.user || s.user === lee)) || st.find(s => s.t === nx && s.item && (s.item.ready || s.item.burnt) && !watched(s));
+    if (s) return { o: stObj(s), say: `Next for the ${rn(h.r)}: the ${sn(nx)}` };
+    return putDown(`The ${sn(nx)} is busy`);
+  }
+  if (burning.length) return { o: stObj(burning[0]), say: `Quick! Take the ${rn(burning[0].item.r)} off the ${sn(burning[0].t)}` };
+  const rowdy = G.groups.find(g => g.rowdy && g.shout > 0 && g.table && !g.calmClaim);
+  if (rowdy) return { o: { k: "table", t: rowdy.table }, say: `Calm down table ${rowdy.table.i + 1}` };
+  const ord = G.groups.filter(g => g.state === "order" && g.table && !g.claim).sort((a, b) => a.pat - b.pat)[0];
+  if (ord) return { o: { k: "table", t: ord.table }, say: `Take table ${ord.table.i + 1}'s order` };
+  const ready = st.find(s => s.item && STATIONS[s.t].k === "pas" && s.item.ready && !s.item.burnt && !watched(s));
+  if (ready) return { o: stObj(ready), say: `The ${rn(ready.item.r)} is ready: pick it up` };
+  const burnt = st.find(s => s.item && s.item.burnt && !watched(s));
+  if (burnt) return { o: stObj(burnt), say: `Clear the burnt food off the ${sn(burnt.t)}` };
+  // things that were put down
+  const held = [...G.spots.map((d, i) => d && { d, o: spotObj(i) }), ...st.filter(s => s.t === "top" && s.item).map(s => ({ d: s.item, o: stObj(s) }))].filter(x => x && !x.d.claim);
+  const freeWaiter = G.actors.some(a => a.role === "waiter" && !a.hand && !a.path.length && !a.work);
+  for (const { d, o } of held) {
+    if (d.burnt) return { o, say: "Throw the burnt food away" };
+    const R = RECIPES[d.r], done = d.s >= R.s.length;
+    if (done) {
+      const g = wantedBy(d.r);
+      if (g && !freeWaiter) return { o, say: `Pick up the ${rn(d.r)} for table ${g.table.i + 1}` };
+      if (!g && need(d.r) < 0 && G.clean === 0) return { o, say: `Nobody wants that ${rn(d.r)} now: bin it to free up the plate` };
+      continue;
+    }
+    const nx = R.s[d.s];
+    if (nx === "plate" ? G.clean > 0 : st.some(s => s.t === nx && !s.item && !s.user)) return { o, say: `Carry on with the ${rn(d.r)}` };
+  }
+  if (G.clean <= 1 && !staffHas("porter")) {
+    if (G.sink > 0 && !G.washer && sink) return { o: stObj(sink), say: "Nearly out of clean plates: wash up" };
+    const t = G.tables.find(t => t.dirty && !t.claim); if (t) return { o: { k: "table", t }, say: `Clear table ${t.i + 1}: you need the plates` };
+  }
+  // start a dish: the most impatient table first, and the slowest dish first
+  const cands = openTickets().filter(x => x.g.state === "wait" && need(x.k.r) > 0 && stockOk(x.k.r) && canMake(x.k.r))
+    .filter(x => !(staffHas("cook") && !RECIPES[x.k.r].d && G.actors.some(a => a.role === "cook" && !a.hand)) && !(staffHas("drinks") && RECIPES[x.k.r].d))
+    .sort((a, b) => (a.g.pat - b.g.pat) * 2 + (cookTime(b.k.r) - cookTime(a.k.r)) / 20);
+  for (const { k } of cands) {
+    const t = RECIPES[k.r].s[0], s = st.find(s => s.t === t && !s.item && !s.user);
+    if (s) return { o: Object.assign(stObj(s), { pref: k.r }), say: `Start the ${rn(k.r)} at the ${sn(t)}` };
+  }
+  const dt = G.tables.find(t => t.dirty && !t.claim);
+  if (dt && !staffHas("porter") && !staffHas("waiter")) return { o: { k: "table", t: dt }, say: `Clear the plates from table ${dt.i + 1}` };
+  if (G.sink > 0 && !G.washer && sink && !staffHas("porter")) return { o: stObj(sink), say: "Wash up while it's quiet" };
+  const m = G.messes.find(m => !m.claim); if (m && !staffHas("floor")) return { o: { k: "mess", m }, say: "Mop up the spill" };
+  return null;
+}
+function helpMode() { return opts.help || "auto"; }
+function learning() { return LV != null ? LV < 5 : S && S.day <= 3; }
+function coachShown() {
+  if (!G || !G.coach || mg || lee.path.length || lee.work) return false;
+  const m = helpMode();
+  return m === "on" || (m === "auto" && (learning() || G.idle > 5));
+}
+
 /* ---------- staff: what they do when they're free ---------- */
 function staffThink(a, dt) {
   if (a.path.length || a.work) return;
@@ -1111,9 +1309,16 @@ function tryOrder(a) {
   return true;
 }
 function tryDeliver(a) {
-  const d = G.spots.find(d => d && !d.claim && !d.burnt && d.s >= RECIPES[d.r].s.length && openTickets(d.r).length); if (!d) return false;
-  d.claim = a;
-  goTo(a, COUNTER.pass[G.spots.indexOf(d)], 4.85, () => { d.claim = null; const i = G.spots.indexOf(d); if (i >= 0 && !a.hand) { a.hand = d; G.spots[i] = null; } });
+  const ok = d => d && !d.claim && !d.burnt && d.s >= RECIPES[d.r].s.length && openTickets(d.r).length;
+  const d = G.spots.find(ok);
+  if (d) {
+    d.claim = a;
+    goTo(a, COUNTER.pass[G.spots.indexOf(d)], 4.85, () => { d.claim = null; const i = G.spots.indexOf(d); if (i >= 0 && !a.hand) { a.hand = d; G.spots[i] = null; } });
+    return true;
+  }
+  const top = G.stations.find(s => s.t === "top" && ok(s.item)); if (!top) return false;
+  const t = top.item; t.claim = a;
+  goTo(a, top.sx, top.sy, () => { t.claim = null; if (top.item === t && !a.hand) { a.hand = t; top.item = null; } });
   return true;
 }
 function tryClear(a) {
@@ -1218,7 +1423,7 @@ function openMini(type, dish, s) {
     if (!mg) return;
     if (mg.type === "chop") { mg.prog++; const f = $("mgF"); f.style.transform = `scale(.9) rotate(${rnd(-8, 8)}deg)`; setTimeout(() => f && (f.style.transform = ""), 80);
       const c = document.createElement("i"); c.style.left = (24 + mg.prog * 9) + "%"; $("mgC").append(c);
-      $("mgS").textContent = "Chop! · " + mg.prog + "/6"; if (mg.prog >= 6) finishMini(); }
+      $("mgS").textContent = "Chop! · " + mg.prog + "/6"; snd("chop"); if (mg.prog >= 6) finishMini(); }
     else if (mg.type === "mix") { A.setPointerCapture(e.pointerId); mg.ang = angleIn(A, e); mg.turn += .35; mixUpd(); }
     else { A.setPointerCapture(e.pointerId); mg.holding = true; }
   };
@@ -1235,7 +1440,7 @@ function mixUpd(e, A) {
 function pourRelease() {
   const f = mg.fill;
   if (f < .82) { $("mgS").textContent = "Keep going: hold again"; return; }
-  if (f <= .96) { mg.dish.perfect = true; G.perfect++; $("mgS").textContent = "Perfect!"; }
+  if (f <= .96) { mg.dish.perfect = true; G.perfect++; $("mgS").textContent = "Perfect!"; snd("ready"); }
   else $("mgS").textContent = "A bit full, but fine";
   finishMini();
 }
@@ -1243,7 +1448,7 @@ function mgStep(dt) {
   if (!mg || mg.type !== "pour") return;
   if (mg.holding) {
     mg.fill += dt * .5;
-    if (mg.fill >= 1) { mg.fill = 0; mg.holding = false; G.spills++; $("mgS").textContent = "Overflowed! Start again"; fx(lee.x, lee.y - 1, "Spilt! 💦", "#5B8DB8"); }
+    if (mg.fill >= 1) { mg.fill = 0; mg.holding = false; G.spills++; snd("spill"); $("mgS").textContent = "Overflowed! Start again"; fx(lee.x, lee.y - 1, "Spilt! 💦", "#5B8DB8"); }
   }
   const el = $("mgFill"); if (el) el.style.height = Math.min(100, mg.fill * 100) + "%";
 }
@@ -1271,11 +1476,14 @@ function loop(now) {
 function step(dt) {
   if (G.ended) return;
   G.t += dt;
-  if (G.open && G.t >= G.len) { G.open = false; toastMsg("Closing time! Finish serving everyone.", 2.5); }
+  if (G.open && G.t >= G.len) { G.open = false; toastMsg("Closing time! Finish serving everyone.", 2.5); snd("bell"); }
+  if (G.rush.length && G.t >= G.rush[0].t) { toastMsg(G.rush.shift().say, 2.6); snd("bell"); }
+  if (G.clean === 0 && G.groups.some(g => g.state === "wait")) G.plateless += dt;
   groupsStep(dt); stationsStep(dt); mgStep(dt);
   for (const a of G.actors) { actorStep(a, dt); if (a !== lee) staffThink(a, dt); }
   for (const f of G.fx) f.t += dt; G.fx = G.fx.filter(f => f.t < 1.8);
   for (const tp of G.taps) tp.t += dt; G.taps = G.taps.filter(tp => tp.t < .45);
+  if (!lee.path.length && !lee.work && !mg) G.idle += dt; else G.idle = 0;
   if (!G.open && !G.groups.length) { G.endT += dt; if (G.endT > 1.2) endDay(); }
 }
 function fx(x, y, text, col) { G.fx.push({ x, y, text, col, t: 0 }); }
@@ -1366,6 +1574,15 @@ function draw() {
   // where Lee Lee is heading, and where the finger landed
   const gb = lee.path.length ? goalBox(lee.goal) : null;
   if (gb) { c.strokeStyle = "#E8664A"; c.lineWidth = 3; c.setLineDash([6, 4]); c.lineDashOffset = -G.t * 20; rr(c, PX(gb[0]) - 3, PY(gb[1]) - 3, gb[2] * T + 6, gb[3] * T + 6, 10); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0; }
+  if (coachShown()) {
+    const b = goalBox(G.coach.o);
+    if (b) {
+      const cx = PX(b[0] + b[2] / 2), top = PY(b[1]) - 6 - Math.abs(Math.sin(G.t * 5)) * T * .22;
+      c.strokeStyle = `rgba(62,155,107,${.5 + .4 * pulse})`; c.lineWidth = 3; rr(c, PX(b[0]) - 4, PY(b[1]) - 4, b[2] * T + 8, b[3] * T + 8, 12); c.stroke();
+      c.fillStyle = "#3E9B6B"; c.strokeStyle = "#fff"; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(cx, top); c.lineTo(cx - T * .22, top - T * .3); c.lineTo(cx - T * .08, top - T * .3); c.lineTo(cx - T * .08, top - T * .55); c.lineTo(cx + T * .08, top - T * .55); c.lineTo(cx + T * .08, top - T * .3); c.lineTo(cx + T * .22, top - T * .3); c.closePath(); c.fill(); c.stroke();
+    }
+  }
   for (const tp of G.taps) { c.strokeStyle = `rgba(232,102,74,${1 - tp.t / .45})`; c.lineWidth = 2.5; circ(c, PX(tp.x), PY(tp.y), T * (.15 + tp.t)); c.stroke(); }
   // fx
   for (const f of G.fx) { c.globalAlpha = 1 - f.t / 1.8; text(f.text, PX(f.x), PY(f.y) - f.t * T * .6, T * .32, f.col, 800); c.globalAlpha = 1; }
@@ -1484,7 +1701,7 @@ function uiTick(dt) {
   uiT -= dt; if (uiT > 0) return; uiT = .2;
   $("pClock").textContent = `${LV != null ? CHAPTERS[LEVELS[LV].ch].e + " Day " + (LV + 1) : "Day " + S.day} · ${G.open ? clock() : "Closing up"}`;
   $("pCash").textContent = money(G.rev + G.tips);
-  $("pServed").textContent = LV != null ? `${G.served + G.thrown}/${LEVELS[LV].goals[0][1]} served${G.angry ? " · " + G.angry + " out" : ""}` : `${G.served} served${G.angry ? " · " + G.angry + " walked out" : ""}`;
+  $("pServed").textContent = (LV != null ? `${G.served + G.thrown}/${LEVELS[LV].goals[0][1]} served${G.angry ? " · " + G.angry + " out" : ""}` : `${G.served} served${G.angry ? " · " + G.angry + " out" : ""}`) + (G.streak >= 2 ? ` · 🔥${G.streak}` : "");
   // tickets
   const by = new Map();
   for (const g of G.groups) if (g.table && g.state === "wait") by.set(g, g.tickets.filter(k => !k.done));
@@ -1492,15 +1709,18 @@ function uiTick(dt) {
   let html = "";
   [...by.entries()].sort((a, b) => a[0].pat - b[0].pat).forEach(([g, ks]) => {
     if (!ks.length) return;
-    html += `<div class="tk ${g.pat < .28 ? "low" : g.pat < .55 ? "mid" : ""}">${g.table.i + 1}${ks.map(k => { const go = made[k.r] > 0; if (go) made[k.r]--; return `<span class="e${go ? " go" : ""}">${RECIPES[k.r].e}</span>`; }).join("")}</div>`;
+    html += `<div class="tk ${g.pat < .28 ? "low" : g.pat < .55 ? "mid" : ""}" data-g="${g.id}">${g.table.i + 1}${ks.map(k => { const go = made[k.r] > 0; if (go) made[k.r]--; return `<span class="e${go ? " go" : ""}" data-r="${k.r}">${RECIPES[k.r].e}</span>`; }).join("")}</div>`;
   });
   const waitingOrder = G.groups.filter(g => g.state === "order").length;
-  if (waitingOrder) html = `<div class="tk mid">📝 ${waitingOrder}</div>` + html;
+  if (waitingOrder) html = `<div class="tk mid" data-order="1">📝 ${waitingOrder}</div>` + html;
   $("rail").innerHTML = html || `<span class="none">${G.open ? "No orders yet" : "Last orders done"}</span>`;
-  // hint
+  // hint (the coach's advice when it's showing)
+  G.coach = coachNext();
+  if (G.coach && !lee.path.length && !lee.work && !mg && G.idle > 3) G.slack += .2;
   const h = lee.hand;
   let hint = "";
   if (mg) hint = "";
+  else if (coachShown()) hint = `💡 <b>${esc(G.coach.say)}</b>`;
   else if (h && h.k === "dirty") hint = `Carrying <b>${h.n} dirty plate${h.n > 1 ? "s" : ""}</b>: take to the ${hasStation("dishwasher") ? "sink or dishwasher" : "sink"}`;
   else if (h && h.burnt) hint = `<b>Burnt ${esc(RECIPES[h.r].n.toLowerCase())}</b>: bin it 🗑`;
   else if (h) { const R = RECIPES[h.r], n = R.s[h.s]; hint = `<b>${esc(R.n)}</b>: ` + (h.s >= R.s.length ? "serve it to the table (or leave it on the counter)" : n === "plate" ? "plate it up at the counter" : "next, the " + STATIONS[n].n.toLowerCase()); }
@@ -1508,19 +1728,66 @@ function uiTick(dt) {
   else hint = G.clean <= 1 && G.sink + G.tables.reduce((a, t) => a + t.dirty, 0) > 0 ? "<b>Running out of plates!</b> Clear tables and wash up" : "Tap something and Lee Lee goes to it";
   $("hint").innerHTML = hint;
 }
+/* Tapping an order on the strip: serve it if Lee Lee is holding it, fetch it if it's made, otherwise start it. */
+$("rail").addEventListener("pointerdown", e => {
+  if (!G || paused || G.ended) return;
+  const el = e.target.closest("[data-r],[data-order],[data-g]"); if (!el) return;
+  e.preventDefault();
+  if (el.dataset.order) { const g = G.groups.filter(g => g.state === "order" && g.table).sort((a, b) => a.pat - b.pat)[0]; if (g) leeTap({ k: "table", t: g.table }); return; }
+  const chip = el.closest("[data-g]"), g = chip && G.groups.find(x => x.id === +chip.dataset.g); if (!g || !g.table) return;
+  const r = el.dataset.r || (g.tickets.find(k => !k.done) || {}).r; if (r) ticketTap(g, r);
+});
+function ticketTap(g, r) {
+  const h = lee.hand, R = RECIPES[r];
+  if (h && h.k === "dish" && h.r === r && h.s >= R.s.length && !h.burnt) return leeTap({ k: "table", t: g.table });
+  if (h) { toastMsg("Your hands are full"); return; }
+  const spot = G.spots.findIndex(d => d && d.r === r && !d.burnt && !d.claim); if (spot >= 0) return leeTap(spotObj(spot));
+  const st = G.stations.find(s => s.item && s.item.r === r && !s.item.burnt && (STATIONS[s.t].k === "top" || s.item.ready) && !watched(s)); if (st) return leeTap(stObj(st));
+  if (need(r) <= 0) { toastMsg(`The ${rn(r)} is already on its way`); return; }
+  const t = R.s[0], s = G.stations.find(s => s.t === t && !s.item && !s.user) || G.stations.find(s => s.t === t);
+  if (s) leeTap(Object.assign(stObj(s), { pref: r }));
+}
 document.addEventListener("visibilitychange", () => { if (document.hidden && view === "play" && G && !G.ended) pauseMenu(); });
 $("pauseBtn").onclick = () => pauseMenu();
 function pauseMenu() {
   if (paused) return;
   paused = true;
+  const pr = progress();
   dialog(`<h3>Paused</h3><p class="muted" style="text-align:center">${LV != null ? esc(LEVELS[LV].n) : `Day ${S.day} at ${esc(S.name)}`}</p>
+    ${(LV != null ? LEVELS[LV].goals.map(([k, n]) => ({ k, n })) : G.goals).length ? `<div class="goals">${(LV != null ? LEVELS[LV].goals.map(([k, n]) => ({ k, n })) : G.goals).map(g => `<div><span>${goalMet(g.k, g.n, pr) ? "✅" : "☆"}</span><span>${GOAL_TEXT[g.k](g.n)}</span></div>`).join("")}</div>` : ""}
     <div class="acts"><button class="btn pri" data-a="go">Carry on</button><button class="btn" data-a="mini">Cooking mini-games: ${opts.mini ? "on" : "off"}</button>
+    <button class="btn" data-a="help">Helper arrow: ${{ auto: "auto", on: "always", off: "off" }[helpMode()]}</button><button class="btn" data-a="sound">Sounds: ${opts.sound ? "on" : "off"}</button>
     <button class="btn" data-a="restart">${LV != null ? "Start this day again" : "Leave (this day starts again next time)"}</button></div>`, a => {
     if (a === "mini") { opts.mini = !opts.mini; store("ll.opts", opts); paused = false; pauseMenu(); return; }
-    if (a === "restart") { paused = false; G = null; closeMini(); if (LV != null) { const i = LV; LV = null; S = null; renderCamp(); show("camp"); levelIntro(i); } else { renderTitle(); show("title"); } return; }
+    if (a === "help") { opts.help = HELP_NEXT[helpMode()]; store("ll.opts", opts); paused = false; pauseMenu(); return; }
+    if (a === "sound") { opts.sound = !opts.sound; store("ll.opts", opts); paused = false; pauseMenu(); return; }
+    if (a === "restart") { paused = false; G = null; closeMini(); if (LV != null) { const i = LV; LV = null; EASY = false; S = null; renderCamp(); show("camp"); levelIntro(i); } else { renderTitle(); show("title"); } return; }
     paused = false; lastT = performance.now();
   });
 }
+
+/* After a day: the one or two things that would help most next time. */
+function dayTips(g) {
+  const t = [], add = (score, text) => { if (score > 0) t.push([score, text]); }, ob = g.outBy;
+  add(ob.order * 3, "Some people walked out before ordering. Take an order as soon as a 📝 appears: it only takes a moment.");
+  add(ob.food * 2.5, "Some people gave up waiting for food. Start the slowest dish first, and get the next one going while something cooks.");
+  add(ob.queue * 2, LV != null ? "People gave up waiting for a table. Clear the plates as soon as a table leaves." : "People gave up waiting for a table. Clear tables quickly, or add more tables in Upgrades.");
+  add(g.burnt * 3, "Food burnt. Listen for the warning beeps and look for ⚠️. If your hands are full, put things down on the counter first.");
+  add(g.plateless > 4 ? g.plateless / 4 : 0, "You ran out of clean plates. Wash up in quiet moments" + (LV == null ? ", or buy more plates in Upgrades." : "."));
+  add(g.spills * 2, "Drinks overflowed. Let go as soon as the glass reaches the green band.");
+  add(g.messes.length * 2, "Spills were left on the floor. They make nearby tables grumpy, so tap a puddle to mop it.");
+  add(g.turned * 3, "Some people couldn't get what they wanted because stock ran out. Turn on automatic stock in the office.");
+  add(g.slack > 10 ? g.slack / 5 : 0, "Lee Lee stood still while work was waiting. Tap an order on the strip at the top to jump straight to it.");
+  if (g.critic === "angry") add(10, "The critic walked out. Serve the 🧐 table first.");
+  t.sort((a, b) => b[0] - a[0]);
+  const out = t.slice(0, 2).map(x => x[1]);
+  const dn = LV == null ? (S.diff != null ? S.diff : 1) : 2;
+  if (!out.length) out.push(g.bestStreak >= 5 && dn < 2 ? `Lovely service! Try ${DIFFS[dn + 1].n} (in the office) for more customers and bigger tips.` : "Lovely service! Keep tables happy one after another for a 🔥 streak and bigger tips.");
+  return out;
+}
+
+/* How the day is going, in the shape goalMet reads. */
+function progress() { return { served: G.served + G.thrown, angry: G.angry, burnt: G.burnt, rev: G.rev, tips: G.tips, perfect: G.perfect, critic: G.critic, messes: G.messes.length, streak: G.bestStreak }; }
 
 /* ---------- end of the day ---------- */
 function endDay() {
@@ -1531,10 +1798,12 @@ function endDay() {
   let fee = S.cash < 0 ? 4 : 0;
   // leftover messes and dirty plates count against you
   const messes = G.messes.length; G.repD -= messes * 2;
-  const income = Math.round((G.rev + G.tips) * 100) / 100;
+  const pr = progress(), goals = (G.goals || []).map(g => Object.assign({ ok: goalMet(g.k, g.n, pr) }, g));
+  const bonus = goals.reduce((a, g) => a + (g.ok ? g.cash : 0), 0); G.repD += goals.reduce((a, g) => a + (g.ok ? g.rep : 0), 0);
+  const income = Math.round((G.rev + G.tips + bonus) * 100) / 100;
   const net = income - wages - rent - fee;
   const repBefore = S.rep, starsBefore = starsOf(S.rep);
-  S.rep = Math.max(0, S.rep + G.repD);
+  S.rep = Math.max(0, Math.round(S.rep + G.repD));
   S.cash = Math.round((S.cash + net) * 100) / 100;
   // stock: what's left, fresh food half goes off
   const spoiled = {};
@@ -1564,7 +1833,7 @@ function endDay() {
   if (G.critic === "angry") news.unshift("The food critic walked out. Ouch, a bad review.");
   if (S.cash < 0) news.push("You're overdrawn. The bank charges £4 a night until you're back in the black.");
   const last = { day: S.day, rev: G.rev, tips: G.tips, wages, rent, fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
-    messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc };
+    messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G) };
   S.last = last;
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
   S.stats.served += G.served; S.stats.angry += G.angry; S.stats.earned += income; S.stats.best = Math.max(S.stats.best, Math.round(net));
@@ -1574,15 +1843,19 @@ function endDay() {
   const rating = g.people ? g.happy / g.people : 0, dayStars = rating > .85 ? 3 : rating > .6 ? 2 : rating > .3 ? 1 : 0;
   show("manage"); renderManage("day");
   dialog(`<h3>Day ${last.day} done!</h3><div class="stars" style="text-align:center;font-size:2rem">${"★".repeat(dayStars)}${"☆".repeat(3 - dayStars)}</div>
-    <div class="lines"><div><span>Customers served</span><b>${last.served} of ${last.people}</b></div>
+    <div class="lines"><div><span>Customers served</span><b>${last.served + last.thrown} of ${last.people}</b></div>
     ${last.angry ? `<div><span>Walked out</span><b class="neg">${last.angry}</b></div>` : ""}
     ${last.turned ? `<div><span>Nothing they wanted in stock</span><b class="neg">${last.turned}</b></div>` : ""}
     ${last.burnt ? `<div><span>Burnt dishes</span><b class="neg">${last.burnt}</b></div>` : ""}
     ${last.perfect ? `<div><span>Perfect pours</span><b class="pos">${last.perfect}</b></div>` : ""}
     <div><span>Takings + tips</span><b>${money(last.rev + last.tips)}</b></div>
+    ${bonus ? `<div><span>Goal rewards</span><b class="pos">${money(bonus)}</b></div>` : ""}
     <div><span>Rent${wages ? " + wages" : ""}</span><b>−${money(rent + wages + fee)}</b></div>
     <div class="tot"><span>Profit</span><b class="${net >= 0 ? "pos" : "neg"}">${money(net)}</b></div>
     <div><span>Reputation</span><b class="${last.repD >= 0 ? "pos" : "neg"}">${last.repD >= 0 ? "+" : ""}${last.repD}</b></div></div>
+    ${goals.length ? `<div class="goals">${goals.map(x => `<div><span>${x.ok ? "⭐" : "✖️"}</span><span>${GOAL_TEXT[x.k](x.n)}${x.ok ? ` <b class="pos">+${money(x.cash)}</b>` : ""}</span></div>`).join("")}</div>` : ""}
+    ${last.streak >= 3 ? `<p class="small" style="text-align:center">🔥 Best streak: <b>${last.streak}</b> happy tables in a row</p>` : ""}
+    <div class="news small"><b>Next time</b><br>${last.advice.map(esc).join("<br>")}</div>
     <div class="acts"><button class="btn pri" data-a="ok">To the office</button></div>`);
 }
 
@@ -1658,6 +1931,7 @@ function tabDay() {
       <div><span>Takings</span><b>${money(L.rev)}</b></div><div><span>Tips</span><b>${money(L.tips)}</b></div>
       <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
       ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
+    if (L.advice) h += `<div class="news small"><b>💡 Next time</b><br>${L.advice.map(esc).join("<br>")}</div>`;
   } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
   h += `<div class="card"><div class="row spread"><h2>Reputation</h2><span class="stars">${starStr(st)}</span></div><div class="meter"><i style="width:${prog * 100}%"></i></div>
     <p class="small muted">${next ? `${Math.round(S.rep)} of ${next} for the next star.` : "Five stars: the best in town!"} About <b>${Math.round(expectedGroups(S))}</b> groups expected tomorrow.</p></div>`;
@@ -1665,7 +1939,9 @@ function tabDay() {
   h += `<div class="card"><div class="row spread"><div class="grow"><h2>Stock</h2><p class="small muted">${auto ? (cost > 0 ? `Topped up automatically when you open: about ${money(cost)}.` : "You have enough for tomorrow.") : "You buy stock yourself."}</p></div>
       <button class="btn sm ${auto ? "good" : ""}" data-act="autotoggle">${auto ? "Auto: on" : "Auto: off"}</button></div>
     <details id="stockBox"><summary class="small muted">Choose amounts myself</summary>${stockList()}</details></div>`;
-  h += `<div class="card"><div class="row spread"><div class="grow"><b>${esc(S.name)}</b><div class="small muted">${esc(VENUES[S.venue].n)} · ${S.stats.served} customers in total</div></div><button class="btn sm" data-act="rename">Rename</button></div></div>`;
+  h += `<div class="card"><div class="row spread"><div class="grow"><b>${esc(S.name)}</b><div class="small muted">${esc(VENUES[S.venue].n)} · ${S.stats.served} customers in total</div></div><button class="btn sm" data-act="rename">Rename</button></div>
+    <div class="row spread"><span><b>How busy</b></span><select id="diffSel">${DIFFS.map((D, i) => `<option value="${i}" ${i === (S.diff != null ? S.diff : 1) ? "selected" : ""}>${D.e} ${D.n}</option>`).join("")}</select></div>
+    <p class="small muted">${esc(diffOf(S).d)}</p></div>`;
   h += `<button class="btn" data-act="title">Back to save slots</button>`;
   return h;
 }
@@ -1768,6 +2044,7 @@ function tabUp() {
   return h + `</div>`;
 }
 $("mwrap").addEventListener("change", e => {
+  if (e.target.id === "diffSel") { S.diff = +e.target.value; saveGame(); renderManage(); return; }
   if (e.target.id === "discR" || e.target.id === "discP") {
     const r = $("discR").value, p = +$("discP").value;
     S.disc = r ? { r, pct: p } : null; saveGame();
