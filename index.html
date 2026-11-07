@@ -18,7 +18,9 @@ const gameForLink = h => (/^#?lu\./.test(h) ? "games/link-up/" : /^#?sl\./.test(
 if (location.hash.length > 1) location.replace(gameForLink(location.hash) + location.hash);
 </script>
 <style>
-/* Layout: one scrolling column. A dark "shelf" header, then one tall card per game, each wearing its own game's colours. */
+/* Layout: a dark "shelf" header, then "Today's puzzles" (the daily games, done or not), "Carry on" (the last games played,
+   from sg.recent, written by shell.js), then every game as a two-column tile grid in groups. Each tile wears its own
+   game's colours; its picture is drawn in a 96x112 .frame so it keeps its shape however wide the tile is. */
 :root{
   --bg:#ECEEF1; --surface:#FFFFFF; --ink:#17202B; --muted:#5E6878; --line:#D3D8DF;
   --shelf:#17202B; --shelf-ink:#F3F5F8; --accent:#F2A500; --accent-ink:#1A1300; --good:#16865A; --bad:#C93838;
@@ -64,15 +66,55 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
 
-.game{display:grid;grid-template-columns:96px 1fr;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;text-decoration:none;color:inherit;min-height:112px}
-.game:active{transform:scale(.99)}
-.art{display:grid;place-items:center;position:relative}
-.info{padding:14px 14px 14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.info h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.25rem;line-height:1.1}
-.info .kind{font-size:.72rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.info .stat{font-size:.88rem;color:var(--muted);font-variant-numeric:tabular-nums}
+section{display:flex;flex-direction:column;gap:10px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:520px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.game{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit}
+.game:active{transform:scale(.98)}
+.art{display:grid;place-items:center;position:relative;overflow:hidden;height:88px}
+.frame{position:relative;width:96px;height:112px;flex:none;transform:scale(.78);display:grid;place-items:center}
+.art svg{overflow:visible}
+.info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.info h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.02rem;line-height:1.12}
+.grid .kind{display:none}
+.info .kind{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.3}
+.info .stat{font-size:.8rem;line-height:1.35;color:var(--muted);font-variant-numeric:tabular-nums;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .info .stat b{color:var(--ink)}
-.info .go{margin-top:auto;align-self:flex-start;font-weight:800;font-size:.88rem;background:var(--accent);color:var(--accent-ink);border-radius:99px;padding:6px 14px}
+/* Carry on: the same card laid sideways, picture on the left (also the odd last tile of a group on a phone) */
+.recent{display:flex;flex-direction:column;gap:10px}
+@media (max-width:519px){
+  .grid>.game:last-child:nth-child(odd){grid-column:1/-1;display:grid;grid-template-columns:96px 1fr;min-height:96px}
+  .grid>.game:last-child:nth-child(odd) .art{height:auto}
+  .grid>.game:last-child:nth-child(odd) .frame{transform:scale(.9)}
+  .grid>.game:last-child:nth-child(odd) .info{padding:12px 14px;justify-content:center}
+}
+.game.wide{display:grid;grid-template-columns:96px 1fr;min-height:104px}
+.game.wide .art{height:auto}
+.game.wide .frame{transform:none}
+.game.wide .info{padding:12px 14px;justify-content:center}
+.game.wide h2{font-size:1.15rem}
+.game.wide .stat{font-size:.86rem;-webkit-line-clamp:4}
+.game.wide .kind{color:var(--good)}
+/* Today's puzzles */
+.today{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;gap:10px}
+.today .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.today h3{margin:0}
+.today .count{font-size:.8rem;font-weight:700;color:var(--muted)}
+.today .count.all{color:var(--good)}
+.chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.chip{display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:8px 2px 7px;border-radius:12px;border:1px solid var(--line);background:var(--bg);text-decoration:none;color:inherit;font-weight:700;font-size:.74rem;line-height:1.15}
+.chip:active{transform:scale(.96)}
+.chip .sw{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:1.05rem;font-weight:800}
+.chip small{display:block;margin-top:2px;font-size:.66rem;font-weight:600;color:var(--muted)}
+.chip.done{background:color-mix(in srgb,var(--good) 12%,var(--surface));border-color:color-mix(in srgb,var(--good) 35%,transparent)}
+.chip.done small{color:var(--good)}
+/* Backup and app updates, folded away at the bottom */
+.more{margin-top:6px;display:flex;flex-direction:column}
+.more summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-weight:800}
+.more summary::-webkit-details-marker{display:none}
+.more summary span:first-child::before{content:"▸";display:inline-block;width:1.1em;color:var(--muted);transition:transform .15s}
+.more[open] summary span:first-child::before{transform:rotate(90deg)}
+.more[open]>*+*{margin-top:10px}
 
 /* Word Rattle art: a die tile on cobalt */
 .art.wr{background:#1F3A93}
@@ -96,7 +138,7 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .art.tp .b{position:absolute;left:50%;bottom:34px;width:18px;height:36px;margin-left:-22px;border-radius:3px;background:linear-gradient(90deg,#D9822F 70%,#C26F25);box-shadow:inset 0 5px 0 #F7B95A;transform:rotate(18deg);transform-origin:bottom right}
 /* Buddy Breakout art: Buddy, a white labradoodle, sliding down a mud slope under a blue sky */
 .art.ml{background:linear-gradient(#8FD0F5 62%,#7DBA5A 62%);overflow:hidden}
-.art.ml .s{position:absolute;left:-10px;bottom:24px;width:90px;height:60px;background:#6B4423;clip-path:polygon(0 0,100% 100%,0 100%)}
+.art.ml .s{position:absolute;left:-100px;bottom:24px;width:180px;height:120px;background:#6B4423;clip-path:polygon(0 0,100% 100%,0 100%)}
 .art.ml .d{position:absolute;left:30px;top:28px;width:30px;height:18px;border-radius:50%;background:#fff;box-shadow:-8px -3px 0 -2px #fff,8px -5px 0 0 #fff,12px -8px 0 2px #fff,2px 5px 0 -3px #6B4423;transform:rotate(30deg)}
 .art.ml .d::after{content:"";position:absolute;right:-12px;top:-7px;width:4px;height:4px;border-radius:50%;background:#1E1712}
 /* Boxed In art: a box-headed survivor on a dark floor */
@@ -119,9 +161,9 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 /* Lee Lee's Kitchen art: Lee Lee with a steaming cup on a warm café wall */
 .art.ll{background:#FFE3D2;overflow:hidden}
 .art.ll svg{width:96px;height:100%}
-.art.hd{background:#3A2C21;overflow:hidden}
+.art.hd{background:#67503B;overflow:hidden}
 .art.hd svg{width:96px;height:100%}
-/* Gem Tower Defence art: a faceted gem on dusk purple */
+/* Gravity Well art: a dashed shot curving round a planet */
 .art.gw{background:#05070D;overflow:hidden}
 .art.gw .o{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;border:1px dashed rgba(170,190,255,.35)}
 .art.gw .p{position:absolute;left:50%;top:50%;width:32px;height:32px;margin:-16px 0 0 -16px;border-radius:50%;background:#FFC65A;box-shadow:inset -7px -7px 0 rgba(0,0,0,.28)}
@@ -129,6 +171,7 @@ main{padding-block:18px calc(32px + env(safe-area-inset-bottom,0px));display:fle
 .art.gw svg{position:absolute;inset:0;width:100%;height:100%}
 .art.es{background:#F0A65E;overflow:hidden}
 .art.es svg{position:absolute;inset:0;width:100%;height:100%}
+/* Gem Tower Defence art: a faceted gem on dusk purple */
 .art.gb{background:#231F31}
 .art.gb .gem{width:48px;height:48px;clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%);
   background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.62),rgba(255,255,255,.06) 42%,rgba(0,0,0,.34) 100%),conic-gradient(#ec3b55 0 70deg,#f4d03f 70deg 170deg,#3d82f5 170deg 260deg,#a25cf0 260deg 360deg)}
@@ -167,83 +210,109 @@ textarea{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--li
 </header>
 
 <main class="wrap">
-  <div class="notice" id="note" hidden></div>
 
-  <a class="game" href="games/word-rattle/index.html">
-    <div class="art wr" aria-hidden="true"><div class="die">W</div><div class="die">R</div></div>
-    <div class="info"><span class="kind">Word dice · 1 to 8 players</span><h2>Word Rattle</h2><span class="stat" id="stWR">Swipe words on a shaken board.</span><span class="go">Play</span></div>
-  </a>
-  <a class="game" href="games/link-up/index.html">
-    <div class="art lu" aria-hidden="true"><div class="g"><i></i><i></i><i></i><i></i></div></div>
-    <div class="info"><span class="kind">Word groups · daily</span><h2>Link Up</h2><span class="stat" id="stLU">Sixteen words, four hidden groups.</span><span class="go">Play</span></div>
-  </a>
-  <a class="game" href="games/cross-sums/index.html">
-    <div class="art cs" aria-hidden="true"><div class="g"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i>8</i><i>9</i><i class="b"></i><i>1</i><i>3</i></div></div>
-    <div class="info"><span class="kind">Number puzzle</span><h2>Kakuro</h2><span class="stat" id="stCS">200 puzzles with notes and best times.</span><span class="go">Play</span></div>
-  </a>
-  <a class="game" href="games/gem-bastion/index.html">
-    <div class="art gb" aria-hidden="true"><div class="gem"></div></div>
-    <div class="info"><span class="kind">Strategy</span><h2>Gem Tower Defence</h2><span class="stat" id="stGB">Forge gems, merge them, hold the path.</span><span class="go">Play</span></div>
-  </a>
+  <section class="today" id="today" aria-labelledby="todayH">
+    <div class="head"><h3 id="todayH">Today's puzzles</h3><span class="count" id="todayCount"></span></div>
+    <div class="chips" id="todayChips"></div>
+  </section>
 
-  <a class="game" href="games/topple/index.html">
-    <div class="art tp" aria-hidden="true"><div class="t"><i></i><i></i><i class="g"></i></div><div class="b"></div></div>
-    <div class="info"><span class="kind">Block puzzle · daily</span><h2>Topple</h2><span class="stat" id="stTP">Tip the block into the hole.</span><span class="go">Play</span></div>
-  </a>
+  <section id="recentBox" hidden aria-labelledby="recentH">
+    <h3 id="recentH">Carry on</h3>
+    <div class="recent" id="recent"></div>
+  </section>
 
-  <a class="game" href="games/mudlark/index.html">
-    <div class="art ml" aria-hidden="true"><div class="s"></div><div class="d"></div></div>
-    <div class="info"><span class="kind">Launch and upgrade</span><h2>Buddy Breakout</h2><span class="stat" id="stML">Get Buddy to the lady dogs.</span><span class="go">Play</span></div>
-  </a>
+  <section>
+    <h3>Words &amp; numbers</h3>
+    <div class="grid">
+    <a class="game" href="games/word-rattle/index.html" data-game="word-rattle">
+    <div class="art wr" aria-hidden="true"><div class="frame"><div class="die">W</div><div class="die">R</div></div></div>
+    <div class="info"><span class="kind">Word dice · 1 to 8 players</span><h2>Word Rattle</h2><span class="stat" id="stWR">Swipe words on a shaken board.</span></div>
+    </a>
+    <a class="game" href="games/link-up/index.html" data-game="link-up">
+    <div class="art lu" aria-hidden="true"><div class="frame"><div class="g"><i></i><i></i><i></i><i></i></div></div></div>
+    <div class="info"><span class="kind">Word groups · daily</span><h2>Link Up</h2><span class="stat" id="stLU">Sixteen words, four hidden groups.</span></div>
+    </a>
+    <a class="game" href="games/cross-sums/index.html" data-game="cross-sums">
+    <div class="art cs" aria-hidden="true"><div class="frame"><div class="g"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i>8</i><i>9</i><i class="b"></i><i>1</i><i>3</i></div></div></div>
+    <div class="info"><span class="kind">Number puzzle</span><h2>Kakuro</h2><span class="stat" id="stCS">200 puzzles with notes and best times.</span></div>
+    </a>
+    </div>
+  </section>
 
-  <a class="game" href="games/echo-cartographer/index.html">
-    <div class="art ec" aria-hidden="true"><div class="r"></div><div class="w w1"></div><div class="w w2"></div><div class="d"></div><div class="x"></div></div>
-    <div class="info"><span class="kind">Memory maze · daily</span><h2>Echo Cartographer</h2><span class="stat" id="stEC">Ping the dark. Remember the walls.</span><span class="go">Play</span></div>
-  </a>
+  <section>
+    <h3>Puzzles</h3>
+    <div class="grid">
+    <a class="game" href="games/topple/index.html" data-game="topple">
+    <div class="art tp" aria-hidden="true"><div class="frame"><div class="t"><i></i><i></i><i class="g"></i></div><div class="b"></div></div></div>
+    <div class="info"><span class="kind">Block puzzle · daily</span><h2>Topple</h2><span class="stat" id="stTP">Tip the block into the hole.</span></div>
+    </a>
+    <a class="game" href="games/gravity-well/index.html" data-game="gravity-well">
+    <div class="art gw" aria-hidden="true"><div class="frame"><div class="o"></div><div class="p"></div><div class="t"></div><svg viewBox="0 0 96 112"><path d="M14 96C20 56 38 26 74 23" fill="none" stroke="#EAF0FA" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="14" cy="96" r="4" fill="#fff"/></svg></div></div>
+    <div class="info"><span class="kind">Gravity puzzle · daily</span><h2>Gravity Well</h2><span class="stat" id="stGW">Bend your shot round the planets.</span></div>
+    </a>
+    <a class="game" href="games/echo-cartographer/index.html" data-game="echo-cartographer">
+    <div class="art ec" aria-hidden="true"><div class="frame"><div class="r"></div><div class="w w1"></div><div class="w w2"></div><div class="d"></div><div class="x"></div></div></div>
+    <div class="info"><span class="kind">Memory maze · daily</span><h2>Echo Cartographer</h2><span class="stat" id="stEC">Ping the dark. Remember the walls.</span></div>
+    </a>
+    <a class="game" href="games/big-slide/index.html" data-game="big-slide">
+    <div class="art bs" aria-hidden="true"><div class="frame"><svg viewBox="0 0 96 112"><path d="M-70 30L-4 40C26 46 36 84 62 82S86 62 100 52L170 38" fill="none" stroke="#23324A" stroke-width="3.5" stroke-linecap="round"/><g transform="translate(38 66) rotate(34)"><rect x="-11" y="3" width="21" height="3.5" rx="1.5" fill="#E8452C"/><circle cx="-5" cy="-1" r="4.5" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="1" cy="-2" r="4.5" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="7" cy="-6" r="4" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="10.5" cy="-6.5" r="1" fill="#1E1712"/></g><g transform="translate(76 34)"><path d="M0 22V0" stroke="#3B3226" stroke-width="1.6"/><path d="M0 0h12v8H0z" fill="#1B2433"/><path d="M0 0h4v4H0zM8 0h4v4H8zM4 4h4v4H4z" fill="#fff"/></g></svg></div></div>
+    <div class="info"><span class="kind">Draw and ride · daily</span><h2>Buddy's Big Slide</h2><span class="stat" id="stBS">Draw a track and watch Buddy ride it.</span></div>
+    </a>
+    </div>
+  </section>
 
-  <a class="game" href="games/boxed-in/index.html">
-    <div class="art bi" aria-hidden="true"><div class="g"></div><div class="h"></div><div class="z"></div></div>
-    <div class="info"><span class="kind">Zombie survival</span><h2>Boxed In</h2><span class="stat" id="stBI">Your gun aims itself. Keep moving.</span><span class="go">Play</span></div>
-  </a>
+  <section>
+    <h3>Strategy</h3>
+    <div class="grid">
+    <a class="game" href="games/gem-bastion/index.html" data-game="gem-bastion">
+    <div class="art gb" aria-hidden="true"><div class="frame"><div class="gem"></div></div></div>
+    <div class="info"><span class="kind">Strategy</span><h2>Gem Tower Defence</h2><span class="stat" id="stGB">Forge gems, merge them, hold the path.</span></div>
+    </a>
+    <a class="game" href="games/epoch-siege/index.html" data-game="epoch-siege">
+    <div class="art es" aria-hidden="true"><div class="frame"><svg viewBox="0 0 96 112"><rect width="96" height="112" fill="#F0A65E"/><rect x="-100" y="62" width="296" height="50" fill="#F6DDB0"/><path d="M-100 84H0Q24 70 48 80T96 76H196V112H-100z" fill="#7C8A3C"/><rect x="-100" y="90" width="296" height="22" fill="#5A4632"/><path d="M-2 90V50h8v-6h6v6h6v-6h6v6h4v40z" fill="#9A968E"/><rect x="8" y="30" width="1.6" height="16" fill="#2A2420"/><path d="M9.6 30l9 3-9 3z" fill="#3D8BFF"/><path d="M98 90V56h-7v-6h-5v6h-5v-6h-5v6h-4v34z" fill="#8C8C84"/><rect x="85" y="34" width="1.6" height="16" fill="#2A2420"/><path d="M85 34l-9 3 9 3z" fill="#FF5147"/><g stroke-linecap="round"><path d="M38 90l2-8 2 8M40 82v-8" stroke="#5E3B22" stroke-width="2.4"/><rect x="37" y="72" width="6" height="10" rx="2" fill="#8A5A33"/><rect x="37" y="77" width="6" height="2" fill="#3D8BFF"/><circle cx="40.4" cy="69" r="3.2" fill="#C98B5B"/><path d="M42 76l7-6" stroke="#6B4426" stroke-width="2.4"/><circle cx="49" cy="70" r="2.4" fill="#6B4426"/><path d="M58 90l-2-8-2 8M56 82v-8" stroke="#4A5431" stroke-width="2.4"/><rect x="53" y="72" width="6" height="10" rx="2" fill="#5E6B3E"/><rect x="53" y="77" width="6" height="2" fill="#FF5147"/><circle cx="55.6" cy="69" r="3.2" fill="#D9A27A"/><path d="M51.5 68a4 4 0 0 1 8 0z" fill="#56603A"/><path d="M54 76h-9" stroke="#2E2E2A" stroke-width="2"/></g><circle cx="47" cy="74" r="2" fill="#FFE7A0"/></svg></div></div>
+    <div class="info"><span class="kind">Base against base · strategy</span><h2>Epoch Siege</h2><span class="stat" id="stES">From clubs to lasers: knock their base down.</span></div>
+    </a>
+    <a class="game" href="games/hollowdeep/index.html" data-game="hollowdeep">
+    <div class="art hd" aria-hidden="true"><div class="frame"><svg viewBox="0 0 96 112"><rect width="96" height="112" fill="#67503B"/><path d="M-100 46h140v-14h30v28h126v52H-100z" fill="#7A644A"/><path d="M-100 46h140v-14h30v28h126v4H70v-28H44v14H-100z" fill="#3A2C21"/><g fill="#3FC1B0" opacity=".28"><rect x="-100" y="50" width="296" height="62"/><rect x="44" y="36" width="26" height="14"/></g><rect x="16" y="66" width="36" height="34" rx="6" fill="#2A2420" stroke="#3FC1B0" stroke-width="2"/><circle cx="34" cy="83" r="11" fill="#3FC1B0"/><circle cx="31" cy="80" r="4" fill="#fff" opacity=".9"/><circle cx="76" cy="12" r="3" fill="#F2C94C"/><circle cx="84" cy="22" r="3" fill="#F2C94C"/><circle cx="10" cy="18" r="3" fill="#F2C94C"/><rect x="40" y="0" width="56" height="32" fill="none" stroke="#FFD65A" stroke-width="2" stroke-dasharray="4 3"/><g transform="translate(66 52)"><ellipse cx="0" cy="2" rx="6" ry="7" fill="#8E6140"/><circle cx="1" cy="-6" r="5" fill="#C99467"/><path d="M-4 -8l-5 -5 4 1zM5 -8l5 -5 -4 1z" fill="#C99467"/><path d="M5 -2l8 -8" stroke="#B9C0C8" stroke-width="2"/></g><g transform="translate(76 92)"><circle r="7" fill="#4C7F35"/><circle cy="-8" r="6" fill="#7CC25A"/><path d="M-4 -9l-8 -3 7 6zM4 -9l8 -3 -7 6z" fill="#7CC25A"/></g></svg></div></div>
+    <div class="info"><span class="kind">Dig a realm · beat rival lords</span><h2>Hollowdeep</h2><span class="stat" id="stHD">Dig, build, and send your creatures to war.</span></div>
+    </a>
+    </div>
+  </section>
 
-  <a class="game" href="games/big-slide/index.html">
-    <div class="art bs" aria-hidden="true"><svg viewBox="0 0 96 112"><path d="M-4 40C26 46 36 84 62 82S86 62 100 52" fill="none" stroke="#23324A" stroke-width="3.5" stroke-linecap="round"/><g transform="translate(38 66) rotate(34)"><rect x="-11" y="3" width="21" height="3.5" rx="1.5" fill="#E8452C"/><circle cx="-5" cy="-1" r="4.5" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="1" cy="-2" r="4.5" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="7" cy="-6" r="4" fill="#fff" stroke="#9A9384" stroke-width=".8"/><circle cx="10.5" cy="-6.5" r="1" fill="#1E1712"/></g><g transform="translate(76 34)"><path d="M0 22V0" stroke="#3B3226" stroke-width="1.6"/><path d="M0 0h12v8H0z" fill="#1B2433"/><path d="M0 0h4v4H0zM8 0h4v4H8zM4 4h4v4H4z" fill="#fff"/></g></svg></div>
-    <div class="info"><span class="kind">Draw and ride · daily</span><h2>Buddy's Big Slide</h2><span class="stat" id="stBS">Draw a track and watch Buddy ride it.</span><span class="go">Play</span></div>
-  </a>
+  <section>
+    <h3>Action &amp; easy-going</h3>
+    <div class="grid">
+    <a class="game" href="games/mudlark/index.html" data-game="mudlark">
+    <div class="art ml" aria-hidden="true"><div class="frame"><div class="s"></div><div class="d"></div></div></div>
+    <div class="info"><span class="kind">Launch and upgrade</span><h2>Buddy Breakout</h2><span class="stat" id="stML">Get Buddy to the lady dogs.</span></div>
+    </a>
+    <a class="game" href="games/boxed-in/index.html" data-game="boxed-in">
+    <div class="art bi" aria-hidden="true"><div class="frame"><div class="g"></div><div class="h"></div><div class="z"></div></div></div>
+    <div class="info"><span class="kind">Zombie survival</span><h2>Boxed In</h2><span class="stat" id="stBI">Your gun aims itself. Keep moving.</span></div>
+    </a>
+    <a class="game" href="games/lee-lee/index.html" data-game="lee-lee">
+    <div class="art ll" aria-hidden="true"><div class="frame"><svg viewBox="0 0 96 112"><rect x="-100" y="84" width="296" height="28" fill="#C08A55"/><circle cx="51" cy="25" r="8" fill="#22140E"/><rect x="31" y="58" width="34" height="34" rx="12" fill="#E8664A"/><rect x="37" y="66" width="22" height="24" rx="5" fill="#FFF7EE"/><circle cx="48" cy="42" r="15" fill="#C68A5E"/><path d="M33 42a15 15 0 0 1 30 0z" fill="#22140E"/><ellipse cx="48" cy="34" rx="15" ry="8" fill="#22140E"/><rect x="34" y="34" width="28" height="4" rx="2" fill="#E8664A"/><circle cx="43" cy="45" r="1.8" fill="#22160F"/><circle cx="53" cy="45" r="1.8" fill="#22160F"/><circle cx="33" cy="46" r="1.6" fill="#F2C14E"/><circle cx="63" cy="46" r="1.6" fill="#F2C14E"/><rect x="66" y="74" width="14" height="12" rx="3" fill="#fff"/><path d="M80 77h3a3 3 0 0 1 0 6h-3" fill="none" stroke="#fff" stroke-width="2"/><path d="M70 70c-2-3 2-4 0-7M76 70c-2-3 2-4 0-7" fill="none" stroke="#B08A70" stroke-width="1.6" stroke-linecap="round"/></svg></div></div>
+    <div class="info"><span class="kind">Cooking and running a café</span><h2>Lee Lee's Kitchen</h2><span class="stat" id="stLL">Cook, serve, clean up, and grow.</span></div>
+    </a>
+    </div>
+  </section>
 
-  <a class="game" href="games/lee-lee/index.html">
-    <div class="art ll" aria-hidden="true"><svg viewBox="0 0 96 112"><rect y="84" width="96" height="28" fill="#C08A55"/><circle cx="51" cy="25" r="8" fill="#22140E"/><rect x="31" y="58" width="34" height="34" rx="12" fill="#E8664A"/><rect x="37" y="66" width="22" height="24" rx="5" fill="#FFF7EE"/><circle cx="48" cy="42" r="15" fill="#C68A5E"/><path d="M33 42a15 15 0 0 1 30 0z" fill="#22140E"/><ellipse cx="48" cy="34" rx="15" ry="8" fill="#22140E"/><rect x="34" y="34" width="28" height="4" rx="2" fill="#E8664A"/><circle cx="43" cy="45" r="1.8" fill="#22160F"/><circle cx="53" cy="45" r="1.8" fill="#22160F"/><circle cx="33" cy="46" r="1.6" fill="#F2C14E"/><circle cx="63" cy="46" r="1.6" fill="#F2C14E"/><rect x="66" y="74" width="14" height="12" rx="3" fill="#fff"/><path d="M80 77h3a3 3 0 0 1 0 6h-3" fill="none" stroke="#fff" stroke-width="2"/><path d="M70 70c-2-3 2-4 0-7M76 70c-2-3 2-4 0-7" fill="none" stroke="#B08A70" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-    <div class="info"><span class="kind">Cooking and running a café</span><h2>Lee Lee's Kitchen</h2><span class="stat" id="stLL">Cook, serve, clean up, and grow.</span><span class="go">Play</span></div>
-  </a>
-
-  <a class="game" href="games/gravity-well/index.html">
-    <div class="art gw" aria-hidden="true"><div class="o"></div><div class="p"></div><div class="t"></div><svg viewBox="0 0 96 112"><path d="M14 96C20 56 38 26 74 23" fill="none" stroke="#EAF0FA" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="14" cy="96" r="4" fill="#fff"/></svg></div>
-    <div class="info"><span class="kind">Gravity puzzle · daily</span><h2>Gravity Well</h2><span class="stat" id="stGW">Bend your shot round the planets.</span><span class="go">Play</span></div>
-  </a>
-
-  <a class="game" href="games/epoch-siege/index.html">
-    <div class="art es" aria-hidden="true"><svg viewBox="0 0 96 112"><rect width="96" height="112" fill="#F0A65E"/><rect y="62" width="96" height="50" fill="#F6DDB0"/><path d="M0 84Q24 70 48 80T96 76V112H0z" fill="#7C8A3C"/><rect y="90" width="96" height="22" fill="#5A4632"/><path d="M-2 90V50h8v-6h6v6h6v-6h6v6h4v40z" fill="#9A968E"/><rect x="8" y="30" width="1.6" height="16" fill="#2A2420"/><path d="M9.6 30l9 3-9 3z" fill="#3D8BFF"/><path d="M98 90V56h-7v-6h-5v6h-5v-6h-5v6h-4v34z" fill="#8C8C84"/><rect x="85" y="34" width="1.6" height="16" fill="#2A2420"/><path d="M85 34l-9 3 9 3z" fill="#FF5147"/><g stroke-linecap="round"><path d="M38 90l2-8 2 8M40 82v-8" stroke="#5E3B22" stroke-width="2.4"/><rect x="37" y="72" width="6" height="10" rx="2" fill="#8A5A33"/><rect x="37" y="77" width="6" height="2" fill="#3D8BFF"/><circle cx="40.4" cy="69" r="3.2" fill="#C98B5B"/><path d="M42 76l7-6" stroke="#6B4426" stroke-width="2.4"/><circle cx="49" cy="70" r="2.4" fill="#6B4426"/><path d="M58 90l-2-8-2 8M56 82v-8" stroke="#4A5431" stroke-width="2.4"/><rect x="53" y="72" width="6" height="10" rx="2" fill="#5E6B3E"/><rect x="53" y="77" width="6" height="2" fill="#FF5147"/><circle cx="55.6" cy="69" r="3.2" fill="#D9A27A"/><path d="M51.5 68a4 4 0 0 1 8 0z" fill="#56603A"/><path d="M54 76h-9" stroke="#2E2E2A" stroke-width="2"/></g><circle cx="47" cy="74" r="2" fill="#FFE7A0"/></svg></div>
-    <div class="info"><span class="kind">Base against base · strategy</span><h2>Epoch Siege</h2><span class="stat" id="stES">From clubs to lasers: knock their base down.</span><span class="go">Play</span></div>
-  </a>
-
-  <a class="game" href="games/hollowdeep/index.html">
-    <div class="art hd" aria-hidden="true"><svg viewBox="0 0 96 112"><rect width="96" height="112" fill="#67503B"/><path d="M0 46h40v-14h30v28h26v52H0z" fill="#7A644A"/><path d="M0 46h40v-14h30v28h26v4H70v-28H44v14H0z" fill="#3A2C21"/><g fill="#3FC1B0" opacity=".28"><rect x="0" y="50" width="96" height="62"/><rect x="44" y="36" width="26" height="14"/></g><rect x="16" y="66" width="36" height="34" rx="6" fill="#2A2420" stroke="#3FC1B0" stroke-width="2"/><circle cx="34" cy="83" r="11" fill="#3FC1B0"/><circle cx="31" cy="80" r="4" fill="#fff" opacity=".9"/><circle cx="76" cy="12" r="3" fill="#F2C94C"/><circle cx="84" cy="22" r="3" fill="#F2C94C"/><circle cx="10" cy="18" r="3" fill="#F2C94C"/><rect x="40" y="0" width="56" height="32" fill="none" stroke="#FFD65A" stroke-width="2" stroke-dasharray="4 3"/><g transform="translate(66 52)"><ellipse cx="0" cy="2" rx="6" ry="7" fill="#8E6140"/><circle cx="1" cy="-6" r="5" fill="#C99467"/><path d="M-4 -8l-5 -5 4 1zM5 -8l5 -5 -4 1z" fill="#C99467"/><path d="M5 -2l8 -8" stroke="#B9C0C8" stroke-width="2"/></g><g transform="translate(76 92)"><circle r="7" fill="#4C7F35"/><circle cy="-8" r="6" fill="#7CC25A"/><path d="M-4 -9l-8 -3 7 6zM4 -9l8 -3 -7 6z" fill="#7CC25A"/></g></svg></div>
-    <div class="info"><span class="kind">Dig a realm · beat rival lords</span><h2>Hollowdeep</h2><span class="stat" id="stHD">Dig, build, and send your creatures to war.</span><span class="go">Play</span></div>
-  </a>
-
-  <h3>Your data</h3>
-  <div class="panel">
-    <p>Each game saves on this phone. A backup code holds every game, so you can keep a copy or move to a new phone.</p>
-    <div class="row"><button class="btn" id="backupBtn">Copy backup code</button></div>
-    <textarea id="restoreIn" placeholder="Paste a backup code to restore" spellcheck="false" aria-label="Backup code to restore"></textarea>
-    <div class="row"><button class="btn" id="restoreBtn">Restore</button></div>
-  </div>
-
-  <div class="panel" id="appPanel" hidden>
-    <div class="row" style="justify-content:space-between"><b>App updates</b><span class="ver" id="ver"></span></div>
-    <p>New versions install straight from here.</p>
-    <div class="row"><button class="btn" id="checkBtn">Check for updates</button></div>
-  </div>
+  <details class="more" id="more">
+    <summary><span>Backup &amp; app updates</span><span class="ver" id="ver"></span></summary>
+    <div class="notice" id="note" hidden></div>
+    <div class="panel">
+      <b>Your data</b>
+      <p>Each game saves on this phone. A backup code holds every game, so you can keep a copy or move to a new phone.</p>
+      <div class="row"><button class="btn" id="backupBtn">Copy backup code</button></div>
+      <textarea id="restoreIn" placeholder="Paste a backup code to restore" spellcheck="false" aria-label="Backup code to restore"></textarea>
+      <div class="row"><button class="btn" id="restoreBtn">Restore</button></div>
+    </div>
+    <div class="panel" id="appPanel" hidden>
+      <b>App updates</b>
+      <p>New versions install straight from here.</p>
+      <div class="row"><button class="btn" id="checkBtn">Check for updates</button></div>
+    </div>
+  </details>
 </main>
 
 <script>
@@ -297,8 +366,42 @@ function renderStats(){
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}
 }
 
+/* ---------- Today's puzzles: has each daily game's puzzle for today been finished? ----------
+   Each game keys its daily saves by its own day number (see the dayNum/todayNo code in each game). */
+const dayNo=(epoch,first)=>{const d=new Date();return Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-epoch)/864e5)+first};
+const TODAY=[
+  {id:"link-up",name:"Link Up",sw:"background:#1B2430;color:#F4D35E",ic:"▦",done:()=>{const g=load("lu.games",{})[dayNo(Date.UTC(2026,9,28),1)];return !!(g&&g.done)}},
+  {id:"topple",name:"Topple",sw:"background:#15233B;color:#F2A541",ic:"▮",done:()=>!!load("tp.daily",{})[dayNo(Date.UTC(2026,9,30),0)]},
+  {id:"gravity-well",name:"Gravity Well",sw:"background:#05070D;color:#FFC65A",ic:"●",done:()=>!!load("gw.daily",{})[dayNo(Date.UTC(2026,10,4),1)]},
+  {id:"echo-cartographer",full:"Echo Cartographer",name:"Echo",sw:"background:#000;color:#96F0FF",ic:"◎",done:()=>!!load("ec.daily",{})[dayNo(Date.UTC(2026,9,30),0)]},
+  {id:"big-slide",full:"Buddy's Big Slide",name:"Big Slide",sw:"background:#FBF7EE;color:#E8452C;box-shadow:inset 0 0 0 1px #D9D2C1",ic:"〜",done:()=>!!load("slide.daily",{})[dayNo(Date.UTC(2026,9,30),1)]},
+];
+function renderToday(){
+  const box=$("todayChips");box.textContent="";let n=0;
+  for(const t of TODAY){let done=false;try{done=t.done()}catch(e){}if(done)n++;
+    const a=document.createElement("a");a.className="chip"+(done?" done":"");a.href=`games/${t.id}/index.html`;
+    const sw=document.createElement("span");sw.className="sw";sw.style.cssText=t.sw;sw.textContent=done?"✓":t.ic;sw.setAttribute("aria-hidden","true");
+    const tx=document.createElement("span");tx.textContent=t.name;const sm=document.createElement("small");sm.textContent=done?"Done":"To play";a.setAttribute("aria-label",`${t.full||t.name}: ${done?"done today":"not played today"}`);tx.append(sm);
+    a.append(sw,tx);box.append(a)}
+  const c=$("todayCount");c.textContent=n===TODAY.length?"All done ✓":`${n} of ${TODAY.length} done`;c.classList.toggle("all",n===TODAY.length);
+}
+
+/* ---------- Carry on: the last games played on this phone (sg.recent {game folder: time}, written by shell.js) ---------- */
+function renderRecent(){
+  const box=$("recent");box.textContent="";
+  const r=load("sg.recent",{})||{};
+  const ids=Object.keys(r).filter(id=>document.querySelector(`.grid .game[data-game="${CSS.escape(id)}"]`)).sort((a,b)=>r[b]-r[a]).slice(0,2);
+  for(const id of ids){
+    const card=document.querySelector(`.grid .game[data-game="${CSS.escape(id)}"]`).cloneNode(true);
+    card.classList.add("wide");card.querySelectorAll("[id]").forEach(el=>el.removeAttribute("id"));
+    const kind=card.querySelector(".kind");if(kind)kind.textContent="Played "+ago(r[id]);
+    box.append(card)}
+  $("recentBox").hidden=!ids.length;
+}
+function renderHome(){renderStats();renderToday();renderRecent()}
+
 /* ---------- backup and restore (every game's saved data) ---------- */
-const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi.","ec.","slide.","ll.","gw.","es.","hd."];
+const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi.","ec.","slide.","ll.","gw.","es.","hd.","sg."];
 function b64u(str){const bytes=new TextEncoder().encode(str);let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const bin=atob(s);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
 function backupCode(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PREFIXES.some(p=>k.startsWith(p)))data[k]=localStorage.getItem(k)}return "SGB1."+b64u(JSON.stringify({v:1,at:Date.now(),data}))}
@@ -314,7 +417,7 @@ $("restoreBtn").onclick=()=>{
   if(!restoreArmed){restoreArmed=true;$("restoreBtn").textContent="Tap again to replace this phone's saves";setTimeout(()=>{restoreArmed=false;$("restoreBtn").textContent="Restore"},4000);return}
   let n=0;for(const [k,val] of Object.entries(d.data)){if(PREFIXES.some(p=>k.startsWith(p))){try{localStorage.setItem(k,val);n++}catch(e){}}}
   $("restoreIn").value="";restoreArmed=false;$("restoreBtn").textContent="Restore";
-  note(`Restored ${n} saved item${n===1?"":"s"} from ${new Date(d.at).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})}.`,true);renderStats();
+  note(`Restored ${n} saved item${n===1?"":"s"} from ${new Date(d.at).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})}.`,true);renderHome();
 };
 
 /* ---------- app updates (Android app only) ---------- */
@@ -380,9 +483,9 @@ if(NATIVE){
 }else if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
-renderStats();
+renderHome();
 /* Check again when the app comes back to the front, at most every 30 minutes, unless a download is under way. */
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;renderStats();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;renderHome();
   if(NATIVE&&Date.now()-LAST_CHECK>30*60e3&&$("updBar").hidden)checkForUpdate(false)});
 </script>
 </body>

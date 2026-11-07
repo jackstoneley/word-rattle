@@ -2,6 +2,7 @@
    - Website: registers the offline service worker (sw.js at the site root).
    - Android app: routes the phone's back button. A game may define window.SG_BACK();
      returning true means the game handled it, false (or no SG_BACK) goes back to the games list.
+   - Records the time this game was opened in sg.recent (the home page's "Carry on" list).
    - Android app: game links opened while another game is showing go to Link Up (#lu.…), Big Slide (#sl.…) or Word Rattle. */
 (function () {
   var HUB = "../../index.html";
@@ -10,6 +11,12 @@
   window.SG.app = APP;
   window.SG.hub = HUB;
   window.SG.goHub = function () { location.href = HUB; };
+
+  // Remember when each game was last opened, for the home page's "Carry on" list (sg.recent {game folder: time}).
+  try {
+    var m = /\/games\/([^\/]+)\//.exec(location.pathname);
+    if (m) { var r = JSON.parse(localStorage.getItem("sg.recent") || "{}") || {}; r[m[1]] = Date.now(); localStorage.setItem("sg.recent", JSON.stringify(r)); }
+  } catch (e) {}
 
   if (!APP && "serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
     try { navigator.serviceWorker.register(new URL("../../sw.js", location.href).href).catch(function () {}); } catch (e) {}

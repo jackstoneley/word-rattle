@@ -290,6 +290,17 @@
         "Happy tables in a row build a 🔥 streak with bigger tips. Rush warnings, and sounds (including beeps before food burns).",
         "Campaign: stuck on a day? After two tries you can have an easier go. Finishing a chapter earns a certificate worth £75 in free play."
       ]
+    },
+    {
+      "id": 27,
+      "type": "features",
+      "headline": "A tidier games list",
+      "details": [
+        "Today's puzzles at the top: see at a glance which daily games you've done today, and tap one to play.",
+        "Carry on: the last two games you played sit just below, ready to jump back in.",
+        "Games are now in smaller tiles, grouped into Words & numbers, Puzzles, Strategy, and Action & easy-going.",
+        "Backup and Check for updates are folded away at the bottom: tap Backup & app updates to open them."
+      ]
     }
   ]
 }

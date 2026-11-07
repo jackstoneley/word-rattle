@@ -31,7 +31,7 @@ words, and describe how to get the update on their phones (open the app, tap Che
 ## Layout
 
 ```
-index.html                 Home page ("hub"): game cards with progress, backup/restore of all games, app updates
+index.html                 Home page ("hub"): Today's puzzles, Carry on, grouped game tiles with progress, backup/restore, app updates
 shell.js                   Loaded at the end of every game: back button routing, offline service worker, links
 sw.js                      Website offline cache. VERSION is stamped by tools/build.py; never edit by hand
 manifest.webmanifest, *.png  Website install metadata and icons
@@ -74,6 +74,10 @@ list is injected at `__WORDS__`).
 - Saved data lives in `localStorage` on the phone. Each game owns a key prefix:
   `wr.` (Word Rattle), `kk.` (Cross Sums), `gembastion.` (Gem Bastion). A new game needs its own prefix,
   added to `PREFIXES` in the hub's backup code and, if useful, a progress line in `renderStats()` there.
+- The hub lays games out as: **Today's puzzles** (`TODAY` in the hub script: each daily game's done-today check, keyed
+  by that game's own day number), **Carry on** (the two most recent entries of `sg.recent`, `{game folder: time}`,
+  which `shell.js` writes whenever a game page opens; the hub owns the `sg.` prefix), then tiles in four groups
+  (Words & numbers, Puzzles, Strategy, Action & easy-going). Backup and app updates sit in a folded section at the bottom.
 - **Never break saved data.** Keep reading old shapes; migrate on load if a format must change.
 - End every game page with `<script src="../../shell.js"></script>` and give it a `← All games` link to
   `../../index.html`. For the phone's back button, define `window.SG_BACK = () => { ... }`: return `true`
@@ -258,7 +262,8 @@ rebuilt each `recount`), and claims chain along lines (`chainClaim`). **Campaign
 ### Adding a new game
 
 1. Create `games/<id>/index.html` (self-contained), add the shell script tag, home link and `SG_BACK`.
-2. Add a card for it in the hub (`index.html`), with its own small CSS art panel.
+2. Add a tile for it in the right group in the hub (`index.html`), with `data-game="<id>"` and its own small art panel
+   inside a 96x112 `.frame`; if it has a daily puzzle, add it to `TODAY` too.
 3. Add the page to `CORE` in `sw.js`.
 4. If it uses a Google Font not already bundled, add the `@fontsource/<family>` package to
    `android-app/package.json` and an entry to `FACES` in `android-app/scripts/prepare-www.js`.
