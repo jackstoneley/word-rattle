@@ -95,6 +95,12 @@ wordplay). Puzzle #1 is 28 October 2026 and the daily puzzle cycles through the 
 puzzles (never reorder or edit old ones: saved games are keyed by puzzle number). Each word must fit only one
 group, unless it is a deliberate red herring that the other groups rule out. `tools/build.py` checks the shape.
 
+- **Two sets.** List entries 1-50 are the first, gentler set (daily #1-11 used them). From #12 (8 November 2026)
+  `puzzleFor` cycles through entries 51 onwards, the trickier set, NYT style: each group may carry `"r"`, words from
+  *other* groups that also fit it (red herrings). `tools/build.py` checks every board with `r` still has exactly one
+  answer, and that each trickier puzzle has at least two red herrings. Write new puzzles this way, with honest `r`
+  lists, and append them.
+
 - **Bonus puzzles** live in the `id="bonus"` block (same shape). They are never used as daily puzzles; saved games
   are keyed by bonus number in `lu.bonus`, so append only here too.
 - **Boards people make** (`lu.mine`, received ones in `lu.shared`, their games in `lu.cgames` keyed by board id).

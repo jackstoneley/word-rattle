@@ -29,6 +29,25 @@ def build_word_rattle():
     print(f"word-rattle: {len(words)} words, {len(common)} common")
 
 
+def link_up_answers(p):
+    """How many ways sixteen words split into the four groups, counting each group's red herrings ("r") as fits."""
+    words = [w for g in p for w in g["w"]]
+    fits = {w: [k for k, g in enumerate(p) if w in g["w"] or w in g.get("r", [])] for w in words}
+    count, used = 0, [0, 0, 0, 0]
+    def place(n):
+        nonlocal count
+        if n == 16:
+            count += 1
+            return
+        for k in fits[words[n]]:
+            if used[k] < 4:
+                used[k] += 1
+                place(n + 1)
+                used[k] -= 1
+    place(0)
+    return count
+
+
 def check_link_up():
     """Every Link Up puzzle: four groups at levels 1-4, four words each, sixteen different words."""
     import json
@@ -43,6 +62,15 @@ def check_link_up():
             words = [w for g in p for w in g["w"]]
             if len(p) != 4 or sorted(g["l"] for g in p) != [1, 2, 3, 4] or any(len(g["w"]) != 4 for g in p) or len(set(words)) != 16:
                 sys.exit(f"link-up: {block} puzzle {i} is malformed")
+            # "r" lists red herrings: words from other groups that also fit this one. With them the board must still
+            # have exactly one answer. Daily puzzles from list index 51 on (the trickier set) need at least two.
+            herrings = {w for g in p for w in g.get("r", [])}
+            if any(w not in words or w in g["w"] for g in p for w in g.get("r", [])):
+                sys.exit(f"link-up: {block} puzzle {i}: a red herring must be a word from another group")
+            if herrings and link_up_answers(p) != 1:
+                sys.exit(f"link-up: {block} puzzle {i} has {link_up_answers(p)} answers with its red herrings, not one")
+            if block == "puzzles" and i > 50 and len(herrings) < 2:
+                sys.exit(f"link-up: puzzles {i} needs at least two red herrings (words that fit two groups)")
         counts.append(f"{len(puzzles)} {block}")
     print(f"link-up: {', '.join(counts)} ok")
 

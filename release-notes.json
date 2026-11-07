@@ -310,6 +310,15 @@
         "Today's puzzles on the games list now includes the Word Rattle daily board and Kakuro's puzzle of the day.",
         "If you'd already played them today, open each game once and the tick appears."
       ]
+    },
+    {
+      "id": 29,
+      "type": "features",
+      "headline": "Link Up: trickier puzzles",
+      "details": [
+        "From tomorrow's puzzle (#12), the daily Link Up is harder: lots of words look like they fit two or three groups, but only one way works.",
+        "A month of new puzzles. Earlier puzzles and your streak are unchanged."
+      ]
     }
   ]
 }
