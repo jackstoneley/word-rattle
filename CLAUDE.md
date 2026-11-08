@@ -279,8 +279,9 @@ pass to the winner (`destroyRealm`). Any keeper raises `alarmAt` when enemy figh
 ### Life (`games/life`)
 
 An evolve-a-creature game (in the genre of the evolution sims, with its own names and art), built a stage at a time:
-`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; only the **cell stage** exists so far (later stages are
-planned as tap-to-move / turn-based, not live action). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
+`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell** and **sea** stages exist (land onwards are
+planned as tap-to-move / turn-based, not live action). `S.stage` is "cell" or "sea"; `cur(S)` is that stage's state
+(`S.cell` / `S.sea`, same shape) and `TS(S)` its sizes (`TIERS` / `SEA_TIERS`). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
 A creature is a design `{s: [segment radii, head first], p: [{id, s: segment, a: angle (0 = front), m: mirrored}], h, l, h2,
 pat, edge}`; `geom` places the parts, `stats` turns them into speed, bite, health, sight and so on, `designValue` is its DNA
 price. Every creature in the pond is drawn from the same parts (`randomDesign`, per-save `species(tier, i)`: 0-2 plant
@@ -292,15 +293,25 @@ spots, every part has weight `w`, and `good`/`bad` text shows in the builder. Co
 sprint after other creatures (not the player), then eat. `steer` eases off when facing away, so nothing circles.
 Test starts (`STARTS`, `testStart`, chosen in the new-life dialog) jump to a later size or the end of the cell stage with every
 part and 300 DNA, and mark the save `test`; add each new stage to `STARTS` as it's built. Pods (`W.pods`) carry a visible part id; beaten creatures can drop one of their own parts.
-Sea stage plan (agreed): live action still, no songs or friendship mini-game; species mostly don't get along; diet can drift
-(an omnivore stage you pass through on the way to herbivore or carnivore).
+**Sea** (`W.sea`): a bounded map (`SEA`: ±W wide, D deep, surface/shore at y = 0) in five depth bands with their own food
+size, plant/meat density and share of hunters (`populateSea`, species tier = band - 1 + a little); creatures keep to their
+band (`think`). `seaStart` turns the cell into a sea creature (second section, whip → tail fin) when the cell stage ends
+(`goToSea`). Sea-only parts carry `sea: 1` (`stageParts`). Nest `W.nest` (evolve there; respawn there; `seaStep` opens the
+builder on entering, or while ready). Young (`kind: "ally"`, `team` 1, count `S.sea.young` = min(3, size) refilled at each
+evolve) follow you and join fights (`allyThink`, `W.foe`). Diet `S.sea.lean` -1..1 drifts with what you eat and scales food
+value. `SEA_GOALS` pay DNA and a pod; a boss (`W.boss`, name from `BOSS_NAMES`) spawns in the Deep. At the last size the
+growth bar sets `ashore`; with lungs and two leg fins, reaching the surface finishes the stage (`done`, `S.seaNature`).
+No songs or friendship mini-game in the sea; species mostly don't get along. Long bodies are drawn bent (`bentG`).
+The builder picks parts by a fingertip-sized reach (`partCentre`), a chip list of every part (`renderChips`), drag-anywhere
+to move the picked part, and ↺ ↻ / section buttons.
 Sizes: `TIERS` (growth needed per size), world scale `KT(t)` = 1.7^t; the camera zooms out as you grow. Eating fills
 `cell.grow`; when full (`ready`) the mate appears and evolving with it grows a size (`applyEvolve`); finishing the last size
 sets `cell.done` and `S.nature` (hunter / grazer / forager from what was eaten), to carry into the sea stage.
 Saves: `lf.slot.0`-`lf.slot.2` (whole save, `migrate()` fills new fields), `lf.last` (slot index), `lf.opts`. `mode` is
 `normal` (respawn, lose 10% DNA) or `hard` (one life: `S.dead` set, slot shows the fossil). `PARTS` and `TIERS` are
 saved by id / index: append only. `tools/life-check.js` runs a greedy bot through the stage (about 14-22 min for a
-perfect bot, so 20+ for a person) and fails if it can't finish or finishes in under 8 minutes. `window.LF` exposes the
+perfect bot, so 20+ for a person) and fails if it can't finish or finishes in under 8 minutes; then plays on into the sea
+(about 21-30 min for the bot; fails if not done in 90 or under 12). `window.LF` exposes the
 world for Playwright.
 
 ### Adding a new game

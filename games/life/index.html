@@ -78,6 +78,10 @@ h1 span{color:var(--accent)}
 .bar.gr.ready i{background:linear-gradient(90deg,#FF8CC6,#FFD0E6);animation:pulse 1s infinite alternate}
 @keyframes pulse{from{opacity:.7}to{opacity:1}}
 .grl{font-size:.78rem;font-weight:800;color:#CFF7EC;text-shadow:0 1px 3px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dietbar{display:flex;align-items:center;gap:5px;font-size:.72rem;max-width:200px}
+.dietbar[hidden]{display:none}
+.dietbar i{flex:1;height:6px;border-radius:9px;background:linear-gradient(90deg,#5BD47A,#9AA58A 50%,#E8566A);position:relative}
+.dietbar b{position:absolute;top:-3px;width:4px;height:12px;margin-left:-2px;border-radius:2px;background:#fff;box-shadow:0 0 4px #000}
 .dna{flex:none;background:rgba(4,22,29,.65);border:1px solid rgba(215,174,255,.3);border-radius:12px;padding:0 11px;height:42px;display:flex;align-items:center;gap:5px;font-weight:800;color:var(--dna);pointer-events:none}
 .dna b{color:#fff;font-size:1.05rem;font-variant-numeric:tabular-nums}
 .toast{position:fixed;z-index:60;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 62px);transform:translateX(-50%);background:rgba(4,22,29,.88);border:1px solid var(--line);border-radius:14px;padding:9px 14px;font-weight:800;font-size:.92rem;max-width:calc(100% - 32px);text-align:center;pointer-events:none;transition:opacity .3s}
@@ -110,6 +114,9 @@ h1 span{color:var(--accent)}
 .esel p{margin:0;font-size:.82rem;color:var(--muted)}
 .esel input[type=range]{width:100%}
 .ehelp{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:.78rem;color:var(--muted);pointer-events:none;padding:0 12px}
+.eparts{display:flex;gap:5px;overflow-x:auto;padding:4px 10px 2px;scrollbar-width:none;min-height:34px}
+.eparts button{flex:none;padding:5px 10px;border-radius:99px;background:#0E3640;color:var(--muted);font-weight:700;font-size:.78rem;border:2px solid transparent}
+.eparts button.on{border-color:var(--accent);color:var(--ink)}
 .estats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px;padding:6px 14px}
 .estats div{font-size:.72rem;font-weight:800;color:var(--muted);display:flex;flex-direction:column;gap:2px}
 .estats div i{display:block;height:5px;border-radius:9px;background:rgba(0,0,0,.4);overflow:hidden}
@@ -153,7 +160,7 @@ h1 span{color:var(--accent)}
     <div class="road">
       <h3>The stages of life</h3>
       <ol id="road"></ol>
-      <p>The cell stage is here now. The sea and the stages after it arrive in later updates, and your species carries on into them.</p>
+      <p>The cell and sea stages are here now. Land and the stages after it arrive in later updates, and your species carries on into them.</p>
     </div>
   </div>
 </div>
@@ -166,6 +173,7 @@ h1 span{color:var(--accent)}
       <div class="bar hp" aria-label="Health"><i id="hpFill"></i></div>
       <div class="bar gr" id="grBar" aria-label="Growth"><i id="grFill"></i></div>
       <div class="grl" id="grLabel"></div>
+      <div class="dietbar" id="dietBar" hidden aria-label="Diet"><span>🌿</span><i><b id="dietMark"></b></i><span>🦷</span></div>
     </div>
     <div class="dna" aria-label="DNA">🧬 <b id="dnaN">0</b></div>
   </div>
@@ -183,9 +191,10 @@ h1 span{color:var(--accent)}
   </div>
   <div class="ewrap">
     <canvas id="ecv"></canvas>
-    <div class="ehelp" id="eHelp">Tap a part below to add it. Drag parts round the body. Drag a part off to remove it.</div>
+    <div class="ehelp" id="eHelp">Tap a part below to add it. To move one, tap it (or its name in the list), then drag anywhere. Drag a part right off the body to remove it.</div>
     <div class="esel" id="eSel" hidden></div>
   </div>
+  <div class="eparts" id="eParts"></div>
   <div class="estats" id="eStats"></div>
   <div class="etabs" id="eTabs"></div>
   <div class="etray" id="eTray"></div>
@@ -203,6 +212,23 @@ h1 span{color:var(--accent)}
 const TAU = Math.PI * 2;
 const TIERS = [{ n: "Speck", g: 50 }, { n: "Mote", g: 85 }, { n: "Droplet", g: 120 }, { n: "Bloom", g: 160 }, { n: "Titan", g: 200 }];
 const KT = t => Math.pow(1.7, t);
+const SEA_TIERS = [{ n: "Fry", g: 95 }, { n: "Finling", g: 140 }, { n: "Glider", g: 185 }, { n: "Roamer", g: 230 }, { n: "Leviathan", g: 265 }];
+function cur(S) { return S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
+function TS(S) { return S && S.stage === "sea" ? SEA_TIERS : TIERS; }
+/* The sea: a bounded world, surface (and the shore) at y = 0, bands of depth going down. Each band has its own food
+   size (it), plant and meat density, and share of hunters. Creatures belong to the band that suits their size. */
+const SEA = { W: 6000, D: 10000, bands: [
+  { n: "Sunlit shallows", y: 0, it: 0, plants: 70, meat: 8, hunt: .2, c: [44, 157, 180] },
+  { n: "Kelp reef", y: 1500, it: .5, plants: 80, meat: 10, hunt: .25, c: [22, 122, 134] },
+  { n: "Open blue", y: 3200, it: 1.5, plants: 60, meat: 14, hunt: .35, c: [12, 76, 120] },
+  { n: "Twilight", y: 5200, it: 2.5, plants: 44, meat: 14, hunt: .4, c: [18, 38, 84] },
+  { n: "The Deep", y: 7400, it: 3.5, plants: 26, meat: 16, hunt: .5, c: [4, 6, 15] }] };
+function bandAt(y) { let b = 0; for (let i = 1; i < 5; i++) if (y >= SEA.bands[i].y) b = i; return b; }
+function bandMid(b) { return b < 4 ? (SEA.bands[b].y + SEA.bands[b + 1].y) / 2 : (SEA.bands[4].y + SEA.D) / 2; }
+const SEA_GOALS = [{ id: "reef", n: "Swim down to the kelp reef" }, { id: "eat60", n: "Eat 60 mouthfuls" }, { id: "open", n: "Reach the open blue" },
+  { id: "big", n: "Beat a creature bigger than you" }, { id: "young", n: "Swim with three of your young" }, { id: "twi", n: "Find the twilight zone" },
+  { id: "deep", n: "Survive 20 seconds in the Deep" }, { id: "boss", n: "Beat a giant of the Deep" }];
+const BOSS_NAMES = ["Old Gulper", "The Maw", "Great Lurker", "Night Coil", "Grandmother Teeth"];
 const STAGES = ["Cell", "Sea", "Land", "Tribe", "Civilisation", "Space"];
 /* Every part does something where it sits, good and bad: tails push only when they point backwards, each jaw bites
    on its own, shells and thorns guard their own patch, and every part adds weight. */
@@ -227,10 +253,22 @@ const PARTS = [
   { id: "pincer", cat: "fight", n: "Pincer", c: 14, t: 1, w: 1.5, bite: 4, good: "Nips anything it touches, even if you're a plant eater.", bad: "Heavy, and it can't eat." },
   { id: "bristle", cat: "fight", n: "Bristles", c: 10, t: 1, w: .8, spk: 2.5, wide: 1, good: "A patch of little spikes that pricks biters over a wide area.", bad: "Drag: a little slower." },
   { id: "paddle", cat: "move", n: "Paddle", c: 14, t: 2, w: 1, spd: 24, push: 1, turn: -.8, good: "A big push when it points backwards.", bad: "Clumsy: slower turns." },
-  { id: "clear", cat: "extra", n: "Clear skin", c: 12, t: 2, w: 0, hide: 1, hp: -5, good: "See-through patches: hunters spot you much later.", bad: "Thin: less health." }
+  { id: "clear", cat: "extra", n: "Clear skin", c: 12, t: 2, w: 0, hide: 1, hp: -5, good: "See-through patches: hunters spot you much later.", bad: "Thin: less health." },
+  // sea parts (sea: 1): only offered in the sea stage
+  { id: "sidefin", cat: "move", n: "Side fin", c: 12, t: 0, sea: 1, w: .5, spd: 9, turn: .9, good: "Speed and steadier turns, wherever it goes.", bad: "" },
+  { id: "tailfin", cat: "move", n: "Tail fin", c: 14, t: 0, sea: 1, w: 1, spd: 26, push: 1, good: "A strong push when it points backwards.", bad: "Pointing sideways it only helps you turn." },
+  { id: "beak", cat: "mouth", n: "Beak", c: 20, t: 1, sea: 1, w: 1.5, eat: "meat", bite: 9, good: "A hard, hooked bite that eats meat.", bad: "Heavy." },
+  { id: "baleen", cat: "mouth", n: "Baleen mouth", c: 14, t: 0, sea: 1, w: 1, eat: "plant", reach: 11, good: "Sweeps up plants from twice as far away.", bad: "Can't bite, and it's heavy." },
+  { id: "tentacle", cat: "fight", n: "Tentacle", c: 16, t: 1, sea: 1, w: .8, bite: 2, grab: 1, good: "Grabs whatever it touches and slows it down.", bad: "Drag: a little slower." },
+  { id: "ink", cat: "fight", n: "Ink sac", c: 18, t: 1, sea: 1, w: 1, ab: "ink", good: "Tap ✺ for a cloud of ink: hunters lose track of you.", bad: "A bit heavy." },
+  { id: "plate", cat: "fight", n: "Armour plates", c: 18, t: 2, sea: 1, w: 3.5, arm: .65, hp: 8, good: "Bites near them do about a third of the damage.", bad: "Very heavy." },
+  { id: "lamp", cat: "extra", n: "Lamp", c: 12, t: 2, sea: 1, w: .4, light: 1, lure: .5, good: "Lights up the dark water around you, and draws in small fish.", bad: "In the dark, hunters see you from much further away." },
+  { id: "lungs", cat: "extra", n: "Lungs", c: 20, t: 3, sea: 1, w: 2, lungs: 1, good: "Breathe air: you need them to leave the sea.", bad: "Heavy." },
+  { id: "legfin", cat: "move", n: "Leg fin", c: 16, t: 3, sea: 1, w: 1.5, spd: 3, legs: 1, good: "Strong enough to crawl on. You need two to climb onto land.", bad: "Clumsy in the water: slower." }
 ];
 const PART = {}; PARTS.forEach(p => PART[p.id] = p);
 const START_PARTS = ["whip", "moon", "fringe"];
+function stageParts(S) { const sea = S && S.stage === "sea"; return PARTS.filter(p => !p.sea || sea); }
 
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function hash() { let h = 2166136261; for (let i = 0; i < arguments.length; i++) { h ^= arguments[i] | 0; h = Math.imul(h, 16777619); h ^= h >>> 13; } return h >>> 0; }
@@ -238,8 +276,8 @@ const wrapA = a => { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const d2 = (a, b) => (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 
-function partLimit(tier) { return 5 + tier * 2; }
-function segLimit(tier) { return [2, 2, 3, 3, 4][Math.min(4, tier)]; }
+function partLimit(tier, S) { return 5 + tier * 2 + (S && S.stage === "sea" ? 3 : 0); }
+function segLimit(tier, S) { return (S && S.stage === "sea" ? [3, 3, 4, 4, 5] : [2, 2, 3, 3, 4])[Math.min(4, tier)]; }
 function cloneD(d) { return JSON.parse(JSON.stringify(d)); }
 
 /* Where everything sits on a design: segment centres along the spine (head first, facing +x) and each part,
@@ -262,11 +300,12 @@ function geom(d) {
 }
 function stats(d, g) {
   g = g || geom(d);
-  let spd = 0, turn = 0, hp = 0, spk = 0, sen = 0, bite = 0, lure = 0, w = 0, eyes = 0, shells = 0, hide = 0, smell = 0, slit = 0; const ab = {}, eat = { plant: 0, meat: 0 };
+  let spd = 0, turn = 0, hp = 0, spk = 0, sen = 0, bite = 0, lure = 0, w = 0, eyes = 0, shells = 0, hide = 0, smell = 0, slit = 0, light = 0, lungs = 0, legs = 0; const ab = {}, eat = { plant: 0, meat: 0 };
   for (const q of g.parts) {
     const P = q.P, back = -Math.cos(q.a); // 1 when pointing straight back
     if (P.push) { spd += P.spd * Math.max(.15, back); turn += P.spd * .05 * Math.abs(Math.sin(q.a)); } else spd += P.spd || 0;
     turn += P.turn || 0; hp += P.hp || 0; spk += P.spk || 0; sen += P.sen || 0; bite += P.bite || 0; lure += P.lure || 0; w += P.w || 0;
+    light += P.light || 0; lungs += P.lungs || 0; legs += P.legs || 0;
     if (P.cat === "eye") eyes++; if (P.arm) shells++; if (P.hide) hide = 1; if (P.smell) smell = 1; if (q.id === "slit") slit = 1;
     if (P.ab) ab[P.ab] = 1;
     if (P.eat === "plant" || P.eat === "both") eat.plant++; if (P.eat === "meat" || P.eat === "both") eat.meat++;
@@ -274,7 +313,7 @@ function stats(d, g) {
   const mass = d.s.reduce((a, r) => a + r * r, 0) / 144;
   return { spd: (36 + 72 * (1 - Math.exp(-Math.max(0, spd) / 26))) / Math.pow(Math.max(.5, mass), .15) / (1 + w * .035), turn: clamp(3.2 + turn, 1.6, 7.5),
     hp: Math.max(8, Math.round(14 + hp + mass * 10)), shells, spk, sen, eyes, view: eyes ? 150 + Math.min(80, sen * 2.2) : 105 + Math.min(20, sen),
-    bite, lure, hide, smell, slit, w, ab, eat, mass, parts: g.parts.length };
+    bite, lure, hide, smell, slit, light, lungs, legs, w, ab, eat, mass, parts: g.parts.length };
 }
 function dietOf(st) { return st.eat.plant && st.eat.meat ? "both" : st.eat.plant ? "plant" : st.eat.meat ? "meat" : "none"; }
 function designValue(d) {
@@ -294,15 +333,36 @@ function newSave(o) {
     cell: { tier: 0, grow: 0, ready: false, dna: 20, unlocked: [diet === "meat" ? "jaw" : "filter", ...START_PARTS], design: starterDesign(diet),
       ate: { plant: 0, meat: 0 }, kills: 0, deaths: 0, evolves: 0, done: false } };
 }
-/* A testing start: jump to a later size (0-4) of the cell stage, or "grown" (Titan with a full growth bar, ready to
-   finish the stage). Every part is unlocked and there's plenty of DNA. Later stages will join this list. */
+/* Leaving the pond: the cell becomes a little sea creature. It gets a second body section, its whip tail becomes a
+   tail fin on the last section, and its nature from the pond sets where its diet starts. */
+function seaStart(S) {
+  const c = S.cell, d = cloneD(c.design);
+  if (d.s.length < 2) d.s.push(Math.max(9, Math.round(d.s[0] * .8)));
+  for (const q of d.p) { if (q.id === "whip") q.id = "tailfin"; if (q.s === 0 && Math.cos(q.a) < -.5) q.s = d.s.length - 1; }
+  const nat = S.nature || natureOf(c);
+  return { tier: 0, grow: 0, ready: false, dna: Math.round(40 + Math.min(60, c.dna * .3)), unlocked: [...new Set([...c.unlocked, "tailfin", "sidefin"])], design: d,
+    ate: { plant: 0, meat: 0 }, kills: 0, deaths: 0, evolves: 0, done: false, lean: nat === "hunter" ? .35 : nat === "grazer" ? -.35 : 0,
+    nest: { x: 0, y: 420 }, goals: {}, young: 0, eaten: 0, ashore: false, x: 0, y: 420 };
+}
+function goToSea(S) { if (!S.nature) S.nature = natureOf(S.cell); S.cell.done = true; S.sea = S.sea || seaStart(S); S.stage = "sea"; return S; }
+/* A testing start: jump to a later size of a stage, or the end of one, with every part unlocked and plenty of DNA. */
 const STARTS = [["s0", "Cell stage, from the start", ""], ["s2", "Cell stage, Droplet size", "Size 3 of 5"], ["s4", "Cell stage, Titan size", "Size 5 of 5"],
-  ["grown", "End of the cell stage", "A fully grown Titan: meet your mate to finish"]];
+  ["grown", "End of the cell stage", "A fully grown Titan: meet your mate to finish"], ["sea0", "Sea stage, from the start", "Fresh out of the pond"],
+  ["sea2", "Sea stage, Glider size", "Size 3 of 5"], ["seaend", "End of the sea stage", "Fully grown, with lungs and leg fins: swim up to the shore"]];
 function testStart(S, start) {
   if (!start || start === "s0") return S;
-  const c = S.cell; S.test = true;
+  S.test = true; const all = PARTS.map(p => p.id);
+  if (start.startsWith("sea")) {
+    S.cell.tier = TIERS.length - 1; S.nature = "forager"; goToSea(S);
+    const c = S.sea; c.unlocked = all; c.dna = 300;
+    if (start === "sea2") { c.tier = 2; c.y = 2400; }
+    if (start === "seaend") { c.tier = 4; c.ashore = true; c.y = 1200; c.design.p.push({ id: "lungs", s: 0, a: -1.4, m: false }, { id: "legfin", s: c.design.s.length - 1, a: -1.9, m: true }); }
+    c.young = Math.min(3, c.tier);
+    return S;
+  }
+  const c = S.cell;
   c.tier = start === "grown" ? TIERS.length - 1 : clamp(+start.slice(1) | 0, 0, TIERS.length - 1);
-  c.unlocked = PARTS.map(p => p.id); c.dna = 300;
+  c.unlocked = all; c.dna = 300;
   if (start === "grown") { c.grow = TIERS[c.tier].g; c.ready = true; }
   return S;
 }
@@ -310,12 +370,17 @@ function testStart(S, start) {
 function migrate(S) {
   const N = newSave({ name: S.name, mode: S.mode, seed: S.seed, diet: "plant" });
   for (const k in N) if (S[k] === undefined) S[k] = N[k];
-  for (const k in N.cell) if (S.cell[k] === undefined) S.cell[k] = N.cell[k];
-  if (!S.cell.ate) S.cell.ate = { plant: 0, meat: 0 };
-  const d = S.cell.design; if (!d || !Array.isArray(d.s) || !d.s.length) S.cell.design = starterDesign("plant");
-  for (const k of ["h", "l", "h2", "pat", "edge"]) if (S.cell.design[k] === undefined) S.cell.design[k] = N.cell.design[k];
-  S.cell.design.p = (S.cell.design.p || []).filter(q => PART[q.id]);
-  S.cell.tier = clamp(S.cell.tier | 0, 0, TIERS.length - 1);
+  const C = S.cell;
+  for (const k in N.cell) if (C[k] === undefined) C[k] = N.cell[k];
+  if (!C.ate) C.ate = { plant: 0, meat: 0 };
+  if (!C.design || !Array.isArray(C.design.s) || !C.design.s.length) C.design = starterDesign("plant");
+  for (const k of ["h", "l", "h2", "pat", "edge"]) if (C.design[k] === undefined) C.design[k] = N.cell.design[k];
+  C.design.p = (C.design.p || []).filter(q => PART[q.id]);
+  C.tier = clamp(C.tier | 0, 0, TIERS.length - 1);
+  if (S.sea) {
+    const N2 = seaStart(S); for (const k in N2) if (S.sea[k] === undefined) S.sea[k] = N2[k];
+    S.sea.design.p = (S.sea.design.p || []).filter(q => PART[q.id]); S.sea.tier = clamp(S.sea.tier | 0, 0, SEA_TIERS.length - 1);
+  } else if (S.stage === "sea") S.stage = "cell";
   return S;
 }
 function natureOf(c) { const t = c.ate.plant + c.ate.meat || 1, m = c.ate.meat / t; return m > .66 ? "hunter" : m < .34 ? "grazer" : "forager"; }
@@ -357,26 +422,62 @@ function randomDesign(R, diet, tier) {
   return { s, p, h: Math.round(h) % 360, l: Math.round(diet === "meat" ? 34 + R() * 12 : 56 + R() * 14), h2: Math.round(h + 120 + R() * 120) % 360,
     pat: Math.floor(R() * 6), edge: diet === "meat" ? (R() < .75 ? 1 : 2) : (R() < .6 ? 0 : 2) };
 }
+/* Sea creatures: longer bodies, tail fins, beaks and baleen; lamps in the dark. */
+function seaDesign(R, diet, tier) {
+  const pick = a => a[Math.floor(R() * a.length)], deep = tier >= 3;
+  const ns = 2 + (R() < .55 ? 1 : 0) + (tier >= 2 && R() < .4 ? 1 : 0);
+  const s = []; for (let i = 0; i < ns; i++) s.push(Math.round(i === 0 ? 10 + R() * 7 : Math.max(6, 13 - i * 2 + R() * 5)));
+  const L = ns - 1, p = [], rs = () => Math.floor(R() * ns), add = (id, si, a, m) => p.push({ id, s: si, a, m: !!m });
+  if (diet === "plant") add(R() < .6 ? "baleen" : "filter", 0, 0);
+  else if (diet === "meat") { add(R() < .5 ? "beak" : "jaw", 0, 0); if (tier >= 2 && R() < .35) add("jaw", 0, .5, true); }
+  else { add("siphon", 0, 0); if (R() < .6) add("tentacle", 0, .7, true); }
+  add(diet === "meat" ? pick(["slit", "cluster", "stalk"]) : pick(["moon", "moon", "stalk", "cluster"]), 0, -(.55 + R() * .4), true);
+  add("tailfin", L, Math.PI);
+  if (R() < .7) add("sidefin", Math.min(1, L), -(1.5 + R() * .5), true);
+  if (diet === "meat") { const n = Math.floor(R() * 3); for (let i = 0; i < n; i++) add("thorn", rs(), -(1 + R() * 1.5), true); if (R() < .35) add("plate", rs(), -1.6, true); if (R() < .3) add("tentacle", 0, .8, true); }
+  else { if (R() < .35) add("plate", rs(), -(1.3 + R() * .6), true); if (R() < .3) add("frill", L, -(2 + R() * .6), true); if (R() < .25) add("ink", L, 2.7); if (R() < .2) add("bristle", L, -2.2, true); }
+  if (deep) add("lamp", 0, -.1);
+  const h = diet === "meat" ? pick([350, 5, 285, 300, 15, 330]) + R() * 14 : diet === "plant" ? pick([175, 190, 200, 140, 40, 320]) + R() * 20 : pick([30, 55, 215, 255]) + R() * 20;
+  return { s, p, h: Math.round(h) % 360, l: Math.round((diet === "meat" ? 34 + R() * 12 : 52 + R() * 16) - (deep ? 10 : 0)), h2: Math.round(h + 120 + R() * 120) % 360,
+    pat: Math.floor(R() * 6), edge: diet === "meat" ? (R() < .7 ? 1 : 2) : (R() < .5 ? 0 : 2) };
+}
 function species(W, tier, i) {
-  const key = tier + ":" + i; if (W.sp[key]) return W.sp[key];
-  const R = rng(hash(W.seed, tier + 50, i)), diet = i < 3 ? "plant" : i < 5 ? "meat" : "both";
-  const d = randomDesign(R, diet, Math.max(0, tier)); const g = geom(d);
+  const key = (W.sea ? "s" : "") + tier + ":" + i; if (W.sp[key]) return W.sp[key];
+  const R = rng(hash(W.seed, tier + (W.sea ? 150 : 50), i)), diet = i < 3 ? "plant" : i < 5 ? "meat" : "both";
+  const d = (W.sea ? seaDesign : randomDesign)(R, diet, Math.max(0, tier)); const g = geom(d);
   return W.sp[key] = { d, g, st: stats(d, g), diet, tier, key };
 }
 
 function mkC(W, d, kind, tier, k, x, y, sp) {
   const g = geom(d), st = stats(d, g);
   const c = { id: W.nid++, kind, sp: sp || null, d, g, st, tier, k, x, y, a: W.R() * TAU, vx: 0, vy: 0, max: st.hp * Math.pow(k, 1.5), hp: 0,
-    bcd: 0, bcdM: [], ecd: 0, hurtT: -99, stun: 0, inv: 0, dash: 0, ab: {}, spk: {}, diet: dietOf(st),
+    bcd: 0, bcdM: [], ecd: 0, hurtT: -99, stun: 0, slow: 0, inv: 0, dash: 0, ab: {}, spk: {}, diet: dietOf(st), team: kind === "npc" ? 0 : 1,
     ai: { t: 0, dir: W.R() * TAU, thr: .3, tg: null, ts: 0, rest: 0, chase: 0, fear: null, fearT: 0, food: null, kin: null, scan: 0, lure: false, hunger: .3 + W.R() * .6 } };
   c.hp = c.max; return c;
 }
-function placePlayer(W, x, y, a) { const T = W.S.cell.tier; const P = mkC(W, W.S.cell.design, "player", T, KT(T), x, y); P.a = a; W.player = P; }
+function placePlayer(W, x, y, a) {
+  const S = W.S, c = cur(S), T = c.tier, P = mkC(W, c.design, "player", T, KT(T), x, y); P.a = a; W.player = P;
+  if (W.sea) {
+    // the pond's nature gives a head start
+    if (S.nature === "hunter") P.biteMul = 1.2; else if (S.nature === "grazer") { P.max *= 1.2; P.hp = P.max; } else P.st.spd *= 1.1;
+    W.cr = W.cr.filter(q => q.kind !== "ally");
+    for (let i = 0; i < Math.min(3, c.young || 0); i++) addAlly(W);
+  }
+}
+/* Your young: smaller copies of you that follow you about and join your fights. */
+function addAlly(W) {
+  const P = W.player, A = mkC(W, cur(W.S).design, "ally", P.tier, P.k * .55, P.x + (W.R() - .5) * P.g.R * P.k * 4, P.y + (W.R() - .5) * P.g.R * P.k * 4);
+  A.biteMul = P.biteMul || 1; W.cr.push(A); return A;
+}
 function viewR(W) { return W.player.st.view * W.player.k; }
 function newWorld(S, rs) {
   const W = { S, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], pods: [], mate: null,
-    nid: 1, nextRelic: 28, lastEvo: 0, mateWait: 20, mateCool: 0, popT: 0, sp: {}, over: null };
-  placePlayer(W, 0, 0, -Math.PI / 2); W.player.inv = 2;
+    nid: 1, nextRelic: 28, lastEvo: 0, mateWait: 20, mateCool: 0, popT: 0, sp: {}, over: null,
+    sea: S.stage === "sea", nest: null, inNest: true, boss: null, bossNext: 20, deepT: 0, warnT: 0, foe: null, foeT: -99 };
+  const c = cur(S);
+  if (W.sea) { W.nest = { x: c.nest.x, y: c.nest.y }; placePlayer(W, c.x == null ? c.nest.x : c.x, c.y == null ? c.nest.y : c.y, Math.PI / 2); W.inNest = Math.hypot(W.player.x - W.nest.x, W.player.y - W.nest.y) < 200; }
+  else placePlayer(W, 0, 0, -Math.PI / 2);
+  W.player.inv = 2;
   populate(W, true);
   return W;
 }
@@ -385,7 +486,31 @@ function toW(c, lx, ly) { const co = Math.cos(c.a), si = Math.sin(c.a); return [
 function distBody(c, x, y) { let m = 1e9; for (let i = 0; i < c.g.r.length; i++) { const [sx, sy] = segW(c, i); m = Math.min(m, Math.hypot(x - sx, y - sy) - c.g.r[i] * c.k); } return m; }
 function spot(W, rmin, rmax) { const P = W.player, a = W.R() * TAU, r = Math.sqrt(rmin * rmin + W.R() * (rmax * rmax - rmin * rmin)); return [P.x + Math.cos(a) * r, P.y + Math.sin(a) * r]; }
 
+function spotSea(W, rmin, rmax) { for (let k = 0; k < 8; k++) { const [x, y] = spot(W, rmin, rmax); if (Math.abs(x) < SEA.W && y > 0 && y < SEA.D) return [x, y]; } return null; }
+function populateSea(W, init) {
+  const P = W.player, V = viewR(W), SR = V * 2.4, far = (SR * 1.3) ** 2, B = SEA.bands[bandAt(P.y)];
+  W.items = W.items.filter(it => d2(it, P) < far && !(it.life <= 0));
+  W.cr = W.cr.filter(c => c.kind === "ally" || (c.boss ? d2(c, P) < far * 4 : d2(c, P) < far));
+  let np = 0, nm = 0; for (const it of W.items) { if (it.ty === "plant") np++; else if (!it.life) nm++; }
+  let guard = 0;
+  while (np < B.plants && guard++ < 40) {
+    const at = spotSea(W, init ? V * .2 : V * 1.1, SR); if (!at) continue;
+    const bb = bandAt(at[1]), k = KT(SEA.bands[bb].it), n = 2 + Math.floor(W.R() * 5), v = [1, 1, 1.3, 1.7, 2.2][bb]; // deep-water plants are more filling
+    for (let i = 0; i < n; i++) { W.items.push(item(W, "plant", at[0] + (W.R() - .5) * 80 * k, Math.max(5, at[1] + (W.R() - .5) * 80 * k), k, v)); np++; }
+  }
+  guard = 0;
+  while (nm < B.meat && guard++ < 20) { const at = spotSea(W, init ? V * .3 : V * 1.1, SR); if (!at) continue; W.items.push(item(W, "meat", at[0], at[1], KT(SEA.bands[bandAt(at[1])].it) * .8, 1.6)); nm++; }
+  let nc = 0; for (const c of W.cr) if (c.kind === "npc") nc++;
+  guard = 0;
+  while (nc < 22 && guard++ < 30) {
+    const at = spotSea(W, init ? V * .8 : V * 1.15, SR); if (!at) continue;
+    const b = bandAt(at[1]), u = W.R(), tier = b - 1 + (u < .5 ? 0 : u < .82 ? 1 : u < .96 ? -1 : 2), v = W.R(), hs = SEA.bands[b].hunt;
+    const i = v < .88 - hs ? Math.floor(W.R() * 3) : v < .88 ? 3 + Math.floor(W.R() * 2) : 5;
+    const sp = species(W, tier, i); W.cr.push(mkC(W, sp.d, "npc", tier, KT(tier) * (.85 + W.R() * .3), at[0], at[1], sp)); nc++;
+  }
+}
 function populate(W, init) {
+  if (W.sea) return populateSea(W, init);
   const P = W.player, V = viewR(W), SR = V * 2.4, T = P.tier, far = (SR * 1.3) * (SR * 1.3);
   W.items = W.items.filter(it => d2(it, P) < far && !(it.life <= 0));
   W.cr = W.cr.filter(c => c.kind === "mate" || d2(c, P) < far);
@@ -415,7 +540,7 @@ function item(W, ty, x, y, k, v) {
 
 function turnTo(c, ang, dt, mult) { const df = wrapA(ang - c.a), m = c.st.turn * (mult || 1) * dt; c.a += clamp(df, -m, m); }
 function accel(c, sp, dt) { const tx = Math.cos(c.a) * sp, ty = Math.sin(c.a) * sp, f = Math.min(1, dt * 3); c.vx += (tx - c.vx) * f; c.vy += (ty - c.vy) * f; }
-function npcSpd(W, c) { return c.st.spd * Math.pow(c.k, .5) * Math.pow(W.player.k, .5) * .8; } // bigger is faster, but not so much you can never get away
+function npcSpd(W, c) { return c.st.spd * Math.pow(c.k, .5) * Math.pow(W.player.k, .5) * .8 * (c.slow > W.t ? .55 : 1); } // bigger is faster, but not so much you can never get away
 function allC(W) { return [W.player, ...W.cr]; }
 function edible(c, ty) { return ty === "plant" ? c.st.eat.plant > 0 : c.st.eat.meat > 0; }
 
@@ -429,7 +554,7 @@ function scan(W, c, sense) {
     if (o === c || o.kind === "mate") continue;
     const dd = d2(o, c); if (dd > s2 * 2.3) continue;
     if (o.sp && o.sp === c.sp) { if (dd < kd && dd > (c.g.R * c.k * 3) ** 2) { kin = o; kd = dd; } continue; }
-    const isP = o.kind === "player", seen = isP ? (o.st.hide ? .5 : 1) * (o.st.lure ? 1.5 : 1) : 1; // clear skin hides you, a glow gives you away
+    const isP = o.kind === "player", seen = isP ? (o.st.hide ? .5 : 1) * (o.st.lure ? 1.5 : 1) * (W.sea && o.st.light && o.y > SEA.bands[3].y ? 1.5 : 1) : 1; // clear skin hides you, a glow gives you away
     if (dd > s2 * seen * seen) continue;
     const threat = o.st.bite > 0 && o.diet !== "plant" && o.k >= c.k * (c.diet === "meat" ? 1.6 : .8);
     const whiff = isP && (o.st.smell || o.st.slit) && c.diet === "plant" && o.k >= c.k * .6; // stink or hunter's eyes put grazers off
@@ -470,7 +595,19 @@ function think(W, c, dt) {
   if (ai.t <= 0) { ai.t = 2 + W.R() * 4; ai.thr = W.R() < .25 ? .05 : .15 + W.R() * .3; }
   ai.dir += (W.R() - .5) * dt * 1.2;
   if (ai.kin && c.diet !== "meat") ai.dir += wrapA(Math.atan2(ai.kin.y - c.y, ai.kin.x - c.x) - ai.dir) * Math.min(1, dt * .8);
+  if (W.sea) { const hy = bandMid(clamp(c.tier + 1, 0, 4)); if (Math.abs(c.y - hy) > 900 || Math.abs(c.x) > SEA.W * .9 || c.y < 60) ai.dir += wrapA(Math.atan2(hy - c.y, -c.x * .3) - ai.dir) * Math.min(1, dt * .8); } // stay in its own depth
   steer(c, ai.dir, sp * ai.thr, dt, .5);
+}
+function allyThink(W, c, dt) {
+  const P = W.player, ai = c.ai, R = P.g.R * P.k, V = viewR(W);
+  if (c.stun > 0) { c.stun -= dt; accel(c, 0, dt); return; }
+  if (ai.tg && (ai.tg.dead || d2(ai.tg, P) > (V * 1.2) ** 2)) ai.tg = null;
+  if (!ai.tg && W.foe && !W.foe.dead && W.t - W.foeT < 6 && W.foe.k < c.k * 3) ai.tg = W.foe; // join your fight
+  const ps = Math.hypot(P.vx, P.vy), sp = Math.max(c.st.spd * c.k * 1.2, ps * 1.15);
+  if (ai.tg) { const T = ai.tg; steer(c, Math.atan2(T.y - c.y, T.x - c.x), sp, dt); return; }
+  const tx = P.x - Math.cos(P.a) * R * 2.5 + Math.cos(c.id * 2.4) * R * 1.2, ty = P.y - Math.sin(P.a) * R * 2.5 + Math.sin(c.id * 2.4) * R * 1.2, dd = Math.hypot(tx - c.x, ty - c.y);
+  steer(c, Math.atan2(ty - c.y, tx - c.x), sp * clamp(dd / (R * 1.5), 0, 1.4), dt);
+  if (dd > V * 2) { c.x = P.x; c.y = P.y; }
 }
 function mateThink(W, c, dt) {
   const P = W.player; c.ai.t -= dt;
@@ -487,6 +624,7 @@ function hurt(W, B, dmg, src, x, y) {
   if (B.inv > 0 || B.kind === "mate" || B.dead) return;
   if (x !== undefined) dmg *= guardAt(B, x, y);
   B.hp -= dmg; B.hurtT = W.t;
+  if (B.team && src && src.kind === "npc") { W.foe = src; W.foeT = W.t; }
   if (B.kind === "npc" && src && src !== B) {
     if (B.st.bite > 0 && B.diet !== "plant" && src.k <= B.k * 1.6) { B.ai.tg = src; B.ai.chase = 5; B.ai.rest = 0; }
     else { B.ai.fear = src; B.ai.fearT = 3; }
@@ -497,30 +635,52 @@ function hurt(W, B, dmg, src, x, y) {
 function kill(W, B, src) {
   if (B.kind === "player") { if (!W.over) { W.over = "dead"; W.ev.push({ t: "die", by: src && src.sp ? src.sp.key : null, rel: src ? Math.round(Math.log(src.k / B.k) / Math.log(1.7)) : 0, how: W.how, diet: src ? src.diet : "" }); } return; }
   B.dead = true; W.cr = W.cr.filter(c => c !== B);
+  if (B.kind === "ally") { const c = cur(W.S); c.young = Math.max(0, (c.young || 0) - 1); W.ev.push({ t: "allyDie", x: B.x, y: B.y }); return; }
   const P = W.player, rel = Math.min(1.5, (B.k / P.k) ** 2), n = clamp(Math.round(2 + 3 * rel), 1, 7);
   for (let i = 0; i < n; i++) { const it = item(W, "meat", B.x + (W.R() - .5) * B.g.R * B.k, B.y + (W.R() - .5) * B.g.R * B.k, B.k, 3.2); it.life = 45; W.items.push(it); }
   W.ev.push({ t: "kill", x: B.x, y: B.y, k: B.k, h: B.d.h, by: src === P });
   if (src && src.kind === "npc") src.ai.hunger = Math.max(0, src.ai.hunger - .2);
+  const mine = src === P || (src && src.kind === "ally");
+  if (B.boss) {
+    W.boss = null; W.bossNext = W.t + 240;
+    if (mine) {
+      goal(W, "boss"); cur(W.S).dna += 60;
+      for (let j = 0; j < 2; j++) { const id = pickLocked(W.S, W.R); if (id) W.pods.push({ x: B.x + (j - .5) * B.g.R * B.k, y: B.y, r: 11 * P.k, ph: 0, id, life: 60 }); }
+      W.ev.push({ t: "bossDown", n: B.boss });
+    }
+  }
+  if (mine && B.k > P.k * 1.05) goal(W, "big");
   if (src === P) {
-    W.S.cell.kills++;
+    cur(W.S).kills++;
     // sometimes it leaves behind one of its own parts for you to pick up
-    const ids = [...new Set(B.d.p.map(q => q.id))].filter(id => !W.S.cell.unlocked.includes(id));
+    const ids = [...new Set(B.d.p.map(q => q.id))].filter(id => !cur(W.S).unlocked.includes(id));
     if (ids.length && W.R() < .3) W.pods.push({ x: B.x, y: B.y, r: 11 * P.k, ph: 0, id: ids[Math.floor(W.R() * ids.length)], life: 40 });
   }
 }
 function grow(W, v, ty) {
-  const c = W.S.cell; c.ate[ty] += v; c.dna += v * .7;
-  if (!c.ready && !c.done) { c.grow = Math.min(TIERS[c.tier].g, c.grow + v); if (c.grow >= TIERS[c.tier].g) { c.ready = true; W.ev.push({ t: "ready" }); } }
+  const c = cur(W.S); c.ate[ty] += v; c.dna += v * .7;
+  if (!c.ready && !c.done) { const TT = TS(W.S); c.grow = Math.min(TT[c.tier].g, c.grow + v); if (c.grow >= TT[c.tier].g) { c.ready = true; W.ev.push({ t: "ready" }); } }
 }
-function lockedParts(S) { return PARTS.filter(p => !S.cell.unlocked.includes(p.id)); }
+function lockedParts(S) { return stageParts(S).filter(p => !cur(S).unlocked.includes(p.id)); }
+/* Sea goals: each pays 25 DNA and leaves a pod with a part you haven't got. */
+function goal(W, id) {
+  const c = cur(W.S); if (!W.sea || !c.goals || c.goals[id]) return;
+  c.goals[id] = 1; c.dna += 25; const P = W.player, pid = pickLocked(W.S, W.R);
+  if (pid) W.pods.push({ x: clamp(P.x + Math.cos(P.a) * P.g.R * P.k * 4, -SEA.W, SEA.W), y: clamp(P.y + Math.sin(P.a) * P.g.R * P.k * 4, 10, SEA.D), r: 11 * P.k, ph: 0, id: pid, life: 60 });
+  W.ev.push({ t: "goal", id });
+}
 function pickLocked(S, R) {
   const L = lockedParts(S); if (!L.length) return null;
-  const pref = L.filter(p => p.t <= S.cell.tier + 1), list = pref.length ? pref : L;
+  const pref = L.filter(p => p.t <= cur(S).tier + 1), list = pref.length ? pref : L;
   return list[Math.floor(R() * list.length)].id;
 }
 function useAb(W, P, ab) {
   if (ab === "dash") { P.dash = .5; P.ab.dash = 3.5; }
   else if (ab === "poison") { const [x, y] = toW(P, P.g.minX - 6, 0); W.clouds.push({ x, y, r: 36 * P.k, t: 4.5, T: 4.5 }); P.ab.poison = 7; }
+  else if (ab === "ink") {
+    const [x, y] = toW(P, P.g.minX - 6, 0); W.clouds.push({ x, y, r: 55 * P.k, t: 4, T: 4, ink: 1 }); P.ab.ink = 8;
+    for (const c of W.cr) if (c.kind === "npc" && c.ai.tg && c.ai.tg.team && d2(c, P) < viewR(W) ** 2) { c.ai.tg = null; c.ai.rest = 5; }
+  }
   else if (ab === "zap") {
     P.hp = Math.max(1, P.hp - P.max * .08); P.hurtT = W.t;
     for (const c of W.cr) if (c.kind === "npc" && distBody(c, P.x, P.y) < (P.g.R + 45) * P.k) { hurt(W, c, 7 * Math.pow(P.k, 1.5), P); c.stun = 1.3; }
@@ -531,28 +691,37 @@ function useAb(W, P, ab) {
 
 function stepWorld(W, dt, inp) {
   if (W.over) return;
-  W.t += dt; const P = W.player, S = W.S, c0 = S.cell; S.time += dt;
+  W.t += dt; const P = W.player, S = W.S, c0 = cur(S); S.time += dt;
   // the player swims where the stick points
   const mx = inp.mx || 0, my = inp.my || 0, m = Math.min(1, Math.hypot(mx, my));
   let face = 1;
   if (m > .08) { const want = Math.atan2(my, mx); face = .35 + .65 * Math.max(0, Math.cos(wrapA(want - P.a))); turnTo(P, want, dt, P.dash > 0 ? 1.6 : 1); }
-  let sp = P.st.spd * P.k * m * face;
+  let sp = P.st.spd * P.k * m * face * (P.slow > W.t ? .55 : 1);
   if (P.dash > 0) { P.dash -= dt; sp = Math.max(sp * 2.6, P.st.spd * P.k * 2.2); }
   accel(P, sp, dt);
   for (const k in P.ab) if (P.ab[k] > 0) P.ab[k] -= dt;
   if (inp.ab) { if (P.st.ab[inp.ab] && !(P.ab[inp.ab] > 0)) useAb(W, P, inp.ab); inp.ab = null; }
-  for (const c of W.cr) { if (c.kind === "npc") think(W, c, dt); else if (c.kind === "mate") mateThink(W, c, dt); }
+  for (const c of W.cr) { if (c.kind === "npc") think(W, c, dt); else if (c.kind === "ally") allyThink(W, c, dt); else if (c.kind === "mate") mateThink(W, c, dt); }
   const L = allC(W);
   for (const c of L) { c.x += c.vx * dt; c.y += c.vy * dt; if (c.inv > 0) c.inv -= dt; if (c.bcd > 0) c.bcd -= dt; if (c.ecd > 0) c.ecd -= dt; }
+  if (W.sea) for (const c of L) { // the walls, the seabed and the surface
+    if (c.x < -SEA.W) { c.x = -SEA.W; c.vx = Math.abs(c.vx); } else if (c.x > SEA.W) { c.x = SEA.W; c.vx = -Math.abs(c.vx); }
+    if (c.y < 0) { c.y = 0; c.vy = Math.abs(c.vy) * .3; } else if (c.y > SEA.D) { c.y = SEA.D; c.vy = -Math.abs(c.vy); }
+  }
   for (const it of W.items) { it.x += it.vx * dt; it.y += it.vy * dt; it.vx *= 1 - dt * .3; it.vy *= 1 - dt * .3; if (it.life !== undefined) it.life -= dt; }
   collide(W, L); feed(W); fight(W, L);
-  for (const cl of W.clouds) { cl.t -= dt; for (const c of W.cr) if (c.kind === "npc" && distBody(c, cl.x, cl.y) < cl.r) hurt(W, c, 5 * Math.pow(P.k, 1.5) * dt, P); }
+  for (const cl of W.clouds) {
+    cl.t -= dt;
+    if (cl.ink) { for (const c of W.cr) if (c.kind === "npc" && c.ai.tg && c.ai.tg.team && distBody(c, cl.x, cl.y) < cl.r * 1.5) { c.ai.tg = null; c.ai.rest = 4; } continue; }
+    for (const c of W.cr) if (c.kind === "npc" && distBody(c, cl.x, cl.y) < cl.r) hurt(W, c, 5 * Math.pow(P.k, 1.5) * dt, P);
+  }
   W.clouds = W.clouds.filter(cl => cl.t > 0);
   for (const c of allC(W)) if (W.t - c.hurtT > 3 && c.hp < c.max) c.hp = Math.min(c.max, c.hp + c.max * (c.kind === "player" ? .07 : .03) * dt);
   // mate: evolve with them (and grow, when the growth bar is full)
   W.mateCool -= dt; W.mateWait -= dt;
   const V = viewR(W);
-  if (!W.mate && W.mateWait <= 0 && (c0.ready || (W.t - W.lastEvo > 75 && c0.dna >= 12))) {
+  if (W.sea) seaStep(W, dt, V);
+  else if (!W.mate && W.mateWait <= 0 && (c0.ready || (W.t - W.lastEvo > 75 && c0.dna >= 12))) {
     const [x, y] = spot(W, V * .9, V * 1.3); W.mate = mkC(W, cloneD(c0.design), "mate", P.tier, P.k, x, y); W.cr.push(W.mate); W.ev.push({ t: "mateSpawn" });
   }
   if (W.mate) {
@@ -561,8 +730,9 @@ function stepWorld(W, dt, inp) {
   }
   // glowing pods hold parts: one drifts by every so often, and beaten creatures sometimes drop one of theirs
   if (!W.pods.some(q => q.nat) && W.t >= W.nextRelic) {
-    const [x, y] = spot(W, V * 1, V * 1.5), id = pickLocked(S, W.R) || PARTS[Math.floor(W.R() * PARTS.length)].id;
-    W.pods.push({ x, y, r: 11 * P.k, ph: 0, id, nat: true }); W.ev.push({ t: "relicSpawn" });
+    const sp = W.sea ? spotSea(W, V, V * 1.5) : spot(W, V, V * 1.5), SP = stageParts(S); if (!sp) { W.nextRelic = W.t + 2; } else {
+    const [x, y] = sp, id = pickLocked(S, W.R) || SP[Math.floor(W.R() * SP.length)].id;
+    W.pods.push({ x, y, r: 11 * P.k, ph: 0, id, nat: true }); W.ev.push({ t: "relicSpawn" }); }
   }
   for (let i = W.pods.length - 1; i >= 0; i--) {
     const R = W.pods[i]; R.ph += dt; if (R.life !== undefined) R.life -= dt;
@@ -574,6 +744,31 @@ function stepWorld(W, dt, inp) {
     }
   }
   W.popT -= dt; if (W.popT <= 0) { W.popT = .5; populate(W, false); }
+}
+/* The sea's own rules each step: the nest, goals, the giants of the Deep and crawling ashore. */
+function seaStep(W, dt, V) {
+  const P = W.player, S = W.S, c = cur(S), N = W.nest, b = bandAt(P.y);
+  const inN = Math.hypot(N.x - P.x, N.y - P.y) < 30 * P.k + P.g.R * P.k;
+  // swimming into the nest opens the builder; so does being in it fully grown (say, after coming back from being eaten)
+  if (inN && W.mateCool <= 0 && (!W.inNest || ((c.ready || c.ashore) && !W.nestAsked))) { W.mateCool = 2; W.nestAsked = true; W.ev.push({ t: "mate" }); }
+  if (!inN) W.nestAsked = false;
+  W.inNest = inN;
+  if (b >= 1) goal(W, "reef"); if (b >= 2) goal(W, "open"); if (b >= 3) goal(W, "twi");
+  W.deepT = b === 4 ? W.deepT + dt : 0; if (W.deepT > 20) goal(W, "deep");
+  if ((c.eaten || 0) >= 60) goal(W, "eat60");
+  if (W.cr.filter(q => q.kind === "ally").length >= 3) goal(W, "young");
+  if (!W.boss && b === 4 && W.t > W.bossNext) {
+    const at = spotSea(W, V * 1.1, V * 1.6);
+    if (at) {
+      const sp = species(W, 5, 3 + (W.R() < .5 ? 1 : 0)), B = mkC(W, sp.d, "npc", 5, KT(5) * 1.15, at[0], Math.max(at[1], SEA.bands[4].y + 200), sp);
+      B.max *= 4; B.hp = B.max; B.boss = BOSS_NAMES[hash(W.seed, W.t | 0) % BOSS_NAMES.length]; W.boss = B; W.cr.push(B); W.ev.push({ t: "boss", n: B.boss });
+    }
+  }
+  if (W.boss && !W.cr.includes(W.boss)) W.boss = null;
+  if (c.ashore && !c.done && P.y < 25 * P.k) {
+    if (P.st.lungs && P.st.legs >= 2) { c.done = true; S.seaNature = c.lean > .35 ? "hunter" : c.lean < -.35 ? "grazer" : "forager"; W.ev.push({ t: "ashore" }); }
+    else if (W.t > W.warnT) { W.warnT = W.t + 8; W.ev.push({ t: "needLegs" }); }
+  }
 }
 function collide(W, L) {
   for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
@@ -592,12 +787,18 @@ function feed(W) {
     if (c.kind === "mate" || !c.g.mouths.length) continue;
     if (c.kind === "npc" && (c.ecd > 0 || !c.ai.food)) continue;
     for (const mo of c.g.mouths) {
-      const ty = mo.P.eat; const [mx, my] = toW(c, mo.x + Math.cos(mo.a) * 2, mo.y + Math.sin(mo.a) * 2), reach = 5 * c.k;
+      const ty = mo.P.eat; const [mx, my] = toW(c, mo.x + Math.cos(mo.a) * 2, mo.y + Math.sin(mo.a) * 2), reach = (mo.P.reach || 5) * c.k;
       for (let i = W.items.length - 1; i >= 0; i--) {
         const it = W.items[i]; if (ty !== "both" && ty !== it.ty) continue;
         const ex = it.x - mx, ey = it.y - my, rr = it.r + reach; if (ex * ex + ey * ey > rr * rr) continue;
         W.items.splice(i, 1);
-        if (c === P) { const v = it.v * Math.min(1, (it.k / P.k) ** 2) * (ty === "both" ? .8 : 1); grow(W, v, it.ty); W.ev.push({ t: "eat", x: it.x, y: it.y, ty: it.ty, hue: it.hue }); }
+        if (c === P) {
+          let v = it.v * Math.min(W.sea ? 1.6 : 1, (it.k / P.k) ** 2);
+          if (W.sea) { // your diet drifts towards what you eat, and what you're used to feeds you best
+            const cs = cur(W.S), lean = it.ty === "meat" ? cs.lean : -cs.lean; v *= .75 + .45 * lean;
+            cs.lean = clamp(cs.lean + (it.ty === "meat" ? 1 : -1) * Math.min(1, v) * .006, -1, 1); cs.eaten = (cs.eaten || 0) + 1;
+          } else if (ty === "both") v *= .8;
+          grow(W, v, it.ty); W.ev.push({ t: "eat", x: it.x, y: it.y, ty: it.ty, hue: it.hue }); }
         else { c.ecd = 1.2; c.ai.food = null; c.ai.hunger = Math.max(0, c.ai.hunger - (it.ty === "meat" ? .25 : .15)); break; }
       }
     }
@@ -611,20 +812,23 @@ function fight(W, L) {
       if ((A.bcdM[bi] || 0) > W.t) return;
       const [mx, my] = toW(A, mo.x + Math.cos(mo.a) * 3, mo.y + Math.sin(mo.a) * 3), reach = 5 * A.k; let hit = null;
       for (const B of L) {
-        if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp)) continue;
+        if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp) || (A.team && A.team === B.team)) continue;
+        if (A.kind === "ally" && B !== A.ai.tg) continue;
         if (A.kind === "npc" && B !== A.ai.tg && !(B.kind === "player" && A.diet === "meat" && B.k <= A.k * 1.3 && B.k >= A.k * .45)) continue;
         const lim = B.g.R * B.k + reach; if (Math.abs(B.x - mx) > lim || Math.abs(B.y - my) > lim) continue;
         if (distBody(B, mx, my) < reach) { hit = B; break; }
       }
       if (!hit) return;
-      A.bcdM[bi] = W.t + .85; W.how = "bite"; hurt(W, hit, mo.P.bite * .9 * Math.pow(A.k, 1.5) * (hit === P ? .75 : 1), A, mx, my); // a little kinder to the player
+      A.bcdM[bi] = W.t + .85; W.how = "bite"; hurt(W, hit, mo.P.bite * .9 * Math.pow(A.k, 1.5) * (A.biteMul || 1) * (hit === P ? .75 : 1), A, mx, my);
+      if (mo.P.grab) hit.slow = W.t + 1.5;
+      if (A === P && hit.kind === "npc") { W.foe = hit; W.foeT = W.t; } // a little kinder to the player
       if (A === P && mo.P.eat === "both") grow(W, .3 * Math.min(1, (hit.k / P.k) ** 2), "meat");
       W.ev.push({ t: "bite", x: mx, y: my, by: A === P, on: hit === P });
     });
     if (A.st.spk > 0) for (const s of A.g.spikes) {
       const [tx, ty] = toW(A, s.x + Math.cos(s.a) * 7, s.y + Math.sin(s.a) * 7);
       for (const B of L) {
-        if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp)) continue;
+        if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp) || (A.team && A.team === B.team)) continue;
         if (A.kind === "npc" && B.ai.tg !== A && !(B.kind === "player" && B.st.bite > 0)) continue; // thorns fight back against hunters, not grazers bumping by
         const lim = B.g.R * B.k; if (Math.abs(B.x - tx) > lim || Math.abs(B.y - ty) > lim) continue;
         if ((A.spk[B.id] || 0) > W.t || distBody(B, tx, ty) > (s.P.wide ? 5 * A.k : 0)) continue;
@@ -635,24 +839,31 @@ function fight(W, L) {
 }
 /* Evolving: pay for the new design; with a full growth bar, grow a size (or finish the stage at the last size). */
 function applyEvolve(W, d) {
-  const S = W.S, c = S.cell, cost = designValue(d) - designValue(c.design);
+  const S = W.S, c = cur(S), cost = designValue(d) - designValue(c.design);
   c.dna = Math.max(0, c.dna - cost); c.design = cloneD(d); c.evolves++;
-  let grew = false, done = false, gift = null;
+  let grew = false, done = false, gift = null, ashore = false;
   if (c.ready) {
     c.ready = false; c.grow = 0;
-    if (c.tier < TIERS.length - 1) { c.tier++; grew = true; gift = pickLocked(S, W.R); if (gift) c.unlocked.push(gift); }
+    if (c.tier < TS(S).length - 1) {
+      c.tier++; grew = true;
+      gift = W.sea && c.tier === 3 && !c.unlocked.includes("lungs") ? "lungs" : W.sea && c.tier === 4 && !c.unlocked.includes("legfin") ? "legfin" : pickLocked(S, W.R);
+      if (gift) c.unlocked.push(gift);
+    }
+    else if (W.sea) { c.ashore = true; ashore = true; }
     else { c.done = true; done = true; S.nature = natureOf(c); }
   }
+  if (W.sea) c.young = Math.min(3, c.tier); // the nest hatches a new brood each time you evolve
   const P = W.player; placePlayer(W, P.x, P.y, P.a); W.player.inv = 1.5;
   if (W.mate) { W.cr = W.cr.filter(q => q !== W.mate); W.mate = null; }
   W.lastEvo = W.t; W.mateWait = 10;
-  return { grew, done, gift };
+  return { grew, done, gift, ashore };
 }
 function respawn(W) {
-  const S = W.S, P = W.player, lost = Math.floor(S.cell.dna * .1), V = viewR(W);
-  S.cell.deaths++; S.cell.dna -= lost;
-  W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.sqrt(d2(c, P)) > V * 1.6);
-  placePlayer(W, P.x, P.y, P.a); W.player.inv = 3; W.over = null; W.clouds = [];
+  const S = W.S, P = W.player, lost = Math.floor(cur(S).dna * .1), V = viewR(W);
+  cur(S).deaths++; cur(S).dna -= lost;
+  if (W.sea) { const N = W.nest; W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.hypot(c.x - N.x, c.y - N.y) > V * 2); placePlayer(W, N.x, N.y, Math.PI / 2); W.inNest = true; }
+  else { W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.sqrt(d2(c, P)) > V * 1.6); placePlayer(W, P.x, P.y, P.a); }
+  W.player.inv = 3; W.over = null; W.clouds = [];
   return lost;
 }
 /*CORE-END*/
@@ -682,7 +893,15 @@ function snd(kind) {
 }
 
 /* ---------- drawing a creature (in its own design units, facing +x) ---------- */
-const BACK = { whip: 1, fringe: 1, jet: 1, thorn: 1, stink: 1, frill: 1, feeler: 1, glow: 1, bristle: 1, paddle: 1 };
+const BACK = { whip: 1, fringe: 1, jet: 1, thorn: 1, stink: 1, frill: 1, feeler: 1, glow: 1, bristle: 1, paddle: 1, sidefin: 1, tailfin: 1, tentacle: 1, legfin: 1 };
+/* A long body bends as it swims: each section is turned a little from the one in front (ang[i]), and the parts go with it. */
+function bentG(g, ang) {
+  const n = g.r.length, cx = [g.cx[0]], cy = [0], th = [0];
+  for (let i = 1; i < n; i++) { th[i] = th[i - 1] + ang[i]; const gap = g.cx[i - 1] - g.cx[i]; cx[i] = cx[i - 1] - Math.cos(th[i]) * gap; cy[i] = cy[i - 1] - Math.sin(th[i]) * gap; }
+  const parts = g.parts.map(q => { const t = th[q.s], lx = q.x - g.cx[q.s], co = Math.cos(t), si = Math.sin(t); return Object.assign({}, q, { x: cx[q.s] + lx * co - q.y * si, y: cy[q.s] + lx * si + q.y * co, a: q.a + t }); });
+  let minX = 1e9, maxX = -1e9; for (let i = 0; i < n; i++) { minX = Math.min(minX, cx[i] - g.r[i]); maxX = Math.max(maxX, cx[i] + g.r[i]); }
+  return Object.assign({}, g, { cx, cy, parts, minX, maxX });
+}
 function cols(d) {
   const l = clamp(d.l, 25, 75);
   return { fill: `hsl(${d.h} 62% ${l}%)`, hi: `hsl(${d.h} 70% ${Math.min(92, l + 22)}%)`, line: `hsl(${d.h} 55% ${Math.max(8, l - 30)}%)`,
@@ -691,11 +910,11 @@ function cols(d) {
 function bodyPath(d, g, t) {
   const p = new Path2D();
   for (let i = 0; i < g.r.length; i++) {
-    const cx = g.cx[i], r = g.r[i], n = d.edge === 1 ? 22 : 36;
+    const cx = g.cx[i], cy = g.cy ? g.cy[i] : 0, r = g.r[i], n = d.edge === 1 ? 22 : 36;
     for (let j = 0; j <= n; j++) {
       const a = j / n * TAU; let rr = r * (1 + .03 * Math.sin(t * 2.3 + i * 1.7 + a * 3));
       if (d.edge === 1) rr *= j % 2 ? .9 : 1.08; else if (d.edge === 2) rr *= 1 + .06 * Math.sin(a * 7 + t * 3);
-      const x = cx + Math.cos(a) * rr, y = Math.sin(a) * rr; j ? p.lineTo(x, y) : p.moveTo(x, y);
+      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr; j ? p.lineTo(x, y) : p.moveTo(x, y);
     }
     p.closePath();
   }
@@ -709,17 +928,17 @@ function drawCreature(ctx, d, g, t, o) {
   ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = C.line; ctx.stroke(bp);
   ctx.fillStyle = C.fill; ctx.fill(bp);
   ctx.save(); ctx.clip(bp);
-  const r0 = g.r[0], minX = g.minX, maxX = g.maxX;
+  const r0 = g.r[0], minX = g.minX, maxX = g.maxX, CY = i => g.cy ? g.cy[i] : 0;
   ctx.fillStyle = C.pat;
-  if (d.pat === 1) { for (let i = 0; i < g.r.length; i++) for (let j = 0; j < 5; j++) { const a = j * 2.4 + i, rr = g.r[i] * (.35 + .4 * ((j * 7 + i * 3) % 5) / 5); ctx.beginPath(); ctx.arc(g.cx[i] + Math.cos(a) * rr, Math.sin(a) * rr, g.r[i] * .17, 0, TAU); ctx.fill(); } }
+  if (d.pat === 1) { for (let i = 0; i < g.r.length; i++) for (let j = 0; j < 5; j++) { const a = j * 2.4 + i, rr = g.r[i] * (.35 + .4 * ((j * 7 + i * 3) % 5) / 5); ctx.beginPath(); ctx.arc(g.cx[i] + Math.cos(a) * rr, CY(i) + Math.sin(a) * rr, g.r[i] * .17, 0, TAU); ctx.fill(); } }
   else if (d.pat === 2) { for (let x = minX + 3; x < maxX; x += 7) ctx.fillRect(x, -40, 3, 80); }
-  else if (d.pat === 3) { ctx.strokeStyle = C.pat; ctx.lineWidth = 2.2; for (let i = 0; i < g.r.length; i++) { ctx.beginPath(); ctx.arc(g.cx[i], 0, g.r[i] * .62, 0, TAU); ctx.stroke(); } }
+  else if (d.pat === 3) { ctx.strokeStyle = C.pat; ctx.lineWidth = 2.2; for (let i = 0; i < g.r.length; i++) { ctx.beginPath(); ctx.arc(g.cx[i], CY(i), g.r[i] * .62, 0, TAU); ctx.stroke(); } }
   else if (d.pat === 4) { for (let j = 0; j < 30; j++) { const x = minX + ((j * 37) % 100) / 100 * (maxX - minX), y = (((j * 53) % 100) / 100 - .5) * r0 * 2; ctx.fillRect(x, y, 1.4, 1.4); } }
   else if (d.pat === 5) { ctx.fillRect(minX, -2.6, maxX - minX, 5.2); }
   // a soft shine and the nucleus, so it reads as a living cell
   const gr = ctx.createRadialGradient(g.cx[0] + r0 * .2, -r0 * .45, 0, g.cx[0], -r0 * .2, r0 * 1.1);
   gr.addColorStop(0, "rgba(255,255,255,.35)"); gr.addColorStop(1, "rgba(255,255,255,0)"); ctx.fillStyle = gr; ctx.fillRect(minX, -40, maxX - minX, 80);
-  ctx.fillStyle = C.dark; ctx.globalAlpha = .28; ctx.beginPath(); ctx.arc(g.cx[g.r.length > 1 ? 1 : 0] - r0 * .2, r0 * .25, r0 * .32, 0, TAU); ctx.fill();
+  ctx.fillStyle = C.dark; ctx.globalAlpha = .28; ctx.beginPath(); ctx.arc(g.cx[g.r.length > 1 ? 1 : 0] - r0 * .2, CY(g.r.length > 1 ? 1 : 0) + r0 * .25, r0 * .32, 0, TAU); ctx.fill();
   ctx.globalAlpha = .5; ctx.fillStyle = C.hi; for (let j = 0; j < 3; j++) { ctx.beginPath(); ctx.arc(g.cx[0] - r0 * .35 + j * 2.5, -r0 * .1 + ((j * 5) % 3) * 2, .9, 0, TAU); ctx.fill(); }
   ctx.globalAlpha = 1; ctx.restore();
   if (o.hurt) { ctx.save(); ctx.globalAlpha = .5; ctx.fillStyle = "#fff"; ctx.fill(bp); ctx.restore(); }
@@ -741,12 +960,12 @@ function eyeBall(ctx, x, y, r, t, o, kind) {
   ctx.restore();
 }
 function drawPart(ctx, q, d, g, t, C, mv, o, noJaw) {
-  const id = q.id, cx = g.cx[q.s], r = g.r[q.s], sg = q.y < 0 ? -1 : 1;
+  const id = q.id, cx = g.cx[q.s], cy = g.cy ? g.cy[q.s] : 0, r = g.r[q.s], sg = q.y - cy < 0 ? -1 : 1;
   ctx.save();
   if (id === "moon" || id === "slit" || id === "cluster") {
-    const ix = cx + (q.x - cx) * .7, iy = q.y * .7;
-    if (id === "cluster") { for (let j = 0; j < 3; j++) { const a = q.a + (j - 1) * .5; ctx.save(); ctx.fillStyle = "#16060A"; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * r * .72, Math.sin(a) * r * .72, 2.1, 0, TAU); ctx.fill();
-        ctx.fillStyle = o.glare ? "#FF2B3B" : "#FF6A4D"; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * r * .72 + .4, Math.sin(a) * r * .72, 1.1, 0, TAU); ctx.fill(); ctx.restore(); } }
+    const ix = cx + (q.x - cx) * .7, iy = cy + (q.y - cy) * .7;
+    if (id === "cluster") { for (let j = 0; j < 3; j++) { const a = q.a + (j - 1) * .5; ctx.save(); ctx.fillStyle = "#16060A"; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * r * .72, cy + Math.sin(a) * r * .72, 2.1, 0, TAU); ctx.fill();
+        ctx.fillStyle = o.glare ? "#FF2B3B" : "#FF6A4D"; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * r * .72 + .4, cy + Math.sin(a) * r * .72, 1.1, 0, TAU); ctx.fill(); ctx.restore(); } }
     else {
       eyeBall(ctx, ix, iy, id === "moon" ? 4.6 : 4, t, o, id);
       if (id === "slit") { ctx.strokeStyle = C.dark; ctx.lineWidth = 1.6; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(ix - 4, iy + sg * 4.6); ctx.lineTo(ix + 4.2, iy + sg * 1.8); ctx.stroke(); }
@@ -844,6 +1063,53 @@ function drawPart(ctx, q, d, g, t, C, mv, o, noJaw) {
       ctx.beginPath(); ctx.moveTo(-1, -1.5); ctx.quadraticCurveTo(6, -6.5, 13, -2.5); ctx.quadraticCurveTo(15, 0, 13, 2.5); ctx.quadraticCurveTo(6, 6.5, -1, 1.5); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.beginPath(); for (const y of [-2.5, 0, 2.5]) { ctx.moveTo(1, y * .4); ctx.lineTo(12, y); } ctx.stroke(); break;
     }
+    case "sidefin": {
+      ctx.rotate(Math.sin(t * 5 + q.y) * .2 * (mv + .2)); ctx.fillStyle = `hsla(${d.h2} 65% 60% / .85)`; ctx.strokeStyle = C.line; ctx.lineWidth = .9;
+      ctx.beginPath(); ctx.moveTo(-1, -3); ctx.quadraticCurveTo(7, -6, 11, 1); ctx.quadraticCurveTo(5, 3.5, -1, 3); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); for (const y of [-1.5, 0, 1.5]) { ctx.moveTo(0, y); ctx.lineTo(9, y * .6 + .5); } ctx.stroke(); break;
+    }
+    case "tailfin": {
+      ctx.rotate(Math.sin(t * (5 + mv * 8) + q.y) * .3 * (mv + .25)); ctx.fillStyle = `hsla(${d.h2} 65% 58% / .9)`; ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-1, -2); ctx.quadraticCurveTo(6, -4, 13, -10); ctx.quadraticCurveTo(9, 0, 13, 10); ctx.quadraticCurveTo(6, 4, -1, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); for (const y of [-6, -3, 3, 6]) { ctx.moveTo(1, y * .2); ctx.lineTo(11, y); } ctx.stroke(); break;
+    }
+    case "beak": {
+      ctx.fillStyle = "#D9B65A"; ctx.strokeStyle = "#3A2A08"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-1, -4.2); ctx.lineTo(8, -1.6); ctx.quadraticCurveTo(11.5, 0, 8.5, 2.6); ctx.lineTo(7.5, .6); ctx.lineTo(-1, 4.2); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, .4); ctx.lineTo(7, .2); ctx.stroke(); break;
+    }
+    case "baleen": {
+      ctx.fillStyle = "#1B0E14"; ctx.beginPath(); ctx.ellipse(1, 0, 3, 6.2, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = "#E9DFC4"; ctx.lineWidth = .7; for (let j = -5; j <= 5; j++) { ctx.beginPath(); ctx.moveTo(-.5, j * 1.05); ctx.lineTo(2.8, j * 1.05); ctx.stroke(); }
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(1, 0, 3, 6.2, 0, 0, TAU); ctx.stroke(); break;
+    }
+    case "tentacle": {
+      const ph = t * 4 + q.y; ctx.strokeStyle = C.line; ctx.lineCap = "round";
+      for (const [w, col] of [[3, C.line], [1.8, C.fill]]) { ctx.lineWidth = w; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(-1, 0); for (let i = 1; i <= 10; i++) ctx.lineTo(i * 1.7, Math.sin(ph - i * .6) * i * .3); ctx.stroke(); }
+      ctx.fillStyle = C.hi; for (let i = 2; i <= 9; i += 2) { ctx.beginPath(); ctx.arc(i * 1.7, Math.sin(ph - i * .6) * i * .3, .5, 0, TAU); ctx.fill(); } break;
+    }
+    case "ink": {
+      ctx.fillStyle = "#3B2A55"; ctx.strokeStyle = "#140A22"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(3.5, 0, 4 + Math.sin(t * 2) * .3, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#6B5A8E"; ctx.beginPath(); ctx.arc(2.5, -1.2, 1, 0, TAU); ctx.fill(); break;
+    }
+    case "plate": {
+      ctx.fillStyle = `hsl(${d.h2} 20% 42%)`; ctx.strokeStyle = `hsl(${d.h2} 25% 18%)`; ctx.lineWidth = 1;
+      for (const y of [-6, 0, 6]) { ctx.beginPath(); ctx.ellipse(-2, y, 3.6, 4.2, 0, 0, TAU); ctx.fill(); ctx.stroke(); } break;
+    }
+    case "lamp": {
+      const ey = -2 + Math.sin(t * 2) * 1.2; ctx.strokeStyle = C.line; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-1, 0); ctx.quadraticCurveTo(5, -5, 9, ey); ctx.stroke();
+      const gl = ctx.createRadialGradient(9, ey, 0, 9, ey, 12); gl.addColorStop(0, "rgba(255,245,170,.8)"); gl.addColorStop(1, "rgba(255,230,120,0)"); ctx.fillStyle = gl; ctx.fillRect(-3, ey - 12, 24, 24);
+      ctx.fillStyle = "#FFF8D0"; ctx.beginPath(); ctx.arc(9, ey, 2.6, 0, TAU); ctx.fill(); break;
+    }
+    case "lungs": {
+      ctx.fillStyle = "rgba(255,140,170,.55)"; ctx.strokeStyle = "rgba(150,40,70,.6)"; ctx.lineWidth = .8;
+      for (const y of [-2.6, 2.6]) { ctx.beginPath(); ctx.ellipse(-6, y, 3.4, 2.3, 0, 0, TAU); ctx.fill(); ctx.stroke(); } break;
+    }
+    case "legfin": {
+      ctx.rotate(Math.sin(t * 4 + q.y) * .15); ctx.fillStyle = C.fill; ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-1, -2.4, 10, 4.8, 2.2) : ctx.rect(-1, -2.4, 10, 4.8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.line; for (const y of [-2, 0, 2]) { ctx.beginPath(); ctx.arc(9.5, y, 1.2, 0, TAU); ctx.fill(); } break;
+    }
     case "clear": {
       ctx.fillStyle = "rgba(225,250,255,.35)"; ctx.strokeStyle = "rgba(225,250,255,.6)"; ctx.lineWidth = .7;
       ctx.beginPath(); ctx.ellipse(-4.5, 0, 3.6, 5, 0, 0, TAU); ctx.fill(); ctx.stroke();
@@ -871,7 +1137,7 @@ function partIcon(cv, id, d) {
 /* ---------- menu ---------- */
 function slotKey(i) { return "lf.slot." + i; }
 function loadSlot(i) { const s = store.get(slotKey(i), null); return s && s.cell ? migrate(s) : null; }
-function saveSlot() { if (!S || slot < 0) return; S.at = Date.now(); store.set(slotKey(slot), S); store.set("lf.last", slot); }
+function saveSlot() { if (!S || slot < 0) return; if (W && W.sea && W.player && S.sea) { S.sea.x = Math.round(W.player.x); S.sea.y = Math.round(W.player.y); } S.at = Date.now(); store.set(slotKey(slot), S); store.set("lf.last", slot); }
 function fmtTime(s) { const m = Math.round(s / 60); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; }
 function preview(cv, d, w, h) {
   const dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = w * dpr; cv.height = h * dpr; const ctx = cv.getContext("2d");
@@ -888,15 +1154,20 @@ function renderMenu() {
     const nm = document.createElement("b"); nm.textContent = s.name; const chip = document.createElement("span"); chip.className = "chip" + (s.mode === "hard" ? " hc" : ""); chip.textContent = s.mode === "hard" ? "☠ Hardcore" : "Normal"; nm.append(chip);
     if (s.test) { const tc = document.createElement("span"); tc.className = "chip"; tc.textContent = "Test start"; nm.append(tc); }
     const sm = document.createElement("span"); sm.className = "sm";
-    sm.textContent = s.dead ? `Died out at ${TIERS[s.cell.tier].n} size · ${fmtTime(s.time)}` : s.cell.done ? `Cell stage complete · ${NATURES[s.nature] ? NATURES[s.nature].n : ""} · ${fmtTime(s.time)}` : `Cell stage · ${TIERS[s.cell.tier].n} (size ${s.cell.tier + 1} of 5) · ${fmtTime(s.time)}`;
+    const sea = s.stage === "sea", cs = cur(s), TT = TS(s), stg = sea ? "Sea" : "Cell", tm = fmtTime(s.time);
+    sm.textContent = s.dead ? `Died out in the ${stg.toLowerCase()} stage at ${TT[cs.tier].n} size · ${tm}` : sea && cs.done ? `Sea stage complete: crawled onto land · ${tm}`
+      : !sea && cs.done ? `Cell stage complete · ${NATURES[s.nature] ? NATURES[s.nature].n : ""} · ready for the sea · ${tm}` : `${stg} stage · ${TT[cs.tier].n} (size ${cs.tier + 1} of 5) · ${tm}`;
     const row = document.createElement("div"); row.className = "row";
-    if (!s.dead) { const p = document.createElement("button"); p.className = "btn small primary"; p.textContent = "Play"; p.onclick = () => startSlot(i); row.append(p); }
+    if (!s.dead) {
+      const toSea = !sea && cs.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : "Play";
+      p.onclick = () => { if (toSea) { goToSea(s); store.set(slotKey(i), s); } startSlot(i); }; row.append(p);
+    }
     const del = document.createElement("button"); del.className = "btn small bad"; del.textContent = s.dead ? "Clear" : "Delete";
     del.onclick = () => dialog(`<h2>${s.dead ? "Clear" : "Delete"} ${esc(s.name)}?</h2><p>${s.dead ? "This clears the fossil from this slot." : "This species and all its progress will be gone for good."}</p><div class="row"><button class="btn" data-a="no">Keep</button><button class="btn bad" data-a="yes">${s.dead ? "Clear" : "Delete"}</button></div>`, { yes: () => { store.del(slotKey(i)); closeDlg(); renderMenu(); }, no: closeDlg });
     row.append(del); info.append(nm, sm, row); el.append(info); box.append(el);
-    preview(cv, s.cell.design, 84, 72); if (s.dead) cv.style.filter = "grayscale(1) brightness(.6)";
+    preview(cv, cs.design, 84, 72); if (s.dead) cv.style.filter = "grayscale(1) brightness(.6)";
   }
-  $("road").innerHTML = STAGES.map((n, i) => `<li class="${i === 0 ? "on" : ""}">${i + 1}. ${n}${i > 0 ? " · soon" : ""}</li>`).join("");
+  $("road").innerHTML = STAGES.map((n, i) => `<li class="${i < 2 ? "on" : ""}">${i + 1}. ${n}${i > 1 ? " · soon" : ""}</li>`).join("");
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
 const SYL = ["zo", "bli", "qua", "mi", "ru", "xe", "po", "lo", "vin", "ka", "fli", "nu", "tor", "gla", "pip", "oz", "wib", "sna", "dro", "ul", "ki", "mop", "zee", "bo"];
@@ -922,7 +1193,7 @@ function newLifeDlg(i) {
     <button class="opt" data-a="hard"><b>☠ Hardcore</b><span>One life. If you're eaten, your species is gone for good.</span></button></div>
     <div class="lbl">Start at</div>
     <div class="pick" id="startPick">${STARTS.map((x, j) => `<button class="opt${j ? "" : " on"}" data-a="st_${x[0]}"><b>${x[1]}</b><span>${j ? x[2] + ". For testing: every part and 300 DNA." : "The normal way to play."}</span></button>`).join("")}
-    ${STAGES.slice(1).map(n => `<button class="opt" disabled style="opacity:.45"><b>${n} stage</b><span>Not built yet.</span></button>`).join("")}</div>
+    ${STAGES.slice(2).map(n => `<button class="opt" disabled style="opacity:.45"><b>${n} stage</b><span>Not built yet.</span></button>`).join("")}</div>
     <div class="row"><button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="go">Begin</button></div>`, {
     dice: () => { $("nmIn").value = randName(); },
     plant: b => { diet = "plant"; mark("dietPick", b); }, meat: b => { diet = "meat"; mark("dietPick", b); },
@@ -945,13 +1216,14 @@ function show(v) { view = v; $("menu").hidden = v !== "menu"; $("play").hidden =
 function startSlot(i) {
   const s = loadSlot(i); if (!s || s.dead) return;
   S = s; slot = i; W = newWorld(S); paused = false; parts = []; fx = []; saveT = 15; abilKeys = "";
-  cam.x = 0; cam.y = 0; cam.s = Math.min(CW, CH) * .62 / viewR(W);
+  cam.x = W.player.x; cam.y = W.player.y; cam.s = Math.min(CW, CH) * .62 / viewR(W);
   show("play"); resize(); store.set("lf.last", i); hintT = 1; updateAbil();
 }
 function quitToMenu() { saveSlot(); W = null; S = null; slot = -1; closeDlg(); show("menu"); renderMenu(); }
 function pause() {
   if (!W || W.over) return; paused = true; saveSlot();
-  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${TIERS[S.cell.tier].n} size · ${fmtTime(S.time)} played</p>
+  const c = cur(S), gl = W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>` : "";
+  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${TS(S)[c.tier].n} size · ${W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : ""}${fmtTime(S.time)} played</p>${gl}
     <div class="row"><button class="btn primary" data-a="go">Carry on</button></div>
     <div class="row"><button class="btn" data-a="snd">Sound: ${opts.sound ? "on" : "off"}</button><button class="btn" data-a="help">How to play</button></div>
     <div class="row"><button class="btn" data-a="quit">Save and leave</button></div>`, {
@@ -968,6 +1240,10 @@ function helpDlg() {
     <p><b>Evolve:</b> your mate also lets you spend DNA 🧬 on new parts. Every part does something where you put it, good and bad: tails only push when they point backwards, each jaw bites on its own, shells only guard their own side, and everything adds weight.</p>
     <p><b>Pods:</b> glowing pods ✦ hold a body part (you can see which). Beaten creatures sometimes drop one of theirs. Grab them and use them if you want to.</p>
     <p><b>Danger:</b> creatures with jaws and a red glow are hunting you. Swim away: they give up after a few seconds. You heal when you've been left alone for a bit.</p>
+    ${W && W.sea ? `<p><b>The sea:</b> the deeper you go, the bigger the food and the bigger the danger. The map in the corner shows how deep you are. The Deep is dark: lamps and good eyes help.</p>
+    <p><b>Your nest ⌂:</b> swim into it to evolve. When your green bar is full, evolving there grows you a size and hatches young that swim with you and help you fight. If you're eaten, you come back at the nest.</p>
+    <p><b>Diet:</b> the bar under your health slides towards 🌿 or 🦷 as you eat. Food you're used to feeds you better, so you settle into being a plant eater or a meat eater, or stay in the middle.</p>
+    <p><b>Leaving the sea:</b> at the last size, grow lungs and two leg fins, then swim up to the shore.</p>` : ""}
     <div class="row"><button class="btn primary" data-a="ok">Got it</button></div>`, { ok: () => { if (W && !W.over && view === "play") pause(); else closeDlg(); } }, () => { if (W && view === "play") pause(); else closeDlg(); });
 }
 $("pauseBtn").onclick = pause;
@@ -989,7 +1265,7 @@ addEventListener("keydown", e => { keys[e.key.toLowerCase()] = 1; if (e.key === 
 addEventListener("keyup", e => { keys[e.key.toLowerCase()] = 0; });
 document.addEventListener("visibilitychange", () => { if (document.hidden) { if (view === "play" && !paused && W && !W.over) pause(); saveSlot(); } });
 
-const AB = { dash: ["⚡", "Dash"], poison: ["☁", "Stink"], zap: ["✶", "Zap"] };
+const AB = { dash: ["⚡", "Dash"], poison: ["☁", "Stink"], zap: ["✶", "Zap"], ink: ["✺", "Ink"] };
 function updateAbil() {
   const P = W.player, ks = Object.keys(P.st.ab).sort().join(","); if (ks === abilKeys) return; abilKeys = ks;
   const box = $("abil"); box.textContent = "";
@@ -1005,6 +1281,13 @@ function hint(n, text, secs) { if (S.hints & (1 << n) || hintOn >= 0) return; S.
 function hints() {
   if (hintOn >= 0 && performance.now() > hintEnd && !(hintOn === 0 && moved < 30)) { hintOn = -1; $("hint").hidden = true; }
   if (!W) return; const P = W.player;
+  if (W.sea) {
+    if (W.t > 1) hint(8, "Welcome to the sea! Your nest ⌂ is where you evolve. Deeper water has bigger food, and bigger danger.", 8);
+    if (W.t > 25) hint(9, "The bar under your health is your diet: it slides towards what you eat, and food you're used to feeds you better.", 8);
+    if (W.cr.some(q => q.kind === "ally")) hint(10, "Your young swim with you and join your fights. Each time you evolve at the nest, it hatches more.", 7);
+    if (W.boss) hint(11, `${W.boss.boss} lives down here. Beat it for a big reward, if you dare.`, 7);
+    return;
+  }
   if (W.t > .5) hint(0, "Put your thumb anywhere and drag to swim.", 5);
   if (W.t > 6) hint(1, P.st.eat.plant ? "Steer your mouth into the green bits to eat them." : "Bite smaller creatures with your jaw, then eat the red bits.", 7);
   if (W.pods.length && W.t > 12) hint(2, "A glowing pod ✦ with a body part inside! Grab it, then use the part next time you evolve, if you like.", 7);
@@ -1021,7 +1304,13 @@ function handleEvents() {
     else if (e.t === "hurt") { snd("hurt"); cam.shake = Math.min(12, cam.shake + 4 + e.f * 30); $("vig").style.opacity = Math.min(1, .3 + e.f * 3); }
     else if (e.t === "kill") { snd("kill"); for (let i = 0; i < 14; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90 * e.k, vy: (Math.random() - .5) * 90 * e.k, life: .8, col: `hsl(${e.h} 70% 60%)`, r: 2.4 * e.k }); }
     else if (e.t === "bite") { for (let i = 0; i < 3; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 50 * P.k, vy: (Math.random() - .5) * 50 * P.k, life: .35, col: "#FF6B7E", r: 1.6 * P.k }); }
-    else if (e.t === "ready") { snd("grow"); toast("Fully grown! Find your mate ❤ to evolve and get bigger."); }
+    else if (e.t === "ready") { snd("grow"); toast(W.sea ? (cur(S).tier < 4 ? "Fully grown! Swim back to your nest ⌂ to evolve and get bigger." : "As big as you'll get! Evolve at your nest ⌂ to get ready for land.") : "Fully grown! Find your mate ❤ to evolve and get bigger."); }
+    else if (e.t === "goal") { snd("relic"); toast(`Goal done: ${SEA_GOALS.find(g => g.id === e.id).n}! +25 DNA and a pod ✦`); }
+    else if (e.t === "boss") { snd("hurt"); toast(`Something huge stirs in the Deep: ${e.n}.`); }
+    else if (e.t === "bossDown") { snd("grow"); toast(`You beat ${e.n}! +60 DNA and two pods ✦`); }
+    else if (e.t === "allyDie") { toast("One of your young was eaten."); }
+    else if (e.t === "needLegs") { toast("To crawl onto land you need lungs and two leg fins. Evolve at your nest ⌂."); }
+    else if (e.t === "ashore") { saveSlot(); seaDone(); }
     else if (e.t === "relic") { snd("relic"); toast(e.id ? `New part: ${PART[e.id].n}! It's in your builder next time you evolve.` : "You already have that part: +10 DNA 🧬"); }
     else if (e.t === "mateSpawn") { snd("mate"); }
     else if (e.t === "mate") { openEditor(); }
@@ -1033,11 +1322,11 @@ function handleEvents() {
 }
 function died() {
   saveSlot();
-  const c = S.cell;
+  const c = cur(S);
   if (S.mode === "hard") {
     S.dead = { at: Date.now(), tier: c.tier }; saveSlot();
     setTimeout(() => dialog(`<h2>Your species has died out</h2><p>${esc(S.name)} was eaten. In hardcore there's only one life.</p>
-      <div class="stats"><div>Size<b>${TIERS[c.tier].n}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Creatures eaten<b>${c.kills}</b></div><div>Evolved<b>${c.evolves}×</b></div></div>
+      <div class="stats"><div>Size<b>${TS(S)[c.tier].n}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Creatures eaten<b>${c.kills}</b></div><div>Evolved<b>${c.evolves}×</b></div></div>
       <div class="row"><button class="btn primary" data-a="ok">Back to the menu</button></div>`, { ok: quitToMenu }, quitToMenu), 700);
   } else {
     setTimeout(() => { const lost = Math.floor(c.dna * .1);
@@ -1056,6 +1345,7 @@ function draw(dt) {
   const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 30);
   const ox = CW / 2 - cam.x * cam.s + (Math.random() - .5) * sh, oy = CH / 2 - cam.y * cam.s + (Math.random() - .5) * sh, s = cam.s;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (W.sea) drawSeaBack(ox, oy, s, t); else {
   const [c1, c2] = DEPTH[Math.min(4, T)], bg = ctx.createRadialGradient(CW / 2, CH * .35, 0, CW / 2, CH / 2, Math.max(CW, CH) * .8);
   bg.addColorStop(0, c1); bg.addColorStop(1, c2); ctx.fillStyle = bg; ctx.fillRect(0, 0, CW, CH);
   // giant shapes far below: the bigger life you'll grow into
@@ -1065,7 +1355,7 @@ function draw(dt) {
     const wx = ((b.x * (CW + 800) - cam.x * s * .25 + t * b.sp) % (CW + 800) + (CW + 800)) % (CW + 800) - 400, wy = ((b.y * (CH + 800) - cam.y * s * .25) % (CH + 800) + (CH + 800)) % (CH + 800) - 400;
     ctx.save(); ctx.translate(wx, wy); ctx.rotate(.3 + i * 2.4 + Math.sin(t * .1 + i) * .2); ctx.scale(sz, sz); drawCreature(ctx, sp.d, g, t * .5, { mv: .2 }); ctx.restore();
   });
-  ctx.restore();
+  ctx.restore(); }
   // drifting specks at three depths
   ctx.fillStyle = "#CFFFF4";
   for (const [f, cs, al] of [[.3, 120, .12], [.6, 90, .2], [1, 70, .3]]) {
@@ -1077,9 +1367,10 @@ function draw(dt) {
   }
   ctx.globalAlpha = 1;
   const onS = (x, y, r) => { const X = x * s + ox, Y = y * s + oy, R = r * s; return X > -R && X < CW + R && Y > -R && Y < CH + R; };
-  // poison clouds
+  if (W.sea) drawNest(W.nest.x * s + ox, W.nest.y * s + oy, 30 * P.k * s, t);
+  // poison and ink clouds
   for (const cl of W.clouds) { if (!onS(cl.x, cl.y, cl.r)) continue; const X = cl.x * s + ox, Y = cl.y * s + oy, R = cl.r * s, gr = ctx.createRadialGradient(X, Y, 0, X, Y, R);
-    gr.addColorStop(0, `rgba(170,220,60,${.45 * cl.t / cl.T})`); gr.addColorStop(1, "rgba(170,220,60,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill(); }
+    gr.addColorStop(0, cl.ink ? `rgba(20,10,35,${.85 * cl.t / cl.T})` : `rgba(170,220,60,${.45 * cl.t / cl.T})`); gr.addColorStop(1, cl.ink ? "rgba(20,10,35,0)" : "rgba(170,220,60,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill(); }
   // food
   for (const it of W.items) {
     if (!onS(it.x, it.y, it.r * 2)) continue; const X = it.x * s + ox, Y = it.y * s + oy, R = it.r * s * (1 + .08 * Math.sin(t * 3 + it.ph));
@@ -1095,7 +1386,7 @@ function draw(dt) {
     }
   }
   // the pod
-  for (const R of W.pods) { if (!onS(R.x, R.y, R.r * 3)) continue; const X = R.x * s + ox, Y = R.y * s + oy, r = R.r * s * (1 + .06 * Math.sin(t * 3 + R.ph)), have = S.cell.unlocked.includes(R.id);
+  for (const R of W.pods) { if (!onS(R.x, R.y, R.r * 3)) continue; const X = R.x * s + ox, Y = R.y * s + oy, r = R.r * s * (1 + .06 * Math.sin(t * 3 + R.ph)), have = cur(S).unlocked.includes(R.id);
     if (R.life !== undefined && R.life < 6 && Math.floor(t * 6) % 2) continue;
     const gr = ctx.createRadialGradient(X, Y, 0, X, Y, r * 2.6); gr.addColorStop(0, have ? "rgba(200,220,255,.35)" : "rgba(215,174,255,.6)"); gr.addColorStop(1, "rgba(215,174,255,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, r * 2.6, 0, TAU); ctx.fill();
     ctx.fillStyle = "rgba(30,14,60,.55)"; ctx.strokeStyle = have ? "#AFC4FF" : "#D7AEFF"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, r, 0, TAU); ctx.fill(); ctx.stroke();
@@ -1105,14 +1396,23 @@ function draw(dt) {
     if (!onS(c.x, c.y, c.g.R * c.k * 2.2)) continue;
     const X = c.x * s + ox, Y = c.y * s + oy, hunting = c.kind === "npc" && c.ai.tg === P;
     if (hunting) { const R = c.g.R * c.k * s * 1.6, gr = ctx.createRadialGradient(X, Y, R * .3, X, Y, R); gr.addColorStop(0, "rgba(255,40,60,.28)"); gr.addColorStop(1, "rgba(255,40,60,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill(); }
+    if (c.kind === "ally") { ctx.strokeStyle = "rgba(124,242,200,.45)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, c.g.R * c.k * s * 1.25, 0, TAU); ctx.stroke(); }
+    if (c.boss) { ctx.fillStyle = "#FFB4B4"; ctx.font = `800 ${Math.max(13, Math.min(22, c.g.R * c.k * s * .3))}px Figtree, sans-serif`; ctx.textAlign = "center"; ctx.fillText(c.boss, X, Y - c.g.R * c.k * s - 10); }
     if (c.kind === "mate") { ctx.fillStyle = "rgba(255,140,200,.9)"; ctx.font = `${Math.max(14, c.g.R * c.k * s * .7)}px sans-serif`; ctx.textAlign = "center"; ctx.fillText("❤", X, Y - c.g.R * c.k * s - 6 + Math.sin(t * 4) * 3); }
     ctx.save(); ctx.translate(X, Y); ctx.rotate(c.a); ctx.scale(s * c.k, s * c.k);
     if (c.kind === "player" && c.inv > 0 && Math.floor(t * 10) % 2) ctx.globalAlpha = .5;
-    const sp = Math.hypot(c.vx, c.vy) / (c.st.spd * c.k);
-    drawCreature(ctx, c.d, c.g, t + c.id, { mv: clamp(sp, 0, 1), hurt: W.t - c.hurtT < .12, glare: hunting, dash: c.dash > 0 });
+    const sp = Math.hypot(c.vx, c.vy) / (c.st.spd * c.k), mv = clamp(sp, 0, 1);
+    let gg = c.g; // long bodies bend: the tail swings behind as it turns, with a gentle swimming wave
+    if (c.g.r.length > 1) {
+      if (dt > 0) { const tr = wrapA(c.a - (c.pa == null ? c.a : c.pa)) / dt; c.tr = (c.tr || 0) + (tr - (c.tr || 0)) * Math.min(1, dt * 6); c.pa = c.a; }
+      const ang = [0]; for (let i = 1; i < c.g.r.length; i++) ang.push(clamp(-(c.tr || 0) * .12, -.4, .4) + Math.sin(t * (3 + 7 * mv) + c.id - i * 1.1) * .15 * (.25 + mv));
+      gg = bentG(c.g, ang);
+    }
+    drawCreature(ctx, c.d, gg, t + c.id, { mv: clamp(sp, 0, 1), hurt: W.t - c.hurtT < .12, glare: hunting, dash: c.dash > 0 });
     ctx.restore();
     if (c.kind === "npc" && c.hp < c.max && W.t - c.hurtT < 4) { const w = c.g.R * c.k * s * 1.4; ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(X - w / 2, Y + c.g.R * c.k * s + 4, w, 4); ctx.fillStyle = "#FF6B86"; ctx.fillRect(X - w / 2, Y + c.g.R * c.k * s + 4, w * Math.max(0, c.hp / c.max), 4); }
   }
+  if (W.sea) drawDark(ox, oy, s, t);
   // sparkles and rings
   for (const p of parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; ctx.globalAlpha = Math.max(0, p.life * 2); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x * s + ox, p.y * s + oy, Math.max(1, p.r * s), 0, TAU); ctx.fill(); }
   parts = parts.filter(p => p.life > 0); ctx.globalAlpha = 1;
@@ -1122,23 +1422,96 @@ function draw(dt) {
   const edge = (x, y, icon, col) => {
     const X = x * s + ox, Y = y * s + oy; if (X > 20 && X < CW - 20 && Y > 70 && Y < CH - 20) return;
     const a = Math.atan2(Y - CH / 2, X - CW / 2), m = 30, k = Math.min((CW / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (CH / 2 - m - 30) / Math.abs(Math.sin(a) || 1e-6));
-    const ex = CW / 2 + Math.cos(a) * k, ey = CH / 2 + 15 + Math.sin(a) * k;
+    const ex = CW / 2 + Math.cos(a) * k, ey = clamp(CH / 2 + 15 + Math.sin(a) * k, 125, CH - 30); // below the bars at the top
     ctx.save(); ctx.translate(ex, ey); ctx.fillStyle = "rgba(4,22,29,.75)"; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 17, 0, TAU); ctx.fill(); ctx.stroke();
     ctx.rotate(a); ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(17, -6); ctx.lineTo(17, 6); ctx.fill(); ctx.rotate(-a);
     ctx.font = "16px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(icon, 0, 1); ctx.restore();
   };
   if (W.mate) edge(W.mate.x, W.mate.y, "❤", "#FF8CC6");
-  { let near = null, nd = 1e18; for (const R of W.pods) { if (S.cell.unlocked.includes(R.id)) continue; const dd = d2(R, P); if (dd < nd) { nd = dd; near = R; } } if (near) edge(near.x, near.y, "✦", "#D7AEFF"); }
+  if (W.sea) { const c = cur(S); edge(W.nest.x, W.nest.y, "⌂", "#FFB7D5"); if (c.ashore && !c.done) edge(P.x, -40 * P.k, "⬆", "#FFE08A"); if (W.boss) edge(W.boss.x, W.boss.y, "☠", "#FF6B6B"); drawMap(); }
+  { let near = null, nd = 1e18; for (const R of W.pods) { if (cur(S).unlocked.includes(R.id)) continue; const dd = d2(R, P); if (dd < nd) { nd = dd; near = R; } } if (near) edge(near.x, near.y, "✦", "#D7AEFF"); }
+}
+/* The sea's backdrop: colour by depth, sunbeams, the shore above the surface, kelp, the seabed and the walls. */
+function mix(a, b, f) { return a.map((v, i) => Math.round(v + (b[i] - v) * f)); }
+function seaColour(y) {
+  const B = SEA.bands; let i = bandAt(y); if (i >= 4) return B[4].c;
+  const f = clamp((y - B[i].y) / (B[i + 1].y - B[i].y), 0, 1); return mix(B[i].c, B[i + 1].c, f);
+}
+function drawSeaBack(ox, oy, s, t) {
+  const top = -oy / s, bot = (CH - oy) / s, left = -ox / s, right = (CW - ox) / s;
+  const g = ctx.createLinearGradient(0, 0, 0, CH), c1 = seaColour(Math.max(0, top)), c2 = seaColour(Math.max(0, bot));
+  g.addColorStop(0, `rgb(${c1})`); g.addColorStop(1, `rgb(${c2})`); ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+  if (top < 2500) { // sunbeams fading with depth
+    ctx.save(); ctx.globalAlpha = clamp(1 - Math.max(0, top) / 2500, 0, 1) * .12; ctx.fillStyle = "#FFFFE8";
+    for (let i = 0; i < 6; i++) { const x = ((i * 0.19 + t * .004) % 1.2 - .1) * CW; ctx.beginPath(); ctx.moveTo(x, Math.max(0, oy)); ctx.lineTo(x + 50, Math.max(0, oy)); ctx.lineTo(x - 140, CH); ctx.lineTo(x - 210, CH); ctx.fill(); }
+    ctx.restore();
+  }
+  if (top < 0) { // the shore: sand and sky above the surface
+    const Y = oy; const sg = ctx.createLinearGradient(0, Y - 260, 0, Y); sg.addColorStop(0, "#BFE6F2"); sg.addColorStop(.55, "#F1DFA6"); sg.addColorStop(1, "#E3C985");
+    ctx.fillStyle = sg; ctx.fillRect(0, 0, CW, Y);
+    ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.beginPath(); ctx.moveTo(0, Y); for (let x = 0; x <= CW; x += 12) ctx.lineTo(x, Y - 4 - Math.sin(x * .03 + t * 2) * 3); ctx.lineTo(CW, Y); ctx.fill();
+  }
+  // kelp in the reef: tall swaying strands, fixed in the world
+  const K0 = SEA.bands[1].y, K1 = SEA.bands[2].y;
+  if (bot > K0 && top < K1) {
+    const step = 220, i0 = Math.floor(left / step) - 1, i1 = Math.ceil(right / step) + 1;
+    for (let i = i0; i <= i1; i++) {
+      const h = hash(i, 77), x0 = i * step + (h % 120), len = 500 + (h >>> 8) % 900, base = K1 - (h >>> 4) % 200;
+      ctx.strokeStyle = `rgba(${40 + (h & 31)},${120 + (h >>> 5 & 63)},70,.5)`; ctx.lineWidth = Math.max(2, 9 * s); ctx.beginPath();
+      for (let j = 0; j <= 10; j++) { const yy = base - len * j / 10, xx = x0 + Math.sin(t * .8 + j * .5 + i) * 14 * j; j ? ctx.lineTo(xx * s + ox, yy * s + oy) : ctx.moveTo(xx * s + ox, yy * s + oy); }
+      ctx.stroke();
+    }
+  }
+  if (bot > SEA.D) { ctx.fillStyle = "#07090C"; ctx.fillRect(0, SEA.D * s + oy, CW, CH); }
+  ctx.fillStyle = "#0B1418"; if (left < -SEA.W) ctx.fillRect(0, 0, -SEA.W * s + ox, CH); if (right > SEA.W) ctx.fillRect(SEA.W * s + ox, 0, CW, CH);
+}
+function drawNest(X, Y, R, t) {
+  if (X < -R * 2 || X > CW + R * 2 || Y < -R * 2 || Y > CH + R * 2) return;
+  ctx.save(); ctx.translate(X, Y);
+  ctx.fillStyle = "rgba(230,205,150,.55)"; ctx.beginPath(); ctx.ellipse(0, 0, R * 1.2, R * .9, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = "rgba(255,140,170,.85)"; ctx.lineWidth = Math.max(2, R * .08); ctx.lineCap = "round";
+  for (let i = 0; i < 9; i++) { const a = i / 9 * TAU, x = Math.cos(a) * R * 1.1, y = Math.sin(a) * R * .85; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x * 1.25 + Math.sin(t + i) * R * .05, y * 1.3); ctx.stroke(); }
+  const c = cur(S), n = c.ready ? 7 : 3 + Math.floor(c.grow / TS(S)[c.tier].g * 4);
+  for (let i = 0; i < n; i++) { const a = i * 2.4, rr = R * (.15 + .35 * ((i * 5) % 7) / 7); ctx.fillStyle = "rgba(255,245,220,.85)"; ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * .7, R * .16, 0, TAU); ctx.fill(); ctx.fillStyle = "rgba(255,170,190,.7)"; ctx.beginPath(); ctx.arc(Math.cos(a) * rr + R * .04, Math.sin(a) * rr * .7, R * .06, 0, TAU); ctx.fill(); }
+  ctx.restore();
+}
+/* Darkness below the twilight: only a pool of light round you (bigger with lamps) and the lamps of what lives down there. */
+function drawDark(ox, oy, s, t) {
+  const P = W.player, dk = clamp((P.y - 4600) / 3200, 0, .94); if (dk <= 0) return;
+  const X = P.x * s + ox, Y = P.y * s + oy, r0 = (P.g.R * 2.2 + P.st.light * 70 + P.st.eyes * 6) * P.k * s, g = ctx.createRadialGradient(X, Y, r0 * .5, X, Y, r0 * 2.2);
+  g.addColorStop(0, "rgba(2,3,10,0)"); g.addColorStop(1, `rgba(2,3,10,${dk})`); ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+  for (const c of [...W.cr, P]) if (c.st.light > 0) {
+    for (const q of c.g.parts) if (q.id === "lamp") {
+      const [lx, ly] = toW(c, q.x + Math.cos(q.a) * 9, q.y + Math.sin(q.a) * 9), LX = lx * s + ox, LY = ly * s + oy, LR = 14 * c.k * s * (1 + .1 * Math.sin(t * 3 + c.id));
+      if (LX < -LR || LX > CW + LR || LY < -LR || LY > CH + LR) continue;
+      const lg = ctx.createRadialGradient(LX, LY, 0, LX, LY, LR); lg.addColorStop(0, "rgba(255,245,170,.9)"); lg.addColorStop(1, "rgba(255,230,120,0)"); ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(LX, LY, LR, 0, TAU); ctx.fill();
+    }
+  }
+  if (W.boss) { const B = W.boss; for (const q of B.g.parts) if (q.id === "slit" || q.id === "cluster" || q.id === "stalk") { const [ex, ey] = toW(B, q.x * .8, q.y * .8); ctx.fillStyle = "rgba(255,60,60,.9)"; ctx.beginPath(); ctx.arc(ex * s + ox, ey * s + oy, Math.max(2, 2.5 * B.k * s), 0, TAU); ctx.fill(); } }
+}
+/* A little map of the whole sea in the corner: the depth bands, your nest, you. */
+function drawMap() {
+  const w = 54, h = 92, x0 = CW - w - 12, y0 = $("pauseBtn").getBoundingClientRect().bottom + 14, P = W.player;
+  ctx.save(); ctx.globalAlpha = .85;
+  for (let i = 0; i < 5; i++) { const ya = y0 + SEA.bands[i].y / SEA.D * h, yb = y0 + (i < 4 ? SEA.bands[i + 1].y : SEA.D) / SEA.D * h; ctx.fillStyle = `rgb(${SEA.bands[i].c})`; ctx.fillRect(x0, ya, w, yb - ya); }
+  ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 1; ctx.strokeRect(x0 + .5, y0 + .5, w - 1, h - 1);
+  const mx = x => x0 + (x + SEA.W) / (2 * SEA.W) * w, my = y => y0 + y / SEA.D * h;
+  ctx.fillStyle = "#FFB7D5"; ctx.beginPath(); ctx.arc(mx(W.nest.x), my(W.nest.y), 3, 0, TAU); ctx.fill();
+  if (W.boss) { ctx.fillStyle = "#FF5A5A"; ctx.beginPath(); ctx.arc(mx(W.boss.x), my(W.boss.y), 2.5, 0, TAU); ctx.fill(); }
+  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(mx(P.x), my(P.y), 3, 0, TAU); ctx.fill();
+  ctx.restore();
 }
 function hud() {
-  const P = W.player, c = S.cell, T = TIERS[c.tier];
+  const P = W.player, c = cur(S), T = TS(S)[c.tier];
   $("hpFill").style.width = Math.max(0, P.hp / P.max * 100) + "%";
   $("grFill").style.width = (c.done ? 100 : c.grow / T.g * 100) + "%";
   $("grBar").classList.toggle("ready", !!c.ready);
-  const lbl = c.done ? `${S.name} · cell stage complete` : c.ready ? `${T.n} · fully grown: find your mate ❤` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5)`;
+  const lbl = W.sea ? (c.done ? `${S.name} · on land!` : c.ashore ? `${T.n} · swim up to the shore ⬆` : c.ready ? `${T.n} · fully grown: back to your nest ⌂` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5) · ${SEA.bands[bandAt(P.y)].n}`)
+    : c.done ? `${S.name} · cell stage complete` : c.ready ? `${T.n} · fully grown: find your mate ❤` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5)`;
+  $("dietBar").hidden = !W.sea; if (W.sea) $("dietMark").style.left = ((c.lean + 1) / 2 * 100) + "%";
   if ($("grLabel").textContent !== lbl) $("grLabel").textContent = lbl;
   const dn = String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
-  $("abil").querySelectorAll(".ab").forEach(b => { const k = b.dataset.ab, cd = { dash: 3.5, poison: 7, zap: 8 }[k]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
+  $("abil").querySelectorAll(".ab").forEach(b => { const k = b.dataset.ab, cd = { dash: 3.5, poison: 7, zap: 8, ink: 8 }[k]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
   const v = $("vig"); if (+v.style.opacity > 0) v.style.opacity = Math.max(0, +v.style.opacity - .03);
   if (toastT && performance.now() > toastT) { $("toast").hidden = true; toastT = 0; }
 }
@@ -1149,29 +1522,37 @@ let ED = null, EW = 0, EH = 0;
 const TABS = [["body", "Body"], ["mouth", "Mouths"], ["move", "Move"], ["fight", "Fight"], ["eye", "Senses"], ["extra", "Extras"], ["look", "Look"]];
 function openEditor() {
   if (!W) return; paused = true; inp.mx = inp.my = 0; stickId = null; $("stick").hidden = true;
-  ED = { d: cloneD(S.cell.design), d0: cloneD(S.cell.design), sel: null, drag: null, tab: "mouth", view: { sc: 4, ox: 0, oy: 0 } };
+  ED = { d: cloneD(cur(S).design), d0: cloneD(cur(S).design), sel: null, drag: null, tab: "mouth", view: { sc: 4, ox: 0, oy: 0 } };
   show("edit"); renderTabs(); renderTray(); refreshEditor();
 }
 function sizeEditor() { const r = ecv.getBoundingClientRect(); EW = r.width; EH = r.height; ecv.width = EW * DPR; ecv.height = EH * DPR; }
 function edCost() { return designValue(ED.d) - designValue(ED.d0); }
-function edLeft() { return Math.floor(S.cell.dna - edCost()); }
+function edLeft() { return Math.floor(cur(S).dna - edCost()); }
 function refreshEditor() {
-  const c = S.cell, st = stats(ED.d), left = edLeft(), lim = partLimit(c.tier), n = st.parts;
-  $("eTitle").textContent = c.ready ? (c.tier < TIERS.length - 1 ? `Evolve and grow to ${TIERS[c.tier + 1].n}` : "Evolve: ready to leave the pond") : "Evolve";
+  const c = cur(S), st = stats(ED.d), left = edLeft(), lim = partLimit(c.tier, S), n = st.parts;
+  $("eTitle").textContent = c.ready ? (c.tier < TS(S).length - 1 ? `Evolve and grow to ${TS(S)[c.tier + 1].n}` : (W.sea ? "Evolve: get ready for land" : "Evolve: ready to leave the pond")) : (W.sea && c.ashore ? "Evolve: get ready for land" : "Evolve");
   $("eInfo").innerHTML = `🧬 <em class="${left < 0 ? "neg" : ""}">${left}</em> DNA left · parts ${n} of ${lim}`;
   $("eDone").textContent = c.ready ? "Grow ▲" : "Done";
   const diet = dietOf(st), dt = { plant: "🌿 Eats plants", meat: "🦷 Eats meat", both: "🌿🦷 Eats plants and meat", none: "⚠ No mouth: it can't eat!" }[diet];
   const bar = (n, v) => `<div>${n}<i><u style="width:${Math.round(clamp(v, 0, 1) * 100)}%"></u></i></div>`;
   $("eStats").innerHTML = bar("Speed", (st.spd - 25) / 90) + bar("Turning", (st.turn - 2.6) / 4.5) + bar("Health", st.hp / 60) + bar("Bite", st.bite / 14) + bar("Defence", Math.min(1, st.shells / 3) * .6 + Math.min(1, st.spk / 25) * .4) + bar("Sight", (st.view - 140) / 90)
     + `<div class="diet${diet === "none" ? " no" : ""}">${dt}${Object.keys(st.ab).length ? " · " + Object.keys(st.ab).map(k => AB[k][0] + " " + AB[k][1]).join(" ") : ""}</div>`;
-  renderSel(); if (ED.tab !== "look" && ED.tab !== "body") updateCards();
+  renderSel(); renderChips(); if (ED.tab !== "look" && ED.tab !== "body") updateCards();
+}
+/* Every part on the creature as a row of names: tap one to pick it, however small it is on screen. */
+function renderChips() {
+  const box = $("eParts"); box.textContent = "";
+  ED.d.p.forEach((q, i) => {
+    const P = PART[q.id], b = document.createElement("button"); b.textContent = P.n + (q.m && Math.abs(Math.sin(q.a)) > .08 ? " ×2" : ""); b.className = ED.sel === i ? "on" : "";
+    b.onclick = () => { ED.sel = ED.sel === i ? null : i; refreshEditor(); }; box.append(b);
+  });
 }
 function renderTabs() {
   const box = $("eTabs"); box.textContent = "";
   for (const [id, n] of TABS) { const b = document.createElement("button"); b.textContent = n; b.className = ED.tab === id ? "on" : ""; b.onclick = () => { ED.tab = id; renderTabs(); renderTray(); }; box.append(b); }
 }
 function renderTray() {
-  const box = $("eTray"), d = ED.d, c = S.cell; box.textContent = "";
+  const box = $("eTray"), d = ED.d, c = cur(S); box.textContent = "";
   if (ED.tab === "look") {
     const L = document.createElement("div"); L.className = "look";
     L.innerHTML = `<label>Colour <input class="hue" type="range" min="0" max="359" value="${d.h}" id="lH"></label>
@@ -1186,7 +1567,7 @@ function renderTray() {
     return;
   }
   if (ED.tab === "body") {
-    const B = document.createElement("div"); B.className = "bodyp"; const lim = segLimit(c.tier);
+    const B = document.createElement("div"); B.className = "bodyp"; const lim = segLimit(c.tier, S);
     B.innerHTML = d.s.map((r, i) => `<label>${i === 0 ? "Head" : "Body " + (i + 1)} size <input type="range" min="8" max="20" value="${r}" data-i="${i}"></label>`).join("")
       + `<div class="row"><button class="btn small" id="bAdd" ${d.s.length >= lim ? "disabled" : ""}>+ Add a section (8 🧬)</button><button class="btn small" id="bDel" ${d.s.length < 2 ? "disabled" : ""}>Remove the last section</button></div>`
       + `<p style="margin:0;font-size:.78rem;color:var(--muted)">${d.s.length >= lim && c.tier < 4 ? "Grow bigger to have more sections. " : ""}Bigger bodies are tougher but slower. Each size step costs a little DNA.</p>`;
@@ -1196,7 +1577,7 @@ function renderTray() {
     $("bDel").onclick = () => { if (d.s.length > 1) { const L = d.s.length - 1; d.s.pop(); d.p = d.p.filter(q => q.s < L); ED.sel = null; renderTray(); refreshEditor(); } };
     return;
   }
-  for (const P of PARTS.filter(p => p.cat === ED.tab)) {
+  for (const P of stageParts(S).filter(p => p.cat === ED.tab)) {
     const has = c.unlocked.includes(P.id), b = document.createElement("button"); b.className = "card" + (has ? "" : " locked"); b.dataset.id = P.id;
     const icon = document.createElement("canvas"); b.append(icon);
     const nm = document.createElement("b"); nm.textContent = has ? P.n : "???"; const cs = document.createElement("span"); cs.textContent = has ? P.c + " 🧬" : "Find in a ✦ pod";
@@ -1209,30 +1590,35 @@ function renderTray() {
 function updateCards() { const left = edLeft(); $("eTray").querySelectorAll(".card:not(.locked)").forEach(b => b.classList.toggle("cant", PART[b.dataset.id].c > left)); }
 function addPart(id) {
   const d = ED.d, P = PART[id], L = d.s.length - 1, same = d.p.filter(q => q.id === id).length;
-  const spots = { mouth: [0, 0], move: id === "whip" ? [L, Math.PI] : id === "jet" ? [L, 2.7] : id === "paddle" ? [L, 2.45] : [L, -2.1], fight: id === "thorn" ? [Math.min(1, L), -1.9] : id === "shell" ? [0, -1.7] : id === "stink" ? [L, 2.8] : id === "pincer" ? [0, .55] : id === "bristle" ? [L, -2.2] : [0, -1.2],
-    eye: [0, -.75], extra: id === "frill" ? [L, -2] : id === "glow" ? [0, -.15] : id === "clear" ? [0, -1.5] : [0, -.35] }[P.cat];
+  const M = Math.min(1, L);
+  const spots = { mouth: [0, 0], move: id === "whip" || id === "tailfin" ? [L, Math.PI] : id === "jet" ? [L, 2.7] : id === "paddle" ? [L, 2.45] : id === "sidefin" ? [M, -1.6] : id === "legfin" ? [L, -1.9] : [L, -2.1],
+    fight: id === "thorn" ? [M, -1.9] : id === "shell" || id === "plate" ? [M, -1.7] : id === "stink" || id === "ink" ? [L, 2.8] : id === "pincer" || id === "tentacle" ? [0, .6] : id === "bristle" ? [L, -2.2] : [0, -1.2],
+    eye: [0, -.75], extra: id === "frill" ? [L, -2] : id === "glow" || id === "lamp" ? [0, -.15] : id === "clear" ? [0, -1.5] : id === "lungs" ? [M, -1.4] : [0, -.35] }[P.cat];
   let a = spots[1] + (same ? (same % 2 ? .45 : -.45) * Math.ceil(same / 2) * (spots[1] < 0 ? 1 : -1) : 0);
   if (P.cat === "mouth" && same) a = (same % 2 ? 1 : -1) * .55;
-  const q = { id, s: spots[0], a: wrapA(a), m: Math.abs(Math.sin(a)) > .2 && P.cat !== "mouth" && id !== "glow" };
+  const q = { id, s: spots[0], a: wrapA(a), m: Math.abs(Math.sin(a)) > .2 && P.cat !== "mouth" && !["glow", "lamp", "lungs", "ink", "stink"].includes(id) };
   let after = cloneD(d); after.p.push(q);
-  if (q.m && (stats(after).parts > partLimit(S.cell.tier) || designValue(after) - designValue(ED.d0) > S.cell.dna)) { q.m = false; after = cloneD(d); after.p.push(q); } // no room for a pair: just one
-  if (stats(after).parts > partLimit(S.cell.tier)) { toast(`That's too many parts for a ${TIERS[S.cell.tier].n}. Grow bigger for more.`); return; }
-  if (designValue(after) - designValue(ED.d0) > S.cell.dna) { toast("Not enough DNA 🧬 for that. Eat more!"); return; }
+  if (q.m && (stats(after).parts > partLimit(cur(S).tier, S) || designValue(after) - designValue(ED.d0) > cur(S).dna)) { q.m = false; after = cloneD(d); after.p.push(q); } // no room for a pair: just one
+  if (stats(after).parts > partLimit(cur(S).tier, S)) { toast(`That's too many parts for a ${TS(S)[cur(S).tier].n}. Grow bigger for more.`); return; }
+  if (designValue(after) - designValue(ED.d0) > cur(S).dna) { toast("Not enough DNA 🧬 for that. Eat more!"); return; }
   d.p.push(q); ED.sel = d.p.length - 1; refreshEditor(); snd("eat");
 }
 function renderSel() {
   const box = $("eSel"); if (ED.sel == null || !ED.d.p[ED.sel]) { box.hidden = true; $("eHelp").hidden = false; return; }
   const q = ED.d.p[ED.sel], P = PART[q.id], canM = Math.abs(Math.sin(q.a)) > .08;
   box.hidden = false; $("eHelp").hidden = true;
-  box.innerHTML = `<div class="t"><b>${P.n}${q.m && canM ? " ×2" : ""}</b>${canM ? `<button class="btn small" id="sM">${q.m ? "Mirrored ⟷" : "Mirror ⟷"}</button>` : ""}<button class="btn small bad" id="sDel">Remove</button></div><p>👍 ${P.good}</p>${P.bad ? `<p>👎 ${P.bad}</p>` : ""}`;
+  box.innerHTML = `<div class="t"><b>${P.n}${q.m && canM ? " ×2" : ""}</b><button class="btn small" id="sL" aria-label="Move round the body one way">↺</button><button class="btn small" id="sR" aria-label="Move round the body the other way">↻</button>${ED.d.s.length > 1 ? `<button class="btn small" id="sN">Section ${q.s + 1} ⇄</button>` : ""}</div>
+    <div class="t">${canM ? `<button class="btn small" id="sM">${q.m ? "Mirrored ⟷" : "Mirror ⟷"}</button>` : ""}<button class="btn small bad" id="sDel">Remove</button></div><p>👍 ${P.good}</p>${P.bad ? `<p>👎 ${P.bad}</p>` : ""}`;
+  $("sL").onclick = () => { q.a = wrapA(q.a - .25); refreshEditor(); }; $("sR").onclick = () => { q.a = wrapA(q.a + .25); refreshEditor(); };
+  if ($("sN")) $("sN").onclick = () => { q.s = (q.s + 1) % ED.d.s.length; refreshEditor(); };
   if (canM) $("sM").onclick = () => { const after = cloneD(ED.d); after.p[ED.sel].m = !q.m;
-    if (!q.m && (stats(after).parts > partLimit(S.cell.tier) || designValue(after) - designValue(ED.d0) > S.cell.dna)) { toast("Not enough DNA or room for a second one."); return; }
+    if (!q.m && (stats(after).parts > partLimit(cur(S).tier, S) || designValue(after) - designValue(ED.d0) > cur(S).dna)) { toast("Not enough DNA or room for a second one."); return; }
     q.m = !q.m; refreshEditor(); };
   $("sDel").onclick = () => { ED.d.p.splice(ED.sel, 1); ED.sel = null; refreshEditor(); };
 }
 function edLayout() {
   const g = geom(ED.d); let x0 = g.minX, x1 = g.maxX, y1 = g.R;
-  for (const q of g.parts) { const ext = q.id === "whip" ? 34 : q.id === "feeler" || q.id === "glow" || q.id === "stalk" ? 16 : 10; const ex = q.x + Math.cos(q.a) * ext, ey = q.y + Math.sin(q.a) * ext; x0 = Math.min(x0, ex); x1 = Math.max(x1, ex); y1 = Math.max(y1, Math.abs(ey)); }
+  for (const q of g.parts) { const ext = q.id === "whip" ? 34 : q.id === "tentacle" ? 18 : ["feeler", "glow", "stalk", "tailfin", "lamp"].includes(q.id) ? 16 : 11; const ex = q.x + Math.cos(q.a) * ext, ey = q.y + Math.sin(q.a) * ext; x0 = Math.min(x0, ex); x1 = Math.max(x1, ex); y1 = Math.max(y1, Math.abs(ey)); }
   const sc = Math.min(EW / (x1 - x0 + 30), (EH - 80) / (y1 * 2 + 24), 7);
   return { g, sc, ox: EW / 2 - (x1 + x0) / 2 * sc, oy: (EH - 50) / 2 + 12 };
 }
@@ -1246,21 +1632,34 @@ function drawEditor(t) {
   ectx.restore();
 }
 function edPt(e) { const r = ecv.getBoundingClientRect(), L = ED.view; return [(e.clientX - r.left - L.ox) / L.sc, (e.clientY - r.top - L.oy) / L.sc]; }
+/* Where a part looks like it is (eyes sit inside the body, tails stick out), for picking it with a finger. */
+function partCentre(q, g) {
+  if (q.P.cat === "eye" && q.id !== "stalk") { const cx = g.cx[q.s]; return [cx + (q.x - cx) * .7, q.y * .7]; }
+  const out = { whip: 12, tailfin: 8, paddle: 7, tentacle: 9, stalk: 9, feeler: 8, glow: 8, lamp: 7, thorn: 5, legfin: 6, sidefin: 6, lungs: -5, clear: -5 }[q.id] || 3;
+  return [q.x + Math.cos(q.a) * out, q.y + Math.sin(q.a) * out];
+}
 ecv.addEventListener("pointerdown", e => {
-  if (!ED) return; const [x, y] = edPt(e), L = ED.view, g = L.g; let best = null, bd = Math.max(9, 22 / L.sc);
-  for (const q of g.parts) { const px = q.x + Math.cos(q.a) * 3, py = q.y + Math.sin(q.a) * 3, dd = Math.hypot(x - px, y - py); if (dd < bd) { bd = dd; best = q; } }
-  if (best) { ED.sel = best.qi; ED.drag = { qi: best.qi, sg: best.sg, del: false }; ecv.setPointerCapture(e.pointerId); refreshEditor(); return; }
-  for (let i = 0; i < g.r.length; i++) if (Math.hypot(x - g.cx[i], y) < g.r[i]) { ED.drag = { seg: i, d0: Math.hypot(x - g.cx[i], y), r0: ED.d.s[i] }; ED.sel = null; ecv.setPointerCapture(e.pointerId); refreshEditor(); return; }
+  if (!ED) return; const [x, y] = edPt(e), L = ED.view, g = L.g; let best = null, bd = 38 / L.sc; // a fingertip's reach
+  for (const q of g.parts) { const [px, py] = partCentre(q, g), dd = Math.hypot(x - px, y - py) - (q.qi === ED.sel ? 4 : 0); if (dd < bd) { bd = dd; best = q; } }
+  if (best) { ED.sel = best.qi; ED.drag = { qi: best.qi, sg: best.sg, del: false, x0: e.clientX, y0: e.clientY }; ecv.setPointerCapture(e.pointerId); refreshEditor(); return; }
+  if (ED.sel != null && ED.d.p[ED.sel]) { // a part is picked: drag anywhere to move it
+    const gp = g.parts.find(q => q.qi === ED.sel); ED.drag = { qi: ED.sel, sg: gp ? gp.sg : 1, del: false, far: true, x0: e.clientX, y0: e.clientY }; ecv.setPointerCapture(e.pointerId); return;
+  }
   ED.sel = null; refreshEditor();
 });
 ecv.addEventListener("pointermove", e => {
   if (!ED || !ED.drag) return; const [x, y] = edPt(e), g = ED.view.g, dr = ED.drag;
-  if (dr.seg != null) { const r = clamp(Math.round(dr.r0 + Math.hypot(x - g.cx[dr.seg], y) - dr.d0), 8, 20); if (r !== ED.d.s[dr.seg]) { ED.d.s[dr.seg] = r; refreshEditor(); } return; }
+  if (!dr.moved && Math.hypot(e.clientX - dr.x0, e.clientY - dr.y0) < 6) return; dr.moved = true;
   let bi = 0, bo = 1e9; for (let i = 0; i < g.r.length; i++) { const o = Math.abs(Math.hypot(x - g.cx[i], y) - g.r[i]); if (o < bo) { bo = o; bi = i; } }
   let out = 1e9; for (let i = 0; i < g.r.length; i++) out = Math.min(out, Math.hypot(x - g.cx[i], y) - g.r[i]);
-  const q = ED.d.p[dr.qi], a = Math.atan2(y, x - g.cx[bi]); q.s = bi; q.a = dr.sg < 0 ? -a : a; dr.del = out > 26;
+  const q = ED.d.p[dr.qi], a = Math.atan2(y, x - g.cx[bi]); q.s = bi; q.a = dr.sg < 0 ? -a : a; dr.del = !dr.far && out > 26;
 });
-const edUp = e => { if (!ED || !ED.drag) return; const dr = ED.drag; ED.drag = null; if (dr.del) { ED.d.p.splice(dr.qi, 1); ED.sel = null; snd("hurt"); } refreshEditor(); if (ED.tab === "body") renderTray(); };
+const edUp = e => {
+  if (!ED || !ED.drag) return; const dr = ED.drag; ED.drag = null;
+  if (dr.del) { ED.d.p.splice(dr.qi, 1); ED.sel = null; snd("hurt"); }
+  else if (dr.far && !dr.moved) ED.sel = null; // a tap on empty water lets go of the part
+  refreshEditor();
+};
 ecv.addEventListener("pointerup", edUp); ecv.addEventListener("pointercancel", edUp);
 $("eBack").onclick = () => leaveEditor();
 function leaveEditor() { if (!ED) return; ED = null; W.mateCool = 3; show("play"); paused = false; }
@@ -1268,16 +1667,25 @@ $("eDone").onclick = () => {
   const st = stats(ED.d);
   if (dietOf(st) === "none") { toast("Your creature needs a mouth to eat!"); return; }
   if (edLeft() < 0) { toast("Not enough DNA 🧬. Take something off, or eat more first."); return; }
-  if (st.parts > partLimit(S.cell.tier)) { toast("Too many parts. Take one off."); return; }
+  if (st.parts > partLimit(cur(S).tier, S)) { toast("Too many parts. Take one off."); return; }
   const res = applyEvolve(W, ED.d); ED = null; abilKeys = ""; updateAbil(); saveSlot(); show("play"); paused = false; snd(res.grew || res.done ? "grow" : "mate");
   if (res.done) stageDone();
-  else if (res.grew) toast(`You grew to ${TIERS[S.cell.tier].n} size!${res.gift ? ` New part: ${PART[res.gift].n}.` : ""}`);
+  else if (res.ashore) toast("As big as you'll get in the sea! With lungs and two leg fins you can crawl onto land: swim up to the shore ⬆");
+  else if (res.grew) toast(`You grew to ${TS(S)[cur(S).tier].n} size!${res.gift ? ` New part: ${PART[res.gift].n}.` : ""}`);
 };
 function stageDone() {
-  paused = true; const N = NATURES[S.nature] || NATURES.forager, c = S.cell;
+  paused = true; const N = NATURES[S.nature] || NATURES.forager, c = cur(S);
   dialog(`<h2>Ready to leave the pond!</h2><p>${esc(S.name)} has grown from a speck into a Titan of the pond.</p>
     <div class="stats"><div>Nature<b>${N.n}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Creatures eaten<b>${c.kills}</b></div><div>Evolved<b>${c.evolves}×</b></div></div>
-    <p>${N.d}</p><p>The sea stage is coming in a later update. Your species is saved and will carry on from here. Until then, you can keep swimming in the pond.</p>
+    <p>${N.d}</p><p>In the sea your body grows longer, you'll find fins, beaks and lamps for the dark, and you'll raise young of your own.</p>
+    <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="sea">Into the sea ▶</button></div>`,
+    { menu: quitToMenu, sea: () => { goToSea(S); saveSlot(); const i = slot; closeDlg(); startSlot(i); } }, resume);
+}
+function seaDone() {
+  paused = true; const c = cur(S);
+  dialog(`<h2>Onto the land!</h2><p>${esc(S.name)} hauled itself out of the sea on its new legs and took its first breath of air.</p>
+    <div class="stats"><div>Diet<b>${c.lean > .35 ? "Meat eater" : c.lean < -.35 ? "Plant eater" : "Eats both"}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Creatures eaten<b>${c.kills}</b></div><div>Goals<b>${Object.keys(c.goals).length} of ${SEA_GOALS.length}</b></div></div>
+    <p>The land stage is coming in a later update: you'll walk and explore instead of swimming. Your species is saved and will carry on from here. Until then, you can keep exploring the sea.</p>
     <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="go">Keep swimming</button></div>`, { menu: quitToMenu, go: resume }, resume);
 }
 

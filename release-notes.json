@@ -387,6 +387,20 @@
         "When you start a new life you can now jump straight to Droplet size, Titan size, or the very end of the cell stage, with every part and plenty of DNA. Handy for trying things out.",
         "Lives started this way are marked \"Test start\" on the menu. The sea stage and the stages after it will join the list as they're built."
       ]
+    },
+    {
+      "id": 36,
+      "type": "features",
+      "headline": "Life: the sea stage, and easier part picking",
+      "details": [
+        "The sea is here! Finish the pond and tap Into the sea: your creature grows a longer body that bends as it swims.",
+        "Dive from the sunlit shallows through the kelp reef and open blue to the twilight and the pitch-dark Deep. The deeper you go, the bigger the food and the danger. A little map shows where you are.",
+        "Your nest is where you evolve. Each time you grow, it hatches young that swim with you and join your fights.",
+        "Your diet slides towards what you eat: stay in the middle eating both, or become a plant eater or meat eater.",
+        "Ten new sea parts, including tail fins, beaks, tentacles, ink clouds, armour and lamps for the dark. Goals to chase, and giants in the Deep.",
+        "At the last size, grow lungs and two leg fins and crawl up onto the shore.",
+        "In the builder, tap a part's name in the new list to pick it, then drag anywhere to move it. You can also nudge it round the body with the arrow buttons."
+      ]
     }
   ]
 }
