@@ -332,6 +332,16 @@
         "Beat a rival and their realm, rooms and all, becomes yours.",
         "The Jail and Persuasion room have proper art now: iron cells, a fireside with armchairs and a great hall."
       ]
+    },
+    {
+      "id": 31,
+      "type": "features",
+      "headline": "Hollowdeep: a different start every time",
+      "details": [
+        "You no longer always start bottom left: it can be any corner or the middle of any side, with your rivals spread out from you.",
+        "Your first hall comes in different shapes and sizes, the first Gate lies in a different direction, and gold turns up in different places.",
+        "There's always something different close by: a gem seam, a lost creature, buried treasure, a little pool or an outcrop of hard rock."
+      ]
     }
   ]
 }

@@ -330,9 +330,12 @@ function newWorld(spec){
       const a=g[iy*gw+ix],b=g[iy*gw+ix+1],c=g[(iy+1)*gw+ix],d=g[(iy+1)*gw+ix+1];out[I(x,y)]=a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy}return out};
   const theme=spec.theme||"earth",lava=spec.lava!=null?spec.lava:theme==="fire"?1:0,water=spec.water!=null?spec.water:theme==="deep"?1:0;
   const nh=noise(7),ng=noise(4),nl=noise(11),np=noise(6),nw=noise(9);
-  const m=7,corners=[[m,h-1-m],[w-1-m,m],[m,m],[w-1-m,h-1-m]];
-  const nr=spec.rivals||0,pick=nr===0?[]:nr===1?[1]:nr===2?[2,3]:[1,2,3];
-  const starts=[corners[0],...pick.map(k=>corners[k])];
+  // where everyone starts: any corner or the middle of any edge, nudged about, rivals spread as far apart as they can be
+  const nr=spec.rivals||0,jit=()=>Math.floor(R()*4),m=7;
+  const spots=[[m,h-1-m],[w-1-m,m],[m,m],[w-1-m,h-1-m],[w>>1,h-1-m],[w>>1,m],[m,h>>1],[w-1-m,h>>1]]
+    .map(([x,y])=>[x+(x<w/2?jit():x>w/2?-jit():Math.floor((R()-.5)*w/4)),y+(y<h/2?jit():y>h/2?-jit():Math.floor((R()-.5)*h/4))]);
+  const starts=[spots.splice(Math.floor(R()*(nr>=2?4:8)),1)[0]];
+  for(let k=0;k<nr;k++){let bi=0,bd=-1;spots.forEach((p,j)=>{const d=Math.min(...starts.map(q=>Math.hypot(p[0]-q[0],p[1]-q[1])))+R()*4;if(d>bd){bd=d;bi=j}});starts.push(spots.splice(bi,1)[0])}
   const far=(x,y,r)=>starts.every(([sx,sy])=>Math.max(Math.abs(x-sx),Math.abs(y-sy))>r);
   const gth=.76/Math.pow(spec.gold||1,.25),hth=theme==="crystal"?.68:.72;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=I(x,y);
@@ -355,10 +358,25 @@ function newWorld(spec){
   const targets=[];
   starts.forEach(([cx,cy],n)=>{
     const o=n+1,ai=o>1,D=DIFF[spec.diff],sx=cx<w/2?1:-1,sy=cy<h/2?1:-1;
-    clearBlock(cx,cy,8);
-    for(let g=0;g<2;g++){const a=R()*6.283,dd=ai?8:6+R()*2;blob(Math.round(cx+Math.cos(a)*dd),Math.round(cy+Math.sin(a)*dd),4,T.GOLD)}
-    const r=ai?5:3;
-    for(let y=cy-r;y<=cy+r;y++)for(let x=cx-r;x<=cx+r;x++)floor(x,y,o);
+    clearBlock(cx,cy,ai?8:4+Math.floor(R()*3));
+    const ng=ai?2:1+Math.floor(R()*3);
+    for(let g=0;g<ng;g++){const a=R()*6.283,dd=ai?8:4+R()*5;blob(Math.round(cx+Math.cos(a)*dd),Math.round(cy+Math.sin(a)*dd),ai?4:3+Math.floor(R()*4),T.GOLD)}
+    if(ai){for(let y=cy-5;y<=cy+5;y++)for(let x=cx-5;x<=cx+5;x++)floor(x,y,o)}
+    else{
+      // your first hall comes in different shapes and sizes
+      const rx=2+Math.floor(R()*3),ry=2+Math.floor(R()*3);
+      for(let y=cy-ry;y<=cy+ry;y++)for(let x=cx-rx;x<=cx+rx;x++)floor(x,y,o);
+      let x=cx+(R()<.5?-rx:rx),y=cy+Math.floor((R()-.5)*2*ry);for(let k=0;k<4+Math.floor(R()*6);k++){floor(x,y,o);const d=Math.floor(R()*4);x+=d===0?1:d===1?-1:0;y+=d===2?1:d===3?-1:0;if(Math.abs(x-cx)>rx+3||Math.abs(y-cy)>ry+3){x=cx;y=cy}}
+      // and something different nearby: a gem seam, a lost creature, buried treasure, a pool or an outcrop of hard rock
+      const near=()=>{const a=R()*6.283,d=6+R()*4;return [Math.round(cx+Math.cos(a)*d),Math.round(cy+Math.sin(a)*d)]};
+      const kinds=[0,1,2,3,4].sort(()=>R()-.5).slice(0,1+Math.floor(R()*2));
+      for(const k of kinds){const [fx,fy]=near();if(!inner(fx,fy)||!inner(fx+1,fy+1))continue;const i=I(fx,fy);
+        if(k===0){if(isRock(W.tile[i]))W.tile[i]=T.GEM}
+        else if(k===1){for(let yy=fy;yy<=fy+1;yy++)for(let xx=fx;xx<=fx+1;xx++)floor(xx,yy,0);W.pendingLost=(W.pendingLost||[]).concat([[fx,fy]])}
+        else if(k===2){if(W.tile[i]===T.ROCK)W.treas[i]=1+Math.floor(R()*3)}
+        else if(k===3&&!spec.noWater){for(let yy=fy;yy<=fy+1;yy++)for(let xx=fx;xx<=fx+1;xx++)W.tile[I(xx,yy)]=T.WATER;for(const j of [I(fx-1,fy),I(fx+2,fy),I(fx,fy-1),I(fx,fy+2)])if(isRock(W.tile[j]))floor(j%w,j/w|0,0)}
+        else if(k===4)blob(fx,fy,4+Math.floor(R()*4),T.HARD)}
+    }
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const i=I(cx+dx,cy+dy);W.tile[i]=T.HEART;W.own[i]=o}
     W.k[o]={o,name:ai?RIVALS[n-1]:"You",ai,gold:ai?1200+400*spec.diff:1200,cap:1500,hx:cx,hy:cy,hp:2000,maxhp:2000,alive:true,rally:-1,
       payT:PAYDAY,arriveT:ai?20:25,attackAt:ai?D.first:0,attacking:false,attackEnd:0,aiT:R()*2,hitT:-99,tunnelT:0,expT:0,goldT:0,zap:0,bp:[],bpN:0,cryptT:60,bellT:-99,bellAt:-1,anchor:{},
@@ -373,9 +391,10 @@ function newWorld(spec){
     }else{
       reveal(cx,cy,7);
       if(!spec.noGate){
-        let vx=w/2-cx,vy=h/2-cy;const L=Math.hypot(vx,vy);vx/=L;vy/=L;
-        const gx=Math.round(cx+vx*10),gy=Math.round(cy+vy*10);
-        for(let k=0;k<=12;k++)clearBlock(Math.round(cx+vx*k),Math.round(cy+vy*k),3);
+        // the first Gate lies roughly towards the middle of the map, at a varying angle and distance
+        const a0=Math.atan2(h/2-cy,w/2-cx)+(R()-.5)*2.2,dist=8+Math.floor(R()*5);let vx=Math.cos(a0),vy=Math.sin(a0);
+        const gx=Math.max(4,Math.min(w-5,Math.round(cx+vx*dist))),gy=Math.max(4,Math.min(h-5,Math.round(cy+vy*dist)));
+        for(let k=0;k<=dist+2;k++)clearBlock(Math.round(cx+vx*k),Math.round(cy+vy*k),3);
         for(let y=gy-2;y<=gy+2;y++)for(let x=gx-2;x<=gx+2;x++)floor(x,y,0);
         gate(gx,gy,0);reveal(gx,gy,4);W.firstGate=I(gx,gy);
       }
@@ -432,6 +451,7 @@ function newWorld(spec){
     }else{const nL=Math.min(lostLeft,1+Math.floor(R()*2));for(let k=0;k<nL;k++){const [xx,yy]=cellAt();putNeutral(xx,yy)}}
     targets.push([cx,cy]);
   });
+  for(const [x,y] of W.pendingLost||[])putNeutral(x,y);delete W.pendingLost;
   if(W.firstGate==null&&W.gates.length)W.firstGate=W.gates.find(g=>!W.own[g])??W.gates[0];
   // natural tunnels wander between some caves
   const worm=(ax,ay,bx,by)=>{let x=ax,y=ay;for(let s=0;s<260;s++){const dx=bx-x,dy=by-y;if(Math.abs(dx)+Math.abs(dy)<=1)break;
@@ -1664,7 +1684,8 @@ const GOALS=[
   [W=>W.k[1].c.fighters>=5,"Grow to 5 creatures. Add Lair tiles for more beds. Tip: a 2×2 square of Lair makes a Big nest."],
   [W=>W.k[1].c.walk.some(i=>W.door[i]),"Build a Workshop of 4 tiles, then 🧱 Build → Wooden door, and tap a narrow tunnel. Your diggers will make and fit it."],
   [W=>W.k[1].mana<SPELLS[SP.LIGHT].cost||W.stats.kills>0||W.t>900,"Tip: tap ✨ Spells and choose ⚡ Lightning to zap enemies you can see. 👑 Possess lets you fight with a creature yourself."],
-  [W=>!W.k[2].alive,"Dig towards Lord Grimble (top right). When you find his Heart, tap 🚩 Flag and then his Heart."]];
+  [W=>!W.k[2].alive,W=>{const P=W.k[1],G=W.k[2],dx=G.hx-P.hx,dy=G.hy-P.hy,v=Math.abs(dy)>W.h/5?(dy<0?"top":"bottom"):"",hz=Math.abs(dx)>W.w/5?(dx<0?"left":"right"):"";
+    return `Dig towards Lord Grimble (${v&&hz?v+" "+hz:v||hz||"nearby"}). When you find his Heart, tap 🚩 Flag and then his Heart.`}]];
 function renderGoal(){
   const g=$("goal");
   if(!W.spec.tips){
@@ -1673,7 +1694,7 @@ function renderGoal(){
   const n=GOALS.findIndex(x=>!x[0](W));
   if(n<0){g.hidden=true;return}
   g.onclick=null;
-  g.hidden=false;g.innerHTML=`<b>Goal ${n+1} of ${GOALS.length}:</b> `;g.append(GOALS[n][1]);
+  g.hidden=false;g.innerHTML=`<b>Goal ${n+1} of ${GOALS.length}:</b> `;g.append(typeof GOALS[n][1]==="function"?GOALS[n][1](W):GOALS[n][1]);
 }
 
 /* ---------- toasts ---------- */
