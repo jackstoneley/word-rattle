@@ -354,6 +354,18 @@
         "Play Normal (come back when you're eaten) or Hardcore (one life only).",
         "This is the cell stage. The sea stage, and the stages after it, come in later updates."
       ]
+    },
+    {
+      "id": 33,
+      "type": "features",
+      "headline": "Hollowdeep: a 20-realm campaign that builds up step by step",
+      "details": [
+        "The campaign is now 20 realms that start simple and add one thing at a time: the first realm has just Lairs, farms, treasuries and Beetles.",
+        "Each realm brings something new, like Training pits and Goblins, Possession, the Library and spells, the Workshop and traps, prisoners, Spirits, heroes and finally Ogres and the Great forge.",
+        "Things you haven't reached yet show a lock and the realm they arrive in. Rival lords play by the same rules.",
+        "Every realm opens with a briefing: what's new, your goal and the two bonus stars.",
+        "Realms 15 to 20 use everything, with bigger maps, fiercer lords and longer hero sieges."
+      ]
     }
   ]
 }

@@ -367,7 +367,7 @@ function renderStats(){
     if(es.played||esv||esc.length)setHTML("stES",[esCl?"":"",{b:String(esCl)}," missions cleared · ",{b:String(esSt)}," ★",esw?` · ${esw} battle win${esw===1?"":"s"}`:"",top>=0?` · beaten ${ESD[top]}`:"",esv&&esv.sd?` · battle in progress`:""])}
   {const hd=load("hd.progress",null),hdg=load("hd.game",null),wl=hd&&hd.won?Object.values(hd.won):[],won=wl.length,
       stars=wl.reduce((a,r)=>a+(r&&r.stars?r.stars.reduce((x,y)=>x+y,0):1),0);
-    if(won||hdg)setHTML("stHD",[{b:String(won)}," of 15 realms · ",{b:"★ "+stars},hdg?" · a game in progress":""])}
+    if(won||hdg)setHTML("stHD",[{b:String(won)}," of 20 realms · ",{b:"★ "+stars},hdg?" · a game in progress":""])}
   {const li=load("lf.last",0),lf=load("lf.slot."+li,null),T=["Speck","Mote","Droplet","Bloom","Titan"];
     if(lf&&lf.cell)setHTML("stLF",lf.dead?[String(lf.name)," · ",{b:"died out"},` at ${T[lf.cell.tier]||""} size`]:lf.cell.done?[String(lf.name)," · ",{b:"cell stage complete"}]:[String(lf.name)," · cell stage, ",{b:T[lf.cell.tier]||""},` (size ${lf.cell.tier+1} of 5)`])}
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
