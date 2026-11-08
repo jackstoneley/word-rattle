@@ -319,6 +319,19 @@
         "From tomorrow's puzzle (#12), the daily Link Up is harder: lots of words look like they fit two or three groups, but only one way works.",
         "A month of new puzzles. Earlier puzzles and your streak are unchanged."
       ]
+    },
+    {
+      "id": 30,
+      "type": "features",
+      "headline": "Hollowdeep: rival lords that grow and conquer",
+      "details": [
+        "Rival lords now play more like people: each has a personality (builder, raider or schemer), keeps digging out a bigger realm all game, and spends their gold.",
+        "They gather their army at the border before attacking, march together, and fall back to regroup when a fight goes badly. You get a warning when an army is gathering.",
+        "Lords fight each other too: a strong lord picks on the weakest neighbour and takes over their land, so leave one alone and it snowballs.",
+        "When enemies get into your realm, your creatures drop what they're doing and turn out together to fight.",
+        "Beat a rival and their realm, rooms and all, becomes yours.",
+        "The Jail and Persuasion room have proper art now: iron cells, a fireside with armchairs and a great hall."
+      ]
     }
   ]
 }

@@ -265,6 +265,11 @@ a spell is known once `K.rp >= rp`. **Possession**: `W.poss {id,dx,dy,atk}` set 
 then to the Persuasion room, where `pers` reaching 50 converts it. Diggers: up to `DIG_SIDE` (3) per side of a rock (`W.digN`,
 rebuilt each `recount`), and claims chain along lines (`chainClaim`). **Campaign**: 15 realms with `par` minutes and a third star
 `s3`; `hd.progress.won[n]` is `{time, at, stars:[3]}` (old entries without `stars` count as one star).
+**Rival brain** (`aiThink` → `aiWar`, `aiExpand`, `aiRooms`, `aiTraps`): each lord has a `persona` (builder, raider, schemer) that scales
+growth, army size (`aiCap`, rising through the game) and boldness. They keep a wage `reserve`, spend surplus on rooms and defences,
+expand all game towards gold, Gates, lost creatures and the map centre (forgetting unreachable marks), and go to war on the weakest
+realm (`strength`): gather on their border (`phase` gather → march), retreat below 35% of the raid. A beaten realm's land and rooms
+pass to the winner (`destroyRealm`). Any keeper raises `alarmAt` when enemy fighters enter its land near the Heart; creatures rush there.
 
 ### Adding a new game
 
