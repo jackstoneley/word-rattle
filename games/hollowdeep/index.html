@@ -273,24 +273,56 @@ const DIFF=[
   {name:"Gentle",arrive:58,cap:10,army:3,every:400,first:600,income:1.5,start:1},
   {name:"Fair",arrive:44,cap:15,army:4,every:320,first:450,income:2.5,start:2},
   {name:"Fierce",arrive:34,cap:22,army:5,every:250,first:330,income:4,start:4}];
-/* Realms, keyed by number in hd.progress (append only). par: minutes for the second star. s3: the third star
-   [kind, n]: lost (lose at most n), capture (lock up n), heart (Heart never below n%), treasure (find n), kills, recruit (n lost creatures). */
+/* Realms, keyed by number in hd.progress. par: minutes for the second star. s3: the third star
+   [kind, n]: lost (lose at most n), capture (lock up n), heart (Heart never below n%), treasure (find n), kills, recruit (n lost creatures).
+   adds: what this realm introduces, kept for every later realm: r rooms, k creatures, i traps and doors ("d1" door 1, "t2" trap 2), s spells.
+   A campaign game carries spec.allow (everything introduced so far); quick games and old saves have none and allow everything. */
 const CAMPAIGN=[
-  {name:"First Hollow",size:40,rivals:1,diff:0,caves:3,seed:101,tips:true,par:20,s3:["lost",3],blurb:"Learn the ropes against Lord Grimble."},
-  {name:"The Gold Vein",size:48,rivals:1,diff:1,caves:4,seed:202,gold:1.4,par:22,s3:["treasure",2],blurb:"Rich seams, hidden treasure and a sharper rival."},
-  {name:"Two Lords",size:56,rivals:2,diff:0,caves:5,seed:303,lost:4,par:30,s3:["recruit",2],blurb:"Two rivals, and lost creatures waiting to be found."},
-  {name:"Wild Deeps",size:56,rivals:1,diff:2,caves:7,seed:404,wild:2,par:28,s3:["capture",3],blurb:"Caves full of wild beasts, and a fierce lord. Build a Jail."},
-  {name:"The Crossing",size:62,rivals:2,diff:1,caves:6,seed:505,theme:"deep",par:32,s3:["lost",6],blurb:"Two rivals across a land of underground lakes."},
-  {name:"Three Crowns",size:68,rivals:3,diff:1,caves:7,seed:606,par:40,s3:["heart",50],blurb:"Every lord at once."},
-  {name:"Lava Halls",size:64,rivals:2,diff:1,caves:6,seed:707,theme:"fire",par:35,s3:["kills",30],blurb:"Rivers of lava split the realm. Find the rock bridges."},
-  {name:"The Siege",size:60,rivals:1,diff:1,caves:5,seed:808,heroes:{first:360,every:240,waves:4},survive:1,par:32,s3:["heart",60],blurb:"Heroes come down from the surface in four waves. Hold them, and beat Lady Murk."},
-  {name:"Lost Souls",size:64,rivals:1,diff:1,caves:8,seed:909,noGate:1,gates:2,lost:9,par:35,s3:["recruit",5],blurb:"No Gate nearby: build your army from lost creatures and prisoners."},
-  {name:"Sunken Mines",size:68,rivals:2,diff:1,caves:7,seed:1010,theme:"deep",water:1.4,treasure:2,par:38,s3:["treasure",5],blurb:"Flooded mines, packed with buried treasure."},
-  {name:"Knights of the Surface",size:60,rivals:0,diff:1,caves:6,seed:1111,heroes:{first:360,every:220,waves:7,boss:1,size:1.2},survive:1,par:30,s3:["capture",4],blurb:"No rivals, just seven waves of heroes and their Champion."},
-  {name:"Crystal Depths",size:76,rivals:3,diff:1,caves:9,seed:1212,theme:"crystal",par:50,s3:["treasure",4],blurb:"A huge glittering realm and three rivals."},
-  {name:"Prison Break",size:64,rivals:2,diff:1,caves:7,seed:1313,capture:6,par:40,s3:["recruit",3],blurb:"Lock up six enemies, then beat both lords."},
-  {name:"Ember Crown",size:72,rivals:1,diff:2,caves:8,seed:1414,theme:"fire",lava:1.3,heroes:{first:420,every:260,waves:5,boss:1},survive:1,par:45,s3:["heart",40],blurb:"Lava, a fierce lord and the Hero Champion."},
-  {name:"The Last Keeper",size:84,rivals:2,diff:2,caves:11,seed:1515,theme:"crystal",heroes:{first:600,every:300,waves:6,boss:1,size:1.3},survive:1,lost:8,par:60,s3:["capture",8],blurb:"The biggest realm of all. Everything at once."}];
+  {name:"First Hollow",size:36,rivals:1,diff:0,caves:3,seed:101,tips:true,par:18,s3:["lost",3],adds:{r:[1,2,3],k:["beetle"],s:[1]},
+    blurb:"Your first realm. Dig, claim, build a Lair and a farm, and beat Lord Grimble with Beetles."},
+  {name:"Sword and Spear",size:40,rivals:1,diff:0,caves:3,seed:202,par:20,s3:["kills",10],adds:{r:[4],k:["goblin"]},
+    blurb:"A Training pit levels your creatures up and brings quick Goblins."},
+  {name:"The Gold Vein",size:44,rivals:1,diff:1,caves:4,seed:303,gold:1.4,treasure:1.6,par:22,s3:["treasure",2],adds:{s:[2]},
+    blurb:"Rich seams and treasure hidden in the rock. Possess a creature and fight with it yourself."},
+  {name:"Lost and Found",size:48,rivals:1,diff:1,caves:5,seed:404,lost:6,par:25,s3:["recruit",3],adds:{r:[8]},
+    blurb:"Lost creatures wait in the dark for whoever reaches them first. Guard rooms keep watch."},
+  {name:"Book Learning",size:52,rivals:1,diff:0,caves:5,seed:5050,par:28,s3:["heart",60],adds:{r:[5],k:["hexer"],s:[3,4]},
+    blurb:"A Library brings Hexers and researches new spells: Heal and Sight."},
+  {name:"The Workshop",size:52,rivals:2,diff:0,caves:5,seed:606,par:30,s3:["lost",6],adds:{r:[6],k:["tinker"],i:["d1","t1","t5"]},
+    blurb:"Two rivals. A Workshop makes doors, spike pits and alarm bells."},
+  {name:"Wild Deeps",size:56,rivals:1,diff:1,caves:8,seed:707,wild:2,par:30,s3:["capture",3],adds:{r:[10,11]},
+    blurb:"Caves full of wild beasts. Build a Jail to capture them, and a Persuasion room to win them over."},
+  {name:"The Crossing",size:56,rivals:2,diff:1,caves:6,seed:808,theme:"deep",par:32,s3:["lost",8],adds:{r:[7],k:["spirit"],s:[5],i:["d2","t2"]},
+    blurb:"Underground lakes. Shrines bring healing Spirits; iron doors and rolling boulders hold the tunnels."},
+  {name:"The Siege",size:60,rivals:1,diff:1,caves:6,seed:909,heroes:{first:360,every:240,waves:4},survive:1,par:34,s3:["heart",60],adds:{s:[6]},
+    blurb:"Heroes come down from the surface in four waves. Call to arms rallies everyone at once."},
+  {name:"Lava Halls",size:60,rivals:2,diff:1,caves:6,seed:1010,theme:"fire",par:36,s3:["kills",30],adds:{k:["ogre"]},
+    blurb:"Rivers of lava. A 3×3 Sparring ring brings mighty Ogres."},
+  {name:"Lost Souls",size:62,rivals:1,diff:0,caves:8,seed:1111,noGate:1,gates:2,lost:10,par:36,s3:["recruit",5],adds:{r:[9]},
+    blurb:"No Gate nearby: build your army from lost creatures, prisoners and the Crypt's Skeletons."},
+  {name:"Three Crowns",size:64,rivals:3,diff:1,caves:7,seed:1212,par:42,s3:["heart",50],adds:{i:["t3","t4","d3"]},
+    blurb:"Three rivals at once. A Great forge makes flame vents, lightning runes and warded doors."},
+  {name:"Sunken Mines",size:64,rivals:2,diff:1,caves:7,seed:1313,theme:"deep",water:1.4,treasure:2,par:40,s3:["treasure",5],adds:{s:[7]},
+    blurb:"Flooded mines packed with treasure. Cave-in brings the roof down on your enemies."},
+  {name:"Knights of the Surface",size:66,rivals:0,diff:1,caves:7,seed:1414,heroes:{first:360,every:220,waves:7,boss:1,size:1.2},survive:1,par:34,s3:["capture",4],adds:{},
+    blurb:"No rivals: just seven waves of heroes and their Champion."},
+  {name:"Crystal Depths",size:68,rivals:3,diff:1,caves:9,seed:1515,theme:"crystal",par:50,s3:["treasure",4],adds:{},
+    blurb:"A huge glittering realm and three rivals. Everything is yours to use."},
+  {name:"Prison Break",size:70,rivals:2,diff:1,caves:8,seed:1616,capture:6,par:45,s3:["recruit",3],adds:{},
+    blurb:"Lock up six enemies, then beat both lords."},
+  {name:"Ember Crown",size:72,rivals:1,diff:2,caves:8,seed:1717,theme:"fire",lava:1.3,heroes:{first:420,every:260,waves:5,boss:1},survive:1,par:48,s3:["heart",40],adds:{},
+    blurb:"Lava, a fierce lord and the Hero Champion."},
+  {name:"Lords of War",size:74,rivals:3,diff:2,caves:9,seed:1818,par:55,s3:["lost",12],adds:{},
+    blurb:"Three fierce lords who will happily fight each other. Let them, then pounce."},
+  {name:"The Long Night",size:78,rivals:2,diff:1,caves:10,seed:1919,theme:"deep",heroes:{first:480,every:240,waves:8,boss:1,size:1.3},survive:1,par:60,s3:["capture",6],adds:{},
+    blurb:"Eight waves of heroes while two lords close in."},
+  {name:"The Last Keeper",size:84,rivals:3,diff:2,caves:11,seed:2020,theme:"crystal",heroes:{first:600,every:300,waves:6,boss:1,size:1.3},survive:1,lost:8,par:70,s3:["kills",80],adds:{},
+    blurb:"The biggest realm of all, and everything at once."}];
+/* everything introduced up to and including realm n */
+function campaignAllow(n){const a={r:[],k:[],i:[],s:[]};for(let q=0;q<n&&q<CAMPAIGN.length;q++){const d=CAMPAIGN[q].adds||{};for(const c of ["r","k","i","s"])for(const x of d[c]||[])if(!a[c].includes(x))a[c].push(x)}return a}
+function campSpec(n){return Object.assign({camp:n},CAMPAIGN[n-1],{allow:campaignAllow(n)})}
+function unlockRealm(cat,id){for(let q=0;q<CAMPAIGN.length;q++){const d=CAMPAIGN[q].adds||{};if((d[cat]||[]).includes(id))return q+1}return 0}
+const allowed=(W,cat,id)=>{const a=W.spec.allow;return !a||a[cat].includes(id)};
 const PAYDAY=150;
 const PAY_CAP=30;
 
@@ -369,7 +401,7 @@ function newWorld(spec){
       let x=cx+(R()<.5?-rx:rx),y=cy+Math.floor((R()-.5)*2*ry);for(let k=0;k<4+Math.floor(R()*6);k++){floor(x,y,o);const d=Math.floor(R()*4);x+=d===0?1:d===1?-1:0;y+=d===2?1:d===3?-1:0;if(Math.abs(x-cx)>rx+3||Math.abs(y-cy)>ry+3){x=cx;y=cy}}
       // and something different nearby: a gem seam, a lost creature, buried treasure, a pool or an outcrop of hard rock
       const near=()=>{const a=R()*6.283,d=6+R()*4;return [Math.round(cx+Math.cos(a)*d),Math.round(cy+Math.sin(a)*d)]};
-      const kinds=[0,1,2,3,4].sort(()=>R()-.5).slice(0,1+Math.floor(R()*2));
+      const kinds=spec.noGate?[1,1,1,2]:[0,1,2,3,4].sort(()=>R()-.5).slice(0,1+Math.floor(R()*2));
       for(const k of kinds){const [fx,fy]=near();if(!inner(fx,fy)||!inner(fx+1,fy+1))continue;const i=I(fx,fy);
         if(k===0){if(isRock(W.tile[i]))W.tile[i]=T.GEM}
         else if(k===1){for(let yy=fy;yy<=fy+1;yy++)for(let xx=fx;xx<=fx+1;xx++)floor(xx,yy,0);W.pendingLost=(W.pendingLost||[]).concat([[fx,fy]])}
@@ -386,7 +418,7 @@ function newWorld(spec){
       gate(...P(3,3),o);
       const room=(x0,x1,y0,y1,rm)=>{for(let dy=y0;dy<=y1;dy++)for(let dx=x0;dx<=x1;dx++){const [x,y]=P(dx,dy);W.room[I(x,y)]=rm;if(rm===RM.FARM)W.food[I(x,y)]=2}};
       room(-4,-2,-4,-2,RM.LAIR);room(-4,-2,2,4,RM.FARM);room(2,4,-4,-4,RM.TREASURY);
-      if(spec.diff>=1)room(-1,1,3,4,RM.TRAINING);
+      if(spec.diff>=1&&(!spec.allow||spec.allow.r.includes(RM.TRAINING)))room(-1,1,3,4,RM.TRAINING);
       targets.push([cx,cy]);
     }else{
       reveal(cx,cy,7);
@@ -424,7 +456,7 @@ function newWorld(spec){
     caves.push([x,y]);
   }
   const wildKinds=theme==="fire"?["salamander","bat","spider"]:theme==="deep"?["bat","spider","troll"]:theme==="crystal"?["troll","spider","bat"]:["spider","spider","bat"];
-  const LOST=["beetle","goblin","hexer","ogre","spirit","tinker","goblin","beetle"];
+  const LOST0=["beetle","goblin","hexer","ogre","spirit","tinker","goblin","beetle"],LOST=spec.allow?LOST0.filter(k=>spec.allow.k.includes(k)):LOST0;if(!LOST.length)LOST.push("beetle");
   let lostLeft=spec.lost!=null?spec.lost:Math.round(S/18);
   const nGates=spec.gates!=null?spec.gates:(nc>2?1:0);
   const putNeutral=(x,y)=>{const u=mkUnit(W,NEUTRAL,LOST[Math.floor(R()*LOST.length)],x,y);u.lvl=1+Math.floor(R()*3)+(spec.diff>1?1:0);u.hp=maxHp(u);u.home=I(x,y);lostLeft--};
@@ -478,7 +510,7 @@ function newWorld(spec){
   }
   for(let o=1;o<W.k.length;o++){const K=W.k[o];
     for(let k=0;k<4;k++){const [dx,dy]=[[-2,0],[2,0],[0,-2],[0,2]][k];mkUnit(W,o,"digger",K.hx+dx,K.hy+dy)}
-    if(K.ai)for(let k=0;k<DIFF[spec.diff].start;k++)mkUnit(W,o,k%2?"goblin":"beetle",K.hx+(k%3)-1,K.hy+(k%2?2:-2))}
+    if(K.ai)for(let k=0;k<DIFF[spec.diff].start;k++)mkUnit(W,o,k%2&&(!spec.allow||spec.allow.k.includes("goblin"))?"goblin":"beetle",K.hx+(k%3)-1,K.hy+(k%2?2:-2))}
   recount(W);
   return W;
 }
@@ -612,7 +644,7 @@ function arrival(W,K,D){
   if(!g.length){if(!K.ai&&W.t>120)evT(W,"gate",150,"No creatures can come until you own a Gate. Dig to one and your diggers will claim it.",W.firstGate);return}
   if(c.fighters>=(K.ai?aiCap(W,K):PAY_CAP))return;
   const tinkers=W.units.filter(u=>u.o===K.o&&u.k==="tinker"&&u.hp>0).length;
-  const opts=FIGHTERS.filter(k=>canCome(K,k)&&(k!=="tinker"||tinkers<1+Math.floor(c.rooms[RM.WORKSHOP]/4)));
+  const opts=FIGHTERS.filter(k=>allowed(W,"k",k)&&canCome(K,k)&&(k!=="tinker"||tinkers<1+Math.floor(c.rooms[RM.WORKSHOP]/4)));
   if(!opts.length){if(!K.ai)evT(W,"lair",120,"Build a Lair of at least 4 tiles so creatures will come.",-1);return}
   if(c.fighters-c.undead>=c.rooms[RM.LAIR]){if(!K.ai)evT(W,"beds",90,"Creatures want to come, but every bed is taken. Build more Lair.",-1);return}
   const k=opts[Math.floor(Math.random()*opts.length)],gi=g[Math.floor(Math.random()*g.length)];
@@ -731,6 +763,7 @@ function craftAdd(W,K,amt){
 }
 function placeBP(W,K,i,t,k){
   const it=t==="d"?DOORS[k]:TRAPS[k];
+  if(!allowed(W,"i",t+k))return "That isn't available in this realm yet.";
   if(!K.c.rooms[RM.WORKSHOP])return "Build a Workshop first: that's where traps and doors are made.";
   if(!itemNeedOk(K,it.need))return it.need===3?"That needs a Great forge: a 3×3 square of Workshop.":"That needs a Workbench: a 2×2 square of Workshop.";
   if(W.own[i]!==K.o||W.tile[i]!==T.FLOOR)return "Put it on your own claimed floor.";
@@ -800,6 +833,7 @@ function neutralTick(W,u,dt){
 /* ---------- possession: you steer one creature yourself ---------- */
 function possess(W,u){
   const K=W.k[u.o];
+  if(!allowed(W,"s",SP.POSS))return "Possession isn't available in this realm yet.";
   if(!u||u.o!==1||u.k==="digger"||u.ko||u.jail||u.held)return "Only your own creatures can be possessed (not diggers).";
   if(K.mana<SPELLS[SP.POSS].cost)return "Not enough mana.";
   K.mana-=SPELLS[SP.POSS].cost;endTask(W,u);u.st=null;u.path=null;u.tgt=0;W.poss={id:u.id,dx:0,dy:0,atk:false};return "";
@@ -826,7 +860,7 @@ function possessTick(W,u,dt){
 /* ---------- spells ---------- */
 function spellCheck(W,K,before){for(let k=1;k<SPELLS.length;k++){const S=SPELLS[k];if(S.rp>before&&S.rp<=K.rp&&K.o===1)ev(W,`Your Library discovered ${S.name}! Find it under ✨ Spells.`,-1,"good")}}
 function castSpell(W,K,k,i){
-  const S=SPELLS[k];if(!S||!spellKnown(K,k))return "You haven't discovered that spell yet.";
+  const S=SPELLS[k];if(!S||!allowed(W,"s",k))return "That spell isn't available in this realm yet.";if(!spellKnown(K,k))return "You haven't discovered that spell yet.";
   if(k===SP.POSS)return "Tap one of your creatures to possess it.";
   if(K.mana<S.cost)return "Not enough mana.";
   const x=i%W.w+.5,y=(i/W.w|0)+.5,o=K.o;
@@ -855,7 +889,7 @@ function treasure(W,i,tr,o){
   fx(W,{k:"sparkle",x:x+.5,y:y+.5});
   if(!K||o>=WILD)return;
   if(tr===1){K.gold+=800;txt="a chest of 800 gold"}
-  else if(tr===2){const k=["goblin","hexer","ogre","beetle","spirit"][Math.floor(Math.random()*5)],u=mkUnit(W,o,k,x,y);u.lvl=3;u.hp=maxHp(u);txt=`a trapped ${KINDS[k].name}, who joins you`}
+  else if(tr===2){const ks=["goblin","hexer","ogre","beetle","spirit"].filter(k=>allowed(W,"k",k)),k=ks.length?ks[Math.floor(Math.random()*ks.length)]:"beetle",u=mkUnit(W,o,k,x,y);u.lvl=3;u.hp=maxHp(u);txt=`a trapped ${KINDS[k].name}, who joins you`}
   else if(tr===3){const nx=SPELLS.find(S=>S&&S.rp>K.rp);if(nx){const b=K.rp;K.rp=nx.rp;spellCheck(W,K,b);txt=`an old spell book, and learnt ${nx.name}`}else{K.mana=K.manaMax;txt="an old spell book brimming with mana"}}
   else if(tr===4){K.manaBonus=(K.manaBonus||0)+150;K.mana+=150;txt="a mana crystal: 150 more mana for good"}
   else if(tr===5){if(mine)for(let yy=y-12;yy<=y+12;yy++)for(let xx=x-12;xx<=x+12;xx++)if(xx>=0&&yy>=0&&xx<W.w&&yy<W.h&&(xx-x)**2+(yy-y)**2<=144)W.known[yy*W.w+xx]=1;txt="an old map of the caves around"}
@@ -1202,7 +1236,7 @@ function arrive(W,u){
 function summonDigger(W,K){const cost=diggerCost(K.c.diggers);if(K.gold<cost||K.c.diggers>=20)return false;
   const ring=K.c.walk.filter(c=>cheb(W,c,K.hx,K.hy)===2);if(!ring.length)return false;
   const c=ring[Math.floor(Math.random()*ring.length)];K.gold-=cost;mkUnit(W,K.o,"digger",c%W.w,c/W.w|0);K.c.diggers++;fx(W,{k:"poof",x:c%W.w+.5,y:(c/W.w|0)+.5,c:OWN_COL[K.o]});return true}
-function canBuild(W,o,i,r){return W.tile[i]===T.FLOOR&&W.own[i]===o&&W.room[i]!==r&&!W.trap[i]&&!W.door[i]&&!(W.k[o].bp||[]).some(b=>b.i===i)}
+function canBuild(W,o,i,r){return allowed(W,"r",r)&&W.tile[i]===T.FLOOR&&W.own[i]===o&&W.room[i]!==r&&!W.trap[i]&&!W.door[i]&&!(W.k[o].bp||[]).some(b=>b.i===i)}
 function buildRoom(W,K,i,r){if(!canBuild(W,K.o,i,r)||K.gold<ROOMS[r].cost)return false;K.gold-=ROOMS[r].cost;W.room[i]=r;W.food[i]=0;return true}
 function sellRoom(W,K,i){if(W.own[i]!==K.o||!W.room[i])return false;K.gold+=Math.round(ROOMS[W.room[i]].cost/2);W.room[i]=0;W.food[i]=0;return true}
 
@@ -1331,7 +1365,7 @@ function aiRooms(W,K){
   const free=i=>W.tile[i]===T.FLOOR&&W.own[i]===K.o&&!W.room[i]&&!W.trap[i]&&!W.door[i]&&cheb(W,i,K.hx,K.hy)>2&&!K.bp.some(b=>b.i===i);
   K.anchor=K.anchor||{};
   for(const [r,n] of wants){
-    if(R[r]>=n)continue;
+    if(R[r]>=n||!allowed(W,"r",r))continue;
     if(K.gold<ROOMS[r].cost+150)return;
     let best=-1,a=K.anchor[r];
     if(a!=null&&a>=0)best=blockNext(W,K,a,r,free);
@@ -1351,9 +1385,9 @@ function aiTraps(W,K){
   for(const b of K.bp)if(b.t==="d")doors++;else traps++;
   const ok=i=>W.tile[i]===T.FLOOR&&!W.room[i]&&!W.trap[i]&&!W.door[i]&&!K.bp.some(b=>b.i===i);
   if(doors<1+d+rich){const cand=c.walk.filter(i=>ok(i)&&corridor(W,i)&&cheb(W,i,K.hx,K.hy)>=4&&cheb(W,i,K.hx,K.hy)<=12);
-    if(cand.length){const k=itemNeedOk(K,3)&&d>=2?3:itemNeedOk(K,2)?2:1;placeBP(W,K,pickOf(cand),"d",k);return}}
+    if(cand.length){const ks=[3,2,1].filter(k=>allowed(W,"i","d"+k)&&itemNeedOk(K,DOORS[k].need)&&(k<3||d>=2));if(ks.length){placeBP(W,K,pickOf(cand),"d",ks[0]);return}}}
   if(traps<2+2*d+rich*2){const cand=c.walk.filter(i=>ok(i)&&cheb(W,i,K.hx,K.hy)>=3&&cheb(W,i,K.hx,K.hy)<=7);
-    if(cand.length){const k=itemNeedOk(K,3)?pickOf([3,4]):itemNeedOk(K,2)?pickOf([1,2]):1;placeBP(W,K,pickOf(cand),"t",k)}}
+    if(cand.length){const ks=[1,2,3,4].filter(k=>allowed(W,"i","t"+k)&&itemNeedOk(K,TRAPS[k].need));if(ks.length)placeBP(W,K,pickOf(cand),"t",ks.length>1&&Math.random()<.7?ks[ks.length-1]:pickOf(ks))}}
 }
 /* ---------- saving ---------- */
 function b64(u8){let s="";for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(s)}
@@ -1412,7 +1446,7 @@ function renderMenu(){
     b.querySelector(".stars").textContent=open?starStr(st):"";
     const tags=[m.rivals?`${m.rivals} rival${m.rivals>1?"s":""} · ${DIFF[m.diff].name}`:"No rivals",m.heroes?"heroes":"",{fire:"lava",deep:"lakes",crystal:"crystal"}[m.theme]||"",m.size>=70?"huge map":""].filter(Boolean).join(" · ");
     b.querySelector("small").textContent=open?`${m.blurb} ${tags}${won?` · best ${mmss(won.time)}`:""}`:"Win the realm before to open this one.";
-    b.onclick=()=>startGame(Object.assign({camp:n+1},m));
+    b.onclick=()=>startGame(campSpec(n+1));
     box.append(b);
   });
   $("starTot").textContent=`★ ${tot} of ${CAMPAIGN.length*3}`;
@@ -1433,11 +1467,11 @@ function startGame(spec){
 }
 function enterGame(){
   setPossUI(false);spellOpen=false;$("spellbar").hidden=true;
-  if(W.spec.camp&&!W.spec.tips)setTimeout(()=>{if(W)toast(`Goal: ${realmGoal(W.spec)}`,"",-1)},600);
   held=W.units.filter(u=>u.held&&u.o===1);sel=null;tool="look";paused=false;speed=1;
   const P=W.k[1];cam.x=P.hx+.5;cam.y=P.hy+.5;cam.z=36;
   $("ov").hidden=true;$("sheet").hidden=true;$("info").hidden=true;$("toasts").textContent="";
   setTool("look");show("game");save();lastFrame=performance.now();
+  if(W.spec.camp&&W.t<1)briefing();
 }
 function save(){if(!W)return;if(W.poss&&!W.over){/* possession is not saved */}if(W.over){LS.del("hd.game");return}LS.set("hd.game",saveWorld(W));lastSave=W.t}
 function quitToMenu(){save();W=null;renderMenu();show("menu")}
@@ -1472,10 +1506,12 @@ function openBuild(){
     b.querySelector(".ic").textContent=ic;b.querySelector("b").textContent=name;b.querySelector("small").textContent=desc;b.querySelector(".c").textContent=cost;b.onclick=fn;s.append(b)};
   sec("Rooms","Shapes matter: squares of the same room turn into something special.");
   for(let r=1;r<ROOMS.length;r++){const R=ROOMS[r],fl=featLine(K,r);
+    if(!allowed(W,"r",r)){opt("🔒",R.name,`Unlocks in realm ${unlockRealm("r",r)}.`,"",()=>toast(`${R.name} unlocks in realm ${unlockRealm("r",r)}.`),true);continue}
     opt(R.icon,R.name,`${R.desc} ${shapeHint(r)} You have ${K.c.rooms[r]} tile${K.c.rooms[r]===1?"":"s"}${fl?" and "+fl:""}.`,`${R.cost} a tile`,()=>{buildSel=r;s.hidden=true;setTool("build");toast(`Tap your floor to build ${R.name}. Hold, then drag, to fill an area.`)})}
   const ws=K.c.rooms[RM.WORKSHOP]>0;
   sec("Traps and doors",ws?`Made in your Workshop (${craftMult(K).toFixed(1)}× speed), then a digger fits them. Plan them on your floor; you pay when you plan.`:"Build a Workshop first. Tinkers and spare diggers make these there, then a digger fits them.");
   const item=(t,k)=>{const it=t==="d"?DOORS[k]:TRAPS[k],ok=itemNeedOk(K,it.need);
+    if(!allowed(W,"i",t+k)){opt("🔒",it.name,`Unlocks in realm ${unlockRealm("i",t+k)}.`,"",()=>{},true);return}
     const req=it.need===3?"Needs a Great forge (3×3 Workshop). ":it.need===2?"Needs a Workbench (2×2 Workshop). ":"";
     opt(it.icon,it.name,`${ok?"":req}${it.desc}${t==="d"?` Strength ${it.hp}. Goes in a tunnel one tile wide.`:""}`,`${it.gold} gold`,()=>{
       if(!ws){toast("Build a Workshop first.","bad");return}
@@ -1494,7 +1530,9 @@ function renderSpellbar(){
   const bar=$("spellbar"),K=W.k[1];if(!spellOpen||possUI){bar.hidden=true;return}
   bar.hidden=false;bar.textContent="";
   const m=document.createElement("div");m.className="mana";m.innerHTML=`<span>🔮 ${Math.floor(K.mana)} / ${K.manaMax}</span><div class="bar"><i style="width:${K.mana/K.manaMax*100}%"></i></div>`;bar.append(m);
-  for(let k=1;k<SPELLS.length;k++){const S=SPELLS[k],known=spellKnown(K,k),b=document.createElement("button");
+  for(let k=1;k<SPELLS.length;k++){const S=SPELLS[k],b=document.createElement("button");
+    if(!allowed(W,"s",k)){b.className="lock";b.innerHTML=`🔒<small>R${unlockRealm("s",k)}</small>`;b.onclick=()=>toast(`${S.icon} ${S.name} unlocks in realm ${unlockRealm("s",k)}.`);bar.append(b);continue}
+    const known=spellKnown(K,k);
     b.className=(k===spellSel&&known?"on ":"")+(known?"":"lock ")+(known&&K.mana<S.cost?"poor":"");
     b.innerHTML=known?`${S.icon}<small>${S.cost}</small>`:`🔒<small>${Math.floor(Math.min(1,K.rp/S.rp)*100)}%</small>`;
     b.onclick=()=>{if(!known){toast(`${S.icon} ${S.name}: ${S.desc} Your Library is researching it (${Math.floor(K.rp)} of ${S.rp}).`);return}
@@ -1608,7 +1646,7 @@ function showInfo(){
     if(mine){h+=row("Doing",doing(u));
       if(u.k!=="digger"){h+=row("Mood",MOODS.find(m=>u.mood>m[0])[1]);h+=row("Wage",`${wage(u)} gold each payday`);
         if(!k.undead)h+=row("Bed",u.bed>=0?"Has one":"None yet");if(u.lvl<10)h+=row("Next level",`${Math.round(u.xp/(40*u.lvl)*100)}%`)}
-      h+=`<div class="seg" style="margin-top:8px"><button class="btn sm" data-pick>✋ Pick up</button>${u.k!=="digger"?`<button class="btn sm" data-poss>👑 Possess (${SPELLS[SP.POSS].cost} mana)</button>`:""}</div>`}
+      h+=`<div class="seg" style="margin-top:8px"><button class="btn sm" data-pick>✋ Pick up</button>${u.k!=="digger"&&allowed(W,"s",SP.POSS)?`<button class="btn sm" data-poss>👑 Possess (${SPELLS[SP.POSS].cost} mana)</button>`:""}</div>`}
   }else{
     const i=sel.i,t=W.tile[i],o=W.own[i],K=W.k[o];
     if(!W.known[i]){h=`<h2><span>Unexplored</span><button class="x" data-x>✕</button></h2><div class="muted">Dig closer to see what's here.</div>`}
@@ -1664,11 +1702,11 @@ function openRealm(){
   for(const k of ["digger",...FIGHTERS]){const L=by[k]||[];if(!L.length&&k!=="digger")continue;
     const avg=L.length?L.reduce((a,u)=>a+u.lvl,0)/L.length:0,happy=L.filter(u=>u.mood>40).length;
     line(`${KINDS[k].name}s`,`${L.length}${k!=="digger"&&L.length?` · level ${avg.toFixed(1)} · ${happy} happy`:""}`)}
-  const next=FIGHTERS.filter(k=>!canCome(K,k));
+  const next=FIGHTERS.filter(k=>allowed(W,"k",k)&&!canCome(K,k));
   h+=`</div>`;
   if(K.bp.length){h+=`<h2 style="font-size:1rem">🔨 Workshop queue · ${c.rooms[RM.WORKSHOP]?craftMult(K).toFixed(1)+"× speed":"no Workshop!"}</h2><div class="list">`;
     for(const b of K.bp){const it=itemOf(b);h+=`<div><span>${it.icon} ${it.name}</span><b>${b.st===0?Math.round(b.p/it.craft*100)+"%":bpBusy(W,b)?"on its way":"ready"}</b></div>`}h+=`</div>`}
-  if(next.length)h+=`<div class="muted" style="font-size:.88rem">To attract more kinds: ${next.map(k=>`${KINDS[k].name}s need ${Object.entries(KINDS[k].need).map(([r,n])=>needText(r,n)).join(", ")}`).join(". ")}. Skeletons come from a Crypt's Sarcophagus.</div>`;
+  if(next.length)h+=`<div class="muted" style="font-size:.88rem">To attract more kinds: ${next.map(k=>`${KINDS[k].name}s need ${Object.entries(KINDS[k].need).map(([r,n])=>needText(r,n)).join(", ")}`).join(". ")}.${allowed(W,"r",RM.CRYPT)?" Skeletons come from a Crypt's Sarcophagus.":""}</div>`;
   const rv=W.k.filter((R,o)=>R&&o>1).map(R=>`${R.name}: ${R.alive?(W.known[R.hy*W.w+R.hx]?`Heart ${Math.ceil(R.hp/R.maxhp*100)}%`:"not found yet"):"beaten ✓"}`);
   h+=`<div class="list">${rv.map(x=>`<div><span>${x}</span></div>`).join("")}</div>`;
   s.innerHTML=h;s.hidden=false;s.querySelector("[data-c]").onclick=()=>{s.hidden=true};
@@ -1683,7 +1721,7 @@ const GOALS=[
   [W=>W.k[1].c.rooms[RM.TRAINING]>=4,"Mine gold (yellow rock), then build a Training pit of 4 tiles. Goblins will come, and everyone can level up."],
   [W=>W.k[1].c.fighters>=5,"Grow to 5 creatures. Add Lair tiles for more beds. Tip: a 2×2 square of Lair makes a Big nest."],
   [W=>W.k[1].c.walk.some(i=>W.door[i]),"Build a Workshop of 4 tiles, then 🧱 Build → Wooden door, and tap a narrow tunnel. Your diggers will make and fit it."],
-  [W=>W.k[1].mana<SPELLS[SP.LIGHT].cost||W.stats.kills>0||W.t>900,"Tip: tap ✨ Spells and choose ⚡ Lightning to zap enemies you can see. 👑 Possess lets you fight with a creature yourself."],
+  [W=>W.k[1].mana<SPELLS[SP.LIGHT].cost||W.stats.kills>0||W.t>900,"Tip: tap ✨ Spells and choose ⚡ Lightning to zap enemies you can see."],
   [W=>!W.k[2].alive,W=>{const P=W.k[1],G=W.k[2],dx=G.hx-P.hx,dy=G.hy-P.hy,v=Math.abs(dy)>W.h/5?(dy<0?"top":"bottom"):"",hz=Math.abs(dx)>W.w/5?(dx<0?"left":"right"):"";
     return `Dig towards Lord Grimble (${v&&hz?v+" "+hz:v||hz||"nearby"}). When you find his Heart, tap 🚩 Flag and then his Heart.`}]];
 function renderGoal(){
@@ -1691,10 +1729,10 @@ function renderGoal(){
   if(!W.spec.tips){
     const H=W.hero;if(H&&H.wave<H.waves&&H.next-W.t<45){g.hidden=false;g.innerHTML=`<b>⚔ Heroes in ${mmss(H.next-W.t)}</b> · wave ${H.wave+1} of ${H.waves}`;g.onclick=()=>{cam.x=W.stair%W.w+.5;cam.y=(W.stair/W.w|0)+.5};return}
     g.hidden=true;return}
-  const n=GOALS.findIndex(x=>!x[0](W));
+  const GS=GOALS.filter(g=>!/Training pit|Workshop/.test(typeof g[1]==='string'?g[1]:'')||allowed(W,'r',/Training pit/.test(g[1])?RM.TRAINING:RM.WORKSHOP));const n=GS.findIndex(x=>!x[0](W));
   if(n<0){g.hidden=true;return}
   g.onclick=null;
-  g.hidden=false;g.innerHTML=`<b>Goal ${n+1} of ${GOALS.length}:</b> `;g.append(typeof GOALS[n][1]==="function"?GOALS[n][1](W):GOALS[n][1]);
+  g.hidden=false;g.innerHTML=`<b>Goal ${n+1} of ${GS.length}:</b> `;g.append(typeof GS[n][1]==="function"?GS[n][1](W):GS[n][1]);
 }
 
 /* ---------- toasts ---------- */
@@ -1728,6 +1766,22 @@ function pauseMenu(){
   c.querySelector("[data-s]").onclick=()=>{if(!confirm("Start this map again from the beginning?"))return;const sp=W.spec;LS.del("hd.game");W=newWorld(sp);updVis(W);enterGame()};
   $("ov").hidden=false;
 }
+function newThings(sp){const d=CAMPAIGN[sp.camp-1].adds||{},out=[];
+  for(const r of d.r||[])out.push(`${ROOMS[r].icon} ${ROOMS[r].name}`);for(const k of d.k||[])out.push(`👾 ${KINDS[k].name}s`);
+  for(const x of d.i||[]){const it=itemOf({t:x[0],k:+x.slice(1)});out.push(`${it.icon} ${it.name}`)}for(const k of d.s||[])out.push(`${SPELLS[k].icon} ${SPELLS[k].name} spell`);
+  if(sp.heroes&&!CAMPAIGN.slice(0,sp.camp-1).some(c=>c.heroes))out.push("⚔ Heroes from the surface");
+  if(sp.theme&&!CAMPAIGN.slice(0,sp.camp-1).some(c=>c.theme===sp.theme))out.push({fire:"🔥 Lava",deep:"🌊 Underground lakes",crystal:"💎 Crystal caverns"}[sp.theme]);
+  return out}
+function briefing(){
+  paused=true;const sp=W.spec,sg=starGoals(sp),nw=newThings(sp);
+  const c=$("ovCard");c.innerHTML=`<span class="muted">Realm ${sp.camp} of ${CAMPAIGN.length}</span><h2></h2><span class="muted" data-b></span>
+  ${nw.length?`<div class="list"><div><b>New in this realm</b></div>${nw.map(x=>`<div><span>${x}</span></div>`).join("")}</div>`:""}
+  <div class="list"><div><span>🎯 ${realmGoal(sp)}</span></div>${sg?sg.slice(1).map(g=>`<div><span><span class="stars">★</span> ${g}</span></div>`).join(""):""}</div>
+  <div class="row"><button class="btn pri" data-go>Let's go</button></div>`;
+  c.querySelector("h2").textContent=sp.name;c.querySelector("[data-b]").textContent=sp.blurb;
+  c.querySelector("[data-go]").onclick=()=>{paused=false;$("ov").hidden=true;renderHud()};
+  $("ov").hidden=false;
+}
 function gameOver(){
   paused=true;setPossUI(false);const won=W.over===1,sp=W.spec,sg=starGoals(sp);
   let st=[0,0,0];
@@ -1742,7 +1796,7 @@ function gameOver(){
   <span class="muted">${won?`Done in ${mmss(W.t)}.`:"You were overrun. Have another go: doors, traps and a strong guard help, and so do spells."}</span>
   <div class="list"><div><span>Enemies defeated</span><b>${W.stats.kills}</b></div><div><span>Prisoners taken</span><b>${W.stats.captured}</b></div><div><span>Lost creatures won</span><b>${W.stats.recruited}</b></div><div><span>Treasures found</span><b>${W.stats.treasure}</b></div><div><span>Creatures you lost</span><b>${W.stats.lost}</b></div></div>
   <div class="row">${next?`<button class="btn pri" data-n>Next realm: ${CAMPAIGN[next-1].name}</button>`:""}<button class="btn${next?"":" pri"}" data-a>${won?"Play again":"Try again"}</button><button class="btn" data-m>Menu</button></div>`;
-  const n=c.querySelector("[data-n]");if(n)n.onclick=()=>{W=newWorld(Object.assign({camp:next},CAMPAIGN[next-1]));updVis(W);enterGame()};
+  const n=c.querySelector("[data-n]");if(n)n.onclick=()=>{W=newWorld(campSpec(next));updVis(W);enterGame()};
   c.querySelector("[data-a]").onclick=()=>{const s2=Object.assign({},sp);if(!s2.camp)s2.seed=Math.floor(Math.random()*1e9);W=newWorld(s2);updVis(W);enterGame()};
   c.querySelector("[data-m]").onclick=()=>{W=null;renderMenu();show("menu")};
   $("ov").hidden=false;

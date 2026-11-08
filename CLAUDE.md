@@ -265,8 +265,11 @@ test for "can be fought". **Spells** (`SPELLS`, `castSpell`): mana `K.mana`, res
 a spell is known once `K.rp >= rp`. **Possession**: `W.poss {id,dx,dy,atk}` set by the page, run by `possessTick`; never saved.
 **Prisoners**: with a free Jail cell a beaten enemy gets `ko` instead of dying; diggers `drag` it to the Jail (`jail` = captor),
 then to the Persuasion room, where `pers` reaching 50 converts it. Diggers: up to `DIG_SIDE` (3) per side of a rock (`W.digN`,
-rebuilt each `recount`), and claims chain along lines (`chainClaim`). **Campaign**: 15 realms with `par` minutes and a third star
+rebuilt each `recount`), and claims chain along lines (`chainClaim`). **Campaign**: 20 realms with `par` minutes and a third star
 `s3`; `hd.progress.won[n]` is `{time, at, stars:[3]}` (old entries without `stars` count as one star).
+Each realm's `adds` introduces rooms, creatures, traps/doors and spells; `campSpec(n)` builds the spec with `allow` (everything up to n),
+saved in `W.spec`, and `allowed(W,cat,id)` gates building, arrivals (rivals too), lost creatures, traps and spells. The page shows locked
+things with `unlockRealm`, and a `briefing` card opens each realm. Quick games and saves without `allow` allow everything.
 **Rival brain** (`aiThink` → `aiWar`, `aiExpand`, `aiRooms`, `aiTraps`): each lord has a `persona` (builder, raider, schemer) that scales
 growth, army size (`aiCap`, rising through the game) and boldness. They keep a wage `reserve`, spend surplus on rooms and defences,
 expand all game towards gold, Gates, lost creatures and the map centre (forgetting unreachable marks), and go to war on the weakest
