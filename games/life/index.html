@@ -204,24 +204,30 @@ const TAU = Math.PI * 2;
 const TIERS = [{ n: "Speck", g: 50 }, { n: "Mote", g: 85 }, { n: "Droplet", g: 120 }, { n: "Bloom", g: 160 }, { n: "Titan", g: 200 }];
 const KT = t => Math.pow(1.7, t);
 const STAGES = ["Cell", "Sea", "Land", "Tribe", "Civilisation", "Space"];
+/* Every part does something where it sits, good and bad: tails push only when they point backwards, each jaw bites
+   on its own, shells and thorns guard their own patch, and every part adds weight. */
 const PARTS = [
-  { id: "filter", cat: "mouth", n: "Filter mouth", c: 10, t: 0, eat: "plant", info: "Sieves up the green bits. A plant eater's mouth." },
-  { id: "jaw", cat: "mouth", n: "Snapper jaw", c: 15, t: 0, eat: "meat", bite: 6, info: "Bites other creatures and eats the red bits they leave." },
-  { id: "siphon", cat: "mouth", n: "Siphon", c: 18, t: 1, eat: "both", bite: 2.5, info: "Sucks up plants and meat. Bites weakly." },
-  { id: "whip", cat: "move", n: "Whip tail", c: 10, t: 0, spd: 16, info: "A long tail that pushes you along. Faster." },
-  { id: "fringe", cat: "move", n: "Fringe", c: 8, t: 0, spd: 6, turn: 1.2, info: "Rows of tiny hairs. Turn more quickly." },
-  { id: "jet", cat: "move", n: "Squirt jet", c: 20, t: 1, spd: 4, ab: "dash", info: "Tap ⚡ to dash: escape, or catch your dinner." },
-  { id: "thorn", cat: "fight", n: "Thorn", c: 12, t: 0, spk: 5, info: "Hurts anything that bumps into it." },
-  { id: "shell", cat: "fight", n: "Shell plate", c: 12, t: 1, arm: .14, hp: 6, spd: -3, info: "Takes the sting out of bites, but it's heavy." },
-  { id: "stink", cat: "fight", n: "Stink sac", c: 20, t: 2, ab: "poison", info: "Tap ☁ to leave a poison cloud behind you." },
-  { id: "spark", cat: "fight", n: "Spark organ", c: 24, t: 2, ab: "zap", info: "Tap ✶ to shock everything close by." },
-  { id: "moon", cat: "eye", n: "Moon eye", c: 5, t: 0, sen: 10, info: "A big friendly eye. See a little further." },
-  { id: "slit", cat: "eye", n: "Slit eye", c: 8, t: 1, sen: 16, info: "A hunter's eye. See further." },
-  { id: "stalk", cat: "eye", n: "Stalk eye", c: 8, t: 1, sen: 20, info: "An eye on a wobbly stalk. See further still." },
-  { id: "cluster", cat: "eye", n: "Eye cluster", c: 10, t: 2, sen: 26, info: "Three little eyes. See much further." },
-  { id: "frill", cat: "extra", n: "Frill", c: 6, t: 0, hp: 4, turn: .4, info: "A floaty frill. A little tougher." },
-  { id: "feeler", cat: "extra", n: "Feeler", c: 6, t: 1, sen: 8, turn: .3, info: "A twitchy feeler. See and turn a little better." },
-  { id: "glow", cat: "extra", n: "Glow bulb", c: 10, t: 2, lure: 1, info: "Small creatures can't help swimming up to it." }
+  { id: "filter", cat: "mouth", n: "Filter mouth", c: 10, t: 0, w: .5, eat: "plant", good: "Sieves up the green bits.", bad: "Can't bite, so it's no help in a fight." },
+  { id: "jaw", cat: "mouth", n: "Snapper jaw", c: 15, t: 0, w: 1.5, eat: "meat", bite: 6, good: "Bites whatever it touches and eats the red bits. Every jaw bites on its own, wherever you put it.", bad: "Heavy, and plant eaters see a hunter and swim away." },
+  { id: "siphon", cat: "mouth", n: "Siphon", c: 18, t: 1, w: .5, eat: "both", bite: 2.5, good: "Eats plants and meat, and drains a little from whatever it bites.", bad: "A weak bite." },
+  { id: "whip", cat: "move", n: "Whip tail", c: 10, t: 0, w: .5, spd: 16, push: 1, good: "Pushes you along when it points backwards.", bad: "Pointing sideways it only helps you turn." },
+  { id: "fringe", cat: "move", n: "Fringe", c: 8, t: 0, w: .3, spd: 6, turn: 1.2, good: "Quicker turns and a little speed, wherever it goes.", bad: "Not much push on its own." },
+  { id: "jet", cat: "move", n: "Squirt jet", c: 20, t: 1, w: 1, spd: 4, push: 1, ab: "dash", good: "Tap ⚡ to dash. Strongest pointing backwards.", bad: "A bit heavy." },
+  { id: "thorn", cat: "fight", n: "Thorn", c: 12, t: 0, w: .7, spk: 5, good: "Hurts anything that touches its tip.", bad: "Only guards the side it points to." },
+  { id: "shell", cat: "fight", n: "Shell plate", c: 12, t: 1, w: 2.5, arm: .55, hp: 3, good: "Bites that land near it do less than half the damage.", bad: "Very heavy, and it only covers its own patch." },
+  { id: "stink", cat: "fight", n: "Stink sac", c: 20, t: 2, w: 1, ab: "poison", smell: 1, good: "Tap ☁ for a poison cloud. Hunters think twice about you.", bad: "Plant eaters smell you coming and keep away." },
+  { id: "spark", cat: "fight", n: "Spark organ", c: 24, t: 2, w: 1, ab: "zap", good: "Tap ✶ to shock and stun everything close by.", bad: "Every shock costs you some health." },
+  { id: "moon", cat: "eye", n: "Moon eye", c: 5, t: 0, w: .2, sen: 10, good: "See further. More eyes, more sight.", bad: "With no eyes at all you can hardly see." },
+  { id: "slit", cat: "eye", n: "Slit eye", c: 8, t: 1, w: .2, sen: 16, good: "A hunter's eye: see further.", bad: "Plant eaters spot the hunter in you and keep away." },
+  { id: "stalk", cat: "eye", n: "Stalk eye", c: 8, t: 1, w: .3, sen: 20, good: "See further still.", bad: "It sticks out: bites near it hurt more." },
+  { id: "cluster", cat: "eye", n: "Eye cluster", c: 10, t: 2, w: .3, sen: 26, good: "Three little eyes: see much further.", bad: "" },
+  { id: "frill", cat: "extra", n: "Frill", c: 6, t: 0, w: .8, hp: 5, turn: .4, good: "Tougher, and steadier turns.", bad: "Drag: a little slower." },
+  { id: "feeler", cat: "extra", n: "Feeler", c: 6, t: 1, w: .2, sen: 8, turn: .3, good: "Feel what's near: see and turn a little better.", bad: "" },
+  { id: "glow", cat: "extra", n: "Glow bulb", c: 10, t: 2, w: .3, lure: 1, good: "Small creatures can't help swimming up to it.", bad: "Hunters spot you from much further away." },
+  { id: "pincer", cat: "fight", n: "Pincer", c: 14, t: 1, w: 1.5, bite: 4, good: "Nips anything it touches, even if you're a plant eater.", bad: "Heavy, and it can't eat." },
+  { id: "bristle", cat: "fight", n: "Bristles", c: 10, t: 1, w: .8, spk: 2.5, wide: 1, good: "A patch of little spikes that pricks biters over a wide area.", bad: "Drag: a little slower." },
+  { id: "paddle", cat: "move", n: "Paddle", c: 14, t: 2, w: 1, spd: 24, push: 1, turn: -.8, good: "A big push when it points backwards.", bad: "Clumsy: slower turns." },
+  { id: "clear", cat: "extra", n: "Clear skin", c: 12, t: 2, w: 0, hide: 1, hp: -5, good: "See-through patches: hunters spot you much later.", bad: "Thin: less health." }
 ];
 const PART = {}; PARTS.forEach(p => PART[p.id] = p);
 const START_PARTS = ["whip", "moon", "fringe"];
@@ -251,20 +257,24 @@ function geom(d) {
   });
   let R = 0, minX = 0, maxX = 0;
   r.forEach((v, i) => { R = Math.max(R, Math.abs(cx[i]) + v); minX = Math.min(minX, cx[i] - v); maxX = Math.max(maxX, cx[i] + v); });
-  return { cx, r, parts, R: R + 3, minX, maxX, mouths: parts.filter(p => p.P.cat === "mouth"), spikes: parts.filter(p => p.P.spk) };
+  return { cx, r, parts, R: R + 3, minX, maxX, mouths: parts.filter(p => p.P.cat === "mouth"), biters: parts.filter(p => p.P.bite), spikes: parts.filter(p => p.P.spk),
+    guards: parts.filter(p => p.P.arm || p.id === "stalk") };
 }
 function stats(d, g) {
   g = g || geom(d);
-  let spd = 0, turn = 0, hp = 0, arm = 1, spk = 0, sen = 0, bite = 0, lure = 0; const ab = {}, eat = { plant: 0, meat: 0 };
+  let spd = 0, turn = 0, hp = 0, spk = 0, sen = 0, bite = 0, lure = 0, w = 0, eyes = 0, shells = 0, hide = 0, smell = 0, slit = 0; const ab = {}, eat = { plant: 0, meat: 0 };
   for (const q of g.parts) {
-    const P = q.P; spd += P.spd || 0; turn += P.turn || 0; hp += P.hp || 0; spk += P.spk || 0; sen += P.sen || 0; bite += P.bite || 0; lure += P.lure || 0;
-    if (P.arm) arm *= 1 - P.arm; if (P.ab) ab[P.ab] = 1;
+    const P = q.P, back = -Math.cos(q.a); // 1 when pointing straight back
+    if (P.push) { spd += P.spd * Math.max(.15, back); turn += P.spd * .05 * Math.abs(Math.sin(q.a)); } else spd += P.spd || 0;
+    turn += P.turn || 0; hp += P.hp || 0; spk += P.spk || 0; sen += P.sen || 0; bite += P.bite || 0; lure += P.lure || 0; w += P.w || 0;
+    if (P.cat === "eye") eyes++; if (P.arm) shells++; if (P.hide) hide = 1; if (P.smell) smell = 1; if (q.id === "slit") slit = 1;
+    if (P.ab) ab[P.ab] = 1;
     if (P.eat === "plant" || P.eat === "both") eat.plant++; if (P.eat === "meat" || P.eat === "both") eat.meat++;
   }
   const mass = d.s.reduce((a, r) => a + r * r, 0) / 144;
-  return { spd: (36 + 72 * (1 - Math.exp(-Math.max(0, spd) / 26))) / Math.pow(Math.max(.5, mass), .18), turn: Math.min(7.5, 3.2 + turn),
-    hp: Math.round(14 + hp + mass * 10), arm: Math.min(.55, 1 - arm), spk, sen, view: 150 + Math.min(80, sen * 2.2),
-    bite: bite ? 9.5 * (1 - Math.exp(-bite / 7)) : 0, lure, ab, eat, mass, parts: g.parts.length };
+  return { spd: (36 + 72 * (1 - Math.exp(-Math.max(0, spd) / 26))) / Math.pow(Math.max(.5, mass), .15) / (1 + w * .035), turn: clamp(3.2 + turn, 1.6, 7.5),
+    hp: Math.max(8, Math.round(14 + hp + mass * 10)), shells, spk, sen, eyes, view: eyes ? 150 + Math.min(80, sen * 2.2) : 105 + Math.min(20, sen),
+    bite, lure, hide, smell, slit, w, ab, eat, mass, parts: g.parts.length };
 }
 function dietOf(st) { return st.eat.plant && st.eat.meat ? "both" : st.eat.plant ? "plant" : st.eat.meat ? "meat" : "none"; }
 function designValue(d) {
@@ -321,7 +331,10 @@ function randomDesign(R, diet, tier) {
   if (diet === "meat") {
     const n = 1 + Math.floor(R() * Math.min(3, 1 + tier)); for (let i = 0; i < n; i++) add("thorn", rs(), -(.9 + R() * 1.6), true);
     if (R() < .3) add("shell", rs(), -Math.PI / 2, true);
+    if (tier >= 1 && R() < .25) add("pincer", 0, .6, true);
   } else {
+    if (tier >= 1 && R() < .2) add("bristle", L, -(1.8 + R() * .8), true);
+    if (tier >= 2 && R() < .2) add("paddle", L, 2.5, true);
     if (R() < .35) add("frill", L, -(2 + R() * .7), true);
     if (R() < .3) add("shell", rs(), -(1.3 + R() * .6), true);
     if (R() < .25) add("thorn", L, -(2.3 + R() * .5), true);
@@ -342,14 +355,14 @@ function species(W, tier, i) {
 function mkC(W, d, kind, tier, k, x, y, sp) {
   const g = geom(d), st = stats(d, g);
   const c = { id: W.nid++, kind, sp: sp || null, d, g, st, tier, k, x, y, a: W.R() * TAU, vx: 0, vy: 0, max: st.hp * Math.pow(k, 1.5), hp: 0,
-    bcd: 0, ecd: 0, hurtT: -99, stun: 0, inv: 0, dash: 0, ab: {}, spk: {}, diet: dietOf(st),
-    ai: { t: 0, dir: W.R() * TAU, thr: .4, tg: null, rest: 0, chase: 0, fear: null, fearT: 0, food: null, scan: 0, lure: false } };
+    bcd: 0, bcdM: [], ecd: 0, hurtT: -99, stun: 0, inv: 0, dash: 0, ab: {}, spk: {}, diet: dietOf(st),
+    ai: { t: 0, dir: W.R() * TAU, thr: .3, tg: null, ts: 0, rest: 0, chase: 0, fear: null, fearT: 0, food: null, kin: null, scan: 0, lure: false, hunger: .3 + W.R() * .6 } };
   c.hp = c.max; return c;
 }
 function placePlayer(W, x, y, a) { const T = W.S.cell.tier; const P = mkC(W, W.S.cell.design, "player", T, KT(T), x, y); P.a = a; W.player = P; }
 function viewR(W) { return W.player.st.view * W.player.k; }
 function newWorld(S, rs) {
-  const W = { S, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], relic: null, mate: null,
+  const W = { S, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], pods: [], mate: null,
     nid: 1, nextRelic: 28, lastEvo: 0, mateWait: 20, mateCool: 0, popT: 0, sp: {}, over: null };
   placePlayer(W, 0, 0, -Math.PI / 2); W.player.inv = 2;
   populate(W, true);
@@ -372,7 +385,7 @@ function populate(W, init) {
     for (let i = 0; i < n; i++) { W.items.push(item(W, "plant", x + (W.R() - .5) * 70 * P.k, y + (W.R() - .5) * 70 * P.k, P.k, 1)); np++; }
   }
   guard = 0; // bits of dead things drift by, so a hunter is never starved
-  while (nm < 9 && guard++ < 20) { const [x, y] = spot(W, init ? V * .3 : V * 1.1, SR); W.items.push(item(W, "meat", x, y, P.k * .8, 1.6)); nm++; }
+  while (nm < 14 && guard++ < 20) { const [x, y] = spot(W, init ? V * .3 : V * 1.1, SR); W.items.push(item(W, "meat", x, y, P.k * .8, 1.6)); nm++; }
   let nc = 0; for (const c of W.cr) if (c.kind === "npc") nc++;
   guard = 0;
   while (nc < 20 && guard++ < 30) {
@@ -394,46 +407,74 @@ function npcSpd(W, c) { return c.st.spd * Math.pow(c.k, .5) * Math.pow(W.player.
 function allC(W) { return [W.player, ...W.cr]; }
 function edible(c, ty) { return ty === "plant" ? c.st.eat.plant > 0 : c.st.eat.meat > 0; }
 
+/* Head for an angle, easing off while facing the wrong way, so nobody circles round its target. */
+function steer(c, ang, sp, dt, mult) { const df = Math.abs(wrapA(ang - c.a)); turnTo(c, ang, dt, mult); accel(c, sp * Math.max(.12, Math.cos(df)), dt); }
+/* What a computer creature notices: what scares it, what it might hunt, food, and others of its kind. */
 function scan(W, c, sense) {
-  const ai = c.ai, P = W.player, s2 = sense * sense; let fear = null, fd = s2 * .5, tg = null, td = s2, food = null, fdd = s2 * .4;
+  const ai = c.ai, P = W.player, s2 = sense * sense, hunter = c.st.bite > 0 && c.diet !== "plant";
+  let fear = null, fd = s2 * .55, best = null, bs = 0, food = null, fdd = s2 * .5, kin = null, kd = s2;
   for (const o of allC(W)) {
-    if (o === c || o.kind === "mate" || (o.sp && o.sp === c.sp)) continue;
-    const dd = d2(o, c); if (dd > s2) continue;
+    if (o === c || o.kind === "mate") continue;
+    const dd = d2(o, c); if (dd > s2 * 2.3) continue;
+    if (o.sp && o.sp === c.sp) { if (dd < kd && dd > (c.g.R * c.k * 3) ** 2) { kin = o; kd = dd; } continue; }
+    const isP = o.kind === "player", seen = isP ? (o.st.hide ? .5 : 1) * (o.st.lure ? 1.5 : 1) : 1; // clear skin hides you, a glow gives you away
+    if (dd > s2 * seen * seen) continue;
     const threat = o.st.bite > 0 && o.diet !== "plant" && o.k >= c.k * (c.diet === "meat" ? 1.6 : .8);
-    if (threat && dd < fd && !(o.kind === "player" && P.st.lure && c.k < P.k * .8)) { fear = o; fd = dd; }
-    if (c.st.bite > 0 && c.diet !== "plant" && ai.rest <= 0 && dd < td && o.k <= c.k * (c.diet === "both" ? .9 : o.kind === "player" ? 1.1 : 1.25) && o.k >= c.k * .45 && !(o.kind === "player" && o.inv > 0)) { tg = o; td = dd; } // big hunters don't bother with specks
+    const whiff = isP && (o.st.smell || o.st.slit) && c.diet === "plant" && o.k >= c.k * .6; // stink or hunter's eyes put grazers off
+    if ((threat || whiff) && dd < fd * (threat ? 1 : 1.4) && !(isP && o.st.lure && c.k < o.k * .8)) { fear = o; fd = dd; }
+    if (hunter && ai.rest <= 0 && !(isP && o.inv > 0)) {
+      const rel = o.k / c.k;
+      if (rel <= (c.diet === "both" ? .9 : isP ? 1.1 : 1.25) && rel >= .45 && !(o.diet === "meat" && rel > .9 && o.st.bite > c.st.bite)) {
+        // worth chasing: bigger meals are worth more, nearer ones are easier; spiky or stinky prey put hunters off
+        const sc = Math.min(1, rel) ** 2 / (Math.sqrt(dd) + c.g.R * c.k * 4) * (isP && o.st.smell ? .4 : 1) * (o.st.spk > 6 ? .6 : 1);
+        if (sc > bs) { bs = sc; best = o; }
+      }
+    }
   }
   if (ai.fearT <= 0) ai.fear = fear;
-  if (tg && tg !== ai.tg && (!ai.tg || ai.tg.dead)) { ai.tg = tg; ai.chase = 3 + W.R() * 2; }
-  if (ai.tg && (ai.tg.dead || d2(ai.tg, c) > s2 * 1.6)) ai.tg = null;
-  ai.food = null;
-  if (!ai.tg) for (const it of W.items) { if (!edible(c, it.ty)) continue; const dd = d2(it, c); if (dd < fdd) { fdd = dd; food = it; } }
-  ai.food = food;
+  if (ai.tg && (ai.tg.dead || d2(ai.tg, c) > s2 * 2.2)) ai.tg = null;
+  // hunt only when hungry, and not always; switch only when clearly better prey crosses its path
+  if (best && best !== ai.tg) {
+    // the player gets a short chase they can escape; other creatures get chased longer
+    const ch = () => best.kind === "player" ? 3 + W.R() * 2 : 5 + W.R() * 4;
+    if (ai.tg) { if (bs > ai.ts * 1.6) { ai.tg = best; ai.ts = bs; ai.chase = ch(); } }
+    else if (ai.hunger > .4 && W.R() < ai.hunger * .8) { ai.tg = best; ai.ts = bs; ai.chase = ch(); }
+  } else if (best && best === ai.tg) ai.ts = bs;
+  if (!ai.tg && ai.hunger > .2) for (const it of W.items) { if (!edible(c, it.ty) || it.k < c.k * .25) continue; const dd = d2(it, c); if (dd < fdd) { fdd = dd; food = it; } }
+  ai.food = food; ai.kin = kin;
   ai.lure = P.st.lure > 0 && c.k < P.k * .8 && d2(P, c) < (viewR(W) * 1.1) ** 2;
 }
 function think(W, c, dt) {
   const ai = c.ai; if (c.stun > 0) { c.stun -= dt; accel(c, 0, dt); return; }
-  ai.t -= dt; ai.rest -= dt; ai.fearT -= dt; ai.scan -= dt;
-  const sense = c.st.view * c.k * .8;
+  ai.t -= dt; ai.rest -= dt; ai.fearT -= dt; ai.scan -= dt; ai.hunger = Math.min(1, ai.hunger + dt * .03);
+  const sense = c.st.view * c.k * .8, sp = npcSpd(W, c), R = c.g.R * c.k;
   if (ai.scan <= 0) { ai.scan = .3 + W.R() * .25; scan(W, c, sense); }
-  let ang = null, thr = ai.thr;
-  if (ai.fear && !ai.fear.dead) { ang = Math.atan2(c.y - ai.fear.y, c.x - ai.fear.x); thr = 1; if (d2(ai.fear, c) > sense * sense * 1.2) ai.fear = null; }
-  else if (ai.tg) { ang = Math.atan2(ai.tg.y - c.y, ai.tg.x - c.x); thr = 1; ai.chase -= dt; if (ai.chase <= 0) { ai.tg = null; ai.rest = 5 + W.R() * 4; } }
-  else if (ai.lure) { const P = W.player; ang = Math.atan2(P.y - c.y, P.x - c.x); thr = .55; }
-  else if (ai.food && W.items.includes(ai.food)) { ang = Math.atan2(ai.food.y - c.y, ai.food.x - c.x); thr = .6; }
-  else { if (ai.t <= 0) { ai.t = 2 + W.R() * 3; ai.dir = c.a + (W.R() - .5) * 2.6; ai.thr = .2 + W.R() * .35; } ang = ai.dir; thr = ai.thr; }
-  turnTo(c, ang, dt); accel(c, npcSpd(W, c) * thr, dt);
+  const go = (x, y, thr, arrive) => { const dd = Math.hypot(x - c.x, y - c.y); steer(c, Math.atan2(y - c.y, x - c.x), sp * thr * (arrive ? clamp(dd / (R * 3), .3, 1) : 1), dt); };
+  if (ai.fear && !ai.fear.dead) { const f = ai.fear; steer(c, Math.atan2(c.y - f.y, c.x - f.x), sp, dt); if (d2(f, c) > sense * sense * 1.3) ai.fear = null; return; }
+  if (ai.tg) { const T = ai.tg; go(T.x + T.vx * .3, T.y + T.vy * .3, T.kind === "player" ? 1 : 1.3, false); ai.chase -= dt; if (ai.chase <= 0) { ai.tg = null; ai.rest = 4 + W.R() * 4; } return; }
+  if (ai.food && W.items.includes(ai.food)) { go(ai.food.x, ai.food.y, .65, true); return; }
+  if (ai.lure) { const P = W.player; go(P.x, P.y, .5, true); return; }
+  // nothing to do: drift along, changing course gently, keeping near others of its kind
+  if (ai.t <= 0) { ai.t = 2 + W.R() * 4; ai.thr = W.R() < .25 ? .05 : .15 + W.R() * .3; }
+  ai.dir += (W.R() - .5) * dt * 1.2;
+  if (ai.kin && c.diet !== "meat") ai.dir += wrapA(Math.atan2(ai.kin.y - c.y, ai.kin.x - c.x) - ai.dir) * Math.min(1, dt * .8);
+  steer(c, ai.dir, sp * ai.thr, dt, .5);
 }
 function mateThink(W, c, dt) {
   const P = W.player; c.ai.t -= dt;
-  if (d2(P, c) < (P.g.R * P.k * 6) ** 2) turnTo(c, Math.atan2(P.y - c.y, P.x - c.x), dt, .6);
-  else { if (c.ai.t <= 0) { c.ai.t = 3; c.ai.dir = c.a + (W.R() - .5) * 2; } turnTo(c, c.ai.dir, dt, .5); }
-  accel(c, c.st.spd * c.k * .12, dt);
+  if (d2(P, c) < (P.g.R * P.k * 6) ** 2) steer(c, Math.atan2(P.y - c.y, P.x - c.x), c.st.spd * c.k * .1, dt, .6);
+  else { c.ai.dir += (W.R() - .5) * dt; steer(c, c.ai.dir, c.st.spd * c.k * .12, dt, .5); }
 }
 
-function hurt(W, B, dmg, src) {
+/* A shell softens a bite that lands near it; a stalk eye is a weak spot. */
+function guardAt(B, x, y) {
+  let f = 1; for (const q of B.g.guards) { const [gx, gy] = toW(B, q.x, q.y); if (Math.hypot(x - gx, y - gy) < (q.P.arm ? 12 : 7) * B.k) f *= q.P.arm ? 1 - q.P.arm : 1.35; }
+  return Math.max(.2, f);
+}
+function hurt(W, B, dmg, src, x, y) {
   if (B.inv > 0 || B.kind === "mate" || B.dead) return;
-  dmg *= 1 - B.st.arm; B.hp -= dmg; B.hurtT = W.t;
+  if (x !== undefined) dmg *= guardAt(B, x, y);
+  B.hp -= dmg; B.hurtT = W.t;
   if (B.kind === "npc" && src && src !== B) {
     if (B.st.bite > 0 && B.diet !== "plant" && src.k <= B.k * 1.6) { B.ai.tg = src; B.ai.chase = 5; B.ai.rest = 0; }
     else { B.ai.fear = src; B.ai.fearT = 3; }
@@ -445,9 +486,15 @@ function kill(W, B, src) {
   if (B.kind === "player") { if (!W.over) { W.over = "dead"; W.ev.push({ t: "die", by: src && src.sp ? src.sp.key : null, rel: src ? Math.round(Math.log(src.k / B.k) / Math.log(1.7)) : 0, how: W.how, diet: src ? src.diet : "" }); } return; }
   B.dead = true; W.cr = W.cr.filter(c => c !== B);
   const P = W.player, rel = Math.min(1.5, (B.k / P.k) ** 2), n = clamp(Math.round(2 + 3 * rel), 1, 7);
-  for (let i = 0; i < n; i++) { const it = item(W, "meat", B.x + (W.R() - .5) * B.g.R * B.k, B.y + (W.R() - .5) * B.g.R * B.k, B.k, 2.5); it.life = 45; W.items.push(it); }
+  for (let i = 0; i < n; i++) { const it = item(W, "meat", B.x + (W.R() - .5) * B.g.R * B.k, B.y + (W.R() - .5) * B.g.R * B.k, B.k, 3.2); it.life = 45; W.items.push(it); }
   W.ev.push({ t: "kill", x: B.x, y: B.y, k: B.k, h: B.d.h, by: src === P });
-  if (src === P) { W.S.cell.kills++; if (!W.relic && lockedParts(W.S).length && W.R() < .1) W.relic = { x: B.x, y: B.y, r: 6 * P.k, ph: 0 }; }
+  if (src && src.kind === "npc") src.ai.hunger = Math.max(0, src.ai.hunger - .2);
+  if (src === P) {
+    W.S.cell.kills++;
+    // sometimes it leaves behind one of its own parts for you to pick up
+    const ids = [...new Set(B.d.p.map(q => q.id))].filter(id => !W.S.cell.unlocked.includes(id));
+    if (ids.length && W.R() < .3) W.pods.push({ x: B.x, y: B.y, r: 11 * P.k, ph: 0, id: ids[Math.floor(W.R() * ids.length)], life: 40 });
+  }
 }
 function grow(W, v, ty) {
   const c = W.S.cell; c.ate[ty] += v; c.dna += v * .7;
@@ -463,6 +510,7 @@ function useAb(W, P, ab) {
   if (ab === "dash") { P.dash = .5; P.ab.dash = 3.5; }
   else if (ab === "poison") { const [x, y] = toW(P, P.g.minX - 6, 0); W.clouds.push({ x, y, r: 36 * P.k, t: 4.5, T: 4.5 }); P.ab.poison = 7; }
   else if (ab === "zap") {
+    P.hp = Math.max(1, P.hp - P.max * .08); P.hurtT = W.t;
     for (const c of W.cr) if (c.kind === "npc" && distBody(c, P.x, P.y) < (P.g.R + 45) * P.k) { hurt(W, c, 7 * Math.pow(P.k, 1.5), P); c.stun = 1.3; }
     P.ab.zap = 8; W.ev.push({ t: "zap", x: P.x, y: P.y, r: (P.g.R + 45) * P.k });
   }
@@ -474,8 +522,9 @@ function stepWorld(W, dt, inp) {
   W.t += dt; const P = W.player, S = W.S, c0 = S.cell; S.time += dt;
   // the player swims where the stick points
   const mx = inp.mx || 0, my = inp.my || 0, m = Math.min(1, Math.hypot(mx, my));
-  if (m > .08) turnTo(P, Math.atan2(my, mx), dt, P.dash > 0 ? 1.6 : 1);
-  let sp = P.st.spd * P.k * m;
+  let face = 1;
+  if (m > .08) { const want = Math.atan2(my, mx); face = .35 + .65 * Math.max(0, Math.cos(wrapA(want - P.a))); turnTo(P, want, dt, P.dash > 0 ? 1.6 : 1); }
+  let sp = P.st.spd * P.k * m * face;
   if (P.dash > 0) { P.dash -= dt; sp = Math.max(sp * 2.6, P.st.spd * P.k * 2.2); }
   accel(P, sp, dt);
   for (const k in P.ab) if (P.ab[k] > 0) P.ab[k] -= dt;
@@ -498,14 +547,18 @@ function stepWorld(W, dt, inp) {
     if (d2(W.mate, P) > (V * 3) ** 2) { const [x, y] = spot(W, V * .9, V * 1.3); W.mate.x = x; W.mate.y = y; }
     if (W.mateCool <= 0 && distBody(W.mate, P.x, P.y) < P.g.R * P.k * 1.05) { W.mateCool = 2.5; W.ev.push({ t: "mate" }); }
   }
-  // glowing pods hold new parts
-  if (!W.relic && W.t >= W.nextRelic) { const [x, y] = spot(W, V * 1, V * 1.5); W.relic = { x, y, r: 6 * P.k, ph: 0 }; W.ev.push({ t: "relicSpawn" }); }
-  if (W.relic) {
-    const R = W.relic; R.ph += dt;
-    if (d2(R, P) > (V * 3.2) ** 2) { W.relic = null; W.nextRelic = W.t + 6; }
-    else if (Math.sqrt(d2(R, P)) < P.g.R * P.k + R.r) {
-      const id = pickLocked(S, W.R); if (id) { c0.unlocked.push(id); W.ev.push({ t: "relic", id }); } else { c0.dna += 15; W.ev.push({ t: "relic", id: null }); }
-      W.relic = null; W.nextRelic = W.t + (lockedParts(S).length ? 50 + W.R() * 30 : 90);
+  // glowing pods hold parts: one drifts by every so often, and beaten creatures sometimes drop one of theirs
+  if (!W.pods.some(q => q.nat) && W.t >= W.nextRelic) {
+    const [x, y] = spot(W, V * 1, V * 1.5), id = pickLocked(S, W.R) || PARTS[Math.floor(W.R() * PARTS.length)].id;
+    W.pods.push({ x, y, r: 11 * P.k, ph: 0, id, nat: true }); W.ev.push({ t: "relicSpawn" });
+  }
+  for (let i = W.pods.length - 1; i >= 0; i--) {
+    const R = W.pods[i]; R.ph += dt; if (R.life !== undefined) R.life -= dt;
+    if (d2(R, P) > (V * 3.2) ** 2 || R.life <= 0) { W.pods.splice(i, 1); if (R.nat) W.nextRelic = W.t + 6; continue; }
+    if (Math.sqrt(d2(R, P)) < P.g.R * P.k + R.r) {
+      W.pods.splice(i, 1);
+      if (!c0.unlocked.includes(R.id)) { c0.unlocked.push(R.id); W.ev.push({ t: "relic", id: R.id }); } else { c0.dna += 10; W.ev.push({ t: "relic", id: null }); }
+      if (R.nat) W.nextRelic = W.t + (lockedParts(S).length ? 45 + W.R() * 25 : 80);
     }
   }
   W.popT -= dt; if (W.popT <= 0) { W.popT = .5; populate(W, false); }
@@ -533,7 +586,7 @@ function feed(W) {
         const ex = it.x - mx, ey = it.y - my, rr = it.r + reach; if (ex * ex + ey * ey > rr * rr) continue;
         W.items.splice(i, 1);
         if (c === P) { const v = it.v * Math.min(1, (it.k / P.k) ** 2) * (ty === "both" ? .8 : 1); grow(W, v, it.ty); W.ev.push({ t: "eat", x: it.x, y: it.y, ty: it.ty, hue: it.hue }); }
-        else { c.ecd = 1.5; c.ai.food = null; break; }
+        else { c.ecd = 1.2; c.ai.food = null; c.ai.hunger = Math.max(0, c.ai.hunger - (it.ty === "meat" ? .25 : .15)); break; }
       }
     }
   }
@@ -542,31 +595,28 @@ function fight(W, L) {
   const P = W.player;
   for (const A of L) {
     if (A.kind === "mate" || A.stun > 0) continue;
-    if (A.st.bite > 0 && A.bcd <= 0) {
-      for (const mo of A.g.mouths) {
-        if (!mo.P.bite) continue;
-        const [mx, my] = toW(A, mo.x + Math.cos(mo.a) * 3, mo.y + Math.sin(mo.a) * 3), reach = 5 * A.k; let hit = null;
-        for (const B of L) {
-          if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp)) continue;
-          if (A.kind === "npc" && B !== A.ai.tg && !(B.kind === "player" && A.diet === "meat" && B.k <= A.k * 1.3 && B.k >= A.k * .45)) continue;
-          const lim = B.g.R * B.k + reach; if (Math.abs(B.x - mx) > lim || Math.abs(B.y - my) > lim) continue;
-          if (distBody(B, mx, my) < reach) { hit = B; break; }
-        }
-        if (hit) {
-          A.bcd = .85; W.how = "bite"; hurt(W, hit, A.st.bite * Math.pow(A.k, 1.5) * (hit === P ? .75 : 1), A); // a little kinder to the player
-          if (A === P && mo.P.eat === "both") grow(W, .3 * Math.min(1, (hit.k / P.k) ** 2), "meat");
-          W.ev.push({ t: "bite", x: mx, y: my, by: A === P, on: hit === P }); break;
-        }
+    if (A.st.bite > 0) A.g.biters.forEach((mo, bi) => { // every jaw (or pincer) bites on its own
+      if ((A.bcdM[bi] || 0) > W.t) return;
+      const [mx, my] = toW(A, mo.x + Math.cos(mo.a) * 3, mo.y + Math.sin(mo.a) * 3), reach = 5 * A.k; let hit = null;
+      for (const B of L) {
+        if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp)) continue;
+        if (A.kind === "npc" && B !== A.ai.tg && !(B.kind === "player" && A.diet === "meat" && B.k <= A.k * 1.3 && B.k >= A.k * .45)) continue;
+        const lim = B.g.R * B.k + reach; if (Math.abs(B.x - mx) > lim || Math.abs(B.y - my) > lim) continue;
+        if (distBody(B, mx, my) < reach) { hit = B; break; }
       }
-    }
+      if (!hit) return;
+      A.bcdM[bi] = W.t + .85; W.how = "bite"; hurt(W, hit, mo.P.bite * .9 * Math.pow(A.k, 1.5) * (hit === P ? .75 : 1), A, mx, my); // a little kinder to the player
+      if (A === P && mo.P.eat === "both") grow(W, .3 * Math.min(1, (hit.k / P.k) ** 2), "meat");
+      W.ev.push({ t: "bite", x: mx, y: my, by: A === P, on: hit === P });
+    });
     if (A.st.spk > 0) for (const s of A.g.spikes) {
       const [tx, ty] = toW(A, s.x + Math.cos(s.a) * 7, s.y + Math.sin(s.a) * 7);
       for (const B of L) {
         if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp)) continue;
         if (A.kind === "npc" && B.ai.tg !== A && !(B.kind === "player" && B.st.bite > 0)) continue; // thorns fight back against hunters, not grazers bumping by
         const lim = B.g.R * B.k; if (Math.abs(B.x - tx) > lim || Math.abs(B.y - ty) > lim) continue;
-        if ((A.spk[B.id] || 0) > W.t || distBody(B, tx, ty) > 0) continue;
-        A.spk[B.id] = W.t + .8; W.how = "spike"; hurt(W, B, s.P.spk * Math.pow(Math.min(A.k, B.k * 1.3), 1.5) * .6, A); W.ev.push({ t: "spike", x: tx, y: ty });
+        if ((A.spk[B.id] || 0) > W.t || distBody(B, tx, ty) > (s.P.wide ? 5 * A.k : 0)) continue;
+        A.spk[B.id] = W.t + .8; W.how = "spike"; hurt(W, B, s.P.spk * Math.pow(Math.min(A.k, B.k * 1.3), 1.5) * .6, A, tx, ty); W.ev.push({ t: "spike", x: tx, y: ty });
       }
     }
   }
@@ -620,7 +670,7 @@ function snd(kind) {
 }
 
 /* ---------- drawing a creature (in its own design units, facing +x) ---------- */
-const BACK = { whip: 1, fringe: 1, jet: 1, thorn: 1, stink: 1, frill: 1, feeler: 1, glow: 1 };
+const BACK = { whip: 1, fringe: 1, jet: 1, thorn: 1, stink: 1, frill: 1, feeler: 1, glow: 1, bristle: 1, paddle: 1 };
 function cols(d) {
   const l = clamp(d.l, 25, 75);
   return { fill: `hsl(${d.h} 62% ${l}%)`, hi: `hsl(${d.h} 70% ${Math.min(92, l + 22)}%)`, line: `hsl(${d.h} 55% ${Math.max(8, l - 30)}%)`,
@@ -766,14 +816,41 @@ function drawPart(ctx, q, d, g, t, C, mv, o, noJaw) {
       const gl = ctx.createRadialGradient(11, ey, 0, 11, ey, 10); gl.addColorStop(0, "rgba(190,255,240,.75)"); gl.addColorStop(1, "rgba(120,255,220,0)"); ctx.fillStyle = gl; ctx.fillRect(1, ey - 10, 20, 20);
       ctx.fillStyle = "#EFFFF8"; ctx.beginPath(); ctx.arc(11, ey, 2.4, 0, TAU); ctx.fill(); break;
     }
+    case "pincer": {
+      const op = .6 + .5 * Math.sin(t * 5 + q.y); ctx.fillStyle = `hsl(${d.h2} 45% 50%)`; ctx.strokeStyle = `hsl(${d.h2} 45% 18%)`; ctx.lineWidth = .9;
+      ctx.beginPath(); ctx.ellipse(2.5, 0, 3.5, 2.6, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      for (const sg of [-1, 1]) { ctx.save(); ctx.translate(5, sg * .8); ctx.rotate(sg * op * .5); ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(5, sg * 3.5, 8.5, sg * .4); ctx.quadraticCurveTo(5, sg * 1.4, 0, sg * -1); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+      break;
+    }
+    case "bristle": {
+      ctx.strokeStyle = "#EDE3CF"; ctx.lineWidth = .9;
+      for (let j = -3; j <= 3; j++) { ctx.beginPath(); ctx.moveTo(-1, j * 1.7); ctx.lineTo(5 + (j & 1) * 1.5, j * 2.4); ctx.stroke(); }
+      break;
+    }
+    case "paddle": {
+      ctx.rotate(Math.sin(t * 6) * .25 * (mv + .2)); ctx.fillStyle = `hsla(${d.h2} 65% 58% / .9)`; ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-1, -1.5); ctx.quadraticCurveTo(6, -6.5, 13, -2.5); ctx.quadraticCurveTo(15, 0, 13, 2.5); ctx.quadraticCurveTo(6, 6.5, -1, 1.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); for (const y of [-2.5, 0, 2.5]) { ctx.moveTo(1, y * .4); ctx.lineTo(12, y); } ctx.stroke(); break;
+    }
+    case "clear": {
+      ctx.fillStyle = "rgba(225,250,255,.35)"; ctx.strokeStyle = "rgba(225,250,255,.6)"; ctx.lineWidth = .7;
+      ctx.beginPath(); ctx.ellipse(-4.5, 0, 3.6, 5, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.beginPath(); ctx.arc(-5.5, -2, .8, 0, TAU); ctx.fill(); break;
+    }
   }
   ctx.restore();
+}
+const PODI = {};
+function podIcon(id) {
+  if (PODI[id]) return PODI[id]; const P = PART[id], a = P.cat === "eye" && id !== "stalk" ? -.6 : P.cat === "move" ? Math.PI : id === "shell" || id === "frill" || id === "clear" ? -1.4 : 0;
+  const d = { s: [6], p: [{ id, s: 0, a, m: false }], h: 268, l: 62, h2: 190, pat: 0, edge: 0 };
+  return PODI[id] = { d, g: geom(d), ox: P.cat === "move" ? 6 : P.cat === "eye" ? 0 : -4 };
 }
 function partIcon(cv, id, d) {
   const ctx = cv.getContext("2d"), dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = 72 * dpr; cv.height = 52 * dpr;
   ctx.setTransform(dpr * 2, 0, 0, dpr * 2, 0, 0); ctx.clearRect(0, 0, 36, 26);
   const P = PART[id], dd = { s: [8], p: [], h: d.h, l: d.l, h2: d.h2, pat: 0, edge: 0 }, eye = P.cat === "eye" && id !== "stalk";
-  const a = eye ? -.6 : P.cat === "move" ? Math.PI : id === "shell" || id === "frill" ? -1.3 : 0;
+  const a = eye ? -.6 : P.cat === "move" ? Math.PI : id === "shell" || id === "frill" || id === "clear" ? -1.3 : 0;
   dd.p.push({ id, s: 0, a, m: false }); const g = geom(dd);
   ctx.translate(id === "whip" || P.cat === "move" ? 24 : 13, 13); if (id === "shell" || id === "frill") ctx.translate(5, 5);
   drawCreature(ctx, dd, g, 1.2, { mv: .4 });
@@ -871,7 +948,8 @@ function helpDlg() {
     <p><b>Swim:</b> put your thumb anywhere and drag. Your cell swims that way.</p>
     <p><b>Eat:</b> steer your mouth into food. Filter mouths and siphons eat the green bits; jaws bite creatures and eat the red bits.</p>
     <p><b>Grow:</b> eating fills the green bar. When it's full, find your mate (❤ at the edge of the screen) to evolve and grow a size bigger. Five sizes finish the cell stage.</p>
-    <p><b>Evolve:</b> your mate also lets you spend DNA 🧬 on new parts. Glowing pods ✦ hold parts you haven't found yet.</p>
+    <p><b>Evolve:</b> your mate also lets you spend DNA 🧬 on new parts. Every part does something where you put it, good and bad: tails only push when they point backwards, each jaw bites on its own, shells only guard their own side, and everything adds weight.</p>
+    <p><b>Pods:</b> glowing pods ✦ hold a body part (you can see which). Beaten creatures sometimes drop one of theirs. Grab them and use them if you want to.</p>
     <p><b>Danger:</b> creatures with jaws and a red glow are hunting you. Swim away: they give up after a few seconds. You heal when you've been left alone for a bit.</p>
     <div class="row"><button class="btn primary" data-a="ok">Got it</button></div>`, { ok: () => { if (W && !W.over && view === "play") pause(); else closeDlg(); } }, () => { if (W && view === "play") pause(); else closeDlg(); });
 }
@@ -912,7 +990,7 @@ function hints() {
   if (!W) return; const P = W.player;
   if (W.t > .5) hint(0, "Put your thumb anywhere and drag to swim.", 5);
   if (W.t > 6) hint(1, P.st.eat.plant ? "Steer your mouth into the green bits to eat them." : "Bite smaller creatures with your jaw, then eat the red bits.", 7);
-  if (W.relic && W.t > 12) hint(2, "A glowing pod ✦! Grab it to find a new body part.", 6);
+  if (W.pods.length && W.t > 12) hint(2, "A glowing pod ✦ with a body part inside! Grab it, then use the part next time you evolve, if you like.", 7);
   if (W.mate && W.t > 12) hint(3, "Your mate ❤ is near. Swim to them to evolve: spend DNA 🧬 on parts.", 7);
   if (W.t > 40) hint(4, "Creatures with a red glow are hunting you. Swim away: they soon give up.", 7);
 }
@@ -927,7 +1005,7 @@ function handleEvents() {
     else if (e.t === "kill") { snd("kill"); for (let i = 0; i < 14; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90 * e.k, vy: (Math.random() - .5) * 90 * e.k, life: .8, col: `hsl(${e.h} 70% 60%)`, r: 2.4 * e.k }); }
     else if (e.t === "bite") { for (let i = 0; i < 3; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 50 * P.k, vy: (Math.random() - .5) * 50 * P.k, life: .35, col: "#FF6B7E", r: 1.6 * P.k }); }
     else if (e.t === "ready") { snd("grow"); toast("Fully grown! Find your mate ❤ to evolve and get bigger."); }
-    else if (e.t === "relic") { snd("relic"); toast(e.id ? `New part found: ${PART[e.id].n}! Use it next time you evolve.` : "A DNA pod: +15 🧬"); }
+    else if (e.t === "relic") { snd("relic"); toast(e.id ? `New part: ${PART[e.id].n}! It's in your builder next time you evolve.` : "You already have that part: +10 DNA 🧬"); }
     else if (e.t === "mateSpawn") { snd("mate"); }
     else if (e.t === "mate") { openEditor(); }
     else if (e.t === "zap") { snd("zap"); fx.push({ ty: "ring", x: e.x, y: e.y, r: e.r, life: .35 }); }
@@ -1000,10 +1078,11 @@ function draw(dt) {
     }
   }
   // the pod
-  if (W.relic) { const R = W.relic, X = R.x * s + ox, Y = R.y * s + oy, r = R.r * s;
-    const gr = ctx.createRadialGradient(X, Y, 0, X, Y, r * 3); gr.addColorStop(0, "rgba(215,174,255,.6)"); gr.addColorStop(1, "rgba(215,174,255,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, r * 3, 0, TAU); ctx.fill();
-    ctx.save(); ctx.translate(X, Y); ctx.rotate(t); ctx.fillStyle = "#E9D2FF"; ctx.strokeStyle = "#7B46C4"; ctx.lineWidth = 2; ctx.beginPath();
-    for (let j = 0; j < 6; j++) { const a = j / 6 * TAU, rr = j % 2 ? r * .7 : r; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+  for (const R of W.pods) { if (!onS(R.x, R.y, R.r * 3)) continue; const X = R.x * s + ox, Y = R.y * s + oy, r = R.r * s * (1 + .06 * Math.sin(t * 3 + R.ph)), have = S.cell.unlocked.includes(R.id);
+    if (R.life !== undefined && R.life < 6 && Math.floor(t * 6) % 2) continue;
+    const gr = ctx.createRadialGradient(X, Y, 0, X, Y, r * 2.6); gr.addColorStop(0, have ? "rgba(200,220,255,.35)" : "rgba(215,174,255,.6)"); gr.addColorStop(1, "rgba(215,174,255,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, r * 2.6, 0, TAU); ctx.fill();
+    ctx.fillStyle = "rgba(30,14,60,.55)"; ctx.strokeStyle = have ? "#AFC4FF" : "#D7AEFF"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, r, 0, TAU); ctx.fill(); ctx.stroke();
+    const ic = podIcon(R.id); ctx.save(); ctx.translate(X, Y); ctx.scale(r / 12, r / 12); ctx.translate(ic.ox, 0); drawCreature(ctx, ic.d, ic.g, t, { mv: .4 }); ctx.restore(); }
   // creatures (the player on top)
   for (const c of [...W.cr, P]) {
     if (!onS(c.x, c.y, c.g.R * c.k * 2.2)) continue;
@@ -1032,7 +1111,7 @@ function draw(dt) {
     ctx.font = "16px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(icon, 0, 1); ctx.restore();
   };
   if (W.mate) edge(W.mate.x, W.mate.y, "❤", "#FF8CC6");
-  if (W.relic) edge(W.relic.x, W.relic.y, "✦", "#D7AEFF");
+  { let near = null, nd = 1e18; for (const R of W.pods) { if (S.cell.unlocked.includes(R.id)) continue; const dd = d2(R, P); if (dd < nd) { nd = dd; near = R; } } if (near) edge(near.x, near.y, "✦", "#D7AEFF"); }
 }
 function hud() {
   const P = W.player, c = S.cell, T = TIERS[c.tier];
@@ -1066,7 +1145,7 @@ function refreshEditor() {
   $("eDone").textContent = c.ready ? "Grow ▲" : "Done";
   const diet = dietOf(st), dt = { plant: "🌿 Eats plants", meat: "🦷 Eats meat", both: "🌿🦷 Eats plants and meat", none: "⚠ No mouth: it can't eat!" }[diet];
   const bar = (n, v) => `<div>${n}<i><u style="width:${Math.round(clamp(v, 0, 1) * 100)}%"></u></i></div>`;
-  $("eStats").innerHTML = bar("Speed", (st.spd - 25) / 90) + bar("Turning", (st.turn - 2.6) / 4.5) + bar("Health", st.hp / 60) + bar("Bite", st.bite / 9.5) + bar("Defence", st.arm / .55 * .6 + Math.min(1, st.spk / 25) * .4) + bar("Sight", (st.view - 140) / 90)
+  $("eStats").innerHTML = bar("Speed", (st.spd - 25) / 90) + bar("Turning", (st.turn - 2.6) / 4.5) + bar("Health", st.hp / 60) + bar("Bite", st.bite / 14) + bar("Defence", Math.min(1, st.shells / 3) * .6 + Math.min(1, st.spk / 25) * .4) + bar("Sight", (st.view - 140) / 90)
     + `<div class="diet${diet === "none" ? " no" : ""}">${dt}${Object.keys(st.ab).length ? " · " + Object.keys(st.ab).map(k => AB[k][0] + " " + AB[k][1]).join(" ") : ""}</div>`;
   renderSel(); if (ED.tab !== "look" && ED.tab !== "body") updateCards();
 }
@@ -1113,8 +1192,8 @@ function renderTray() {
 function updateCards() { const left = edLeft(); $("eTray").querySelectorAll(".card:not(.locked)").forEach(b => b.classList.toggle("cant", PART[b.dataset.id].c > left)); }
 function addPart(id) {
   const d = ED.d, P = PART[id], L = d.s.length - 1, same = d.p.filter(q => q.id === id).length;
-  const spots = { mouth: [0, 0], move: id === "whip" ? [L, Math.PI] : id === "jet" ? [L, 2.7] : [L, -2.1], fight: id === "thorn" ? [Math.min(1, L), -1.9] : id === "shell" ? [0, -1.7] : id === "stink" ? [L, 2.8] : [0, -1.2],
-    eye: [0, -.75], extra: id === "frill" ? [L, -2] : id === "glow" ? [0, -.15] : [0, -.35] }[P.cat];
+  const spots = { mouth: [0, 0], move: id === "whip" ? [L, Math.PI] : id === "jet" ? [L, 2.7] : id === "paddle" ? [L, 2.45] : [L, -2.1], fight: id === "thorn" ? [Math.min(1, L), -1.9] : id === "shell" ? [0, -1.7] : id === "stink" ? [L, 2.8] : id === "pincer" ? [0, .55] : id === "bristle" ? [L, -2.2] : [0, -1.2],
+    eye: [0, -.75], extra: id === "frill" ? [L, -2] : id === "glow" ? [0, -.15] : id === "clear" ? [0, -1.5] : [0, -.35] }[P.cat];
   let a = spots[1] + (same ? (same % 2 ? .45 : -.45) * Math.ceil(same / 2) * (spots[1] < 0 ? 1 : -1) : 0);
   if (P.cat === "mouth" && same) a = (same % 2 ? 1 : -1) * .55;
   const q = { id, s: spots[0], a: wrapA(a), m: Math.abs(Math.sin(a)) > .2 && P.cat !== "mouth" && id !== "glow" };
@@ -1128,7 +1207,7 @@ function renderSel() {
   const box = $("eSel"); if (ED.sel == null || !ED.d.p[ED.sel]) { box.hidden = true; $("eHelp").hidden = false; return; }
   const q = ED.d.p[ED.sel], P = PART[q.id], canM = Math.abs(Math.sin(q.a)) > .08;
   box.hidden = false; $("eHelp").hidden = true;
-  box.innerHTML = `<div class="t"><b>${P.n}${q.m && canM ? " ×2" : ""}</b>${canM ? `<button class="btn small" id="sM">${q.m ? "Mirrored ⟷" : "Mirror ⟷"}</button>` : ""}<button class="btn small bad" id="sDel">Remove</button></div><p>${P.info}</p>`;
+  box.innerHTML = `<div class="t"><b>${P.n}${q.m && canM ? " ×2" : ""}</b>${canM ? `<button class="btn small" id="sM">${q.m ? "Mirrored ⟷" : "Mirror ⟷"}</button>` : ""}<button class="btn small bad" id="sDel">Remove</button></div><p>👍 ${P.good}</p>${P.bad ? `<p>👎 ${P.bad}</p>` : ""}`;
   if (canM) $("sM").onclick = () => { const after = cloneD(ED.d); after.p[ED.sel].m = !q.m;
     if (!q.m && (stats(after).parts > partLimit(S.cell.tier) || designValue(after) - designValue(ED.d0) > S.cell.dna)) { toast("Not enough DNA or room for a second one."); return; }
     q.m = !q.m; refreshEditor(); };

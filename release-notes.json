@@ -354,6 +354,18 @@
         "Play Normal (come back when you're eaten) or Hardcore (one life only).",
         "This is the cell stage. The sea stage, and the stages after it, come in later updates."
       ]
+    },
+    {
+      "id": 33,
+      "type": "features",
+      "headline": "Life: smarter creatures and parts that matter",
+      "details": [
+        "The other creatures don't swim in circles any more: plant eaters graze and stick together, and hunters get hungry, chase prey their size, switch to a better meal if one swims past, then eat what they catch.",
+        "Every body part now does something where you put it, good and bad. Tails only push when they point backwards, each jaw bites on its own, shells only protect their own side, and every part adds weight.",
+        "Tap a part in the builder to see what it's good and bad at.",
+        "Glowing pods show which part is inside, and creatures you beat sometimes drop one of their own parts. Pick them up and use them if you like.",
+        "Four new parts to find: Pincer, Bristles, Paddle and Clear skin."
+      ]
     }
   ]
 }
