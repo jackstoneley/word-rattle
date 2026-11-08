@@ -61,7 +61,11 @@ jobs:
 
       - name: Build APK
         working-directory: android-app/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        # Gradle's download site is sometimes slow: allow 2 minutes instead of 10 seconds, and try up to three times.
+        run: |
+          sed -i 's/^networkTimeout=.*/networkTimeout=120000/' gradle/wrapper/gradle-wrapper.properties
+          for i in 1 2 3; do ./gradlew assembleDebug --no-daemon --stacktrace && exit 0; echo "Build attempt $i failed; retrying in 20 s"; sleep 20; done
+          exit 1
 
       - name: Publish to the "latest" release
         env:
