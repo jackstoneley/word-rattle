@@ -1912,7 +1912,7 @@ cv.addEventListener("pointerdown", e => {
 cv.addEventListener("pointermove", e => {
   if (W && W.land) return landMoveP(e);
   if (e.pointerId !== stickId) return; let dx = e.clientX - sx0, dy = e.clientY - sy0; const R = 50, d = Math.hypot(dx, dy);
-  if (d > R) { sx0 += dx / d * (d - R); sy0 += dy / d * (d - R); dx = e.clientX - sx0; dy = e.clientY - sy0; const st = $("stick"); st.style.left = sx0 + "px"; st.style.top = sy0 + "px"; }
+  if (d > R) { dx *= R / d; dy *= R / d; } // the stick stays where your thumb first landed; past the rim is full speed that way
   inp.mx = dx / R; inp.my = dy / R; $("knob").style.transform = `translate(${dx}px,${dy}px)`; moved += 1;
 });
 const endStick = e => { if (W && W.land) return landUp(e); if (e.pointerId !== stickId) return; stickId = null; inp.mx = inp.my = 0; $("stick").hidden = true; };

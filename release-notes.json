@@ -444,6 +444,15 @@
         "If a tree or hill is in front of you, you show through it as a faint outline.",
         "Pinch or use + and - to zoom, and drag to look around, as before. On an older phone the picture gets a little softer to keep things smooth."
       ]
+    },
+    {
+      "id": 40,
+      "type": "fixes",
+      "headline": "Life: the thumb stick stays put",
+      "details": [
+        "In the cell and sea stages the thumb stick now stays where you first put your thumb, instead of following it round the screen.",
+        "Push past the edge of the ring for full speed in that direction."
+      ]
     }
   ]
 }
