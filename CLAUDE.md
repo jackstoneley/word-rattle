@@ -285,6 +285,14 @@ A creature is a design `{s: [segment radii, head first], p: [{id, s: segment, a:
 pat, edge}`; `geom` places the parts, `stats` turns them into speed, bite, health, sight and so on, `designValue` is its DNA
 price. Every creature in the pond is drawn from the same parts (`randomDesign`, per-save `species(tier, i)`: 0-2 plant
 eaters, 3-4 hunters, 5 both), so carnivores are built scary (jaws, slit eyes, spiky skin, dark reds) and grazers cute.
+Parts act where they sit (`stats`, `fight`, `guardAt`): `push` parts (tails, jet, paddle) only push when pointing backwards,
+every biter (`g.biters`: jaws, siphon, pincer) bites on its own cooldown, shells soften bites near them and stalk eyes are weak
+spots, every part has weight `w`, and `good`/`bad` text shows in the builder. Computer creatures (`scan`, `think`) have
+`hunger`: grazers eat and school with their kind, hunters pick prey by size and distance, switch to clearly better prey,
+sprint after other creatures (not the player), then eat. `steer` eases off when facing away, so nothing circles.
+Pods (`W.pods`) carry a visible part id; beaten creatures can drop one of their own parts.
+Sea stage plan (agreed): live action still, no songs or friendship mini-game; species mostly don't get along; diet can drift
+(an omnivore stage you pass through on the way to herbivore or carnivore).
 Sizes: `TIERS` (growth needed per size), world scale `KT(t)` = 1.7^t; the camera zooms out as you grow. Eating fills
 `cell.grow`; when full (`ready`) the mate appears and evolving with it grows a size (`applyEvolve`); finishing the last size
 sets `cell.done` and `S.nature` (hunter / grazer / forager from what was eaten), to carry into the sea stage.

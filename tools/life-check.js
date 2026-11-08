@@ -36,7 +36,7 @@ function bot(W, diet, inp) {
   }
   if (fx || fy) { const n = Math.hypot(fx, fy); inp.mx = fx / n; inp.my = fy / n; if (P.st.ab.dash) inp.ab = "dash"; if (P.st.ab.zap) inp.ab = "zap"; return; }
   if (W.mate && (c.ready || c.dna >= 25)) { tx = W.mate.x; ty = W.mate.y; }
-  else if (W.relic && Math.hypot(W.relic.x - P.x, W.relic.y - P.y) < V * 1.6) { tx = W.relic.x; ty = W.relic.y; }
+  else if (W.pods.length && Math.hypot(W.pods[0].x - P.x, W.pods[0].y - P.y) < V * 1.6) { tx = W.pods[0].x; ty = W.pods[0].y; }
   else {
     for (const it of W.items) { if ((it.ty === "plant") !== P.st.eat.plant > 0 && !(P.st.eat.plant && P.st.eat.meat)) continue; const dd = (it.x - P.x) ** 2 + (it.y - P.y) ** 2; if (dd < best) { best = dd; tx = it.x; ty = it.y; } }
     if (P.st.bite) for (const o of W.cr) if (o.kind === "npc" && o.k < P.k * .9) { const dd = ((o.x - P.x) ** 2 + (o.y - P.y) ** 2) * 1.5; if (dd < best) { best = dd; tx = o.x; ty = o.y; } }
