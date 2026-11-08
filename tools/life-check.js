@@ -105,6 +105,8 @@ function landBot(W, diet, B) {
   // a landmark close by (or nothing else worth doing) is worth the walk
   let mk = null, md = (LT * 30) ** 2; for (const m of W.marks) if (!c.found[m.id]) { const d = (m.x - P.x) ** 2 + (m.y - P.y) ** 2; if (d < md) { md = d; mk = m; } }
   if (mk && (!best || md < bd * .5)) { C.landGo(W, mk.x, mk.y); return; }
+  // an unguarded nest is worth raiding
+  for (const Ls of W.lsp) if (Ls.life === "home" && !(c.nests || {})[Ls.i] && C.lspStatus(c, Ls.i) !== "friend" && !W.cr.some(q => q.lsp === Ls.i && Math.hypot(q.x - Ls.x, q.y - Ls.y) < LT * 7) && Math.hypot(Ls.x - P.x, Ls.y - P.y) < LT * 40) { C.landGo(W, Ls.x, Ls.y); return; }
   if (best) C.landGoTo(W, best);
 }
 function landMeet(W, diet, T) {
@@ -152,20 +154,22 @@ for (const [diet, seed, S] of grown) {
   seaOut.push(`${diet} ${min} min (${c.deaths} deaths)`);
   // and the land
   C.goToLand(S); const t1 = S.time, LW = C.newWorld(S, seed + 200), L = S.land, B = { evoT: 0 };
-  let lg = 0, dead = 0;
+  let lg = 0, dead = 0, rally = 0, scatter = 0, nests = 0;
   while (!L.done && S.time - t1 < 9000 && lg++ < 9000 * 20) {
     landBot(LW, diet, B); C.stepWorld(LW, 1 / 20, {});
     for (const e of LW.ev) {
       if (e.t === "mate") { evolve(LW, diet); B.evoT = LW.t; }
       if (e.t === "meet") landMeet(LW, diet, e.c);
       if (e.t === "die") { dead++; L.deaths++; C.respawn(LW); }
+      if (e.t === "rally") rally++; if (e.t === "scatter") scatter++; if (e.t === "nestWon") nests++;
     }
     LW.ev.length = 0;
   }
   const lmin = Math.round((S.time - t1) / 60), fr = LW.lsp.filter(x => C.lspStatus(L, x.i) === "friend").length, gone = LW.lsp.filter(x => C.lspStatus(L, x.i) === "gone").length;
   if (!L.done) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) didn't finish the land stage in 150 min (brain ${Math.round(L.grow)}, ${fr} friends, ${gone} hunted out)`); continue; }
   if (lmin < 15) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) finished the land stage in ${lmin} min: too quick`); }
-  landOut.push(`${diet} ${lmin} min (${fr} befriended, ${gone} hunted, ${dead} deaths)`);
+  landOut.push(`${diet} ${lmin} min (${fr} befriended, ${gone} hunted, ${nests} nests raided, ${dead} deaths)`);
+  if (verbose) console.log("land groups", diet, seed, "rallied", rally, "scattered", scatter);
   if (verbose) console.log("land", diet, seed, "done", lmin, "min; friends", fr, "hunted", gone, "epics", JSON.stringify(L.epics), "deaths", dead, "evolves", L.evolves, "dna", Math.round(L.dna), "lean", L.lean.toFixed(2), "nature", S.landNature);
   if (verbose) console.log("sea", diet, seed, "sizes at", sizeAt.join(", "), "min; done", min, "min; deaths", c.deaths, "kills", c.kills, "goals", Object.keys(c.goals).join(" "), "lean", c.lean.toFixed(2), "young", c.young, "dna left", Math.round(c.dna));
 }

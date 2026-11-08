@@ -321,7 +321,9 @@ within `sightR`; creatures show only within sight; `S.land.met` lists species me
 in the water; the player and pack don't collide with animals (no deadlocks). Twelve species (`LSPEC`: diet, size, `life`
 herd / pack / solo / home, biomes, extras) plus two giants. Herds and packs follow a leader along a `route` (`W.lead`),
 herds panic together, packs share a target; solo animals keep their own `homes`; home animals defend their nest
-(`scanLand`). Befriend: impress three *different* members (`wooed`); hunt four to drive a species out (`lspStatus`).
+(`scanLand`). Each species has a `temper` (`TEMPER`, `POW` damage/health multipliers): flee, defend or aggro; `landAlarm` makes the
+whole group near the victim answer an attack (or a hunt starting, or aggro ones being approached) together. Home nests: walking
+into one with no guards left calls `nestWon` (`S.land.nests[i]`, `NEST_DNA`, brain +4, eggs or a part pod). Befriend: impress three *different* members (`wooed`); hunt four to drive a species out (`lspStatus`).
 Brain: species +8, giants +12, landmarks +3, food a little; 100 finishes (`done`, `S.landNature`). Impress: `impressPlan`,
 `socialQ` (call = voice, dance = legs, show = crest/frill/wing, pose = horns/armour/size), win at 60% (giants 70%).
 Fights: `landHunt`, `landFight`, `landMove` (`LMOVES`). Pack: young (`pack`, `packMax`) and joiners (`joined`) follow

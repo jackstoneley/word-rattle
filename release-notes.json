@@ -453,6 +453,18 @@
         "In the cell and sea stages the thumb stick now stays where you first put your thumb, instead of following it round the screen.",
         "Push past the edge of the ring for full speed in that direction."
       ]
+    },
+    {
+      "id": 41,
+      "type": "features",
+      "headline": "Life: tougher animals that stick together",
+      "details": [
+        "Every kind of animal on the island now has a temperament, shown when you meet one: shy ones all run when trouble starts, defenders all turn on whoever attacks one of them, and aggressive ones come for you if you get close.",
+        "Groups act together: hunt one and the rest of its herd, pack or nest either scatters or gangs up on you.",
+        "Defenders and aggressive kinds hit much harder and take more beating, so pick your fights and bring your pack.",
+        "Nests: empty an animal's nest (drive them off or beat them) and walk in to claim it, for DNA, a little brain, and eggs or a new part.",
+        "Fewer trees in the woods, and taller ones, so it's easier to see what's going on under them."
+      ]
     }
   ]
 }
