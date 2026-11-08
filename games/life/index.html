@@ -104,7 +104,7 @@ h1 span{color:var(--accent)}
 .lb{pointer-events:auto;min-width:68px;height:62px;border-radius:16px;background:rgba(4,22,29,.88);border:2px solid rgba(124,242,200,.55);font-size:1.45rem;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;position:relative}
 .lb small{font-size:.66rem;font-weight:800;margin-top:3px;color:var(--ink)}
 .lb.mv::after{content:"";position:absolute;inset:-2px;border-radius:16px;background:conic-gradient(rgba(4,22,29,.75) calc(var(--cd,0)*360deg),transparent 0)}
-.lside{position:absolute;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 120px);display:flex;flex-direction:column;gap:8px}
+.lside{position:absolute;left:12px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 170px);display:flex;flex-direction:column;gap:8px}
 .lside .on{background:var(--warn);color:#000}
 .imp{position:absolute;left:0;right:0;bottom:0;padding:12px 12px max(16px,env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(4,22,29,.94) 30%);display:flex;flex-direction:column;align-items:center;gap:10px}
 .imsg{font-weight:800;text-align:center;font-size:1rem;text-shadow:0 1px 3px #000}
@@ -947,7 +947,7 @@ const TSPD = [0, .85, 1, .8, .55, .65, 0, 0, 0, .45, .55, .95, .7];
 const TNAME = ["sea", "beach", "meadow", "forest", "swamp", "hills", "cliffs", "lava", "lake", "river", "snowy peaks", "dry scrub", "jungle"];
 const SOC = [["call", "🎵", "Call"], ["dance", "💃", "Dance"], ["show", "🦚", "Show off"], ["pose", "💪", "Pose"]];
 const LMOVES = { charge: ["💥", "Charge", 5], pounce: ["🐾", "Pounce", 4], spit: ["💦", "Spit", 3], roar: ["📣", "Roar", 8] };
-/* The island's species: diet, size, how they live, and where. Brain: each species 7, each giant 10, each landmark 2. */
+/* The island's species: diet, size, how they live, and where. Brain: each species 8, each giant 12, each landmark 3. */
 const LSPEC = [
   { diet: "plant", tier: 0, life: "home", n: 5, bio: [T_GRASS, T_FOREST] },
   { diet: "plant", tier: 1, life: "herd", n: 6, bio: [T_GRASS, T_SCRUB] },
@@ -1145,7 +1145,7 @@ function reveal(W) {
   const c = cur(W.S); c.met = c.met || {};
   for (const q of W.cr) if (q.kind === "npc" && q.lsp != null && !c.met[q.lsp] && Math.hypot(q.x - P.x, q.y - P.y) < r) c.met[q.lsp] = 1;
   for (const mk of W.marks) if (!c.found[mk.id] && Math.hypot(mk.x - P.x, mk.y - P.y) < LT * 3.5) {
-    c.found[mk.id] = 1; c.dna += 15; brain(W, 2); W.ev.push({ t: "found", n: mk.name, id: mk.id });
+    c.found[mk.id] = 1; c.dna += 15; brain(W, 3); W.ev.push({ t: "found", n: mk.name, id: mk.id });
     if (mk.id === "bones") for (let k = 0; k < 2; k++) { const id = pickLocked(W.S, W.R); if (id) W.pods.push({ x: mk.x + (k - .5) * 60, y: mk.y + 30, r: 14, ph: 0, id }); }
   }
 }
@@ -1234,11 +1234,11 @@ function impressEnd(W, T, frac) {
   if (win && T.wooed) { W.ev.push({ t: "impress", win, again: true }); return win; }
   if (win) {
     T.wooed = true; c.dna += 8;
-    if (epic) { if (!c.epics[T.epic]) { c.epics[T.epic] = "friend"; brain(W, 10); W.ev.push({ t: "epicFriend", n: T.epicName }); } }
+    if (epic) { if (!c.epics[T.epic]) { c.epics[T.epic] = "friend"; brain(W, 12); W.ev.push({ t: "epicFriend", n: T.epicName }); } }
     else {
       c.friends[T.lsp] = (c.friends[T.lsp] || 0) + 1;
       if (c.friends[T.lsp] === FRIEND_NEED) {
-        brain(W, 7); W.ev.push({ t: "friend", n: W.lsp[T.lsp].name });
+        brain(W, 8); W.ev.push({ t: "friend", n: W.lsp[T.lsp].name });
         if (W.cr.filter(q => q.kind === "ally").length < 6) { const L = W.lsp[T.lsp]; addAllyLand(W, L.d, L.k * .9, T.lsp); c.joined.push(T.lsp); W.ev.push({ t: "joined", n: L.name }); }
       }
     }
@@ -1258,9 +1258,9 @@ function landKilled(W, B, src) {
   const c = cur(W.S), mine = src === W.player || (src && src.kind === "ally"); if (!mine) return;
   if (B.lsp != null && lspStatus(c, B.lsp) == null) {
     c.hunted[B.lsp] = (c.hunted[B.lsp] || 0) + 1; c.dna += 5;
-    if (c.hunted[B.lsp] === HUNT_NEED) { brain(W, 7); W.ev.push({ t: "extinct", n: W.lsp[B.lsp].name }); W.cr = W.cr.filter(q => q.kind !== "npc" || q.lsp !== B.lsp); }
+    if (c.hunted[B.lsp] === HUNT_NEED) { brain(W, 8); W.ev.push({ t: "extinct", n: W.lsp[B.lsp].name }); W.cr = W.cr.filter(q => q.kind !== "npc" || q.lsp !== B.lsp); }
   }
-  if (B.epic != null && !c.epics[B.epic]) { c.epics[B.epic] = "gone"; brain(W, 10); c.dna += 40; W.ev.push({ t: "epicDown", n: B.epicName }); }
+  if (B.epic != null && !c.epics[B.epic]) { c.epics[B.epic] = "gone"; brain(W, 12); c.dna += 40; W.ev.push({ t: "epicDown", n: B.epicName }); }
 }
 function landEat(W, v, ty, x, y) {
   const c = cur(W.S), P = W.player, lean = ty === "meat" ? c.lean : -c.lean; v *= .75 + .45 * lean;
@@ -1419,7 +1419,8 @@ function stepLand(W, dt) {
   W.trailT -= dt; if (W.trailT <= 0 && (!W.trail.length || Math.hypot(W.trail[0][0] - P.x, W.trail[0][1] - P.y) > 10)) { W.trailT = .15; W.trail.unshift([P.x, P.y]); if (W.trail.length > 80) W.trail.pop(); }
   for (const q of W.cr) { if (q.kind === "npc") thinkLand(W, q, dt); else if (q.kind === "ally") allyLand(W, q, dt); }
   for (const q of L) if (q.inv > 0) q.inv -= dt;
-  collide(W, L); L.forEach((q, i) => { if (!passXY(W, q.x, q.y)) { q.x = px[i]; q.y = py[i]; } if (!passXY(W, q.x, q.y)) toLand(W, q); });
+  collide(W, W.cr.filter(q => q.kind === "npc")); // you and your pack step round other animals rather than getting stuck behind them
+  L.forEach((q, i) => { if (!passXY(W, q.x, q.y)) { q.x = px[i]; q.y = py[i]; } if (!passXY(W, q.x, q.y)) toLand(W, q); });
   landFight(W);
   for (const s of W.shots) {
     s.life -= dt; const T = s.tg; if (T.dead) { s.life = 0; continue; }
@@ -2384,7 +2385,7 @@ function landDone() {
 }
 
 /* ---------- the land: a tilted, 3D-style view of the island ---------- */
-const TPX = 6, TILT = .62;
+const TPX = 8, TILT = .62;
 const TCOL = [[38, 98, 160], [232, 214, 160], [128, 182, 88], [72, 128, 64], [92, 120, 86], [150, 140, 100], [112, 106, 98], [226, 88, 46], [58, 120, 170], [80, 150, 190], [236, 242, 248], [196, 176, 118], [46, 120, 66]];
 let LTC = null, ENC = null, IMP = null, CALL = false, BIRDS = [], BUGS = [];
 /* The ground, painted once per island: biome colours blended smoothly, hills shaded by the light from the top left,
@@ -2400,8 +2401,10 @@ function landTerrain() {
     const h = H(x0, y0) * w[0] + H(x0 + 1, y0) * w[1] + H(x0, y0 + 1) * w[2] + H(x0 + 1, y0 + 1) * w[3];
     const gx = (H(x0 + 1, y0) - H(x0 - 1, y0)) * (1 - ax) + (H(x0 + 2, y0) - H(x0, y0)) * ax, gy = (H(x0, y0 + 1) - H(x0, y0 - 1)) * (1 - ay) + (H(x0, y0 + 2) - H(x0, y0)) * ay;
     let sh = 1 + clamp((-gx - gy) * 2.2, -.32, .32);
-    if (sea > .5) { const dpt = clamp(-h * 2.2, 0, .5); sh = 1 - dpt; if (sea < .85) { r += 60; g += 60; b += 40; } } // shallows and foam
-    else if (sea > .15) { r = r * .6 + 255 * .4; g = g * .6 + 255 * .4; b = b * .6 + 250 * .4; sh = 1; }
+    const hn = h, landish = sea < .99 && hn > -.004;
+    if (sea > 0 && !landish) { const dpt = clamp(-h * 2.2, 0, .5), sc = TCOL[0]; r = sc[0]; g = sc[1]; b = sc[2]; sh = 1 - dpt; if (h > -.05) { r += 50; g += 55; b += 35; } } // the sea: shallows near the shore
+    else if (sea > 0 && hn < .007) { r = 240; g = 242; b = 232; sh = 1; } // a line of foam where the waves break
+    else if (sea > 0) { const sc = TCOL[1]; r = sc[0]; g = sc[1]; b = sc[2]; } // sand, right down to the water
     if (wet > .3 && wet < .7) { r += 25; g += 25; b += 25; }
     const n = (hash(px, py, 3) & 15) - 7, o = (py * size + px) * 4;
     D[o] = clamp(r * sh + n, 0, 255); D[o + 1] = clamp(g * sh + n, 0, 255); D[o + 2] = clamp(b * sh + n, 0, 255); D[o + 3] = 255;
@@ -2427,14 +2430,14 @@ function nightLevel() { const d = cur(S).day; return d < .68 ? 0 : d < .73 ? (d 
 const seenAt = (x, y) => { const tx = Math.floor(x / LT), ty = Math.floor(y / LT); return tx >= 0 && ty >= 0 && tx < LN && ty < LN && W.seen[ty * LN + tx]; };
 function drawLand(dt) {
   const P = W.player, t = performance.now() / 1000, TT = landTerrain(), c = cur(S);
-  const ts = Math.min(CW, CH) / (LT * 12) * (cam.z || 1); cam.s += (ts - cam.s) * Math.min(1, dt * 6);
+  const ts = Math.min(CW, CH) / (LT * 10) * (cam.z || 1); cam.s += (ts - cam.s) * Math.min(1, dt * 6);
   if (!cam.free) { cam.x += (P.x - cam.x) * Math.min(1, dt * 5); cam.y += (P.y - cam.y) * Math.min(1, dt * 5); }
   const s = cam.s, shk = cam.shake; cam.shake = Math.max(0, shk - dt * 30);
   const ox = CW / 2 - cam.x * s + (Math.random() - .5) * shk, oy = CH / 2 - cam.y * s * TILT + (Math.random() - .5) * shk;
   const SX = x => x * s + ox, SY = y => y * s * TILT + oy;
   for (const i of W.seenNew) TT.fx.clearRect(i % LN, (i / LN) | 0, 1, 1); W.seenNew.length = 0;
   // sky-blue sea, then the ground seen at an angle
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = "#1E5A92"; ctx.fillRect(0, 0, CW, CH);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = "#0B1220"; ctx.fillRect(0, 0, CW, CH);
   const wx0 = Math.max(0, -ox / s), wy0 = Math.max(0, -oy / (s * TILT)), wx1 = Math.min(LN * LT, (CW - ox) / s), wy1 = Math.min(LN * LT, (CH - oy) / (s * TILT));
   ctx.setTransform(DPR * s, 0, 0, DPR * s * TILT, DPR * ox, DPR * oy);
   if (wx1 > wx0 && wy1 > wy0) {
