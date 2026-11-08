@@ -294,6 +294,18 @@ function newSave(o) {
     cell: { tier: 0, grow: 0, ready: false, dna: 20, unlocked: [diet === "meat" ? "jaw" : "filter", ...START_PARTS], design: starterDesign(diet),
       ate: { plant: 0, meat: 0 }, kills: 0, deaths: 0, evolves: 0, done: false } };
 }
+/* A testing start: jump to a later size (0-4) of the cell stage, or "grown" (Titan with a full growth bar, ready to
+   finish the stage). Every part is unlocked and there's plenty of DNA. Later stages will join this list. */
+const STARTS = [["s0", "Cell stage, from the start", ""], ["s2", "Cell stage, Droplet size", "Size 3 of 5"], ["s4", "Cell stage, Titan size", "Size 5 of 5"],
+  ["grown", "End of the cell stage", "A fully grown Titan: meet your mate to finish"]];
+function testStart(S, start) {
+  if (!start || start === "s0") return S;
+  const c = S.cell; S.test = true;
+  c.tier = start === "grown" ? TIERS.length - 1 : clamp(+start.slice(1) | 0, 0, TIERS.length - 1);
+  c.unlocked = PARTS.map(p => p.id); c.dna = 300;
+  if (start === "grown") { c.grow = TIERS[c.tier].g; c.ready = true; }
+  return S;
+}
 /* Old saves keep loading: fill anything missing. */
 function migrate(S) {
   const N = newSave({ name: S.name, mode: S.mode, seed: S.seed, diet: "plant" });
@@ -874,6 +886,7 @@ function renderMenu() {
     el.className = "slot"; const cv = document.createElement("canvas"); el.append(cv);
     const info = document.createElement("div"); info.className = "si";
     const nm = document.createElement("b"); nm.textContent = s.name; const chip = document.createElement("span"); chip.className = "chip" + (s.mode === "hard" ? " hc" : ""); chip.textContent = s.mode === "hard" ? "☠ Hardcore" : "Normal"; nm.append(chip);
+    if (s.test) { const tc = document.createElement("span"); tc.className = "chip"; tc.textContent = "Test start"; nm.append(tc); }
     const sm = document.createElement("span"); sm.className = "sm";
     sm.textContent = s.dead ? `Died out at ${TIERS[s.cell.tier].n} size · ${fmtTime(s.time)}` : s.cell.done ? `Cell stage complete · ${NATURES[s.nature] ? NATURES[s.nature].n : ""} · ${fmtTime(s.time)}` : `Cell stage · ${TIERS[s.cell.tier].n} (size ${s.cell.tier + 1} of 5) · ${fmtTime(s.time)}`;
     const row = document.createElement("div"); row.className = "row";
@@ -897,7 +910,7 @@ function dialog(html, acts, back) {
 }
 function closeDlg() { $("dlg").hidden = true; dlgActs = null; dlgBack = null; }
 function newLifeDlg(i) {
-  let mode = "normal", diet = "plant";
+  let mode = "normal", diet = "plant", start = "s0";
   dialog(`<h2>A new life</h2>
     <div class="lbl">Name your species</div>
     <div class="namerow"><input id="nmIn" maxlength="18" value="${randName()}" aria-label="Species name"><button class="btn" data-a="dice" aria-label="Another name">🎲</button></div>
@@ -907,13 +920,17 @@ function newLifeDlg(i) {
     <div class="lbl">How hard</div>
     <div class="pick" id="modePick"><button class="opt on" data-a="normal"><b>Normal</b><span>If you're eaten, you come back straight away and lose a little DNA.</span></button>
     <button class="opt" data-a="hard"><b>☠ Hardcore</b><span>One life. If you're eaten, your species is gone for good.</span></button></div>
+    <div class="lbl">Start at</div>
+    <div class="pick" id="startPick">${STARTS.map((x, j) => `<button class="opt${j ? "" : " on"}" data-a="st_${x[0]}"><b>${x[1]}</b><span>${j ? x[2] + ". For testing: every part and 300 DNA." : "The normal way to play."}</span></button>`).join("")}
+    ${STAGES.slice(1).map(n => `<button class="opt" disabled style="opacity:.45"><b>${n} stage</b><span>Not built yet.</span></button>`).join("")}</div>
     <div class="row"><button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="go">Begin</button></div>`, {
     dice: () => { $("nmIn").value = randName(); },
     plant: b => { diet = "plant"; mark("dietPick", b); }, meat: b => { diet = "meat"; mark("dietPick", b); },
     normal: b => { mode = "normal"; mark("modePick", b); }, hard: b => { mode = "hard"; mark("modePick", b); },
     cancel: closeDlg,
-    go: () => { const name = ($("nmIn").value || "").trim().slice(0, 18) || randName(); const s = newSave({ name, mode, diet, seed: (Math.random() * 4294967295) >>> 0 }); store.set(slotKey(i), s); closeDlg(); startSlot(i); }
+    go: () => { const name = ($("nmIn").value || "").trim().slice(0, 18) || randName(); const s = testStart(newSave({ name, mode, diet, seed: (Math.random() * 4294967295) >>> 0 }), start); store.set(slotKey(i), s); closeDlg(); startSlot(i); }
   });
+  for (const x of STARTS) dlgActs["st_" + x[0]] = b => { start = x[0]; mark("startPick", b); };
   function mark(id, b) { $(id).querySelectorAll(".opt").forEach(x => x.classList.toggle("on", x === b)); }
 }
 

@@ -366,6 +366,15 @@
         "Glowing pods show which part is inside, and creatures you beat sometimes drop one of their own parts. Pick them up and use them if you like.",
         "Four new parts to find: Pincer, Bristles, Paddle and Clear skin."
       ]
+    },
+    {
+      "id": 34,
+      "type": "features",
+      "headline": "Life: choose where to start",
+      "details": [
+        "When you start a new life you can now jump straight to Droplet size, Titan size, or the very end of the cell stage, with every part and plenty of DNA. Handy for trying things out.",
+        "Lives started this way are marked \"Test start\" on the menu. The sea stage and the stages after it will join the list as they're built."
+      ]
     }
   ]
 }

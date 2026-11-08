@@ -287,7 +287,8 @@ every biter (`g.biters`: jaws, siphon, pincer) bites on its own cooldown, shells
 spots, every part has weight `w`, and `good`/`bad` text shows in the builder. Computer creatures (`scan`, `think`) have
 `hunger`: grazers eat and school with their kind, hunters pick prey by size and distance, switch to clearly better prey,
 sprint after other creatures (not the player), then eat. `steer` eases off when facing away, so nothing circles.
-Pods (`W.pods`) carry a visible part id; beaten creatures can drop one of their own parts.
+Test starts (`STARTS`, `testStart`, chosen in the new-life dialog) jump to a later size or the end of the cell stage with every
+part and 300 DNA, and mark the save `test`; add each new stage to `STARTS` as it's built. Pods (`W.pods`) carry a visible part id; beaten creatures can drop one of their own parts.
 Sea stage plan (agreed): live action still, no songs or friendship mini-game; species mostly don't get along; diet can drift
 (an omnivore stage you pass through on the way to herbivore or carnivore).
 Sizes: `TIERS` (growth needed per size), world scale `KT(t)` = 1.7^t; the camera zooms out as you grow. Eating fills
