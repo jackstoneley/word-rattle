@@ -1,11 +1,11 @@
 /* Stoneley Games offline support for the website: keeps the home page and every game on the phone
    so they open with no connection. tools/build.py rewrites VERSION whenever a game changes. */
-const VERSION = "5ea2243933";
+const VERSION = "7c7d720eaa";
 const CACHE = "stoneley-games-" + VERSION;
 const CORE = [
   "./", "./index.html", "./shell.js", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-maskable.png", "./apple-touch-icon.png",
-  "./games/word-rattle/index.html", "./games/link-up/index.html", "./games/cross-sums/index.html", "./games/gem-bastion/index.html", "./games/topple/index.html", "./games/mudlark/index.html", "./games/boxed-in/index.html", "./games/echo-cartographer/index.html", "./games/big-slide/index.html", "./games/lee-lee/index.html", "./games/gravity-well/index.html", "./games/epoch-siege/index.html", "./games/hollowdeep/index.html", "./games/life/index.html"
+  "./games/word-rattle/index.html", "./games/link-up/index.html", "./games/cross-sums/index.html", "./games/gem-bastion/index.html", "./games/topple/index.html", "./games/mudlark/index.html", "./games/boxed-in/index.html", "./games/echo-cartographer/index.html", "./games/big-slide/index.html", "./games/lee-lee/index.html", "./games/gravity-well/index.html", "./games/epoch-siege/index.html", "./games/hollowdeep/index.html", "./games/life/index.html", "./games/life/three.module.min.js"
 ];
 
 self.addEventListener("install", e => {

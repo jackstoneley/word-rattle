@@ -430,6 +430,20 @@
         "Leftover sea parts (fins and the like) are dead weight on land. They're gone from the builder; tap one on your creature to evolve it away.",
         "If you'd already started the land stage, you're on the new island: your brain, DNA, pack and design are kept, but the species tally starts again."
       ]
+    },
+    {
+      "id": 39,
+      "type": "features",
+      "headline": "Life: the land stage is now real 3D",
+      "details": [
+        "The island is built in 3D: mountains rise with rock cliffs and snowy tops, lakes sit in hollows, rivers run downhill, and waves meet the beach.",
+        "Trees, bushes, rocks and the ten special places are proper 3D models with sunlight and shadows. Fruit and berries disappear as they're eaten and grow back.",
+        "Every creature, including yours, is built in 3D from its design, in its own colours and markings. Legs really walk, tails sway, jaws snap and voice sacs puff.",
+        "Hunters have angry brows, slit eyes and sharp teeth, and their eyes glow at night.",
+        "Day turns to an orange evening and then a dark night, with a glow round you so you can still see.",
+        "If a tree or hill is in front of you, you show through it as a faint outline.",
+        "Pinch or use + and - to zoom, and drag to look around, as before. On an older phone the picture gets a little softer to keep things smooth."
+      ]
     }
   ]
 }

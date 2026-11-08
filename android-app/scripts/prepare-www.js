@@ -45,4 +45,6 @@ fs.copyFileSync(path.join(root, "release-notes.json"), path.join(www, "release-n
 
 // 3. PeerJS for online live games in Word Rattle (it loads "peerjs.min.js" next to itself)
 fs.copyFileSync(path.join(nm, "peerjs", "dist", "peerjs.min.js"), path.join(www, "games", "word-rattle", "peerjs.min.js"));
+// 4. three.js for Life's 3D land (the page imports "three.module.min.js" next to itself)
+fs.copyFileSync(path.join(root, "games", "life", "three.module.min.js"), path.join(www, "games", "life", "three.module.min.js"));
 console.log("www ready:", pages.join(", "));

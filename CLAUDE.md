@@ -303,9 +303,15 @@ value. `SEA_GOALS` pay DNA and a pod; a boss (`W.boss`, name from `BOSS_NAMES`) 
 growth bar sets `ashore`; with lungs and two leg fins, reaching the surface finishes the stage (`done`, `S.seaNature`).
 No songs or friendship mini-game in the sea; species mostly don't get along. Long bodies are drawn bent (`bentG`).
 **Land** (`W.land`, own code after the sea in CORE: `newLand`, `stepLand`; page: `drawLand`, `landTap`, `renderLandUI`,
-`startImpress`): tap to move, drawn as a tilted 3D-style view (`TILT`: ground pre-painted once by `landTerrain` with
-blended biomes, hill shading and a smooth shoreline from the heights; trees, rocks, bushes, landmarks and creatures stand
-up as billboards with shadows, depth-sorted; creatures are drawn on the tilted plane). The island (`makeIsland`, from
+`startImpress`): tap to move, drawn in real 3D with three.js (`games/life/three.module.min.js`, r160, MIT; imported by
+`load3D` when the land first shows, listed in `sw.js` and copied by `prepare-www.js`). Page code `/* the land in 3D */`:
+`land3H` (heights in tiles: `HZ`, lakes flat in raised banks, rivers in beds), `build3D` (ground mesh at 2 vertices a tile
+with vertex-colour fog of war `fog3`; water; plants and rocks as InstancedMesh patches of `CHK` tiles that appear when their
+tile is seen; fruit per plant's `food`; nests; landmarks `mark3`), creatures from designs (`makeTpl` → merged vertex-coloured
+mesh plus animated legs with 2-bone IK, tail/tentacle chains, lower jaws, voice sacs, glows; cached by design in `G3.tpl`,
+instanced per creature by `inst3`, animated by `anim3`), `draw3D` (camera, day/night light, `cut3` cuts plants away round
+the player, `P3` projects to the screen, `ground3` turns taps into ground points) and `overlay3D` (labels, bubbles, birds,
+corner map on the 2D canvas above). The old flat `drawLand` stays as the fallback when WebGL can't start. The island (`makeIsland`, from
 `hash(seed, 777, ISLAND_V)`): `LN`×`LN` tiles of `LT` units, heights `W.hgt`, biomes incl. lakes, rivers (slow), snow and
 cliffs; `W.reach` is the main island. Saves made on an older island (`S.land.iv` ≠ `ISLAND_V`) keep brain, DNA, pack and
 design but restart the species tally on the new island. Fog: `W.seen` (saved packed in `S.land.seen`) filled by `reveal`
