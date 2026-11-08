@@ -84,12 +84,16 @@ function seaBot(W, diet, inp) {
 function landBot(W, diet, B) {
   const P = W.player, c = C.cur(W.S), LT = C.LT;
   if (P.mode === "hunt" && P.tg && !P.tg.dead) {
+    B.fightT = (B.fightT || 0) + .05;
+    if (B.fightT > 25) { B.fightT = 0; P.tg.botSkip = W.t + 90; C.landLeave(W); C.landGoTo(W, W.home); return; } // a fight going nowhere: give up and go home
     for (const id of ["charge", "pounce", "spit", "roar"]) if (P.st.ab[id] && !(P.ab[id] > 0) && Math.hypot(P.tg.x - P.x, P.tg.y - P.y) < LT * 4) { C.landMove(W, id); break; }
     if (P.hp < P.max * .3) { C.landLeave(W); C.landGoTo(W, W.home); }
     return;
   }
+  B.fightT = 0;
   const att = W.cr.find(q => q.kind === "npc" && q.ai.tg && q.ai.tg.team && Math.hypot(q.x - P.x, q.y - P.y) < LT * 4);
-  if (att && P.hp > P.max * .35) { C.landHunt(W, att); return; }
+  if (att && P.hp > P.max * .35 && P.st.bite + 2 >= att.st.bite * .5 && W.t >= (att.botSkip || 0)) { C.landHunt(W, att); return; }
+  if (att && !(P.goal && P.goal.kind === "home")) { C.landGoTo(W, W.home); return; } // too tough: run home
   if (P.hp < P.max * .4) { if (!P.goal || P.goal.kind !== "home") C.landGoTo(W, W.home); return; }
   if (P.goal || P.path || P.eating) return;
   if (c.dna >= 50 && W.t - B.evoT > 150) { C.landGoTo(W, W.home); return; }
@@ -98,6 +102,9 @@ function landBot(W, diet, B) {
     const st = q.lsp != null ? C.lspStatus(c, q.lsp) : c.epics[q.epic]; if (st || q.wooed || W.t < (q.botSkip || 0)) continue;
     const d = (q.x - P.x) ** 2 + (q.y - P.y) ** 2 * 1 + (q.epic != null ? 1e7 : 0); if (d < bd) { bd = d; best = q; }
   }
+  // a landmark close by (or nothing else worth doing) is worth the walk
+  let mk = null, md = (LT * 30) ** 2; for (const m of W.marks) if (!c.found[m.id]) { const d = (m.x - P.x) ** 2 + (m.y - P.y) ** 2; if (d < md) { md = d; mk = m; } }
+  if (mk && (!best || md < bd * .5)) { C.landGo(W, mk.x, mk.y); return; }
   if (best) C.landGoTo(W, best);
 }
 function landMeet(W, diet, T) {
