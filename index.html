@@ -163,6 +163,8 @@ section{display:flex;flex-direction:column;gap:10px}
 .art.ll{background:#FFE3D2;overflow:hidden}
 .art.ll svg{width:96px;height:100%}
 .art.hd{background:#67503B;overflow:hidden}
+.art.lf{background:#0A3A44;overflow:hidden}
+.art.lf svg{width:96px;height:100%}
 .art.hd svg{width:96px;height:100%}
 /* Gravity Well art: a dashed shot curving round a planet */
 .art.gw{background:#05070D;overflow:hidden}
@@ -291,6 +293,10 @@ textarea{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--li
     <div class="art bi" aria-hidden="true"><div class="frame"><div class="g"></div><div class="h"></div><div class="z"></div></div></div>
     <div class="info"><span class="kind">Zombie survival</span><h2>Boxed In</h2><span class="stat" id="stBI">Your gun aims itself. Keep moving.</span></div>
     </a>
+    <a class="game" href="games/life/index.html" data-game="life">
+    <div class="art lf" aria-hidden="true"><div class="frame"><svg viewBox="0 0 96 112"><rect width="96" height="112" fill="#0A3A44"/><circle cx="14" cy="20" r="1.4" fill="#CFFFF4" opacity=".5"/><circle cx="80" cy="96" r="1.2" fill="#CFFFF4" opacity=".4"/><circle cx="70" cy="18" r="2" fill="#CFFFF4" opacity=".3"/><g fill="#5FD0A0"><circle cx="18" cy="88" r="4"/><circle cx="26" cy="94" r="3"/><circle cx="78" cy="40" r="3.5"/></g><path d="M44 76c-4 8 4 14 -2 24" fill="none" stroke="#1D5E52" stroke-width="3" stroke-linecap="round"/><circle cx="48" cy="58" r="21" fill="#2BB89A" stroke="#0E4E45" stroke-width="3"/><circle cx="40" cy="62" r="4" fill="#E79BEF" opacity=".7"/><circle cx="56" cy="68" r="3" fill="#E79BEF" opacity=".7"/><path d="M42 40c-3-8-7-12-10-14M56 40c3-8 7-12 10-14" fill="none" stroke="#0E4E45" stroke-width="2.4" stroke-linecap="round"/><circle cx="31" cy="25" r="6" fill="#fff" stroke="#0B1A1E" stroke-width="1.2"/><circle cx="33" cy="24" r="3.2" fill="#111A22"/><circle cx="67" cy="25" r="6" fill="#fff" stroke="#0B1A1E" stroke-width="1.2"/><circle cx="69" cy="24" r="3.2" fill="#111A22"/><circle cx="32" cy="22.5" r="1" fill="#fff"/><circle cx="68" cy="22.5" r="1" fill="#fff"/><ellipse cx="48" cy="44" rx="5" ry="3" fill="#13231F"/><g transform="translate(78 86) rotate(-30)"><circle r="8" fill="#7A1F33" stroke="#2A0A12" stroke-width="1.5"/><path d="M6 -3l6 3-6 3z" fill="#EDE3CF"/><ellipse cx="3" cy="-3.5" rx="2" ry="1.6" fill="#FF3B3B"/><ellipse cx="3" cy="3.5" rx="2" ry="1.6" fill="#FF3B3B"/></g></svg></div></div>
+    <div class="info"><span class="kind">Evolve a creature</span><h2>Life</h2><span class="stat" id="stLF">From a single cell to the stars.</span></div>
+    </a>
     <a class="game" href="games/lee-lee/index.html" data-game="lee-lee">
     <div class="art ll" aria-hidden="true"><div class="frame"><svg viewBox="0 0 96 112"><rect x="-100" y="84" width="296" height="28" fill="#C08A55"/><circle cx="51" cy="25" r="8" fill="#22140E"/><rect x="31" y="58" width="34" height="34" rx="12" fill="#E8664A"/><rect x="37" y="66" width="22" height="24" rx="5" fill="#FFF7EE"/><circle cx="48" cy="42" r="15" fill="#C68A5E"/><path d="M33 42a15 15 0 0 1 30 0z" fill="#22140E"/><ellipse cx="48" cy="34" rx="15" ry="8" fill="#22140E"/><rect x="34" y="34" width="28" height="4" rx="2" fill="#E8664A"/><circle cx="43" cy="45" r="1.8" fill="#22160F"/><circle cx="53" cy="45" r="1.8" fill="#22160F"/><circle cx="33" cy="46" r="1.6" fill="#F2C14E"/><circle cx="63" cy="46" r="1.6" fill="#F2C14E"/><rect x="66" y="74" width="14" height="12" rx="3" fill="#fff"/><path d="M80 77h3a3 3 0 0 1 0 6h-3" fill="none" stroke="#fff" stroke-width="2"/><path d="M70 70c-2-3 2-4 0-7M76 70c-2-3 2-4 0-7" fill="none" stroke="#B08A70" stroke-width="1.6" stroke-linecap="round"/></svg></div></div>
     <div class="info"><span class="kind">Cooking and running a café</span><h2>Lee Lee's Kitchen</h2><span class="stat" id="stLL">Cook, serve, clean up, and grow.</span></div>
@@ -362,6 +368,8 @@ function renderStats(){
   {const hd=load("hd.progress",null),hdg=load("hd.game",null),wl=hd&&hd.won?Object.values(hd.won):[],won=wl.length,
       stars=wl.reduce((a,r)=>a+(r&&r.stars?r.stars.reduce((x,y)=>x+y,0):1),0);
     if(won||hdg)setHTML("stHD",[{b:String(won)}," of 15 realms · ",{b:"★ "+stars},hdg?" · a game in progress":""])}
+  {const li=load("lf.last",0),lf=load("lf.slot."+li,null),T=["Speck","Mote","Droplet","Bloom","Titan"];
+    if(lf&&lf.cell)setHTML("stLF",lf.dead?[String(lf.name)," · ",{b:"died out"},` at ${T[lf.cell.tier]||""} size`]:lf.cell.done?[String(lf.name)," · ",{b:"cell stage complete"}]:[String(lf.name)," · cell stage, ",{b:T[lf.cell.tier]||""},` (size ${lf.cell.tier+1} of 5)`])}
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
   {const cleared=Object.values(gb.cleared||{}).filter(Boolean).length;
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}
@@ -407,7 +415,7 @@ function renderRecent(){
 function renderHome(){renderStats();renderToday();renderRecent()}
 
 /* ---------- backup and restore (every game's saved data) ---------- */
-const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi.","ec.","slide.","ll.","gw.","es.","hd.","sg."];
+const PREFIXES=["wr.","lu.","kk.","gembastion.","tp.","ml.","bi.","ec.","slide.","ll.","gw.","es.","hd.","lf.","sg."];
 function b64u(str){const bytes=new TextEncoder().encode(str);let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const bin=atob(s);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
 function backupCode(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PREFIXES.some(p=>k.startsWith(p)))data[k]=localStorage.getItem(k)}return "SGB1."+b64u(JSON.stringify({v:1,at:Date.now(),data}))}

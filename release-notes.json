@@ -319,6 +319,18 @@
         "From tomorrow's puzzle (#12), the daily Link Up is harder: lots of words look like they fit two or three groups, but only one way works.",
         "A month of new puzzles. Earlier puzzles and your streak are unchanged."
       ]
+    },
+    {
+      "id": 30,
+      "type": "new-game",
+      "headline": "New game: Life",
+      "details": [
+        "Start as a tiny cell in a pond: eat, dodge the hunters, and grow through five sizes.",
+        "Design your own creature: mouths, tails, eyes, thorns, shells, colours and markings. Every creature in the pond is different, and so is yours.",
+        "Find glowing pods for new body parts, and meet your mate to evolve.",
+        "Play Normal (come back when you're eaten) or Hardcore (one life only).",
+        "This is the cell stage. The sea stage, and the stages after it, come in later updates."
+      ]
     }
   ]
 }
