@@ -61,10 +61,17 @@ jobs:
 
       - name: Build APK
         working-directory: android-app/android
-        # Gradle's download site is sometimes slow: allow 2 minutes instead of 10 seconds, and try up to three times.
+        # Gradle's download site is sometimes slow or down: allow 2 minutes instead of 10 seconds, try up to three
+        # times, and from the second try fetch the same file straight from Gradle's own copy on GitHub.
         run: |
-          sed -i 's/^networkTimeout=.*/networkTimeout=120000/' gradle/wrapper/gradle-wrapper.properties
-          for i in 1 2 3; do ./gradlew assembleDebug --no-daemon --stacktrace && exit 0; echo "Build attempt $i failed; retrying in 20 s"; sleep 20; done
+          P=gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/^networkTimeout=.*/networkTimeout=120000/' $P
+          for i in 1 2 3; do
+            ./gradlew assembleDebug --no-daemon --stacktrace && exit 0
+            echo "Build attempt $i failed; retrying in 20 s"; sleep 20
+            sed -i -E 's#^distributionUrl=https\\?://services\.gradle\.org/distributions/gradle-([0-9.]+)-(all|bin)\.zip#distributionUrl=https\\://github.com/gradle/gradle-distributions/releases/download/v\1/gradle-\1-\2.zip#' $P
+            grep distributionUrl $P
+          done
           exit 1
 
       - name: Publish to the "latest" release
