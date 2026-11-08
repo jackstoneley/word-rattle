@@ -1,6 +1,6 @@
 # Stoneley Games: guide for Claude Code
 
-A home page plus thirteen self-contained HTML games, published two ways:
+A home page plus fourteen self-contained HTML games, published two ways:
 
 | Name on screen | Folder / code name | Saved-data prefix |
 | --- | --- | --- |
@@ -17,6 +17,7 @@ A home page plus thirteen self-contained HTML games, published two ways:
 | Gravity Well | `games/gravity-well` | `gw.` |
 | Epoch Siege | `games/epoch-siege` | `es.` |
 | Hollowdeep | `games/hollowdeep` | `hd.` |
+| Life | `games/life` | `lf.` |
 
 The folder names, saved-data prefixes and code names stay as they are even though the on-screen names
 changed: renaming them would break saved games and old links.
@@ -41,6 +42,7 @@ tools/build.py             Build step. Run after ANY change, before committing
 tools/big-slide-check.js   Rides every Big Slide level's answer (run by build.py)
 tools/gravity-well-check.js  Checks every Gravity Well level can be won (run by build.py)
 tools/epoch-siege-check.js   Computer-vs-computer Epoch Siege battles must all finish (run by build.py)
+tools/life-check.js          Bots must finish Life's cell stage as a plant and a meat eater (run by build.py)
 release-notes.json         What's new in each release; shown in the app's update banner
 android-app/               Capacitor project: config, native plugin, build scripts, icons, signing key
 .github/workflows/android.yml  Builds the APK and replaces the "latest" release
@@ -270,6 +272,24 @@ growth, army size (`aiCap`, rising through the game) and boldness. They keep a w
 expand all game towards gold, Gates, lost creatures and the map centre (forgetting unreachable marks), and go to war on the weakest
 realm (`strength`): gather on their border (`phase` gather → march), retreat below 35% of the raid. A beaten realm's land and rooms
 pass to the winner (`destroyRealm`). Any keeper raises `alarmAt` when enemy fighters enter its land near the Heart; creatures rush there.
+
+### Life (`games/life`)
+
+An evolve-a-creature game (in the genre of the evolution sims, with its own names and art), built a stage at a time:
+`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; only the **cell stage** exists so far (later stages are
+planned as tap-to-move / turn-based, not live action). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
+A creature is a design `{s: [segment radii, head first], p: [{id, s: segment, a: angle (0 = front), m: mirrored}], h, l, h2,
+pat, edge}`; `geom` places the parts, `stats` turns them into speed, bite, health, sight and so on, `designValue` is its DNA
+price. Every creature in the pond is drawn from the same parts (`randomDesign`, per-save `species(tier, i)`: 0-2 plant
+eaters, 3-4 hunters, 5 both), so carnivores are built scary (jaws, slit eyes, spiky skin, dark reds) and grazers cute.
+Sizes: `TIERS` (growth needed per size), world scale `KT(t)` = 1.7^t; the camera zooms out as you grow. Eating fills
+`cell.grow`; when full (`ready`) the mate appears and evolving with it grows a size (`applyEvolve`); finishing the last size
+sets `cell.done` and `S.nature` (hunter / grazer / forager from what was eaten), to carry into the sea stage.
+Saves: `lf.slot.0`-`lf.slot.2` (whole save, `migrate()` fills new fields), `lf.last` (slot index), `lf.opts`. `mode` is
+`normal` (respawn, lose 10% DNA) or `hard` (one life: `S.dead` set, slot shows the fossil). `PARTS` and `TIERS` are
+saved by id / index: append only. `tools/life-check.js` runs a greedy bot through the stage (about 14-22 min for a
+perfect bot, so 20+ for a person) and fails if it can't finish or finishes in under 8 minutes. `window.LF` exposes the
+world for Playwright.
 
 ### Adding a new game
 

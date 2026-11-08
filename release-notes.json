@@ -342,6 +342,18 @@
         "Your first hall comes in different shapes and sizes, the first Gate lies in a different direction, and gold turns up in different places.",
         "There's always something different close by: a gem seam, a lost creature, buried treasure, a little pool or an outcrop of hard rock."
       ]
+    },
+    {
+      "id": 32,
+      "type": "new-game",
+      "headline": "New game: Life",
+      "details": [
+        "Start as a tiny cell in a pond: eat, dodge the hunters, and grow through five sizes.",
+        "Design your own creature: mouths, tails, eyes, thorns, shells, colours and markings. Every creature in the pond is different, and so is yours.",
+        "Find glowing pods for new body parts, and meet your mate to evolve.",
+        "Play Normal (come back when you're eaten) or Hardcore (one life only).",
+        "This is the cell stage. The sea stage, and the stages after it, come in later updates."
+      ]
     }
   ]
 }

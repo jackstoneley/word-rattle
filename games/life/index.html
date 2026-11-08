@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#04161D">
+<title>Life</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--bg:#04161D;--panel:#0B2A33;--panel2:#123C46;--line:#1E5260;--ink:#E8FFF9;--muted:#8FBAB5;--accent:#7CF2C8;--accent-ink:#04211A;--dna:#D7AEFF;--hp:#FF6B86;--warn:#FFB454;--bad:#FF5A6E}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,sans-serif;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input{font:inherit}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column}
+.screen[hidden]{display:none}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:11px 16px;font-weight:800;font-size:.95rem}
+.btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
+.btn.bad{background:transparent;border-color:#6B2A36;color:#FF9AAA}
+.btn:disabled{opacity:.45}
+.btn.small{padding:7px 11px;font-size:.85rem;border-radius:10px}
+
+/* menu */
+#menu{overflow-y:auto;background:radial-gradient(130% 70% at 50% -10%,#11555C 0%,#072A33 45%,#04161D 80%)}
+.mwrap{max-width:560px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px 48px;width:100%}
+.home{color:var(--muted);text-decoration:none;font-weight:700;font-size:.92rem}
+h1{font-family:"Bricolage Grotesque",Figtree,sans-serif;font-weight:800;font-size:3.4rem;margin:14px 0 0;letter-spacing:-.03em;line-height:1}
+h1 span{color:var(--accent)}
+.tag{margin:6px 0 18px;color:var(--muted)}
+.slot{background:rgba(11,42,51,.85);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.slot canvas{width:84px;height:72px;flex:none;border-radius:12px;background:rgba(0,0,0,.25)}
+.slot .si{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.slot b{font-size:1.1rem;font-family:"Bricolage Grotesque",Figtree,sans-serif}
+.slot .sm{font-size:.84rem;color:var(--muted)}
+.slot .row{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.chip{display:inline-block;font-size:.72rem;font-weight:800;padding:2px 7px;border-radius:99px;background:#16424C;color:var(--accent);vertical-align:2px;margin-left:4px}
+.chip.hc{background:#4A1824;color:#FF9AAA}
+.slot.empty{justify-content:center;border-style:dashed;min-height:72px;color:var(--muted);font-weight:800;width:100%}
+.road{margin-top:20px;background:rgba(11,42,51,.6);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.road h3{margin:0 0 8px;font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.road ol{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.road li{font-size:.82rem;font-weight:700;padding:4px 9px;border-radius:99px;background:#0F3540;color:var(--muted)}
+.road li.on{background:var(--accent);color:var(--accent-ink)}
+.road p{margin:8px 0 0;font-size:.82rem;color:var(--muted)}
+
+/* dialogs */
+#dlg{position:fixed;inset:0;background:rgba(1,10,14,.72);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+#dlg[hidden]{display:none}
+.dbox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.dbox h2{margin:0;font-family:"Bricolage Grotesque",Figtree,sans-serif;font-size:1.55rem}
+.dbox p{margin:0;color:var(--muted);line-height:1.4}
+.dbox .row{display:flex;gap:8px;flex-wrap:wrap}
+.dbox .row .btn{flex:1}
+.pick{display:flex;flex-direction:column;gap:8px}
+.opt{border:2px solid var(--line);border-radius:14px;padding:10px 12px;text-align:left;background:var(--bg)}
+.opt b{display:block;font-size:1rem}
+.opt span{font-size:.85rem;color:var(--muted)}
+.opt.on{border-color:var(--accent);background:#0D3A3A}
+.namerow{display:flex;gap:8px}
+.namerow input{flex:1;min-width:0;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 12px;font-weight:700;font-size:1.05rem}
+.lbl{font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:-4px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stats div{background:var(--bg);border-radius:10px;padding:8px 10px;font-size:.85rem;color:var(--muted)}
+.stats b{display:block;color:var(--ink);font-size:1.1rem}
+
+/* play */
+#play{background:#04161D;touch-action:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.hud{position:absolute;left:0;right:0;top:0;padding:max(10px,env(safe-area-inset-top)) 12px 0;display:flex;gap:10px;align-items:flex-start;pointer-events:none}
+.hud>*{pointer-events:auto}
+.iconbtn{width:42px;height:42px;border-radius:12px;background:rgba(4,22,29,.65);border:1px solid rgba(124,242,200,.25);font-weight:900;font-size:.95rem;flex:none}
+.bars{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0;pointer-events:none}
+.bar{height:10px;border-radius:99px;background:rgba(0,0,0,.45);overflow:hidden;border:1px solid rgba(255,255,255,.12)}
+.bar i{display:block;height:100%;width:0;border-radius:99px;transition:width .2s}
+.bar.hp i{background:linear-gradient(90deg,#FF5A7A,#FF9AA6)}
+.bar.gr i{background:linear-gradient(90deg,#57E3B4,#B8FFDF)}
+.bar.gr.ready i{background:linear-gradient(90deg,#FF8CC6,#FFD0E6);animation:pulse 1s infinite alternate}
+@keyframes pulse{from{opacity:.7}to{opacity:1}}
+.grl{font-size:.78rem;font-weight:800;color:#CFF7EC;text-shadow:0 1px 3px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dna{flex:none;background:rgba(4,22,29,.65);border:1px solid rgba(215,174,255,.3);border-radius:12px;padding:0 11px;height:42px;display:flex;align-items:center;gap:5px;font-weight:800;color:var(--dna);pointer-events:none}
+.dna b{color:#fff;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.toast{position:fixed;z-index:60;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 62px);transform:translateX(-50%);background:rgba(4,22,29,.88);border:1px solid var(--line);border-radius:14px;padding:9px 14px;font-weight:800;font-size:.92rem;max-width:calc(100% - 32px);text-align:center;pointer-events:none;transition:opacity .3s}
+.toast[hidden]{display:block;opacity:0}
+.hint{position:absolute;left:16px;right:16px;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 84px);margin:0 auto;max-width:420px;background:rgba(124,242,200,.14);border:1px solid rgba(124,242,200,.4);color:#DFFFF4;border-radius:14px;padding:10px 14px;font-weight:700;font-size:.92rem;text-align:center;pointer-events:none}
+.hint[hidden]{display:none}
+.abil{position:absolute;right:14px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+.ab{width:64px;height:64px;border-radius:50%;background:rgba(4,22,29,.7);border:2px solid rgba(124,242,200,.5);font-size:1.5rem;font-weight:900;position:relative;touch-action:none;display:flex;align-items:center;justify-content:center;flex-direction:column;line-height:1}
+.ab small{font-size:.6rem;font-weight:800;margin-top:2px;color:var(--muted)}
+.ab::after{content:"";position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(rgba(4,22,29,.75) calc(var(--cd,0)*360deg),transparent 0)}
+.stick{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);pointer-events:none}
+.stick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(124,242,200,.35);border:2px solid rgba(124,242,200,.7)}
+.stick[hidden]{display:none}
+.vig{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 90px 30px rgba(255,40,70,.6);opacity:0;transition:opacity .15s}
+
+/* evolve (creature builder) */
+#edit{background:radial-gradient(120% 60% at 50% 20%,#0F4A55 0%,#061F27 60%,#04161D 100%)}
+.etop{display:flex;align-items:center;gap:8px;padding:max(10px,env(safe-area-inset-top)) 12px 6px}
+.emid{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column}
+.emid b{font-family:"Bricolage Grotesque",Figtree,sans-serif;font-size:1.25rem}
+.emid span{font-size:.8rem;color:var(--muted);font-weight:700}
+.emid span em{font-style:normal;color:var(--dna)}
+.emid span em.neg{color:var(--bad)}
+.ewrap{position:relative;flex:1;min-height:150px}
+#ecv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.esel{position:absolute;left:10px;right:10px;bottom:6px;background:rgba(4,22,29,.88);border:1px solid var(--line);border-radius:14px;padding:9px 11px;display:flex;flex-direction:column;gap:6px}
+.esel[hidden]{display:none}
+.esel .t{display:flex;align-items:center;gap:8px}
+.esel .t b{flex:1}
+.esel p{margin:0;font-size:.82rem;color:var(--muted)}
+.esel input[type=range]{width:100%}
+.ehelp{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:.78rem;color:var(--muted);pointer-events:none;padding:0 12px}
+.estats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px;padding:6px 14px}
+.estats div{font-size:.72rem;font-weight:800;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.estats div i{display:block;height:5px;border-radius:9px;background:rgba(0,0,0,.4);overflow:hidden}
+.estats div i u{display:block;height:100%;background:var(--accent)}
+.diet{grid-column:1/-1;font-size:.8rem!important;color:var(--ink)!important;flex-direction:row!important;gap:6px!important}
+.diet.no{color:var(--bad)!important}
+.etabs{display:flex;gap:4px;padding:4px 10px;overflow-x:auto;scrollbar-width:none}
+.etabs button{flex:none;padding:7px 11px;border-radius:99px;font-weight:800;font-size:.84rem;background:#0E3640;color:var(--muted)}
+.etabs button.on{background:var(--accent);color:var(--accent-ink)}
+.etray{display:flex;gap:8px;padding:6px 10px max(12px,env(safe-area-inset-bottom));overflow-x:auto;min-height:118px;align-items:stretch}
+.card{flex:none;width:92px;border-radius:14px;background:var(--panel);border:1px solid var(--line);padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.card canvas{width:72px;height:52px}
+.card b{font-size:.76rem;line-height:1.1}
+.card span{font-size:.74rem;color:var(--dna);font-weight:800}
+.card.locked{opacity:.55}
+.card.locked span{color:var(--muted);font-weight:700;font-size:.66rem}
+.card.cant span{color:var(--bad)}
+.look{display:flex;flex-direction:column;gap:7px;min-width:100%;padding:2px 4px}
+.look label{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:800;color:var(--muted)}
+.look label input[type=range]{flex:1}
+.look .opts{display:flex;gap:5px;flex-wrap:wrap}
+.look .opts button{padding:5px 10px;border-radius:99px;background:#0E3640;font-size:.8rem;font-weight:800;color:var(--muted)}
+.look .opts button.on{background:var(--accent);color:var(--accent-ink)}
+.hue{-webkit-appearance:none;appearance:none;height:14px;border-radius:9px;background:linear-gradient(90deg,#f55,#fd5,#5f8,#5df,#86f,#f5d,#f55)}
+.hue::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #04161D}
+.bodyp{display:flex;flex-direction:column;gap:8px;min-width:100%;padding:2px 4px}
+.bodyp .row{display:flex;gap:8px;flex-wrap:wrap}
+.bodyp label{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:800;color:var(--muted)}
+.bodyp label input{flex:1}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div id="menu" class="screen">
+  <div class="mwrap">
+    <a class="home" href="../../index.html">← All games</a>
+    <h1>Li<span>f</span>e</h1>
+    <p class="tag">Start as a single cell. Eat, evolve, grow, and design a creature like no other.</p>
+    <div id="slots"></div>
+    <div class="road">
+      <h3>The stages of life</h3>
+      <ol id="road"></ol>
+      <p>The cell stage is here now. The sea and the stages after it arrive in later updates, and your species carries on into them.</p>
+    </div>
+  </div>
+</div>
+
+<div id="play" class="screen" hidden>
+  <canvas id="cv"></canvas>
+  <div class="hud">
+    <button class="iconbtn" id="pauseBtn" aria-label="Pause">II</button>
+    <div class="bars">
+      <div class="bar hp" aria-label="Health"><i id="hpFill"></i></div>
+      <div class="bar gr" id="grBar" aria-label="Growth"><i id="grFill"></i></div>
+      <div class="grl" id="grLabel"></div>
+    </div>
+    <div class="dna" aria-label="DNA">🧬 <b id="dnaN">0</b></div>
+  </div>
+  <div class="vig" id="vig"></div>
+  <div class="hint" id="hint" hidden></div>
+  <div class="stick" id="stick" hidden><i id="knob"></i></div>
+  <div class="abil" id="abil"></div>
+</div>
+
+<div id="edit" class="screen" hidden>
+  <div class="etop">
+    <button class="btn small" id="eBack">Leave</button>
+    <div class="emid"><b id="eTitle">Evolve</b><span id="eInfo"></span></div>
+    <button class="btn small primary" id="eDone">Done</button>
+  </div>
+  <div class="ewrap">
+    <canvas id="ecv"></canvas>
+    <div class="ehelp" id="eHelp">Tap a part below to add it. Drag parts round the body. Drag a part off to remove it.</div>
+    <div class="esel" id="eSel" hidden></div>
+  </div>
+  <div class="estats" id="eStats"></div>
+  <div class="etabs" id="eTabs"></div>
+  <div class="etray" id="eTray"></div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<div id="dlg" hidden><div class="dbox" id="dbox"></div></div>
+
+<script>
+"use strict";
+/*CORE-START*/
+/* Life: rules for the cell stage. No page dependencies, so tools/life-check.js can play a whole stage in Node.
+   Sizes: a creature's design is in "design units"; in the water it is scaled by k (KT(tier), 1.7 per size).
+   Saves hold part ids, tier numbers and designs: PARTS and TIERS may grow at the end, never reorder or rename ids. */
+const TAU = Math.PI * 2;
+const TIERS = [{ n: "Speck", g: 50 }, { n: "Mote", g: 85 }, { n: "Droplet", g: 120 }, { n: "Bloom", g: 160 }, { n: "Titan", g: 200 }];
+const KT = t => Math.pow(1.7, t);
+const STAGES = ["Cell", "Sea", "Land", "Tribe", "Civilisation", "Space"];
+const PARTS = [
+  { id: "filter", cat: "mouth", n: "Filter mouth", c: 10, t: 0, eat: "plant", info: "Sieves up the green bits. A plant eater's mouth." },
+  { id: "jaw", cat: "mouth", n: "Snapper jaw", c: 15, t: 0, eat: "meat", bite: 6, info: "Bites other creatures and eats the red bits they leave." },
+  { id: "siphon", cat: "mouth", n: "Siphon", c: 18, t: 1, eat: "both", bite: 2.5, info: "Sucks up plants and meat. Bites weakly." },
+  { id: "whip", cat: "move", n: "Whip tail", c: 10, t: 0, spd: 16, info: "A long tail that pushes you along. Faster." },
+  { id: "fringe", cat: "move", n: "Fringe", c: 8, t: 0, spd: 6, turn: 1.2, info: "Rows of tiny hairs. Turn more quickly." },
+  { id: "jet", cat: "move", n: "Squirt jet", c: 20, t: 1, spd: 4, ab: "dash", info: "Tap ⚡ to dash: escape, or catch your dinner." },
+  { id: "thorn", cat: "fight", n: "Thorn", c: 12, t: 0, spk: 5, info: "Hurts anything that bumps into it." },
+  { id: "shell", cat: "fight", n: "Shell plate", c: 12, t: 1, arm: .14, hp: 6, spd: -3, info: "Takes the sting out of bites, but it's heavy." },
+  { id: "stink", cat: "fight", n: "Stink sac", c: 20, t: 2, ab: "poison", info: "Tap ☁ to leave a poison cloud behind you." },
+  { id: "spark", cat: "fight", n: "Spark organ", c: 24, t: 2, ab: "zap", info: "Tap ✶ to shock everything close by." },
+  { id: "moon", cat: "eye", n: "Moon eye", c: 5, t: 0, sen: 10, info: "A big friendly eye. See a little further." },
+  { id: "slit", cat: "eye", n: "Slit eye", c: 8, t: 1, sen: 16, info: "A hunter's eye. See further." },
+  { id: "stalk", cat: "eye", n: "Stalk eye", c: 8, t: 1, sen: 20, info: "An eye on a wobbly stalk. See further still." },
+  { id: "cluster", cat: "eye", n: "Eye cluster", c: 10, t: 2, sen: 26, info: "Three little eyes. See much further." },
+  { id: "frill", cat: "extra", n: "Frill", c: 6, t: 0, hp: 4, turn: .4, info: "A floaty frill. A little tougher." },
+  { id: "feeler", cat: "extra", n: "Feeler", c: 6, t: 1, sen: 8, turn: .3, info: "A twitchy feeler. See and turn a little better." },
+  { id: "glow", cat: "extra", n: "Glow bulb", c: 10, t: 2, lure: 1, info: "Small creatures can't help swimming up to it." }
+];
+const PART = {}; PARTS.forEach(p => PART[p.id] = p);
+const START_PARTS = ["whip", "moon", "fringe"];
+
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hash() { let h = 2166136261; for (let i = 0; i < arguments.length; i++) { h ^= arguments[i] | 0; h = Math.imul(h, 16777619); h ^= h >>> 13; } return h >>> 0; }
+const wrapA = a => { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; };
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const d2 = (a, b) => (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+
+function partLimit(tier) { return 5 + tier * 2; }
+function segLimit(tier) { return [2, 2, 3, 3, 4][Math.min(4, tier)]; }
+function cloneD(d) { return JSON.parse(JSON.stringify(d)); }
+
+/* Where everything sits on a design: segment centres along the spine (head first, facing +x) and each part,
+   with mirrored copies. */
+function geom(d) {
+  const r = d.s, cx = [0];
+  for (let i = 1; i < r.length; i++) cx[i] = cx[i - 1] - (r[i - 1] + r[i]) * .72;
+  let A = 0, M = 0; r.forEach((v, i) => { A += v * v; M += v * v * cx[i]; });
+  const off = M / A; for (let i = 0; i < cx.length; i++) cx[i] -= off;
+  const parts = [];
+  d.p.forEach((q, qi) => {
+    const P = PART[q.id]; if (!P || q.s >= r.length) return;
+    const sides = q.m && Math.abs(Math.sin(q.a)) > .08 ? [1, -1] : [1];
+    for (const sg of sides) { const a = q.a * sg; parts.push({ id: q.id, P, qi, s: q.s, sg, a, x: cx[q.s] + r[q.s] * Math.cos(a), y: r[q.s] * Math.sin(a) }); }
+  });
+  let R = 0, minX = 0, maxX = 0;
+  r.forEach((v, i) => { R = Math.max(R, Math.abs(cx[i]) + v); minX = Math.min(minX, cx[i] - v); maxX = Math.max(maxX, cx[i] + v); });
+  return { cx, r, parts, R: R + 3, minX, maxX, mouths: parts.filter(p => p.P.cat === "mouth"), spikes: parts.filter(p => p.P.spk) };
+}
+function stats(d, g) {
+  g = g || geom(d);
+  let spd = 0, turn = 0, hp = 0, arm = 1, spk = 0, sen = 0, bite = 0, lure = 0; const ab = {}, eat = { plant: 0, meat: 0 };
+  for (const q of g.parts) {
+    const P = q.P; spd += P.spd || 0; turn += P.turn || 0; hp += P.hp || 0; spk += P.spk || 0; sen += P.sen || 0; bite += P.bite || 0; lure += P.lure || 0;
+    if (P.arm) arm *= 1 - P.arm; if (P.ab) ab[P.ab] = 1;
+    if (P.eat === "plant" || P.eat === "both") eat.plant++; if (P.eat === "meat" || P.eat === "both") eat.meat++;
+  }
+  const mass = d.s.reduce((a, r) => a + r * r, 0) / 144;
+  return { spd: (36 + 72 * (1 - Math.exp(-Math.max(0, spd) / 26))) / Math.pow(Math.max(.5, mass), .18), turn: Math.min(7.5, 3.2 + turn),
+    hp: Math.round(14 + hp + mass * 10), arm: Math.min(.55, 1 - arm), spk, sen, view: 150 + Math.min(80, sen * 2.2),
+    bite: bite ? 9.5 * (1 - Math.exp(-bite / 7)) : 0, lure, ab, eat, mass, parts: g.parts.length };
+}
+function dietOf(st) { return st.eat.plant && st.eat.meat ? "both" : st.eat.plant ? "plant" : st.eat.meat ? "meat" : "none"; }
+function designValue(d) {
+  let v = 0; for (const p of geom(d).parts) v += p.P.c;
+  d.s.forEach((r, i) => { v += (i ? 8 : 0) + Math.max(0, Math.round((r - 12) * .8)); });
+  return v;
+}
+function starterDesign(diet) {
+  const meat = diet === "meat";
+  return { s: [12], p: [{ id: meat ? "jaw" : "filter", s: 0, a: 0, m: false }, { id: "moon", s: 0, a: -.75, m: true }, { id: "whip", s: 0, a: Math.PI, m: false }],
+    h: meat ? 345 : 165, l: 58, h2: meat ? 25 : 205, pat: 1, edge: meat ? 1 : 0 };
+}
+function newSave(o) {
+  const diet = o.diet === "meat" ? "meat" : "plant";
+  return { v: 1, name: o.name || "Blip", mode: o.mode === "hard" ? "hard" : "normal", seed: (o.seed >>> 0) || 1, created: Date.now(), at: Date.now(), time: 0,
+    stage: "cell", dead: null, hints: 0, nature: null,
+    cell: { tier: 0, grow: 0, ready: false, dna: 20, unlocked: [diet === "meat" ? "jaw" : "filter", ...START_PARTS], design: starterDesign(diet),
+      ate: { plant: 0, meat: 0 }, kills: 0, deaths: 0, evolves: 0, done: false } };
+}
+/* Old saves keep loading: fill anything missing. */
+function migrate(S) {
+  const N = newSave({ name: S.name, mode: S.mode, seed: S.seed, diet: "plant" });
+  for (const k in N) if (S[k] === undefined) S[k] = N[k];
+  for (const k in N.cell) if (S.cell[k] === undefined) S.cell[k] = N.cell[k];
+  if (!S.cell.ate) S.cell.ate = { plant: 0, meat: 0 };
+  const d = S.cell.design; if (!d || !Array.isArray(d.s) || !d.s.length) S.cell.design = starterDesign("plant");
+  for (const k of ["h", "l", "h2", "pat", "edge"]) if (S.cell.design[k] === undefined) S.cell.design[k] = N.cell.design[k];
+  S.cell.design.p = (S.cell.design.p || []).filter(q => PART[q.id]);
+  S.cell.tier = clamp(S.cell.tier | 0, 0, TIERS.length - 1);
+  return S;
+}
+function natureOf(c) { const t = c.ate.plant + c.ate.meat || 1, m = c.ate.meat / t; return m > .66 ? "hunter" : m < .34 ? "grazer" : "forager"; }
+const NATURES = {
+  hunter: { n: "Hunter", d: "Your species lived by the bite. It starts the sea stage with a stronger jaw." },
+  grazer: { n: "Grazer", d: "Your species lived peacefully on plants. It starts the sea stage tougher and healthier." },
+  forager: { n: "Forager", d: "Your species ate a bit of everything. It starts the sea stage quicker on its fins." }
+};
+
+/* Creatures the player meets: a pool of species per size, made from the save's seed, so the pond is the same
+   for this species every time but different for every new life. 0-2 plant eaters, 3-4 hunters, 5 eats both. */
+function randomDesign(R, diet, tier) {
+  const pick = a => a[Math.floor(R() * a.length)];
+  const ns = 1 + (R() < .5 ? 1 : 0) + (tier >= 1 && R() < .3 ? 1 : 0) + (tier >= 3 && R() < .25 ? 1 : 0);
+  const s = []; for (let i = 0; i < ns; i++) s.push(Math.round(i === 0 ? 10 + R() * 8 : 8 + R() * 8));
+  const L = ns - 1, p = [], rs = () => Math.floor(R() * ns);
+  const add = (id, si, a, m) => p.push({ id, s: si, a, m: !!m });
+  if (diet === "plant") add("filter", 0, 0);
+  else if (diet === "meat") { add("jaw", 0, 0); if (tier >= 2 && R() < .4) add("jaw", 0, .5, true); }
+  else add("siphon", 0, 0);
+  if (diet === "meat") add(pick(["slit", "slit", "cluster", "stalk"]), 0, -(.55 + R() * .4), true);
+  else add(pick(["moon", "moon", "moon", "stalk", "cluster"]), 0, -(.5 + R() * .5), true);
+  if (R() < .85) add("whip", L, Math.PI);
+  if (R() < .45) add("fringe", rs(), -(1.6 + R() * .9), true);
+  if (diet === "meat") {
+    const n = 1 + Math.floor(R() * Math.min(3, 1 + tier)); for (let i = 0; i < n; i++) add("thorn", rs(), -(.9 + R() * 1.6), true);
+    if (R() < .3) add("shell", rs(), -Math.PI / 2, true);
+  } else {
+    if (R() < .35) add("frill", L, -(2 + R() * .7), true);
+    if (R() < .3) add("shell", rs(), -(1.3 + R() * .6), true);
+    if (R() < .25) add("thorn", L, -(2.3 + R() * .5), true);
+    if (R() < .2) add("feeler", 0, -.3, true);
+    if (diet === "both" && R() < .4) add("glow", 0, -.12);
+  }
+  const h = diet === "meat" ? pick([350, 0, 8, 285, 300, 15]) + R() * 14 : diet === "plant" ? pick([90, 120, 150, 175, 195, 320]) + R() * 20 : pick([40, 55, 210, 255]) + R() * 20;
+  return { s, p, h: Math.round(h) % 360, l: Math.round(diet === "meat" ? 34 + R() * 12 : 56 + R() * 14), h2: Math.round(h + 120 + R() * 120) % 360,
+    pat: Math.floor(R() * 6), edge: diet === "meat" ? (R() < .75 ? 1 : 2) : (R() < .6 ? 0 : 2) };
+}
+function species(W, tier, i) {
+  const key = tier + ":" + i; if (W.sp[key]) return W.sp[key];
+  const R = rng(hash(W.seed, tier + 50, i)), diet = i < 3 ? "plant" : i < 5 ? "meat" : "both";
+  const d = randomDesign(R, diet, Math.max(0, tier)); const g = geom(d);
+  return W.sp[key] = { d, g, st: stats(d, g), diet, tier, key };
+}
+
+function mkC(W, d, kind, tier, k, x, y, sp) {
+  const g = geom(d), st = stats(d, g);
+  const c = { id: W.nid++, kind, sp: sp || null, d, g, st, tier, k, x, y, a: W.R() * TAU, vx: 0, vy: 0, max: st.hp * Math.pow(k, 1.5), hp: 0,
+    bcd: 0, ecd: 0, hurtT: -99, stun: 0, inv: 0, dash: 0, ab: {}, spk: {}, diet: dietOf(st),
+    ai: { t: 0, dir: W.R() * TAU, thr: .4, tg: null, rest: 0, chase: 0, fear: null, fearT: 0, food: null, scan: 0, lure: false } };
+  c.hp = c.max; return c;
+}
+function placePlayer(W, x, y, a) { const T = W.S.cell.tier; const P = mkC(W, W.S.cell.design, "player", T, KT(T), x, y); P.a = a; W.player = P; }
+function viewR(W) { return W.player.st.view * W.player.k; }
+function newWorld(S, rs) {
+  const W = { S, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], relic: null, mate: null,
+    nid: 1, nextRelic: 28, lastEvo: 0, mateWait: 20, mateCool: 0, popT: 0, sp: {}, over: null };
+  placePlayer(W, 0, 0, -Math.PI / 2); W.player.inv = 2;
+  populate(W, true);
+  return W;
+}
+function segW(c, i) { const x = c.g.cx[i] * c.k; return [c.x + Math.cos(c.a) * x, c.y + Math.sin(c.a) * x]; }
+function toW(c, lx, ly) { const co = Math.cos(c.a), si = Math.sin(c.a); return [c.x + (lx * co - ly * si) * c.k, c.y + (lx * si + ly * co) * c.k]; }
+function distBody(c, x, y) { let m = 1e9; for (let i = 0; i < c.g.r.length; i++) { const [sx, sy] = segW(c, i); m = Math.min(m, Math.hypot(x - sx, y - sy) - c.g.r[i] * c.k); } return m; }
+function spot(W, rmin, rmax) { const P = W.player, a = W.R() * TAU, r = Math.sqrt(rmin * rmin + W.R() * (rmax * rmax - rmin * rmin)); return [P.x + Math.cos(a) * r, P.y + Math.sin(a) * r]; }
+
+function populate(W, init) {
+  const P = W.player, V = viewR(W), SR = V * 2.4, T = P.tier, far = (SR * 1.3) * (SR * 1.3);
+  W.items = W.items.filter(it => d2(it, P) < far && !(it.life <= 0));
+  W.cr = W.cr.filter(c => c.kind === "mate" || d2(c, P) < far);
+  let np = 0, nm = 0;
+  for (const it of W.items) { if (it.k >= P.k * .5) { if (it.ty === "plant") np++; else if (!it.life) nm++; } }
+  let guard = 0;
+  while (np < 64 && guard++ < 40) {
+    const [x, y] = spot(W, init ? V * .2 : V * 1.1, SR), n = 2 + Math.floor(W.R() * 5);
+    for (let i = 0; i < n; i++) { W.items.push(item(W, "plant", x + (W.R() - .5) * 70 * P.k, y + (W.R() - .5) * 70 * P.k, P.k, 1)); np++; }
+  }
+  guard = 0; // bits of dead things drift by, so a hunter is never starved
+  while (nm < 9 && guard++ < 20) { const [x, y] = spot(W, init ? V * .3 : V * 1.1, SR); W.items.push(item(W, "meat", x, y, P.k * .8, 1.6)); nm++; }
+  let nc = 0; for (const c of W.cr) if (c.kind === "npc") nc++;
+  guard = 0;
+  while (nc < 20 && guard++ < 30) {
+    const u = W.R(), off = u < .38 ? -1 : u < .8 ? 0 : u < .96 ? 1 : 2, v = W.R();
+    let i = v < .55 ? Math.floor(W.R() * 3) : v < .85 ? 3 + Math.floor(W.R() * 2) : 5;
+    if (T === 0 && off >= 1 && i >= 3 && i < 5 && W.R() < .5) i = Math.floor(W.R() * 3); // fewer big hunters for a brand new cell
+    const sp = species(W, T + off, i), [x, y] = spot(W, init ? V * .8 : V * 1.15, SR);
+    W.cr.push(mkC(W, sp.d, "npc", T + off, KT(T + off) * (.85 + W.R() * .3), x, y, sp)); nc++;
+  }
+}
+function item(W, ty, x, y, k, v) {
+  const a = W.R() * TAU, s = 3 * k * W.R();
+  return { ty, x, y, k, v, r: (ty === "plant" ? 3.2 : 3.6) * k * (.8 + W.R() * .45), vx: Math.cos(a) * s, vy: Math.sin(a) * s, ph: W.R() * TAU, hue: ty === "plant" ? 85 + Math.floor(W.R() * 95) : 345 + Math.floor(W.R() * 25) };
+}
+
+function turnTo(c, ang, dt, mult) { const df = wrapA(ang - c.a), m = c.st.turn * (mult || 1) * dt; c.a += clamp(df, -m, m); }
+function accel(c, sp, dt) { const tx = Math.cos(c.a) * sp, ty = Math.sin(c.a) * sp, f = Math.min(1, dt * 3); c.vx += (tx - c.vx) * f; c.vy += (ty - c.vy) * f; }
+function npcSpd(W, c) { return c.st.spd * Math.pow(c.k, .5) * Math.pow(W.player.k, .5) * .8; } // bigger is faster, but not so much you can never get away
+function allC(W) { return [W.player, ...W.cr]; }
+function edible(c, ty) { return ty === "plant" ? c.st.eat.plant > 0 : c.st.eat.meat > 0; }
+
+function scan(W, c, sense) {
+  const ai = c.ai, P = W.player, s2 = sense * sense; let fear = null, fd = s2 * .5, tg = null, td = s2, food = null, fdd = s2 * .4;
+  for (const o of allC(W)) {
+    if (o === c || o.kind === "mate" || (o.sp && o.sp === c.sp)) continue;
+    const dd = d2(o, c); if (dd > s2) continue;
+    const threat = o.st.bite > 0 && o.diet !== "plant" && o.k >= c.k * (c.diet === "meat" ? 1.6 : .8);
+    if (threat && dd < fd && !(o.kind === "player" && P.st.lure && c.k < P.k * .8)) { fear = o; fd = dd; }
+    if (c.st.bite > 0 && c.diet !== "plant" && ai.rest <= 0 && dd < td && o.k <= c.k * (c.diet === "both" ? .9 : o.kind === "player" ? 1.1 : 1.25) && o.k >= c.k * .45 && !(o.kind === "player" && o.inv > 0)) { tg = o; td = dd; } // big hunters don't bother with specks
+  }
+  if (ai.fearT <= 0) ai.fear = fear;
+  if (tg && tg !== ai.tg && (!ai.tg || ai.tg.dead)) { ai.tg = tg; ai.chase = 3 + W.R() * 2; }
+  if (ai.tg && (ai.tg.dead || d2(ai.tg, c) > s2 * 1.6)) ai.tg = null;
+  ai.food = null;
+  if (!ai.tg) for (const it of W.items) { if (!edible(c, it.ty)) continue; const dd = d2(it, c); if (dd < fdd) { fdd = dd; food = it; } }
+  ai.food = food;
+  ai.lure = P.st.lure > 0 && c.k < P.k * .8 && d2(P, c) < (viewR(W) * 1.1) ** 2;
+}
+function think(W, c, dt) {
+  const ai = c.ai; if (c.stun > 0) { c.stun -= dt; accel(c, 0, dt); return; }
+  ai.t -= dt; ai.rest -= dt; ai.fearT -= dt; ai.scan -= dt;
+  const sense = c.st.view * c.k * .8;
+  if (ai.scan <= 0) { ai.scan = .3 + W.R() * .25; scan(W, c, sense); }
+  let ang = null, thr = ai.thr;
+  if (ai.fear && !ai.fear.dead) { ang = Math.atan2(c.y - ai.fear.y, c.x - ai.fear.x); thr = 1; if (d2(ai.fear, c) > sense * sense * 1.2) ai.fear = null; }
+  else if (ai.tg) { ang = Math.atan2(ai.tg.y - c.y, ai.tg.x - c.x); thr = 1; ai.chase -= dt; if (ai.chase <= 0) { ai.tg = null; ai.rest = 5 + W.R() * 4; } }
+  else if (ai.lure) { const P = W.player; ang = Math.atan2(P.y - c.y, P.x - c.x); thr = .55; }
+  else if (ai.food && W.items.includes(ai.food)) { ang = Math.atan2(ai.food.y - c.y, ai.food.x - c.x); thr = .6; }
+  else { if (ai.t <= 0) { ai.t = 2 + W.R() * 3; ai.dir = c.a + (W.R() - .5) * 2.6; ai.thr = .2 + W.R() * .35; } ang = ai.dir; thr = ai.thr; }
+  turnTo(c, ang, dt); accel(c, npcSpd(W, c) * thr, dt);
+}
+function mateThink(W, c, dt) {
+  const P = W.player; c.ai.t -= dt;
+  if (d2(P, c) < (P.g.R * P.k * 6) ** 2) turnTo(c, Math.atan2(P.y - c.y, P.x - c.x), dt, .6);
+  else { if (c.ai.t <= 0) { c.ai.t = 3; c.ai.dir = c.a + (W.R() - .5) * 2; } turnTo(c, c.ai.dir, dt, .5); }
+  accel(c, c.st.spd * c.k * .12, dt);
+}
+
+function hurt(W, B, dmg, src) {
+  if (B.inv > 0 || B.kind === "mate" || B.dead) return;
+  dmg *= 1 - B.st.arm; B.hp -= dmg; B.hurtT = W.t;
+  if (B.kind === "npc" && src && src !== B) {
+    if (B.st.bite > 0 && B.diet !== "plant" && src.k <= B.k * 1.6) { B.ai.tg = src; B.ai.chase = 5; B.ai.rest = 0; }
+    else { B.ai.fear = src; B.ai.fearT = 3; }
+  }
+  if (B.kind === "player") W.ev.push({ t: "hurt", f: dmg / B.max });
+  if (B.hp <= 0) kill(W, B, src);
+}
+function kill(W, B, src) {
+  if (B.kind === "player") { if (!W.over) { W.over = "dead"; W.ev.push({ t: "die", by: src && src.sp ? src.sp.key : null, rel: src ? Math.round(Math.log(src.k / B.k) / Math.log(1.7)) : 0, how: W.how, diet: src ? src.diet : "" }); } return; }
+  B.dead = true; W.cr = W.cr.filter(c => c !== B);
+  const P = W.player, rel = Math.min(1.5, (B.k / P.k) ** 2), n = clamp(Math.round(2 + 3 * rel), 1, 7);
+  for (let i = 0; i < n; i++) { const it = item(W, "meat", B.x + (W.R() - .5) * B.g.R * B.k, B.y + (W.R() - .5) * B.g.R * B.k, B.k, 2.5); it.life = 45; W.items.push(it); }
+  W.ev.push({ t: "kill", x: B.x, y: B.y, k: B.k, h: B.d.h, by: src === P });
+  if (src === P) { W.S.cell.kills++; if (!W.relic && lockedParts(W.S).length && W.R() < .1) W.relic = { x: B.x, y: B.y, r: 6 * P.k, ph: 0 }; }
+}
+function grow(W, v, ty) {
+  const c = W.S.cell; c.ate[ty] += v; c.dna += v * .7;
+  if (!c.ready && !c.done) { c.grow = Math.min(TIERS[c.tier].g, c.grow + v); if (c.grow >= TIERS[c.tier].g) { c.ready = true; W.ev.push({ t: "ready" }); } }
+}
+function lockedParts(S) { return PARTS.filter(p => !S.cell.unlocked.includes(p.id)); }
+function pickLocked(S, R) {
+  const L = lockedParts(S); if (!L.length) return null;
+  const pref = L.filter(p => p.t <= S.cell.tier + 1), list = pref.length ? pref : L;
+  return list[Math.floor(R() * list.length)].id;
+}
+function useAb(W, P, ab) {
+  if (ab === "dash") { P.dash = .5; P.ab.dash = 3.5; }
+  else if (ab === "poison") { const [x, y] = toW(P, P.g.minX - 6, 0); W.clouds.push({ x, y, r: 36 * P.k, t: 4.5, T: 4.5 }); P.ab.poison = 7; }
+  else if (ab === "zap") {
+    for (const c of W.cr) if (c.kind === "npc" && distBody(c, P.x, P.y) < (P.g.R + 45) * P.k) { hurt(W, c, 7 * Math.pow(P.k, 1.5), P); c.stun = 1.3; }
+    P.ab.zap = 8; W.ev.push({ t: "zap", x: P.x, y: P.y, r: (P.g.R + 45) * P.k });
+  }
+  W.ev.push({ t: "ab", ab });
+}
+
+function stepWorld(W, dt, inp) {
+  if (W.over) return;
+  W.t += dt; const P = W.player, S = W.S, c0 = S.cell; S.time += dt;
+  // the player swims where the stick points
+  const mx = inp.mx || 0, my = inp.my || 0, m = Math.min(1, Math.hypot(mx, my));
+  if (m > .08) turnTo(P, Math.atan2(my, mx), dt, P.dash > 0 ? 1.6 : 1);
+  let sp = P.st.spd * P.k * m;
+  if (P.dash > 0) { P.dash -= dt; sp = Math.max(sp * 2.6, P.st.spd * P.k * 2.2); }
+  accel(P, sp, dt);
+  for (const k in P.ab) if (P.ab[k] > 0) P.ab[k] -= dt;
+  if (inp.ab) { if (P.st.ab[inp.ab] && !(P.ab[inp.ab] > 0)) useAb(W, P, inp.ab); inp.ab = null; }
+  for (const c of W.cr) { if (c.kind === "npc") think(W, c, dt); else if (c.kind === "mate") mateThink(W, c, dt); }
+  const L = allC(W);
+  for (const c of L) { c.x += c.vx * dt; c.y += c.vy * dt; if (c.inv > 0) c.inv -= dt; if (c.bcd > 0) c.bcd -= dt; if (c.ecd > 0) c.ecd -= dt; }
+  for (const it of W.items) { it.x += it.vx * dt; it.y += it.vy * dt; it.vx *= 1 - dt * .3; it.vy *= 1 - dt * .3; if (it.life !== undefined) it.life -= dt; }
+  collide(W, L); feed(W); fight(W, L);
+  for (const cl of W.clouds) { cl.t -= dt; for (const c of W.cr) if (c.kind === "npc" && distBody(c, cl.x, cl.y) < cl.r) hurt(W, c, 5 * Math.pow(P.k, 1.5) * dt, P); }
+  W.clouds = W.clouds.filter(cl => cl.t > 0);
+  for (const c of allC(W)) if (W.t - c.hurtT > 3 && c.hp < c.max) c.hp = Math.min(c.max, c.hp + c.max * (c.kind === "player" ? .07 : .03) * dt);
+  // mate: evolve with them (and grow, when the growth bar is full)
+  W.mateCool -= dt; W.mateWait -= dt;
+  const V = viewR(W);
+  if (!W.mate && W.mateWait <= 0 && (c0.ready || (W.t - W.lastEvo > 75 && c0.dna >= 12))) {
+    const [x, y] = spot(W, V * .9, V * 1.3); W.mate = mkC(W, cloneD(c0.design), "mate", P.tier, P.k, x, y); W.cr.push(W.mate); W.ev.push({ t: "mateSpawn" });
+  }
+  if (W.mate) {
+    if (d2(W.mate, P) > (V * 3) ** 2) { const [x, y] = spot(W, V * .9, V * 1.3); W.mate.x = x; W.mate.y = y; }
+    if (W.mateCool <= 0 && distBody(W.mate, P.x, P.y) < P.g.R * P.k * 1.05) { W.mateCool = 2.5; W.ev.push({ t: "mate" }); }
+  }
+  // glowing pods hold new parts
+  if (!W.relic && W.t >= W.nextRelic) { const [x, y] = spot(W, V * 1, V * 1.5); W.relic = { x, y, r: 6 * P.k, ph: 0 }; W.ev.push({ t: "relicSpawn" }); }
+  if (W.relic) {
+    const R = W.relic; R.ph += dt;
+    if (d2(R, P) > (V * 3.2) ** 2) { W.relic = null; W.nextRelic = W.t + 6; }
+    else if (Math.sqrt(d2(R, P)) < P.g.R * P.k + R.r) {
+      const id = pickLocked(S, W.R); if (id) { c0.unlocked.push(id); W.ev.push({ t: "relic", id }); } else { c0.dna += 15; W.ev.push({ t: "relic", id: null }); }
+      W.relic = null; W.nextRelic = W.t + (lockedParts(S).length ? 50 + W.R() * 30 : 90);
+    }
+  }
+  W.popT -= dt; if (W.popT <= 0) { W.popT = .5; populate(W, false); }
+}
+function collide(W, L) {
+  for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+    const A = L[i], B = L[j], dx = B.x - A.x, dy = B.y - A.y, rr = A.g.R * A.k + B.g.R * B.k;
+    if (dx * dx + dy * dy > rr * rr) continue;
+    let best = 0, nx = 0, ny = 0;
+    for (let a = 0; a < A.g.r.length; a++) { const [ax, ay] = segW(A, a), ra = A.g.r[a] * A.k;
+      for (let b = 0; b < B.g.r.length; b++) { const [bx, by] = segW(B, b), ex = bx - ax, ey = by - ay, dd = Math.hypot(ex, ey) || .01, ov = ra + B.g.r[b] * B.k - dd;
+        if (ov > best) { best = ov; nx = ex / dd; ny = ey / dd; } } }
+    if (best > 0) { const ma = A.k * A.k, mb = B.k * B.k, t = ma + mb; A.x -= nx * best * mb / t * .8; A.y -= ny * best * mb / t * .8; B.x += nx * best * ma / t * .8; B.y += ny * best * ma / t * .8; }
+  }
+}
+function feed(W) {
+  const P = W.player;
+  for (const c of allC(W)) {
+    if (c.kind === "mate" || !c.g.mouths.length) continue;
+    if (c.kind === "npc" && (c.ecd > 0 || !c.ai.food)) continue;
+    for (const mo of c.g.mouths) {
+      const ty = mo.P.eat; const [mx, my] = toW(c, mo.x + Math.cos(mo.a) * 2, mo.y + Math.sin(mo.a) * 2), reach = 5 * c.k;
+      for (let i = W.items.length - 1; i >= 0; i--) {
+        const it = W.items[i]; if (ty !== "both" && ty !== it.ty) continue;
+        const ex = it.x - mx, ey = it.y - my, rr = it.r + reach; if (ex * ex + ey * ey > rr * rr) continue;
+        W.items.splice(i, 1);
+        if (c === P) { const v = it.v * Math.min(1, (it.k / P.k) ** 2) * (ty === "both" ? .8 : 1); grow(W, v, it.ty); W.ev.push({ t: "eat", x: it.x, y: it.y, ty: it.ty, hue: it.hue }); }
+        else { c.ecd = 1.5; c.ai.food = null; break; }
+      }
+    }
+  }
+}
+function fight(W, L) {
+  const P = W.player;
+  for (const A of L) {
+    if (A.kind === "mate" || A.stun > 0) continue;
+    if (A.st.bite > 0 && A.bcd <= 0) {
+      for (const mo of A.g.mouths) {
+        if (!mo.P.bite) continue;
+        const [mx, my] = toW(A, mo.x + Math.cos(mo.a) * 3, mo.y + Math.sin(mo.a) * 3), reach = 5 * A.k; let hit = null;
+        for (const B of L) {
+          if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp)) continue;
+          if (A.kind === "npc" && B !== A.ai.tg && !(B.kind === "player" && A.diet === "meat" && B.k <= A.k * 1.3 && B.k >= A.k * .45)) continue;
+          const lim = B.g.R * B.k + reach; if (Math.abs(B.x - mx) > lim || Math.abs(B.y - my) > lim) continue;
+          if (distBody(B, mx, my) < reach) { hit = B; break; }
+        }
+        if (hit) {
+          A.bcd = .85; W.how = "bite"; hurt(W, hit, A.st.bite * Math.pow(A.k, 1.5) * (hit === P ? .75 : 1), A); // a little kinder to the player
+          if (A === P && mo.P.eat === "both") grow(W, .3 * Math.min(1, (hit.k / P.k) ** 2), "meat");
+          W.ev.push({ t: "bite", x: mx, y: my, by: A === P, on: hit === P }); break;
+        }
+      }
+    }
+    if (A.st.spk > 0) for (const s of A.g.spikes) {
+      const [tx, ty] = toW(A, s.x + Math.cos(s.a) * 7, s.y + Math.sin(s.a) * 7);
+      for (const B of L) {
+        if (B === A || B.kind === "mate" || (A.sp && B.sp === A.sp)) continue;
+        if (A.kind === "npc" && B.ai.tg !== A && !(B.kind === "player" && B.st.bite > 0)) continue; // thorns fight back against hunters, not grazers bumping by
+        const lim = B.g.R * B.k; if (Math.abs(B.x - tx) > lim || Math.abs(B.y - ty) > lim) continue;
+        if ((A.spk[B.id] || 0) > W.t || distBody(B, tx, ty) > 0) continue;
+        A.spk[B.id] = W.t + .8; W.how = "spike"; hurt(W, B, s.P.spk * Math.pow(Math.min(A.k, B.k * 1.3), 1.5) * .6, A); W.ev.push({ t: "spike", x: tx, y: ty });
+      }
+    }
+  }
+}
+/* Evolving: pay for the new design; with a full growth bar, grow a size (or finish the stage at the last size). */
+function applyEvolve(W, d) {
+  const S = W.S, c = S.cell, cost = designValue(d) - designValue(c.design);
+  c.dna = Math.max(0, c.dna - cost); c.design = cloneD(d); c.evolves++;
+  let grew = false, done = false, gift = null;
+  if (c.ready) {
+    c.ready = false; c.grow = 0;
+    if (c.tier < TIERS.length - 1) { c.tier++; grew = true; gift = pickLocked(S, W.R); if (gift) c.unlocked.push(gift); }
+    else { c.done = true; done = true; S.nature = natureOf(c); }
+  }
+  const P = W.player; placePlayer(W, P.x, P.y, P.a); W.player.inv = 1.5;
+  if (W.mate) { W.cr = W.cr.filter(q => q !== W.mate); W.mate = null; }
+  W.lastEvo = W.t; W.mateWait = 10;
+  return { grew, done, gift };
+}
+function respawn(W) {
+  const S = W.S, P = W.player, lost = Math.floor(S.cell.dna * .1), V = viewR(W);
+  S.cell.deaths++; S.cell.dna -= lost;
+  W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.sqrt(d2(c, P)) > V * 1.6);
+  placePlayer(W, P.x, P.y, P.a); W.player.inv = 3; W.over = null; W.clouds = [];
+  return lost;
+}
+/*CORE-END*/
+
+/* ================================ page ================================ */
+const $ = id => document.getElementById(id);
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+const SLOTS = 3;
+const opts = Object.assign({ sound: true }, store.get("lf.opts", {}));
+let view = "menu", S = null, slot = -1, W = null, paused = false, saveT = 15;
+const inp = { mx: 0, my: 0, ab: null };
+const keys = {};
+
+/* ---------- sound ---------- */
+let AC = null;
+function snd(kind) {
+  if (!opts.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.connect(g); g.connect(AC.destination);
+    const S2 = { eat: [520, 880, .07, .05, "sine"], meat: [300, 520, .08, .06, "triangle"], hurt: [180, 70, .18, .12, "sawtooth"], kill: [400, 120, .2, .08, "square"],
+      grow: [440, 1320, .5, .09, "sine"], relic: [660, 1400, .35, .08, "triangle"], mate: [700, 1050, .3, .07, "sine"], zap: [900, 200, .2, .07, "square"], dash: [200, 600, .12, .06, "sine"] }[kind];
+    if (!S2) return;
+    o.type = S2[4]; o.frequency.setValueAtTime(S2[0], t); o.frequency.exponentialRampToValueAtTime(S2[1], t + S2[2]);
+    g.gain.setValueAtTime(S2[3], t); g.gain.exponentialRampToValueAtTime(.001, t + S2[2] + .05); o.start(t); o.stop(t + S2[2] + .08);
+  } catch (e) {}
+}
+
+/* ---------- drawing a creature (in its own design units, facing +x) ---------- */
+const BACK = { whip: 1, fringe: 1, jet: 1, thorn: 1, stink: 1, frill: 1, feeler: 1, glow: 1 };
+function cols(d) {
+  const l = clamp(d.l, 25, 75);
+  return { fill: `hsl(${d.h} 62% ${l}%)`, hi: `hsl(${d.h} 70% ${Math.min(92, l + 22)}%)`, line: `hsl(${d.h} 55% ${Math.max(8, l - 30)}%)`,
+    pat: `hsla(${d.h2} 72% ${Math.max(20, l - 14)}% / .6)`, h2: `hsl(${d.h2} 70% 62%)`, dark: `hsl(${d.h} 50% ${Math.max(6, l - 40)}%)` };
+}
+function bodyPath(d, g, t) {
+  const p = new Path2D();
+  for (let i = 0; i < g.r.length; i++) {
+    const cx = g.cx[i], r = g.r[i], n = d.edge === 1 ? 22 : 36;
+    for (let j = 0; j <= n; j++) {
+      const a = j / n * TAU; let rr = r * (1 + .03 * Math.sin(t * 2.3 + i * 1.7 + a * 3));
+      if (d.edge === 1) rr *= j % 2 ? .9 : 1.08; else if (d.edge === 2) rr *= 1 + .06 * Math.sin(a * 7 + t * 3);
+      const x = cx + Math.cos(a) * rr, y = Math.sin(a) * rr; j ? p.lineTo(x, y) : p.moveTo(x, y);
+    }
+    p.closePath();
+  }
+  return p;
+}
+function drawCreature(ctx, d, g, t, o) {
+  o = o || {}; const C = cols(d), mv = o.mv == null ? .5 : o.mv;
+  const noJaw = !g.parts.some(q => q.id === "jaw");
+  for (const q of g.parts) if (BACK[q.id]) drawPart(ctx, q, d, g, t, C, mv, o);
+  const bp = bodyPath(d, g, t);
+  ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = C.line; ctx.stroke(bp);
+  ctx.fillStyle = C.fill; ctx.fill(bp);
+  ctx.save(); ctx.clip(bp);
+  const r0 = g.r[0], minX = g.minX, maxX = g.maxX;
+  ctx.fillStyle = C.pat;
+  if (d.pat === 1) { for (let i = 0; i < g.r.length; i++) for (let j = 0; j < 5; j++) { const a = j * 2.4 + i, rr = g.r[i] * (.35 + .4 * ((j * 7 + i * 3) % 5) / 5); ctx.beginPath(); ctx.arc(g.cx[i] + Math.cos(a) * rr, Math.sin(a) * rr, g.r[i] * .17, 0, TAU); ctx.fill(); } }
+  else if (d.pat === 2) { for (let x = minX + 3; x < maxX; x += 7) ctx.fillRect(x, -40, 3, 80); }
+  else if (d.pat === 3) { ctx.strokeStyle = C.pat; ctx.lineWidth = 2.2; for (let i = 0; i < g.r.length; i++) { ctx.beginPath(); ctx.arc(g.cx[i], 0, g.r[i] * .62, 0, TAU); ctx.stroke(); } }
+  else if (d.pat === 4) { for (let j = 0; j < 30; j++) { const x = minX + ((j * 37) % 100) / 100 * (maxX - minX), y = (((j * 53) % 100) / 100 - .5) * r0 * 2; ctx.fillRect(x, y, 1.4, 1.4); } }
+  else if (d.pat === 5) { ctx.fillRect(minX, -2.6, maxX - minX, 5.2); }
+  // a soft shine and the nucleus, so it reads as a living cell
+  const gr = ctx.createRadialGradient(g.cx[0] + r0 * .2, -r0 * .45, 0, g.cx[0], -r0 * .2, r0 * 1.1);
+  gr.addColorStop(0, "rgba(255,255,255,.35)"); gr.addColorStop(1, "rgba(255,255,255,0)"); ctx.fillStyle = gr; ctx.fillRect(minX, -40, maxX - minX, 80);
+  ctx.fillStyle = C.dark; ctx.globalAlpha = .28; ctx.beginPath(); ctx.arc(g.cx[g.r.length > 1 ? 1 : 0] - r0 * .2, r0 * .25, r0 * .32, 0, TAU); ctx.fill();
+  ctx.globalAlpha = .5; ctx.fillStyle = C.hi; for (let j = 0; j < 3; j++) { ctx.beginPath(); ctx.arc(g.cx[0] - r0 * .35 + j * 2.5, -r0 * .1 + ((j * 5) % 3) * 2, .9, 0, TAU); ctx.fill(); }
+  ctx.globalAlpha = 1; ctx.restore();
+  if (o.hurt) { ctx.save(); ctx.globalAlpha = .5; ctx.fillStyle = "#fff"; ctx.fill(bp); ctx.restore(); }
+  for (const q of g.parts) if (!BACK[q.id]) drawPart(ctx, q, d, g, t, C, mv, o, noJaw);
+  if (o.sel != null) for (const q of g.parts) if (q.qi === o.sel) { ctx.save(); ctx.strokeStyle = o.del ? "#FF5A6E" : "#fff"; ctx.setLineDash([2, 2]); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(q.x, q.y, 7, 0, TAU); ctx.stroke(); ctx.restore(); }
+}
+function eyeBall(ctx, x, y, r, t, o, kind) {
+  const blink = (Math.sin(t * .9 + x) > .985) ? .15 : 1;
+  ctx.save(); ctx.translate(x, y); ctx.scale(1, blink);
+  if (kind === "slit") {
+    ctx.fillStyle = o.glare ? "#FF3B3B" : "#FFC23D"; ctx.strokeStyle = "#1A0A06"; ctx.lineWidth = .9;
+    ctx.beginPath(); ctx.ellipse(0, 0, r, r * .8, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#120606"; ctx.beginPath(); ctx.ellipse(r * .25, 0, r * .18, r * .72, 0, 0, TAU); ctx.fill();
+  } else {
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "#0B1A1E"; ctx.lineWidth = .8; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = o.glare ? "#C0122A" : "#111A22"; ctx.beginPath(); ctx.arc(r * .3, 0, r * .58, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(r * .05, -r * .32, r * .22, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(r * .5, r * .2, r * .1, 0, TAU); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawPart(ctx, q, d, g, t, C, mv, o, noJaw) {
+  const id = q.id, cx = g.cx[q.s], r = g.r[q.s], sg = q.y < 0 ? -1 : 1;
+  ctx.save();
+  if (id === "moon" || id === "slit" || id === "cluster") {
+    const ix = cx + (q.x - cx) * .7, iy = q.y * .7;
+    if (id === "cluster") { for (let j = 0; j < 3; j++) { const a = q.a + (j - 1) * .5; ctx.save(); ctx.fillStyle = "#16060A"; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * r * .72, Math.sin(a) * r * .72, 2.1, 0, TAU); ctx.fill();
+        ctx.fillStyle = o.glare ? "#FF2B3B" : "#FF6A4D"; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * r * .72 + .4, Math.sin(a) * r * .72, 1.1, 0, TAU); ctx.fill(); ctx.restore(); } }
+    else {
+      eyeBall(ctx, ix, iy, id === "moon" ? 4.6 : 4, t, o, id);
+      if (id === "slit") { ctx.strokeStyle = C.dark; ctx.lineWidth = 1.6; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(ix - 4, iy + sg * 4.6); ctx.lineTo(ix + 4.2, iy + sg * 1.8); ctx.stroke(); }
+      if (id === "moon" && noJaw) { ctx.fillStyle = "rgba(255,120,160,.4)"; ctx.beginPath(); ctx.ellipse(ix - 3, iy + sg * 5.5, 2.6, 1.5, 0, 0, TAU); ctx.fill(); }
+    }
+    ctx.restore(); return;
+  }
+  ctx.translate(q.x, q.y); ctx.rotate(q.a); ctx.lineCap = "round"; ctx.lineJoin = "round";
+  switch (id) {
+    case "filter": {
+      ctx.strokeStyle = C.hi; ctx.lineWidth = .9;
+      for (let j = -2; j <= 2; j++) { const a = j * .38; ctx.beginPath(); ctx.moveTo(1.5, 0); ctx.lineTo(1.5 + Math.cos(a) * 7, Math.sin(a) * 7 + Math.sin(t * 8 + j) * .8); ctx.stroke(); }
+      ctx.fillStyle = "#1B0E14"; ctx.beginPath(); ctx.ellipse(.5, 0, 2.6, 4, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.4; ctx.stroke(); break;
+    }
+    case "jaw": {
+      const op = 1.2 + 1.6 * (.5 + .5 * Math.sin(t * 6 + q.y));
+      ctx.fillStyle = "#1A0508"; ctx.beginPath(); ctx.ellipse(1, 0, 3.4, 2 + op, 0, 0, TAU); ctx.fill();
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = "#E8DCC4"; ctx.strokeStyle = "#2A0E10"; ctx.lineWidth = .9;
+        ctx.beginPath(); ctx.moveTo(-1, s * (2 + op)); ctx.quadraticCurveTo(6, s * (6 + op), 10, s * (op * .4)); ctx.quadraticCurveTo(5, s * (2.2 + op * .6), -1, s * (op * .8)); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#fff"; for (let j = 0; j < 3; j++) { const x = 2 + j * 2.4; ctx.beginPath(); ctx.moveTo(x, s * (1.6 + op * .7)); ctx.lineTo(x + 1, s * (op * .2)); ctx.lineTo(x + 2, s * (1.4 + op * .6)); ctx.fill(); }
+      }
+      break;
+    }
+    case "siphon": {
+      ctx.fillStyle = C.h2; ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-1, -2.4, 9, 4.8, 2) : ctx.rect(-1, -2.4, 9, 4.8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#1B0E14"; ctx.beginPath(); ctx.ellipse(8.5, 0, 1.6, 3 + Math.sin(t * 5) * .4, 0, 0, TAU); ctx.fill(); ctx.stroke(); break;
+    }
+    case "whip": {
+      ctx.strokeStyle = C.line; const ph = t * (6 + mv * 10);
+      for (const [w, col] of [[2.8, C.line], [1.4, C.h2]]) { ctx.lineWidth = w; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(-1, 0);
+        for (let i = 1; i <= 14; i++) ctx.lineTo(i * 2.3, Math.sin(ph - i * .7) * i * .32); ctx.stroke(); }
+      break;
+    }
+    case "fringe": {
+      ctx.strokeStyle = C.h2; ctx.lineWidth = .9;
+      for (let j = -3; j <= 3; j++) { const y = j * 2; ctx.beginPath(); ctx.moveTo(-1.5, y); ctx.lineTo(5, y + Math.sin(t * 12 + j) * 1.6); ctx.stroke(); }
+      break;
+    }
+    case "jet": {
+      ctx.fillStyle = C.h2; ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-1, -3.4); ctx.lineTo(7, -2.2); ctx.lineTo(7, 2.2); ctx.lineTo(-1, 3.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#1B0E14"; ctx.beginPath(); ctx.ellipse(7, 0, 1, 2, 0, 0, TAU); ctx.fill();
+      if (o.dash) { ctx.fillStyle = "rgba(220,250,255,.7)"; for (let j = 0; j < 4; j++) { ctx.beginPath(); ctx.arc(9 + j * 3 + ((t * 40) % 3), Math.sin(j * 2 + t * 20) * 1.5, 1.2 - j * .2, 0, TAU); ctx.fill(); } }
+      break;
+    }
+    case "thorn": {
+      ctx.fillStyle = "#EDE3CF"; ctx.strokeStyle = "#3A2420"; ctx.lineWidth = .9; ctx.beginPath(); ctx.moveTo(-1.5, -2.8); ctx.lineTo(9, 0); ctx.lineTo(-1.5, 2.8); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#5A1E22"; ctx.beginPath(); ctx.moveTo(5.5, -.9); ctx.lineTo(9, 0); ctx.lineTo(5.5, .9); ctx.fill(); break;
+    }
+    case "shell": {
+      ctx.fillStyle = `hsl(${d.h2} 28% 48%)`; ctx.strokeStyle = `hsl(${d.h2} 30% 22%)`; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(-1.5, 0, 3.8, 8.5, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); for (let j = -2; j <= 2; j++) { ctx.moveTo(-4, j * 3); ctx.lineTo(1.5, j * 3.2); } ctx.stroke(); break;
+    }
+    case "stink": {
+      ctx.fillStyle = "#A8C94A"; ctx.strokeStyle = "#3E4A14"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(3.5, 0, 4.2 + Math.sin(t * 3) * .3, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#6E8A22"; for (const [x, y] of [[2.5, -1.5], [4.8, 1.2], [2, 1.8]]) { ctx.beginPath(); ctx.arc(x, y, .8, 0, TAU); ctx.fill(); } break;
+    }
+    case "spark": {
+      const gl = ctx.createRadialGradient(3, 0, 0, 3, 0, 9); gl.addColorStop(0, "rgba(255,240,120,.55)"); gl.addColorStop(1, "rgba(255,240,120,0)"); ctx.fillStyle = gl; ctx.fillRect(-6, -9, 18, 18);
+      ctx.fillStyle = "#FFE45A"; ctx.strokeStyle = "#6A4E00"; ctx.lineWidth = .9; ctx.beginPath(); ctx.moveTo(-1, -3.2); ctx.lineTo(7, 0); ctx.lineTo(-1, 3.2); ctx.lineTo(1.5, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+    }
+    case "stalk": {
+      const ex = 10, ey = Math.sin(t * 2.5 + q.y) * 2; ctx.strokeStyle = C.line; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-1, 0); ctx.quadraticCurveTo(5, -ey, ex, ey); ctx.stroke();
+      ctx.rotate(-q.a); const ax = Math.cos(q.a) * ex - Math.sin(q.a) * ey, ay = Math.sin(q.a) * ex + Math.cos(q.a) * ey; eyeBall(ctx, ax, ay, 3.3, t, o, "moon"); break;
+    }
+    case "frill": {
+      ctx.fillStyle = `hsla(${d.h2} 75% 66% / .55)`; ctx.strokeStyle = `hsla(${d.h2} 60% 40% / .8)`; ctx.lineWidth = .8;
+      ctx.beginPath(); ctx.moveTo(-1, -6); for (let j = 0; j <= 10; j++) { const a = -Math.PI / 2 + j / 10 * Math.PI, rr = 7 + Math.sin(j * 1.6 + t * 4) * 1.2; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr * .9); } ctx.lineTo(-1, 6); ctx.closePath(); ctx.fill(); ctx.stroke();
+      for (let j = 1; j < 5; j++) { const a = -Math.PI / 2 + j / 5 * Math.PI; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 6, Math.sin(a) * 5.4); ctx.stroke(); } break;
+    }
+    case "feeler": {
+      const ey = Math.sin(t * 4 + q.y) * 3; ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-1, 0); ctx.quadraticCurveTo(7, -ey, 13, ey); ctx.stroke();
+      ctx.fillStyle = C.h2; ctx.beginPath(); ctx.arc(13, ey, 1.6, 0, TAU); ctx.fill(); break;
+    }
+    case "glow": {
+      const ey = -3 + Math.sin(t * 2) * 1.5; ctx.strokeStyle = C.line; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-1, 0); ctx.quadraticCurveTo(6, -6, 11, ey); ctx.stroke();
+      const gl = ctx.createRadialGradient(11, ey, 0, 11, ey, 10); gl.addColorStop(0, "rgba(190,255,240,.75)"); gl.addColorStop(1, "rgba(120,255,220,0)"); ctx.fillStyle = gl; ctx.fillRect(1, ey - 10, 20, 20);
+      ctx.fillStyle = "#EFFFF8"; ctx.beginPath(); ctx.arc(11, ey, 2.4, 0, TAU); ctx.fill(); break;
+    }
+  }
+  ctx.restore();
+}
+function partIcon(cv, id, d) {
+  const ctx = cv.getContext("2d"), dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = 72 * dpr; cv.height = 52 * dpr;
+  ctx.setTransform(dpr * 2, 0, 0, dpr * 2, 0, 0); ctx.clearRect(0, 0, 36, 26);
+  const P = PART[id], dd = { s: [8], p: [], h: d.h, l: d.l, h2: d.h2, pat: 0, edge: 0 }, eye = P.cat === "eye" && id !== "stalk";
+  const a = eye ? -.6 : P.cat === "move" ? Math.PI : id === "shell" || id === "frill" ? -1.3 : 0;
+  dd.p.push({ id, s: 0, a, m: false }); const g = geom(dd);
+  ctx.translate(id === "whip" || P.cat === "move" ? 24 : 13, 13); if (id === "shell" || id === "frill") ctx.translate(5, 5);
+  drawCreature(ctx, dd, g, 1.2, { mv: .4 });
+}
+
+/* ---------- menu ---------- */
+function slotKey(i) { return "lf.slot." + i; }
+function loadSlot(i) { const s = store.get(slotKey(i), null); return s && s.cell ? migrate(s) : null; }
+function saveSlot() { if (!S || slot < 0) return; S.at = Date.now(); store.set(slotKey(slot), S); store.set("lf.last", slot); }
+function fmtTime(s) { const m = Math.round(s / 60); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; }
+function preview(cv, d, w, h) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = w * dpr; cv.height = h * dpr; const ctx = cv.getContext("2d");
+  const g = geom(d), sc = Math.min(w / (g.maxX - g.minX + 44), h / (g.R * 2 + 26));
+  ctx.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * (w / 2 - (g.maxX + g.minX) / 2 * sc), dpr * h / 2); drawCreature(ctx, d, g, 1, { mv: .3 });
+}
+function renderMenu() {
+  const box = $("slots"); box.textContent = "";
+  for (let i = 0; i < SLOTS; i++) {
+    const s = loadSlot(i), el = document.createElement("div");
+    if (!s) { el.className = "slot empty"; const b = document.createElement("button"); b.className = "slot empty"; b.style.margin = "0"; b.textContent = "+ Start a new life"; b.onclick = () => newLifeDlg(i); box.append(b); continue; }
+    el.className = "slot"; const cv = document.createElement("canvas"); el.append(cv);
+    const info = document.createElement("div"); info.className = "si";
+    const nm = document.createElement("b"); nm.textContent = s.name; const chip = document.createElement("span"); chip.className = "chip" + (s.mode === "hard" ? " hc" : ""); chip.textContent = s.mode === "hard" ? "☠ Hardcore" : "Normal"; nm.append(chip);
+    const sm = document.createElement("span"); sm.className = "sm";
+    sm.textContent = s.dead ? `Died out at ${TIERS[s.cell.tier].n} size · ${fmtTime(s.time)}` : s.cell.done ? `Cell stage complete · ${NATURES[s.nature] ? NATURES[s.nature].n : ""} · ${fmtTime(s.time)}` : `Cell stage · ${TIERS[s.cell.tier].n} (size ${s.cell.tier + 1} of 5) · ${fmtTime(s.time)}`;
+    const row = document.createElement("div"); row.className = "row";
+    if (!s.dead) { const p = document.createElement("button"); p.className = "btn small primary"; p.textContent = "Play"; p.onclick = () => startSlot(i); row.append(p); }
+    const del = document.createElement("button"); del.className = "btn small bad"; del.textContent = s.dead ? "Clear" : "Delete";
+    del.onclick = () => dialog(`<h2>${s.dead ? "Clear" : "Delete"} ${esc(s.name)}?</h2><p>${s.dead ? "This clears the fossil from this slot." : "This species and all its progress will be gone for good."}</p><div class="row"><button class="btn" data-a="no">Keep</button><button class="btn bad" data-a="yes">${s.dead ? "Clear" : "Delete"}</button></div>`, { yes: () => { store.del(slotKey(i)); closeDlg(); renderMenu(); }, no: closeDlg });
+    row.append(del); info.append(nm, sm, row); el.append(info); box.append(el);
+    preview(cv, s.cell.design, 84, 72); if (s.dead) cv.style.filter = "grayscale(1) brightness(.6)";
+  }
+  $("road").innerHTML = STAGES.map((n, i) => `<li class="${i === 0 ? "on" : ""}">${i + 1}. ${n}${i > 0 ? " · soon" : ""}</li>`).join("");
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
+const SYL = ["zo", "bli", "qua", "mi", "ru", "xe", "po", "lo", "vin", "ka", "fli", "nu", "tor", "gla", "pip", "oz", "wib", "sna", "dro", "ul", "ki", "mop", "zee", "bo"];
+function randName() { const n = 2 + (Math.random() < .3 ? 1 : 0); let s = ""; for (let i = 0; i < n; i++) s += SYL[Math.floor(Math.random() * SYL.length)]; return s[0].toUpperCase() + s.slice(1); }
+
+/* ---------- dialogs ---------- */
+let dlgActs = null, dlgBack = null;
+function dialog(html, acts, back) {
+  $("dbox").innerHTML = html; $("dlg").hidden = false; dlgActs = acts || {}; dlgBack = back || null;
+  $("dbox").querySelectorAll("[data-a]").forEach(b => b.onclick = () => { const f = dlgActs[b.dataset.a]; if (f) f(b); });
+}
+function closeDlg() { $("dlg").hidden = true; dlgActs = null; dlgBack = null; }
+function newLifeDlg(i) {
+  let mode = "normal", diet = "plant";
+  dialog(`<h2>A new life</h2>
+    <div class="lbl">Name your species</div>
+    <div class="namerow"><input id="nmIn" maxlength="18" value="${randName()}" aria-label="Species name"><button class="btn" data-a="dice" aria-label="Another name">🎲</button></div>
+    <div class="lbl">First mouth</div>
+    <div class="pick" id="dietPick"><button class="opt on" data-a="plant"><b>🌿 Plant eater</b><span>A gentle grazer. Sieve up the green bits floating in the water.</span></button>
+    <button class="opt" data-a="meat"><b>🦷 Meat eater</b><span>A hunter. Bite smaller creatures and eat the red bits they leave.</span></button></div>
+    <div class="lbl">How hard</div>
+    <div class="pick" id="modePick"><button class="opt on" data-a="normal"><b>Normal</b><span>If you're eaten, you come back straight away and lose a little DNA.</span></button>
+    <button class="opt" data-a="hard"><b>☠ Hardcore</b><span>One life. If you're eaten, your species is gone for good.</span></button></div>
+    <div class="row"><button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="go">Begin</button></div>`, {
+    dice: () => { $("nmIn").value = randName(); },
+    plant: b => { diet = "plant"; mark("dietPick", b); }, meat: b => { diet = "meat"; mark("dietPick", b); },
+    normal: b => { mode = "normal"; mark("modePick", b); }, hard: b => { mode = "hard"; mark("modePick", b); },
+    cancel: closeDlg,
+    go: () => { const name = ($("nmIn").value || "").trim().slice(0, 18) || randName(); const s = newSave({ name, mode, diet, seed: (Math.random() * 4294967295) >>> 0 }); store.set(slotKey(i), s); closeDlg(); startSlot(i); }
+  });
+  function mark(id, b) { $(id).querySelectorAll(".opt").forEach(x => x.classList.toggle("on", x === b)); }
+}
+
+/* ---------- play ---------- */
+const cv = $("cv"), ctx = cv.getContext("2d");
+let CW = 0, CH = 0, DPR = 1;
+const cam = { x: 0, y: 0, s: 1, shake: 0 };
+let parts = [], fx = [], abilKeys = "";
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); CW = innerWidth; CH = innerHeight; cv.width = CW * DPR; cv.height = CH * DPR; const e = $("ecv"); if (!$("edit").hidden) sizeEditor(); }
+addEventListener("resize", resize);
+function show(v) { view = v; $("menu").hidden = v !== "menu"; $("play").hidden = v !== "play"; $("edit").hidden = v !== "edit"; if (v === "edit") sizeEditor(); }
+function startSlot(i) {
+  const s = loadSlot(i); if (!s || s.dead) return;
+  S = s; slot = i; W = newWorld(S); paused = false; parts = []; fx = []; saveT = 15; abilKeys = "";
+  cam.x = 0; cam.y = 0; cam.s = Math.min(CW, CH) * .62 / viewR(W);
+  show("play"); resize(); store.set("lf.last", i); hintT = 1; updateAbil();
+}
+function quitToMenu() { saveSlot(); W = null; S = null; slot = -1; closeDlg(); show("menu"); renderMenu(); }
+function pause() {
+  if (!W || W.over) return; paused = true; saveSlot();
+  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${TIERS[S.cell.tier].n} size · ${fmtTime(S.time)} played</p>
+    <div class="row"><button class="btn primary" data-a="go">Carry on</button></div>
+    <div class="row"><button class="btn" data-a="snd">Sound: ${opts.sound ? "on" : "off"}</button><button class="btn" data-a="help">How to play</button></div>
+    <div class="row"><button class="btn" data-a="quit">Save and leave</button></div>`, {
+    go: resume, quit: quitToMenu, help: helpDlg,
+    snd: b => { opts.sound = !opts.sound; store.set("lf.opts", opts); b.textContent = "Sound: " + (opts.sound ? "on" : "off"); }
+  }, resume);
+}
+function resume() { closeDlg(); paused = false; }
+function helpDlg() {
+  dialog(`<h2>How to play</h2>
+    <p><b>Swim:</b> put your thumb anywhere and drag. Your cell swims that way.</p>
+    <p><b>Eat:</b> steer your mouth into food. Filter mouths and siphons eat the green bits; jaws bite creatures and eat the red bits.</p>
+    <p><b>Grow:</b> eating fills the green bar. When it's full, find your mate (❤ at the edge of the screen) to evolve and grow a size bigger. Five sizes finish the cell stage.</p>
+    <p><b>Evolve:</b> your mate also lets you spend DNA 🧬 on new parts. Glowing pods ✦ hold parts you haven't found yet.</p>
+    <p><b>Danger:</b> creatures with jaws and a red glow are hunting you. Swim away: they give up after a few seconds. You heal when you've been left alone for a bit.</p>
+    <div class="row"><button class="btn primary" data-a="ok">Got it</button></div>`, { ok: () => { if (W && !W.over && view === "play") pause(); else closeDlg(); } }, () => { if (W && view === "play") pause(); else closeDlg(); });
+}
+$("pauseBtn").onclick = pause;
+
+/* thumb stick: anywhere on the water */
+let stickId = null, sx0 = 0, sy0 = 0;
+cv.addEventListener("pointerdown", e => {
+  if (stickId != null || paused) return; stickId = e.pointerId; sx0 = e.clientX; sy0 = e.clientY; cv.setPointerCapture(e.pointerId);
+  const st = $("stick"); st.hidden = false; st.style.left = sx0 + "px"; st.style.top = sy0 + "px"; $("knob").style.transform = ""; inp.mx = inp.my = 0;
+});
+cv.addEventListener("pointermove", e => {
+  if (e.pointerId !== stickId) return; let dx = e.clientX - sx0, dy = e.clientY - sy0; const R = 50, d = Math.hypot(dx, dy);
+  if (d > R) { sx0 += dx / d * (d - R); sy0 += dy / d * (d - R); dx = e.clientX - sx0; dy = e.clientY - sy0; const st = $("stick"); st.style.left = sx0 + "px"; st.style.top = sy0 + "px"; }
+  inp.mx = dx / R; inp.my = dy / R; $("knob").style.transform = `translate(${dx}px,${dy}px)`; moved += 1;
+});
+const endStick = e => { if (e.pointerId !== stickId) return; stickId = null; inp.mx = inp.my = 0; $("stick").hidden = true; };
+cv.addEventListener("pointerup", endStick); cv.addEventListener("pointercancel", endStick);
+addEventListener("keydown", e => { keys[e.key.toLowerCase()] = 1; if (e.key === " " && W) inp.ab = "dash"; if (e.key === "Escape" && view === "play" && !paused) pause(); });
+addEventListener("keyup", e => { keys[e.key.toLowerCase()] = 0; });
+document.addEventListener("visibilitychange", () => { if (document.hidden) { if (view === "play" && !paused && W && !W.over) pause(); saveSlot(); } });
+
+const AB = { dash: ["⚡", "Dash"], poison: ["☁", "Stink"], zap: ["✶", "Zap"] };
+function updateAbil() {
+  const P = W.player, ks = Object.keys(P.st.ab).sort().join(","); if (ks === abilKeys) return; abilKeys = ks;
+  const box = $("abil"); box.textContent = "";
+  for (const k of Object.keys(AB)) if (P.st.ab[k]) {
+    const b = document.createElement("button"); b.className = "ab"; b.dataset.ab = k; b.innerHTML = `${AB[k][0]}<small>${AB[k][1]}</small>`;
+    b.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); inp.ab = k; }); box.append(b);
+  }
+}
+
+/* hints for a new player, each shown once (bits in S.hints) */
+let hintT = 0, moved = 0, hintOn = -1, hintEnd = 0;
+function hint(n, text, secs) { if (S.hints & (1 << n) || hintOn >= 0) return; S.hints |= 1 << n; hintOn = n; hintEnd = performance.now() + (secs || 6) * 1000; $("hint").textContent = text; $("hint").hidden = false; }
+function hints() {
+  if (hintOn >= 0 && performance.now() > hintEnd && !(hintOn === 0 && moved < 30)) { hintOn = -1; $("hint").hidden = true; }
+  if (!W) return; const P = W.player;
+  if (W.t > .5) hint(0, "Put your thumb anywhere and drag to swim.", 5);
+  if (W.t > 6) hint(1, P.st.eat.plant ? "Steer your mouth into the green bits to eat them." : "Bite smaller creatures with your jaw, then eat the red bits.", 7);
+  if (W.relic && W.t > 12) hint(2, "A glowing pod ✦! Grab it to find a new body part.", 6);
+  if (W.mate && W.t > 12) hint(3, "Your mate ❤ is near. Swim to them to evolve: spend DNA 🧬 on parts.", 7);
+  if (W.t > 40) hint(4, "Creatures with a red glow are hunting you. Swim away: they soon give up.", 7);
+}
+let toastT = 0;
+function toast(t) { const el = $("toast"); el.textContent = t; el.hidden = false; toastT = performance.now() + 2600; }
+
+function handleEvents() {
+  const P = W.player;
+  for (const e of W.ev) {
+    if (e.t === "eat") { snd(e.ty === "plant" ? "eat" : "meat"); for (let i = 0; i < 4; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 40 * P.k, vy: (Math.random() - .5) * 40 * P.k, life: .5, col: `hsl(${e.hue} 90% 70%)`, r: 1.5 * P.k }); }
+    else if (e.t === "hurt") { snd("hurt"); cam.shake = Math.min(12, cam.shake + 4 + e.f * 30); $("vig").style.opacity = Math.min(1, .3 + e.f * 3); }
+    else if (e.t === "kill") { snd("kill"); for (let i = 0; i < 14; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90 * e.k, vy: (Math.random() - .5) * 90 * e.k, life: .8, col: `hsl(${e.h} 70% 60%)`, r: 2.4 * e.k }); }
+    else if (e.t === "bite") { for (let i = 0; i < 3; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 50 * P.k, vy: (Math.random() - .5) * 50 * P.k, life: .35, col: "#FF6B7E", r: 1.6 * P.k }); }
+    else if (e.t === "ready") { snd("grow"); toast("Fully grown! Find your mate ❤ to evolve and get bigger."); }
+    else if (e.t === "relic") { snd("relic"); toast(e.id ? `New part found: ${PART[e.id].n}! Use it next time you evolve.` : "A DNA pod: +15 🧬"); }
+    else if (e.t === "mateSpawn") { snd("mate"); }
+    else if (e.t === "mate") { openEditor(); }
+    else if (e.t === "zap") { snd("zap"); fx.push({ ty: "ring", x: e.x, y: e.y, r: e.r, life: .35 }); }
+    else if (e.t === "ab" && e.ab === "dash") snd("dash");
+    else if (e.t === "die") died();
+  }
+  W.ev.length = 0;
+}
+function died() {
+  saveSlot();
+  const c = S.cell;
+  if (S.mode === "hard") {
+    S.dead = { at: Date.now(), tier: c.tier }; saveSlot();
+    setTimeout(() => dialog(`<h2>Your species has died out</h2><p>${esc(S.name)} was eaten. In hardcore there's only one life.</p>
+      <div class="stats"><div>Size<b>${TIERS[c.tier].n}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Creatures eaten<b>${c.kills}</b></div><div>Evolved<b>${c.evolves}×</b></div></div>
+      <div class="row"><button class="btn primary" data-a="ok">Back to the menu</button></div>`, { ok: quitToMenu }, quitToMenu), 700);
+  } else {
+    setTimeout(() => { const lost = Math.floor(c.dna * .1);
+      dialog(`<h2>You were eaten!</h2><p>Your species carries on. You lost ${lost} DNA 🧬.</p><div class="row"><button class="btn primary" data-a="ok">Swim again</button></div>`,
+        { ok: () => { respawn(W); closeDlg(); saveSlot(); } }, () => { respawn(W); closeDlg(); }); }, 700);
+  }
+}
+
+/* ---------- rendering the water ---------- */
+const DEPTH = [["#13646A", "#06303A"], ["#0F5868", "#052634"], ["#18476E", "#081A36"], ["#2B3A70", "#0C1030"], ["#3E2A66", "#120A26"]];
+const BG = [{ x: .2, y: .3, ph: 0, sp: 3 }, { x: .75, y: .7, ph: 2, sp: 5 }];
+function draw(dt) {
+  const P = W.player, T = P.tier, t = performance.now() / 1000;
+  const ts = Math.min(CW, CH) * .62 / viewR(W); cam.s += (ts - cam.s) * Math.min(1, dt * 2);
+  cam.x += (P.x - cam.x) * Math.min(1, dt * 6); cam.y += (P.y - cam.y) * Math.min(1, dt * 6);
+  const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 30);
+  const ox = CW / 2 - cam.x * cam.s + (Math.random() - .5) * sh, oy = CH / 2 - cam.y * cam.s + (Math.random() - .5) * sh, s = cam.s;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const [c1, c2] = DEPTH[Math.min(4, T)], bg = ctx.createRadialGradient(CW / 2, CH * .35, 0, CW / 2, CH / 2, Math.max(CW, CH) * .8);
+  bg.addColorStop(0, c1); bg.addColorStop(1, c2); ctx.fillStyle = bg; ctx.fillRect(0, 0, CW, CH);
+  // giant shapes far below: the bigger life you'll grow into
+  ctx.save(); ctx.globalAlpha = .1;
+  BG.forEach((b, i) => {
+    const sp = species(W, T + 3, i * 3 + 1), g = sp.g, sz = Math.max(CW, CH) * .45 / g.R;
+    const wx = ((b.x * (CW + 800) - cam.x * s * .25 + t * b.sp) % (CW + 800) + (CW + 800)) % (CW + 800) - 400, wy = ((b.y * (CH + 800) - cam.y * s * .25) % (CH + 800) + (CH + 800)) % (CH + 800) - 400;
+    ctx.save(); ctx.translate(wx, wy); ctx.rotate(.3 + i * 2.4 + Math.sin(t * .1 + i) * .2); ctx.scale(sz, sz); drawCreature(ctx, sp.d, g, t * .5, { mv: .2 }); ctx.restore();
+  });
+  ctx.restore();
+  // drifting specks at three depths
+  ctx.fillStyle = "#CFFFF4";
+  for (const [f, cs, al] of [[.3, 120, .12], [.6, 90, .2], [1, 70, .3]]) {
+    const px = cam.x * s * f, py = cam.y * s * f, i0 = Math.floor(px / cs) - 1, j0 = Math.floor(py / cs) - 1;
+    for (let i = i0; i < i0 + CW / cs + 3; i++) for (let j = j0; j < j0 + CH / cs + 3; j++) {
+      const h = hash(i, j, f * 10); ctx.globalAlpha = al * (.4 + (h >>> 24) / 400); const z = 1 + (h & 3) * f;
+      ctx.fillRect(i * cs + (h % 997) / 997 * cs - px, j * cs + ((h >>> 10) % 997) / 997 * cs - py, z, z);
+    }
+  }
+  ctx.globalAlpha = 1;
+  const onS = (x, y, r) => { const X = x * s + ox, Y = y * s + oy, R = r * s; return X > -R && X < CW + R && Y > -R && Y < CH + R; };
+  // poison clouds
+  for (const cl of W.clouds) { if (!onS(cl.x, cl.y, cl.r)) continue; const X = cl.x * s + ox, Y = cl.y * s + oy, R = cl.r * s, gr = ctx.createRadialGradient(X, Y, 0, X, Y, R);
+    gr.addColorStop(0, `rgba(170,220,60,${.45 * cl.t / cl.T})`); gr.addColorStop(1, "rgba(170,220,60,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill(); }
+  // food
+  for (const it of W.items) {
+    if (!onS(it.x, it.y, it.r * 2)) continue; const X = it.x * s + ox, Y = it.y * s + oy, R = it.r * s * (1 + .08 * Math.sin(t * 3 + it.ph));
+    if (it.ty === "plant") {
+      ctx.fillStyle = `hsla(${it.hue} 90% 60% / .18)`; ctx.beginPath(); ctx.arc(X, Y, R * 1.9, 0, TAU); ctx.fill();
+      ctx.fillStyle = `hsl(${it.hue} 70% 48%)`; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill();
+      ctx.fillStyle = `hsl(${it.hue} 80% 70%)`; ctx.beginPath(); ctx.ellipse(X + R * .5, Y - R * .7, R * .55, R * .28, -.6 + it.ph, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(X - R * .3, Y - R * .3, R * .25, 0, TAU); ctx.fill();
+    } else {
+      const a = it.life !== undefined ? Math.min(1, it.life / 5) : 1; ctx.globalAlpha = a;
+      ctx.fillStyle = `hsl(${it.hue} 62% 46%)`; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.arc(X + R * .7, Y + R * .3, R * .6, 0, TAU); ctx.fill();
+      ctx.fillStyle = `hsl(${it.hue} 70% 68%)`; ctx.beginPath(); ctx.arc(X - R * .3, Y - R * .35, R * .3, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+    }
+  }
+  // the pod
+  if (W.relic) { const R = W.relic, X = R.x * s + ox, Y = R.y * s + oy, r = R.r * s;
+    const gr = ctx.createRadialGradient(X, Y, 0, X, Y, r * 3); gr.addColorStop(0, "rgba(215,174,255,.6)"); gr.addColorStop(1, "rgba(215,174,255,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, r * 3, 0, TAU); ctx.fill();
+    ctx.save(); ctx.translate(X, Y); ctx.rotate(t); ctx.fillStyle = "#E9D2FF"; ctx.strokeStyle = "#7B46C4"; ctx.lineWidth = 2; ctx.beginPath();
+    for (let j = 0; j < 6; j++) { const a = j / 6 * TAU, rr = j % 2 ? r * .7 : r; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+  // creatures (the player on top)
+  for (const c of [...W.cr, P]) {
+    if (!onS(c.x, c.y, c.g.R * c.k * 2.2)) continue;
+    const X = c.x * s + ox, Y = c.y * s + oy, hunting = c.kind === "npc" && c.ai.tg === P;
+    if (hunting) { const R = c.g.R * c.k * s * 1.6, gr = ctx.createRadialGradient(X, Y, R * .3, X, Y, R); gr.addColorStop(0, "rgba(255,40,60,.28)"); gr.addColorStop(1, "rgba(255,40,60,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill(); }
+    if (c.kind === "mate") { ctx.fillStyle = "rgba(255,140,200,.9)"; ctx.font = `${Math.max(14, c.g.R * c.k * s * .7)}px sans-serif`; ctx.textAlign = "center"; ctx.fillText("❤", X, Y - c.g.R * c.k * s - 6 + Math.sin(t * 4) * 3); }
+    ctx.save(); ctx.translate(X, Y); ctx.rotate(c.a); ctx.scale(s * c.k, s * c.k);
+    if (c.kind === "player" && c.inv > 0 && Math.floor(t * 10) % 2) ctx.globalAlpha = .5;
+    const sp = Math.hypot(c.vx, c.vy) / (c.st.spd * c.k);
+    drawCreature(ctx, c.d, c.g, t + c.id, { mv: clamp(sp, 0, 1), hurt: W.t - c.hurtT < .12, glare: hunting, dash: c.dash > 0 });
+    ctx.restore();
+    if (c.kind === "npc" && c.hp < c.max && W.t - c.hurtT < 4) { const w = c.g.R * c.k * s * 1.4; ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(X - w / 2, Y + c.g.R * c.k * s + 4, w, 4); ctx.fillStyle = "#FF6B86"; ctx.fillRect(X - w / 2, Y + c.g.R * c.k * s + 4, w * Math.max(0, c.hp / c.max), 4); }
+  }
+  // sparkles and rings
+  for (const p of parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; ctx.globalAlpha = Math.max(0, p.life * 2); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x * s + ox, p.y * s + oy, Math.max(1, p.r * s), 0, TAU); ctx.fill(); }
+  parts = parts.filter(p => p.life > 0); ctx.globalAlpha = 1;
+  for (const f of fx) { f.life -= dt; ctx.strokeStyle = `rgba(255,240,120,${Math.max(0, f.life * 2.5)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x * s + ox, f.y * s + oy, f.r * s * (1.2 - f.life), 0, TAU); ctx.stroke(); }
+  fx = fx.filter(f => f.life > 0);
+  // arrows to the mate and the pod when off screen
+  const edge = (x, y, icon, col) => {
+    const X = x * s + ox, Y = y * s + oy; if (X > 20 && X < CW - 20 && Y > 70 && Y < CH - 20) return;
+    const a = Math.atan2(Y - CH / 2, X - CW / 2), m = 30, k = Math.min((CW / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (CH / 2 - m - 30) / Math.abs(Math.sin(a) || 1e-6));
+    const ex = CW / 2 + Math.cos(a) * k, ey = CH / 2 + 15 + Math.sin(a) * k;
+    ctx.save(); ctx.translate(ex, ey); ctx.fillStyle = "rgba(4,22,29,.75)"; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 17, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.rotate(a); ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(17, -6); ctx.lineTo(17, 6); ctx.fill(); ctx.rotate(-a);
+    ctx.font = "16px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(icon, 0, 1); ctx.restore();
+  };
+  if (W.mate) edge(W.mate.x, W.mate.y, "❤", "#FF8CC6");
+  if (W.relic) edge(W.relic.x, W.relic.y, "✦", "#D7AEFF");
+}
+function hud() {
+  const P = W.player, c = S.cell, T = TIERS[c.tier];
+  $("hpFill").style.width = Math.max(0, P.hp / P.max * 100) + "%";
+  $("grFill").style.width = (c.done ? 100 : c.grow / T.g * 100) + "%";
+  $("grBar").classList.toggle("ready", !!c.ready);
+  const lbl = c.done ? `${S.name} · cell stage complete` : c.ready ? `${T.n} · fully grown: find your mate ❤` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5)`;
+  if ($("grLabel").textContent !== lbl) $("grLabel").textContent = lbl;
+  const dn = String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
+  $("abil").querySelectorAll(".ab").forEach(b => { const k = b.dataset.ab, cd = { dash: 3.5, poison: 7, zap: 8 }[k]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
+  const v = $("vig"); if (+v.style.opacity > 0) v.style.opacity = Math.max(0, +v.style.opacity - .03);
+  if (toastT && performance.now() > toastT) { $("toast").hidden = true; toastT = 0; }
+}
+
+/* ---------- evolve: the creature builder ---------- */
+const ecv = $("ecv"), ectx = ecv.getContext("2d");
+let ED = null, EW = 0, EH = 0;
+const TABS = [["body", "Body"], ["mouth", "Mouths"], ["move", "Move"], ["fight", "Fight"], ["eye", "Senses"], ["extra", "Extras"], ["look", "Look"]];
+function openEditor() {
+  if (!W) return; paused = true; inp.mx = inp.my = 0; stickId = null; $("stick").hidden = true;
+  ED = { d: cloneD(S.cell.design), d0: cloneD(S.cell.design), sel: null, drag: null, tab: "mouth", view: { sc: 4, ox: 0, oy: 0 } };
+  show("edit"); renderTabs(); renderTray(); refreshEditor();
+}
+function sizeEditor() { const r = ecv.getBoundingClientRect(); EW = r.width; EH = r.height; ecv.width = EW * DPR; ecv.height = EH * DPR; }
+function edCost() { return designValue(ED.d) - designValue(ED.d0); }
+function edLeft() { return Math.floor(S.cell.dna - edCost()); }
+function refreshEditor() {
+  const c = S.cell, st = stats(ED.d), left = edLeft(), lim = partLimit(c.tier), n = st.parts;
+  $("eTitle").textContent = c.ready ? (c.tier < TIERS.length - 1 ? `Evolve and grow to ${TIERS[c.tier + 1].n}` : "Evolve: ready to leave the pond") : "Evolve";
+  $("eInfo").innerHTML = `🧬 <em class="${left < 0 ? "neg" : ""}">${left}</em> DNA left · parts ${n} of ${lim}`;
+  $("eDone").textContent = c.ready ? "Grow ▲" : "Done";
+  const diet = dietOf(st), dt = { plant: "🌿 Eats plants", meat: "🦷 Eats meat", both: "🌿🦷 Eats plants and meat", none: "⚠ No mouth: it can't eat!" }[diet];
+  const bar = (n, v) => `<div>${n}<i><u style="width:${Math.round(clamp(v, 0, 1) * 100)}%"></u></i></div>`;
+  $("eStats").innerHTML = bar("Speed", (st.spd - 25) / 90) + bar("Turning", (st.turn - 2.6) / 4.5) + bar("Health", st.hp / 60) + bar("Bite", st.bite / 9.5) + bar("Defence", st.arm / .55 * .6 + Math.min(1, st.spk / 25) * .4) + bar("Sight", (st.view - 140) / 90)
+    + `<div class="diet${diet === "none" ? " no" : ""}">${dt}${Object.keys(st.ab).length ? " · " + Object.keys(st.ab).map(k => AB[k][0] + " " + AB[k][1]).join(" ") : ""}</div>`;
+  renderSel(); if (ED.tab !== "look" && ED.tab !== "body") updateCards();
+}
+function renderTabs() {
+  const box = $("eTabs"); box.textContent = "";
+  for (const [id, n] of TABS) { const b = document.createElement("button"); b.textContent = n; b.className = ED.tab === id ? "on" : ""; b.onclick = () => { ED.tab = id; renderTabs(); renderTray(); }; box.append(b); }
+}
+function renderTray() {
+  const box = $("eTray"), d = ED.d, c = S.cell; box.textContent = "";
+  if (ED.tab === "look") {
+    const L = document.createElement("div"); L.className = "look";
+    L.innerHTML = `<label>Colour <input class="hue" type="range" min="0" max="359" value="${d.h}" id="lH"></label>
+      <label>Shade <input type="range" min="28" max="72" value="${d.l}" id="lL"></label>
+      <label>Markings colour <input class="hue" type="range" min="0" max="359" value="${d.h2}" id="lH2"></label>
+      <div class="opts" id="lPat">${["Plain", "Spots", "Stripes", "Rings", "Speckles", "Spine stripe"].map((n, i) => `<button data-v="${i}" class="${d.pat === i ? "on" : ""}">${n}</button>`).join("")}</div>
+      <div class="opts" id="lEdge">${["Smooth skin", "Spiky skin", "Wavy skin"].map((n, i) => `<button data-v="${i}" class="${d.edge === i ? "on" : ""}">${n}</button>`).join("")}</div>`;
+    box.append(L);
+    $("lH").oninput = e => { d.h = +e.target.value; refreshEditor(); }; $("lL").oninput = e => { d.l = +e.target.value; refreshEditor(); }; $("lH2").oninput = e => { d.h2 = +e.target.value; refreshEditor(); };
+    $("lPat").onclick = e => { const v = e.target.dataset.v; if (v == null) return; d.pat = +v; renderTray(); refreshEditor(); };
+    $("lEdge").onclick = e => { const v = e.target.dataset.v; if (v == null) return; d.edge = +v; renderTray(); refreshEditor(); };
+    return;
+  }
+  if (ED.tab === "body") {
+    const B = document.createElement("div"); B.className = "bodyp"; const lim = segLimit(c.tier);
+    B.innerHTML = d.s.map((r, i) => `<label>${i === 0 ? "Head" : "Body " + (i + 1)} size <input type="range" min="8" max="20" value="${r}" data-i="${i}"></label>`).join("")
+      + `<div class="row"><button class="btn small" id="bAdd" ${d.s.length >= lim ? "disabled" : ""}>+ Add a section (8 🧬)</button><button class="btn small" id="bDel" ${d.s.length < 2 ? "disabled" : ""}>Remove the last section</button></div>`
+      + `<p style="margin:0;font-size:.78rem;color:var(--muted)">${d.s.length >= lim && c.tier < 4 ? "Grow bigger to have more sections. " : ""}Bigger bodies are tougher but slower. Each size step costs a little DNA.</p>`;
+    box.append(B);
+    B.querySelectorAll("input[type=range]").forEach(inp2 => inp2.oninput = e => { d.s[+e.target.dataset.i] = +e.target.value; refreshEditor(); });
+    $("bAdd").onclick = () => { if (d.s.length < lim) { d.s.push(10); renderTray(); refreshEditor(); } };
+    $("bDel").onclick = () => { if (d.s.length > 1) { const L = d.s.length - 1; d.s.pop(); d.p = d.p.filter(q => q.s < L); ED.sel = null; renderTray(); refreshEditor(); } };
+    return;
+  }
+  for (const P of PARTS.filter(p => p.cat === ED.tab)) {
+    const has = c.unlocked.includes(P.id), b = document.createElement("button"); b.className = "card" + (has ? "" : " locked"); b.dataset.id = P.id;
+    const icon = document.createElement("canvas"); b.append(icon);
+    const nm = document.createElement("b"); nm.textContent = has ? P.n : "???"; const cs = document.createElement("span"); cs.textContent = has ? P.c + " 🧬" : "Find in a ✦ pod";
+    b.append(nm, cs); box.append(b);
+    if (has) { partIcon(icon, P.id, d); b.onclick = () => addPart(P.id); }
+    else { const x = icon.getContext("2d"); icon.width = 72; icon.height = 52; x.fillStyle = "#D7AEFF"; x.font = "28px sans-serif"; x.textAlign = "center"; x.fillText("✦", 36, 36); }
+  }
+  updateCards();
+}
+function updateCards() { const left = edLeft(); $("eTray").querySelectorAll(".card:not(.locked)").forEach(b => b.classList.toggle("cant", PART[b.dataset.id].c > left)); }
+function addPart(id) {
+  const d = ED.d, P = PART[id], L = d.s.length - 1, same = d.p.filter(q => q.id === id).length;
+  const spots = { mouth: [0, 0], move: id === "whip" ? [L, Math.PI] : id === "jet" ? [L, 2.7] : [L, -2.1], fight: id === "thorn" ? [Math.min(1, L), -1.9] : id === "shell" ? [0, -1.7] : id === "stink" ? [L, 2.8] : [0, -1.2],
+    eye: [0, -.75], extra: id === "frill" ? [L, -2] : id === "glow" ? [0, -.15] : [0, -.35] }[P.cat];
+  let a = spots[1] + (same ? (same % 2 ? .45 : -.45) * Math.ceil(same / 2) * (spots[1] < 0 ? 1 : -1) : 0);
+  if (P.cat === "mouth" && same) a = (same % 2 ? 1 : -1) * .55;
+  const q = { id, s: spots[0], a: wrapA(a), m: Math.abs(Math.sin(a)) > .2 && P.cat !== "mouth" && id !== "glow" };
+  let after = cloneD(d); after.p.push(q);
+  if (q.m && (stats(after).parts > partLimit(S.cell.tier) || designValue(after) - designValue(ED.d0) > S.cell.dna)) { q.m = false; after = cloneD(d); after.p.push(q); } // no room for a pair: just one
+  if (stats(after).parts > partLimit(S.cell.tier)) { toast(`That's too many parts for a ${TIERS[S.cell.tier].n}. Grow bigger for more.`); return; }
+  if (designValue(after) - designValue(ED.d0) > S.cell.dna) { toast("Not enough DNA 🧬 for that. Eat more!"); return; }
+  d.p.push(q); ED.sel = d.p.length - 1; refreshEditor(); snd("eat");
+}
+function renderSel() {
+  const box = $("eSel"); if (ED.sel == null || !ED.d.p[ED.sel]) { box.hidden = true; $("eHelp").hidden = false; return; }
+  const q = ED.d.p[ED.sel], P = PART[q.id], canM = Math.abs(Math.sin(q.a)) > .08;
+  box.hidden = false; $("eHelp").hidden = true;
+  box.innerHTML = `<div class="t"><b>${P.n}${q.m && canM ? " ×2" : ""}</b>${canM ? `<button class="btn small" id="sM">${q.m ? "Mirrored ⟷" : "Mirror ⟷"}</button>` : ""}<button class="btn small bad" id="sDel">Remove</button></div><p>${P.info}</p>`;
+  if (canM) $("sM").onclick = () => { const after = cloneD(ED.d); after.p[ED.sel].m = !q.m;
+    if (!q.m && (stats(after).parts > partLimit(S.cell.tier) || designValue(after) - designValue(ED.d0) > S.cell.dna)) { toast("Not enough DNA or room for a second one."); return; }
+    q.m = !q.m; refreshEditor(); };
+  $("sDel").onclick = () => { ED.d.p.splice(ED.sel, 1); ED.sel = null; refreshEditor(); };
+}
+function edLayout() {
+  const g = geom(ED.d); let x0 = g.minX, x1 = g.maxX, y1 = g.R;
+  for (const q of g.parts) { const ext = q.id === "whip" ? 34 : q.id === "feeler" || q.id === "glow" || q.id === "stalk" ? 16 : 10; const ex = q.x + Math.cos(q.a) * ext, ey = q.y + Math.sin(q.a) * ext; x0 = Math.min(x0, ex); x1 = Math.max(x1, ex); y1 = Math.max(y1, Math.abs(ey)); }
+  const sc = Math.min(EW / (x1 - x0 + 30), (EH - 80) / (y1 * 2 + 24), 7);
+  return { g, sc, ox: EW / 2 - (x1 + x0) / 2 * sc, oy: (EH - 50) / 2 + 12 };
+}
+function drawEditor(t) {
+  if (!ED || !EW) return; const L = edLayout(); ED.view = L;
+  ectx.setTransform(DPR, 0, 0, DPR, 0, 0); ectx.clearRect(0, 0, EW, EH);
+  ectx.save(); ectx.translate(L.ox, L.oy);
+  ectx.strokeStyle = "rgba(124,242,200,.12)"; ectx.setLineDash([4, 6]); ectx.beginPath(); ectx.moveTo(-EW, 0); ectx.lineTo(EW, 0); ectx.stroke(); ectx.setLineDash([]);
+  ectx.fillStyle = "rgba(124,242,200,.35)"; ectx.font = "12px Figtree, sans-serif"; ectx.textAlign = "left"; ectx.fillText("front →", (L.g.maxX + 16) * L.sc, -6);
+  ectx.scale(L.sc, L.sc); drawCreature(ectx, ED.d, L.g, t, { mv: .35, sel: ED.sel, del: ED.drag && ED.drag.del });
+  ectx.restore();
+}
+function edPt(e) { const r = ecv.getBoundingClientRect(), L = ED.view; return [(e.clientX - r.left - L.ox) / L.sc, (e.clientY - r.top - L.oy) / L.sc]; }
+ecv.addEventListener("pointerdown", e => {
+  if (!ED) return; const [x, y] = edPt(e), L = ED.view, g = L.g; let best = null, bd = Math.max(9, 22 / L.sc);
+  for (const q of g.parts) { const px = q.x + Math.cos(q.a) * 3, py = q.y + Math.sin(q.a) * 3, dd = Math.hypot(x - px, y - py); if (dd < bd) { bd = dd; best = q; } }
+  if (best) { ED.sel = best.qi; ED.drag = { qi: best.qi, sg: best.sg, del: false }; ecv.setPointerCapture(e.pointerId); refreshEditor(); return; }
+  for (let i = 0; i < g.r.length; i++) if (Math.hypot(x - g.cx[i], y) < g.r[i]) { ED.drag = { seg: i, d0: Math.hypot(x - g.cx[i], y), r0: ED.d.s[i] }; ED.sel = null; ecv.setPointerCapture(e.pointerId); refreshEditor(); return; }
+  ED.sel = null; refreshEditor();
+});
+ecv.addEventListener("pointermove", e => {
+  if (!ED || !ED.drag) return; const [x, y] = edPt(e), g = ED.view.g, dr = ED.drag;
+  if (dr.seg != null) { const r = clamp(Math.round(dr.r0 + Math.hypot(x - g.cx[dr.seg], y) - dr.d0), 8, 20); if (r !== ED.d.s[dr.seg]) { ED.d.s[dr.seg] = r; refreshEditor(); } return; }
+  let bi = 0, bo = 1e9; for (let i = 0; i < g.r.length; i++) { const o = Math.abs(Math.hypot(x - g.cx[i], y) - g.r[i]); if (o < bo) { bo = o; bi = i; } }
+  let out = 1e9; for (let i = 0; i < g.r.length; i++) out = Math.min(out, Math.hypot(x - g.cx[i], y) - g.r[i]);
+  const q = ED.d.p[dr.qi], a = Math.atan2(y, x - g.cx[bi]); q.s = bi; q.a = dr.sg < 0 ? -a : a; dr.del = out > 26;
+});
+const edUp = e => { if (!ED || !ED.drag) return; const dr = ED.drag; ED.drag = null; if (dr.del) { ED.d.p.splice(dr.qi, 1); ED.sel = null; snd("hurt"); } refreshEditor(); if (ED.tab === "body") renderTray(); };
+ecv.addEventListener("pointerup", edUp); ecv.addEventListener("pointercancel", edUp);
+$("eBack").onclick = () => leaveEditor();
+function leaveEditor() { if (!ED) return; ED = null; W.mateCool = 3; show("play"); paused = false; }
+$("eDone").onclick = () => {
+  const st = stats(ED.d);
+  if (dietOf(st) === "none") { toast("Your creature needs a mouth to eat!"); return; }
+  if (edLeft() < 0) { toast("Not enough DNA 🧬. Take something off, or eat more first."); return; }
+  if (st.parts > partLimit(S.cell.tier)) { toast("Too many parts. Take one off."); return; }
+  const res = applyEvolve(W, ED.d); ED = null; abilKeys = ""; updateAbil(); saveSlot(); show("play"); paused = false; snd(res.grew || res.done ? "grow" : "mate");
+  if (res.done) stageDone();
+  else if (res.grew) toast(`You grew to ${TIERS[S.cell.tier].n} size!${res.gift ? ` New part: ${PART[res.gift].n}.` : ""}`);
+};
+function stageDone() {
+  paused = true; const N = NATURES[S.nature] || NATURES.forager, c = S.cell;
+  dialog(`<h2>Ready to leave the pond!</h2><p>${esc(S.name)} has grown from a speck into a Titan of the pond.</p>
+    <div class="stats"><div>Nature<b>${N.n}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Creatures eaten<b>${c.kills}</b></div><div>Evolved<b>${c.evolves}×</b></div></div>
+    <p>${N.d}</p><p>The sea stage is coming in a later update. Your species is saved and will carry on from here. Until then, you can keep swimming in the pond.</p>
+    <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="go">Keep swimming</button></div>`, { menu: quitToMenu, go: resume }, resume);
+}
+
+/* ---------- main loop ---------- */
+let last = 0;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts;
+  if (view === "play" && W) {
+    if (!paused && !W.over) {
+      if (stickId == null) { const kx = (keys.arrowright || keys.d ? 1 : 0) - (keys.arrowleft || keys.a ? 1 : 0), ky = (keys.arrowdown || keys.s ? 1 : 0) - (keys.arrowup || keys.w ? 1 : 0); if (kx || ky) { const n = Math.hypot(kx, ky); inp.mx = kx / n; inp.my = ky / n; moved++; } else { inp.mx = inp.my = 0; } }
+      stepWorld(W, dt, inp); handleEvents(); hints();
+      saveT -= dt; if (saveT <= 0) { saveT = 15; saveSlot(); }
+    }
+    draw(paused ? 0 : dt); hud();
+  } else if (view === "edit") drawEditor(ts / 1000);
+}
+window.SG_BACK = () => {
+  if (!$("dlg").hidden) { if (dlgBack) dlgBack(); else closeDlg(); return true; }
+  if (view === "edit") { leaveEditor(); return true; }
+  if (view === "play") { pause(); return true; }
+  return false;
+};
+window.LF = { get W() { return W; }, get S() { return S; }, inp, startSlot, openEditor, applyEvolve, stepWorld };
+resize(); renderMenu(); requestAnimationFrame(frame);
+</script>
+<script src="../../shell.js"></script>
+</body>
+</html>
