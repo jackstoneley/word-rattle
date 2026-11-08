@@ -335,6 +335,10 @@ Fights: `landHunt`, `landFight`, `landMove` (`LMOVES`). Pack: young (`pack`, `pa
 `W.trail`; `W.callTg` sends them. Day/night `S.land.day` over `DAY`. Parts: `land: 1` land-only; `water: 1` swimming
 parts are not offered on land, and any still on the body are dead weight there (`stats(d, g, "land")`: no effect, double
 weight, -2 health; `designValue(d, "land")` gives no DNA back for them); `both: 1` sea parts work on land too.
+3D shape (all optional, saved in the design): `sy` per-section height and `sh` per-section tall/flat, `sp` spine stretch (used by `geom`),
+and per part `l` length and `z` size (`geom` passes them on). On land they change `stats` (legs: stride, turning, weight, reach; size scales
+effects and weight) and `designValue`. `shapeUp` gives each island species a body plan (`d.plan`: tall, crawl, round, deep, hunch, biped)
+from its own random stream. The builder's Shape tab and the part sliders show only on land, with a 3D preview (`edPreview`, `EP`).
 The builder picks parts by a fingertip-sized reach (`partCentre`), a chip list of every part (`renderChips`), drag-anywhere
 to move the picked part, and ↺ ↻ / section buttons.
 Sizes: `TIERS` (growth needed per size), world scale `KT(t)` = 1.7^t; the camera zooms out as you grow. Eating fills
@@ -345,7 +349,7 @@ Saves: `lf.slot.0`-`lf.slot.2` (whole save, `migrate()` fills new fields), `lf.l
 saved by id / index: append only. `tools/life-check.js` runs a greedy bot through the stage (about 14-22 min for a
 perfect bot, so 20+ for a person) and fails if it can't finish or finishes in under 8 minutes; then plays on into the sea
 (about 21-30 min for the bot; fails if not done in 90 or under 12), then the land (impress what its design can copy,
-else hunt; about 17-28 min for the bot; fails if not done in 150 or under 15). `window.LF` exposes the
+else hunt; about 14-28 min for the bot; fails if not done in 150 or under 12). `window.LF` exposes the
 world for Playwright.
 
 ### Adding a new game

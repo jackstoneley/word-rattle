@@ -478,6 +478,18 @@
         "Ten land goals to tick off (see the pause menu), each worth 25 DNA and a part pod.",
         "Even fewer trees in the woods, so you can see through them."
       ]
+    },
+    {
+      "id": 43,
+      "type": "features",
+      "headline": "Life: shape your creature in 3D",
+      "details": [
+        "On land, the builder has a new Shape tab: raise the head for a neck, lift the front to stand up on two legs, and make each body section tall and deep or low and flat. Stretch or squash the spine too. Shaping is free.",
+        "Pick any part to change its size, and change the length of legs, tails, necks, horns, eye stalks, feelers, arms and claws.",
+        "Size and length matter: long legs stride faster but turn slower and weigh more, really long ones reach fruit in the trees, bigger jaws and horns hit harder, and every bigger part is heavier and costs more DNA.",
+        "A 3D preview of your creature turns slowly in the corner of the builder while you work. Drag it to spin it round.",
+        "The island's animals come in proper body shapes now: long-legged browsers with raised necks, low flat crawlers, round little grazers, deep-chested herds, hunched hunters with long tails, and upright two-legged runners."
+      ]
     }
   ]
 }
