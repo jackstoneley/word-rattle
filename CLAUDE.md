@@ -323,7 +323,12 @@ herd / pack / solo / home, biomes, extras) plus two giants. Herds and packs foll
 herds panic together, packs share a target; solo animals keep their own `homes`; home animals defend their nest
 (`scanLand`). Each species has a `temper` (`TEMPER`, `POW` damage/health multipliers): flee, defend or aggro; `landAlarm` makes the
 whole group near the victim answer an attack (or a hunt starting, or aggro ones being approached) together. Home nests: walking
-into one with no guards left calls `nestWon` (`S.land.nests[i]`, `NEST_DNA`, brain +4, eggs or a part pod). Befriend: impress three *different* members (`wooed`); hunt four to drive a species out (`lspStatus`).
+into one with no guards left calls `nestWon` (`S.land.nests[i]`, `NEST_DNA`, brain +4, eggs or a part pod). Events (core: `quakeStep`, `stampStep`, `landGoals`; state `S.land.quake` {phase warn → erupt → after, t, sx/sy safe spot
+chosen when it starts, made, inv, pk}): at `QUAKE.start` brain or `QUAKE.startT` seconds in the land, the highest ground erupts;
+`W.fireR` grows to `rmax` and burns anything inside, animals follow a flow field (`flowField`, `flowMove`) to the safe spot, your nest
+moves there; then `resettle` (deterministic new homes near it) and `scorch` (dead trees, no bushes) run, also on every load after.
+Invaders (the `late` LSPEC entry) arrive 2 min later; herds stampede through you now and then (`W.stamp`). `LAND_GOALS` reuse
+`goal()`. Page: `quake3` (smoke, lava, flame ring, safe beacon), `burn3` (charred ground). Befriend: impress three *different* members (`wooed`); hunt four to drive a species out (`lspStatus`).
 Brain: species +8, giants +12, landmarks +3, food a little; 100 finishes (`done`, `S.landNature`). Impress: `impressPlan`,
 `socialQ` (call = voice, dance = legs, show = crest/frill/wing, pose = horns/armour/size), win at 60% (giants 70%).
 Fights: `landHunt`, `landFight`, `landMove` (`LMOVES`). Pack: young (`pack`, `packMax`) and joiners (`joined`) follow

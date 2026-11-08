@@ -6,7 +6,7 @@ const fs = require("fs"), path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "..", "games", "life", "index.html"), "utf8");
 const core = html.match(/\/\*CORE-START\*\/([\s\S]*?)\/\*CORE-END\*\//);
 if (!core) { console.error("life: CORE not found"); process.exit(1); }
-const C = new Function(core[1] + ";return {newSave, newWorld, stepWorld, applyEvolve, respawn, viewR, designValue, partLimit, segLimit, stats, cloneD, PART, PARTS, TIERS, cur, goToSea, bandMid, bandAt, SEA, goToLand, landGo, landGoTo, landHunt, landLeave, landMove, lspStatus, impressPlan, socialQ, impressEnd, LT};")();
+const C = new Function(core[1] + ";return {newSave, newWorld, stepWorld, applyEvolve, respawn, viewR, designValue, partLimit, segLimit, stats, cloneD, PART, PARTS, TIERS, cur, goToSea, bandMid, bandAt, SEA, goToLand, landGo, landGoTo, landHunt, landLeave, landMove, lspStatus, impressPlan, socialQ, impressEnd, quakeSites, LT};")();
 const verbose = process.argv.includes("-v");
 
 // What the bot buys when it evolves, in order (skips parts it hasn't found or can't afford).
@@ -83,6 +83,8 @@ function seaBot(W, diet, inp) {
    fight back when attacked, go home to heal and to evolve. */
 function landBot(W, diet, B) {
   const P = W.player, c = C.cur(W.S), LT = C.LT;
+  if (c.quake && c.quake.phase !== "after" && !c.quake.made) { const Q = C.quakeSites(W); if (!P.path || P.mode !== "walk" || !B.fleeing) { B.fleeing = true; C.landLeave(W); C.landGo(W, Q.safe[0], Q.safe[1]); } return; } // run from the volcano
+  B.fleeing = false;
   if (P.mode === "hunt" && P.tg && !P.tg.dead) {
     B.fightT = (B.fightT || 0) + .05;
     if (B.fightT > 25) { B.fightT = 0; P.tg.botSkip = W.t + 90; C.landLeave(W); C.landGoTo(W, W.home); return; } // a fight going nowhere: give up and go home
@@ -154,21 +156,21 @@ for (const [diet, seed, S] of grown) {
   seaOut.push(`${diet} ${min} min (${c.deaths} deaths)`);
   // and the land
   C.goToLand(S); const t1 = S.time, LW = C.newWorld(S, seed + 200), L = S.land, B = { evoT: 0 };
-  let lg = 0, dead = 0, rally = 0, scatter = 0, nests = 0;
+  let lg = 0, dead = 0, rally = 0, scatter = 0, nests = 0, safe = 0, goals = 0;
   while (!L.done && S.time - t1 < 9000 && lg++ < 9000 * 20) {
     landBot(LW, diet, B); C.stepWorld(LW, 1 / 20, {});
     for (const e of LW.ev) {
       if (e.t === "mate") { evolve(LW, diet); B.evoT = LW.t; }
       if (e.t === "meet") landMeet(LW, diet, e.c);
       if (e.t === "die") { dead++; L.deaths++; C.respawn(LW); }
-      if (e.t === "rally") rally++; if (e.t === "scatter") scatter++; if (e.t === "nestWon") nests++;
+      if (e.t === "rally") rally++; if (e.t === "scatter") scatter++; if (e.t === "nestWon") nests++; if (e.t === "safe") safe = 1; if (e.t === "goal") goals++;
     }
     LW.ev.length = 0;
   }
   const lmin = Math.round((S.time - t1) / 60), fr = LW.lsp.filter(x => C.lspStatus(L, x.i) === "friend").length, gone = LW.lsp.filter(x => C.lspStatus(L, x.i) === "gone").length;
   if (!L.done) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) didn't finish the land stage in 150 min (brain ${Math.round(L.grow)}, ${fr} friends, ${gone} hunted out)`); continue; }
   if (lmin < 15) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) finished the land stage in ${lmin} min: too quick`); }
-  landOut.push(`${diet} ${lmin} min (${fr} befriended, ${gone} hunted, ${nests} nests raided, ${dead} deaths)`);
+  landOut.push(`${diet} ${lmin} min (${fr} befriended, ${gone} hunted, ${nests} nests raided, ${goals} goals, ${safe ? "escaped the eruption" : "caught by the eruption"}, ${dead} deaths)`);
   if (verbose) console.log("land groups", diet, seed, "rallied", rally, "scattered", scatter);
   if (verbose) console.log("land", diet, seed, "done", lmin, "min; friends", fr, "hunted", gone, "epics", JSON.stringify(L.epics), "deaths", dead, "evolves", L.evolves, "dna", Math.round(L.dna), "lean", L.lean.toFixed(2), "nature", S.landNature);
   if (verbose) console.log("sea", diet, seed, "sizes at", sizeAt.join(", "), "min; done", min, "min; deaths", c.deaths, "kills", c.kills, "goals", Object.keys(c.goals).join(" "), "lean", c.lean.toFixed(2), "young", c.young, "dna left", Math.round(c.dna));

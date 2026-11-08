@@ -465,6 +465,19 @@
         "Nests: empty an animal's nest (drive them off or beat them) and walk in to claim it, for DNA, a little brain, and eggs or a new part.",
         "Fewer trees in the woods, and taller ones, so it's easier to see what's going on under them."
       ]
+    },
+    {
+      "id": 42,
+      "type": "features",
+      "headline": "Life: the volcano, the great migration, and goals on land",
+      "details": [
+        "Partway through the land stage the ground starts shaking. Then the mountain erupts and fire spreads across the island. Run for the green light on safe ground and keep your pack with you.",
+        "Every animal flees too. Afterwards they all settle on new ground near your new nest, and the old land is left burnt, with blackened trees.",
+        "Later, a fierce new pack comes ashore. Beat three of them for a goal.",
+        "Stampedes: now and then a herd comes charging straight through. Get out of the way!",
+        "Ten land goals to tick off (see the pause menu), each worth 25 DNA and a part pod.",
+        "Even fewer trees in the woods, so you can see through them."
+      ]
     }
   ]
 }
