@@ -279,9 +279,9 @@ pass to the winner (`destroyRealm`). Any keeper raises `alarmAt` when enemy figh
 ### Life (`games/life`)
 
 An evolve-a-creature game (in the genre of the evolution sims, with its own names and art), built a stage at a time:
-`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell** and **sea** stages exist (land onwards are
-planned as tap-to-move / turn-based, not live action). `S.stage` is "cell" or "sea"; `cur(S)` is that stage's state
-(`S.cell` / `S.sea`, same shape) and `TS(S)` its sizes (`TIERS` / `SEA_TIERS`). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
+`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell**, **sea** and **land** stages exist (tribe onwards
+planned as tap / turn-based, not live action). `S.stage` is "cell", "sea" or "land"; `cur(S)` is that stage's state
+(`S.cell` / `S.sea` / `S.land`) and `TS(S)` its sizes (`TIERS` / `SEA_TIERS` / `LAND_TIERS`, land has one: the brain bar). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
 A creature is a design `{s: [segment radii, head first], p: [{id, s: segment, a: angle (0 = front), m: mirrored}], h, l, h2,
 pat, edge}`; `geom` places the parts, `stats` turns them into speed, bite, health, sight and so on, `designValue` is its DNA
 price. Every creature in the pond is drawn from the same parts (`randomDesign`, per-save `species(tier, i)`: 0-2 plant
@@ -302,6 +302,20 @@ evolve) follow you and join fights (`allyThink`, `W.foe`). Diet `S.sea.lean` -1.
 value. `SEA_GOALS` pay DNA and a pod; a boss (`W.boss`, name from `BOSS_NAMES`) spawns in the Deep. At the last size the
 growth bar sets `ashore`; with lungs and two leg fins, reaching the surface finishes the stage (`done`, `S.seaNature`).
 No songs or friendship mini-game in the sea; species mostly don't get along. Long bodies are drawn bent (`bentG`).
+**Land** (`W.land`, own code after the sea in CORE: `newLand`, `stepLand`; page: `drawLand`, `landTap`, `renderLandUI`,
+`startImpress`): tap to move. The island is an `LN`×`LN` tile map of `LT` units (`makeIsland`, from `hash(seed, 777)`, so the same
+island every time; `W.reach` is the main island from `flood`). `findPath` is A* plus string-pulling with a body-width `los`;
+`moveC` slides along water/rock; a stuck walker re-plans tile by tile. Eight species (`LSPEC`, `W.lsp`: design, two liked
+moves `likes`, nest, `night` for the nocturnal one) and two giants (`W.epics`). Progress per species in `S.land.friends[i]`
+(impress three *different* members, `wooed`) and `hunted[i]` (four kills); `lspStatus` → friend / gone; giants in `epics`.
+Each species dealt with: brain +10, giants +15, food a little (`brain`); 100 finishes (`done`, `S.landNature`). Impress:
+`impressPlan` (three rounds, 4/5/6 moves, mostly the two liked; giants 5/6/7), `socialQ` (what this design can do: call =
+voice, dance = legs, show = crest/frill/wing, pose = horns/armour/size), win at 60% (giants 70%) in `impressEnd`; the page
+runs the copy game with `W.freeze`. Fights: `landHunt`, `landFight` (melee in reach), moves `landMove` (`LMOVES`: charge
+horn, pounce claw, spit, roar voice). Pack: young (`pack`, `packMax` +1 per evolve up to 4) and one joiner per befriended
+species (`joined`), following `W.trail`; `W.callTg` sends them. Day/night `S.land.day` over `DAY` seconds; the nocturnal
+species sleeps by day. Land parts carry `land: 1`; swimming parts `water: 1` don't come ashore; `both: 1` sea parts do
+(`stageParts`). `landStart` swaps leg fins → legs, tail fin → tail, adds front legs and a voice sac.
 The builder picks parts by a fingertip-sized reach (`partCentre`), a chip list of every part (`renderChips`), drag-anywhere
 to move the picked part, and ↺ ↻ / section buttons.
 Sizes: `TIERS` (growth needed per size), world scale `KT(t)` = 1.7^t; the camera zooms out as you grow. Eating fills
@@ -311,7 +325,8 @@ Saves: `lf.slot.0`-`lf.slot.2` (whole save, `migrate()` fills new fields), `lf.l
 `normal` (respawn, lose 10% DNA) or `hard` (one life: `S.dead` set, slot shows the fossil). `PARTS` and `TIERS` are
 saved by id / index: append only. `tools/life-check.js` runs a greedy bot through the stage (about 14-22 min for a
 perfect bot, so 20+ for a person) and fails if it can't finish or finishes in under 8 minutes; then plays on into the sea
-(about 21-30 min for the bot; fails if not done in 90 or under 12). `window.LF` exposes the
+(about 21-30 min for the bot; fails if not done in 90 or under 12), then the land (impress what its design can copy,
+else hunt; about 17-28 min for the bot; fails if not done in 150 or under 15). `window.LF` exposes the
 world for Playwright.
 
 ### Adding a new game

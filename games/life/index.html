@@ -88,6 +88,7 @@ h1 span{color:var(--accent)}
 .toast[hidden]{display:block;opacity:0}
 .hint{position:absolute;left:16px;right:16px;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 84px);margin:0 auto;max-width:420px;background:rgba(124,242,200,.14);border:1px solid rgba(124,242,200,.4);color:#DFFFF4;border-radius:14px;padding:10px 14px;font-weight:700;font-size:.92rem;text-align:center;pointer-events:none}
 .hint[hidden]{display:none}
+.hint.top{bottom:auto;top:calc(max(10px,env(safe-area-inset-top)) + 70px);right:110px}
 .abil{position:absolute;right:14px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
 .ab{width:64px;height:64px;border-radius:50%;background:rgba(4,22,29,.7);border:2px solid rgba(124,242,200,.5);font-size:1.5rem;font-weight:900;position:relative;touch-action:none;display:flex;align-items:center;justify-content:center;flex-direction:column;line-height:1}
 .ab small{font-size:.6rem;font-weight:800;margin-top:2px;color:var(--muted)}
@@ -95,6 +96,24 @@ h1 span{color:var(--accent)}
 .stick{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);pointer-events:none}
 .stick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(124,242,200,.35);border:2px solid rgba(124,242,200,.7)}
 .stick[hidden]{display:none}
+#lui[hidden],.lcard[hidden],.imp[hidden]{display:none}
+.lcard{position:absolute;left:12px;right:12px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 84px);max-width:440px;margin:0 auto;background:rgba(4,22,29,.9);border:1px solid var(--line);border-radius:14px;padding:10px 13px;display:flex;flex-direction:column;gap:3px}
+.lcard b{font-family:"Bricolage Grotesque",Figtree,sans-serif;font-size:1.05rem}
+.lcard span{font-size:.82rem;color:var(--muted)}
+.lbar{position:absolute;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));display:flex;justify-content:center;gap:10px;flex-wrap:wrap;padding:0 10px;pointer-events:none}
+.lb{pointer-events:auto;min-width:68px;height:62px;border-radius:16px;background:rgba(4,22,29,.88);border:2px solid rgba(124,242,200,.55);font-size:1.45rem;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;position:relative}
+.lb small{font-size:.66rem;font-weight:800;margin-top:3px;color:var(--ink)}
+.lb.mv::after{content:"";position:absolute;inset:-2px;border-radius:16px;background:conic-gradient(rgba(4,22,29,.75) calc(var(--cd,0)*360deg),transparent 0)}
+.lside{position:absolute;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 120px);display:flex;flex-direction:column;gap:8px}
+.lside .on{background:var(--warn);color:#000}
+.imp{position:absolute;left:0;right:0;bottom:0;padding:12px 12px max(16px,env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(4,22,29,.94) 30%);display:flex;flex-direction:column;align-items:center;gap:10px}
+.imsg{font-weight:800;text-align:center;font-size:1rem;text-shadow:0 1px 3px #000}
+.imbtns{display:flex;gap:10px;justify-content:center}
+.ib{width:76px;height:76px;border-radius:50%;background:#0F3B44;border:3px solid var(--accent);font-size:1.8rem;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.ib small{font-size:.58rem;font-weight:800;margin-top:3px;text-align:center}
+.ib.off{border-color:#555;opacity:.6}
+.ib.hit{background:var(--accent);color:var(--accent-ink)}
+.ib:disabled{filter:saturate(.6)}
 .vig{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 90px 30px rgba(255,40,70,.6);opacity:0;transition:opacity .15s}
 
 /* evolve (creature builder) */
@@ -160,7 +179,7 @@ h1 span{color:var(--accent)}
     <div class="road">
       <h3>The stages of life</h3>
       <ol id="road"></ol>
-      <p>The cell and sea stages are here now. Land and the stages after it arrive in later updates, and your species carries on into them.</p>
+      <p>The cell, sea and land stages are here now. The tribe and the stages after it arrive in later updates, and your species carries on into them.</p>
     </div>
   </div>
 </div>
@@ -180,6 +199,12 @@ h1 span{color:var(--accent)}
   <div class="vig" id="vig"></div>
   <div class="hint" id="hint" hidden></div>
   <div class="stick" id="stick" hidden><i id="knob"></i></div>
+  <div id="lui" hidden>
+    <div class="lcard" id="lCard" hidden></div>
+    <div class="lbar" id="lBar"></div>
+    <div class="lside"><button class="iconbtn" id="lHome" aria-label="Go home">⌂</button><button class="iconbtn" id="lCall" aria-label="Send your pack">📣</button><button class="iconbtn" id="lZin" aria-label="Zoom in">＋</button><button class="iconbtn" id="lZout" aria-label="Zoom out">－</button></div>
+  </div>
+  <div class="imp" id="imp" hidden><div class="imsg" id="imMsg"></div><div class="imbtns" id="imBtns"></div></div>
   <div class="abil" id="abil"></div>
 </div>
 
@@ -213,8 +238,8 @@ const TAU = Math.PI * 2;
 const TIERS = [{ n: "Speck", g: 50 }, { n: "Mote", g: 85 }, { n: "Droplet", g: 120 }, { n: "Bloom", g: 160 }, { n: "Titan", g: 200 }];
 const KT = t => Math.pow(1.7, t);
 const SEA_TIERS = [{ n: "Fry", g: 95 }, { n: "Finling", g: 140 }, { n: "Glider", g: 185 }, { n: "Roamer", g: 230 }, { n: "Leviathan", g: 265 }];
-function cur(S) { return S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
-function TS(S) { return S && S.stage === "sea" ? SEA_TIERS : TIERS; }
+function cur(S) { return S.stage === "land" && S.land ? S.land : S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
+function TS(S) { return S && S.stage === "land" ? LAND_TIERS : S && S.stage === "sea" ? SEA_TIERS : TIERS; }
 /* The sea: a bounded world, surface (and the shore) at y = 0, bands of depth going down. Each band has its own food
    size (it), plant and meat density, and share of hunters. Creatures belong to the band that suits their size. */
 const SEA = { W: 6000, D: 10000, bands: [
@@ -236,9 +261,9 @@ const PARTS = [
   { id: "filter", cat: "mouth", n: "Filter mouth", c: 10, t: 0, w: .5, eat: "plant", good: "Sieves up the green bits.", bad: "Can't bite, so it's no help in a fight." },
   { id: "jaw", cat: "mouth", n: "Snapper jaw", c: 15, t: 0, w: 1.5, eat: "meat", bite: 6, good: "Bites whatever it touches and eats the red bits. Every jaw bites on its own, wherever you put it.", bad: "Heavy, and plant eaters see a hunter and swim away." },
   { id: "siphon", cat: "mouth", n: "Siphon", c: 18, t: 1, w: .5, eat: "both", bite: 2.5, good: "Eats plants and meat, and drains a little from whatever it bites.", bad: "A weak bite." },
-  { id: "whip", cat: "move", n: "Whip tail", c: 10, t: 0, w: .5, spd: 16, push: 1, good: "Pushes you along when it points backwards.", bad: "Pointing sideways it only helps you turn." },
-  { id: "fringe", cat: "move", n: "Fringe", c: 8, t: 0, w: .3, spd: 6, turn: 1.2, good: "Quicker turns and a little speed, wherever it goes.", bad: "Not much push on its own." },
-  { id: "jet", cat: "move", n: "Squirt jet", c: 20, t: 1, w: 1, spd: 4, push: 1, ab: "dash", good: "Tap ⚡ to dash. Strongest pointing backwards.", bad: "A bit heavy." },
+  { id: "whip", cat: "move", n: "Whip tail", c: 10, t: 0, water: 1, w: .5, spd: 16, push: 1, good: "Pushes you along when it points backwards.", bad: "Pointing sideways it only helps you turn." },
+  { id: "fringe", cat: "move", n: "Fringe", c: 8, t: 0, water: 1, w: .3, spd: 6, turn: 1.2, good: "Quicker turns and a little speed, wherever it goes.", bad: "Not much push on its own." },
+  { id: "jet", cat: "move", n: "Squirt jet", c: 20, t: 1, water: 1, w: 1, spd: 4, push: 1, ab: "dash", good: "Tap ⚡ to dash. Strongest pointing backwards.", bad: "A bit heavy." },
   { id: "thorn", cat: "fight", n: "Thorn", c: 12, t: 0, w: .7, spk: 5, good: "Hurts anything that touches its tip.", bad: "Only guards the side it points to." },
   { id: "shell", cat: "fight", n: "Shell plate", c: 12, t: 1, w: 2.5, arm: .55, hp: 3, good: "Bites that land near it do less than half the damage.", bad: "Very heavy, and it only covers its own patch." },
   { id: "stink", cat: "fight", n: "Stink sac", c: 20, t: 2, w: 1, ab: "poison", smell: 1, good: "Tap ☁ for a poison cloud. Hunters think twice about you.", bad: "Plant eaters smell you coming and keep away." },
@@ -252,23 +277,36 @@ const PARTS = [
   { id: "glow", cat: "extra", n: "Glow bulb", c: 10, t: 2, w: .3, lure: 1, good: "Small creatures can't help swimming up to it.", bad: "Hunters spot you from much further away." },
   { id: "pincer", cat: "fight", n: "Pincer", c: 14, t: 1, w: 1.5, bite: 4, good: "Nips anything it touches, even if you're a plant eater.", bad: "Heavy, and it can't eat." },
   { id: "bristle", cat: "fight", n: "Bristles", c: 10, t: 1, w: .8, spk: 2.5, wide: 1, good: "A patch of little spikes that pricks biters over a wide area.", bad: "Drag: a little slower." },
-  { id: "paddle", cat: "move", n: "Paddle", c: 14, t: 2, w: 1, spd: 24, push: 1, turn: -.8, good: "A big push when it points backwards.", bad: "Clumsy: slower turns." },
+  { id: "paddle", cat: "move", n: "Paddle", c: 14, t: 2, water: 1, w: 1, spd: 24, push: 1, turn: -.8, good: "A big push when it points backwards.", bad: "Clumsy: slower turns." },
   { id: "clear", cat: "extra", n: "Clear skin", c: 12, t: 2, w: 0, hide: 1, hp: -5, good: "See-through patches: hunters spot you much later.", bad: "Thin: less health." },
   // sea parts (sea: 1): only offered in the sea stage
-  { id: "sidefin", cat: "move", n: "Side fin", c: 12, t: 0, sea: 1, w: .5, spd: 9, turn: .9, good: "Speed and steadier turns, wherever it goes.", bad: "" },
-  { id: "tailfin", cat: "move", n: "Tail fin", c: 14, t: 0, sea: 1, w: 1, spd: 26, push: 1, good: "A strong push when it points backwards.", bad: "Pointing sideways it only helps you turn." },
-  { id: "beak", cat: "mouth", n: "Beak", c: 20, t: 1, sea: 1, w: 1.5, eat: "meat", bite: 9, good: "A hard, hooked bite that eats meat.", bad: "Heavy." },
-  { id: "baleen", cat: "mouth", n: "Baleen mouth", c: 14, t: 0, sea: 1, w: 1, eat: "plant", reach: 11, good: "Sweeps up plants from twice as far away.", bad: "Can't bite, and it's heavy." },
+  { id: "sidefin", cat: "move", n: "Side fin", c: 12, t: 0, water: 1, sea: 1, w: .5, spd: 9, turn: .9, good: "Speed and steadier turns, wherever it goes.", bad: "" },
+  { id: "tailfin", cat: "move", n: "Tail fin", c: 14, t: 0, water: 1, sea: 1, w: 1, spd: 26, push: 1, good: "A strong push when it points backwards.", bad: "Pointing sideways it only helps you turn." },
+  { id: "beak", cat: "mouth", n: "Beak", c: 20, t: 1, sea: 1, both: 1, w: 1.5, eat: "meat", bite: 9, good: "A hard, hooked bite that eats meat.", bad: "Heavy." },
+  { id: "baleen", cat: "mouth", n: "Baleen mouth", c: 14, t: 0, water: 1, sea: 1, w: 1, eat: "plant", reach: 11, good: "Sweeps up plants from twice as far away.", bad: "Can't bite, and it's heavy." },
   { id: "tentacle", cat: "fight", n: "Tentacle", c: 16, t: 1, sea: 1, w: .8, bite: 2, grab: 1, good: "Grabs whatever it touches and slows it down.", bad: "Drag: a little slower." },
-  { id: "ink", cat: "fight", n: "Ink sac", c: 18, t: 1, sea: 1, w: 1, ab: "ink", good: "Tap ✺ for a cloud of ink: hunters lose track of you.", bad: "A bit heavy." },
-  { id: "plate", cat: "fight", n: "Armour plates", c: 18, t: 2, sea: 1, w: 3.5, arm: .65, hp: 8, good: "Bites near them do about a third of the damage.", bad: "Very heavy." },
-  { id: "lamp", cat: "extra", n: "Lamp", c: 12, t: 2, sea: 1, w: .4, light: 1, lure: .5, good: "Lights up the dark water around you, and draws in small fish.", bad: "In the dark, hunters see you from much further away." },
+  { id: "ink", cat: "fight", n: "Ink sac", c: 18, t: 1, water: 1, sea: 1, w: 1, ab: "ink", good: "Tap ✺ for a cloud of ink: hunters lose track of you.", bad: "A bit heavy." },
+  { id: "plate", cat: "fight", n: "Armour plates", c: 18, t: 2, sea: 1, both: 1, w: 3.5, arm: .65, hp: 8, good: "Bites near them do about a third of the damage.", bad: "Very heavy." },
+  { id: "lamp", cat: "extra", n: "Lamp", c: 12, t: 2, sea: 1, both: 1, w: .4, light: 1, lure: .5, good: "Lights up the dark water around you, and draws in small fish.", bad: "In the dark, hunters see you from much further away." },
   { id: "lungs", cat: "extra", n: "Lungs", c: 20, t: 3, sea: 1, w: 2, lungs: 1, good: "Breathe air: you need them to leave the sea.", bad: "Heavy." },
-  { id: "legfin", cat: "move", n: "Leg fin", c: 16, t: 3, sea: 1, w: 1.5, spd: 3, legs: 1, good: "Strong enough to crawl on. You need two to climb onto land.", bad: "Clumsy in the water: slower." }
+  { id: "legfin", cat: "move", n: "Leg fin", c: 16, t: 3, water: 1, sea: 1, w: 1.5, spd: 3, legs: 1, good: "Strong enough to crawl on. You need two to climb onto land.", bad: "Clumsy in the water: slower." },
+  // land parts (land: 1)
+  { id: "leg", cat: "move", n: "Leg", c: 12, t: 0, land: 1, w: .6, walk: 1, good: "Walk faster, and 💃 dance to impress. Four legs is about right; more is heavier.", bad: "" },
+  { id: "tail", cat: "move", n: "Balancing tail", c: 10, t: 0, land: 1, w: .8, hp: 3, climb: 1, good: "Steadier on hills, and a little tougher.", bad: "A bit heavy." },
+  { id: "hand", cat: "extra", n: "Grabbing hand", c: 14, t: 0, land: 1, w: .6, reach: 1, good: "Pick fruit from tall trees. Hands will matter for tools later.", bad: "" },
+  { id: "voice", cat: "extra", n: "Voice sac", c: 12, t: 0, land: 1, w: .4, call: 1, ab: "roar", good: "🎵 Call to impress, and 📣 roar in a fight to stun everything nearby.", bad: "Hunters hear you from further away." },
+  { id: "ear", cat: "eye", n: "Big ear", c: 8, t: 0, land: 1, w: .2, sen: 12, good: "Hear what's coming: see further, especially at night.", bad: "" },
+  { id: "crest", cat: "extra", n: "Crest", c: 10, t: 0, land: 1, w: .3, show: 1, good: "A bright crest to 🦚 show off with.", bad: "Easy to spot: hunters notice you sooner." },
+  { id: "horn", cat: "fight", n: "Horn", c: 14, t: 1, land: 1, w: 1, spk: 4, pose: 1, ab: "charge", good: "💥 Charge in a fight, and look tough when you 💪 pose.", bad: "Heavy." },
+  { id: "claw", cat: "fight", n: "Claws", c: 14, t: 1, land: 1, w: .6, bite: 3, ab: "pounce", good: "🐾 Pounce in a fight, and hit harder.", bad: "" },
+  { id: "spitter", cat: "fight", n: "Spit gland", c: 16, t: 1, land: 1, w: .6, ab: "spit", good: "💦 Spit from a distance: it stings and slows.", bad: "" },
+  { id: "neck", cat: "extra", n: "Long neck", c: 16, t: 1, land: 1, w: 1.2, reach: 1, sen: 10, turn: -.6, good: "Reach tall trees and see over the grass.", bad: "Heavy, and slow to turn." },
+  { id: "wing", cat: "move", n: "Little wing", c: 18, t: 2, land: 1, w: .8, show: 1, glide: 1, good: "🦚 Show off with it, and glide along a little faster.", bad: "" }
 ];
 const PART = {}; PARTS.forEach(p => PART[p.id] = p);
 const START_PARTS = ["whip", "moon", "fringe"];
-function stageParts(S) { const sea = S && S.stage === "sea"; return PARTS.filter(p => !p.sea || sea); }
+/* Which parts a stage offers: swimming parts (water) stay in the water; land parts (land) only on land; a few sea parts work on land too (both). */
+function stageParts(S) { const st = S ? S.stage : "cell"; return PARTS.filter(p => st === "land" ? (p.land || p.both || (!p.sea && !p.water)) : st === "sea" ? !p.land : !p.sea && !p.land); }
 
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function hash() { let h = 2166136261; for (let i = 0; i < arguments.length; i++) { h ^= arguments[i] | 0; h = Math.imul(h, 16777619); h ^= h >>> 13; } return h >>> 0; }
@@ -276,8 +314,8 @@ const wrapA = a => { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const d2 = (a, b) => (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 
-function partLimit(tier, S) { return 5 + tier * 2 + (S && S.stage === "sea" ? 3 : 0); }
-function segLimit(tier, S) { return (S && S.stage === "sea" ? [3, 3, 4, 4, 5] : [2, 2, 3, 3, 4])[Math.min(4, tier)]; }
+function partLimit(tier, S) { return S && S.stage === "land" ? 18 : 5 + tier * 2 + (S && S.stage === "sea" ? 3 : 0); }
+function segLimit(tier, S) { if (S && S.stage === "land") return 5; return (S && S.stage === "sea" ? [3, 3, 4, 4, 5] : [2, 2, 3, 3, 4])[Math.min(4, tier)]; }
 function cloneD(d) { return JSON.parse(JSON.stringify(d)); }
 
 /* Where everything sits on a design: segment centres along the spine (head first, facing +x) and each part,
@@ -300,12 +338,12 @@ function geom(d) {
 }
 function stats(d, g) {
   g = g || geom(d);
-  let spd = 0, turn = 0, hp = 0, spk = 0, sen = 0, bite = 0, lure = 0, w = 0, eyes = 0, shells = 0, hide = 0, smell = 0, slit = 0, light = 0, lungs = 0, legs = 0; const ab = {}, eat = { plant: 0, meat: 0 };
+  let spd = 0, turn = 0, hp = 0, spk = 0, sen = 0, bite = 0, lure = 0, w = 0, eyes = 0, shells = 0, hide = 0, smell = 0, slit = 0, light = 0, lungs = 0, legs = 0, walk = 0, call = 0, show = 0, pose = 0, reach = 0, climb = 0, glide = 0; const ab = {}, eat = { plant: 0, meat: 0 };
   for (const q of g.parts) {
     const P = q.P, back = -Math.cos(q.a); // 1 when pointing straight back
     if (P.push) { spd += P.spd * Math.max(.15, back); turn += P.spd * .05 * Math.abs(Math.sin(q.a)); } else spd += P.spd || 0;
     turn += P.turn || 0; hp += P.hp || 0; spk += P.spk || 0; sen += P.sen || 0; bite += P.bite || 0; lure += P.lure || 0; w += P.w || 0;
-    light += P.light || 0; lungs += P.lungs || 0; legs += P.legs || 0;
+    light += P.light || 0; lungs += P.lungs || 0; legs += P.legs || 0; walk += P.walk || 0; call += P.call || 0; show += P.show || q.id === "frill" ? 1 : 0; pose += P.pose || P.arm ? 1 : 0; reach += P.reach || 0; climb += P.climb || 0; glide += P.glide || 0;
     if (P.cat === "eye") eyes++; if (P.arm) shells++; if (P.hide) hide = 1; if (P.smell) smell = 1; if (q.id === "slit") slit = 1;
     if (P.ab) ab[P.ab] = 1;
     if (P.eat === "plant" || P.eat === "both") eat.plant++; if (P.eat === "meat" || P.eat === "both") eat.meat++;
@@ -313,7 +351,8 @@ function stats(d, g) {
   const mass = d.s.reduce((a, r) => a + r * r, 0) / 144;
   return { spd: (36 + 72 * (1 - Math.exp(-Math.max(0, spd) / 26))) / Math.pow(Math.max(.5, mass), .15) / (1 + w * .035), turn: clamp(3.2 + turn, 1.6, 7.5),
     hp: Math.max(8, Math.round(14 + hp + mass * 10)), shells, spk, sen, eyes, view: eyes ? 150 + Math.min(80, sen * 2.2) : 105 + Math.min(20, sen),
-    bite, lure, hide, smell, slit, light, lungs, legs, w, ab, eat, mass, parts: g.parts.length };
+    bite, lure, hide, smell, slit, light, lungs, legs, walk, call, show, pose, reach, climb, glide, w, ab, eat, mass, parts: g.parts.length,
+    lspd: (18 + 52 * (1 - Math.exp(-walk / 2.5))) / (1 + w * .03) * (glide ? 1.08 : 1) };
 }
 function dietOf(st) { return st.eat.plant && st.eat.meat ? "both" : st.eat.plant ? "plant" : st.eat.meat ? "meat" : "none"; }
 function designValue(d) {
@@ -348,10 +387,17 @@ function goToSea(S) { if (!S.nature) S.nature = natureOf(S.cell); S.cell.done = 
 /* A testing start: jump to a later size of a stage, or the end of one, with every part unlocked and plenty of DNA. */
 const STARTS = [["s0", "Cell stage, from the start", ""], ["s2", "Cell stage, Droplet size", "Size 3 of 5"], ["s4", "Cell stage, Titan size", "Size 5 of 5"],
   ["grown", "End of the cell stage", "A fully grown Titan: meet your mate to finish"], ["sea0", "Sea stage, from the start", "Fresh out of the pond"],
-  ["sea2", "Sea stage, Glider size", "Size 3 of 5"], ["seaend", "End of the sea stage", "Fully grown, with lungs and leg fins: swim up to the shore"]];
+  ["sea2", "Sea stage, Glider size", "Size 3 of 5"], ["seaend", "End of the sea stage", "Fully grown, with lungs and leg fins: swim up to the shore"],
+  ["land0", "Land stage, from the start", "Just out of the sea"], ["land50", "Land stage, halfway", "Brain half full"], ["land95", "End of the land stage", "One more friend or hunt fills the brain"]];
 function testStart(S, start) {
   if (!start || start === "s0") return S;
   S.test = true; const all = PARTS.map(p => p.id);
+  if (start.startsWith("land")) {
+    S.cell.tier = TIERS.length - 1; S.nature = "forager"; goToSea(S); S.sea.tier = 4; S.seaNature = "forager"; goToLand(S);
+    const c = S.land; c.unlocked = all.filter(id => stageParts(S).some(p => p.id === id)); c.dna = 300;
+    if (start === "land50") c.grow = 50; if (start === "land95") c.grow = 95;
+    return S;
+  }
   if (start.startsWith("sea")) {
     S.cell.tier = TIERS.length - 1; S.nature = "forager"; goToSea(S);
     const c = S.sea; c.unlocked = all; c.dna = 300;
@@ -381,6 +427,10 @@ function migrate(S) {
     const N2 = seaStart(S); for (const k in N2) if (S.sea[k] === undefined) S.sea[k] = N2[k];
     S.sea.design.p = (S.sea.design.p || []).filter(q => PART[q.id]); S.sea.tier = clamp(S.sea.tier | 0, 0, SEA_TIERS.length - 1);
   } else if (S.stage === "sea") S.stage = "cell";
+  if (S.land) {
+    const N3 = landStart(S); for (const k in N3) if (S.land[k] === undefined) S.land[k] = N3[k];
+    S.land.design.p = (S.land.design.p || []).filter(q => PART[q.id]); S.land.tier = 0;
+  } else if (S.stage === "land") S.stage = S.sea ? "sea" : "cell";
   return S;
 }
 function natureOf(c) { const t = c.ate.plant + c.ate.meat || 1, m = c.ate.meat / t; return m > .66 ? "hunter" : m < .34 ? "grazer" : "forager"; }
@@ -456,7 +506,14 @@ function mkC(W, d, kind, tier, k, x, y, sp) {
   c.hp = c.max; return c;
 }
 function placePlayer(W, x, y, a) {
-  const S = W.S, c = cur(S), T = c.tier, P = mkC(W, c.design, "player", T, KT(T), x, y); P.a = a; W.player = P;
+  const S = W.S, c = cur(S), T = c.tier, P = mkC(W, c.design, "player", T, W.land ? 1.3 : KT(T), x, y); P.a = a; W.player = P;
+  if (W.land) {
+    landK(P); const n = S.seaNature; if (n === "hunter") P.biteMul = 1.25; else if (n === "grazer") { P.max *= 1.25; P.hp = P.max; } else P.st.lspd *= 1.1;
+    W.cr = W.cr.filter(q => q.kind !== "ally");
+    for (let i = 0; i < (c.pack || 0); i++) addAllyLand(W, c.design, 1.05);
+    for (const j of c.joined || []) if (W.lsp && W.lsp[j]) addAllyLand(W, W.lsp[j].d, W.lsp[j].k * .9, j);
+    return;
+  }
   if (W.sea) {
     // the pond's nature gives a head start
     if (S.nature === "hunter") P.biteMul = 1.2; else if (S.nature === "grazer") { P.max *= 1.2; P.hp = P.max; } else P.st.spd *= 1.1;
@@ -471,6 +528,7 @@ function addAlly(W) {
 }
 function viewR(W) { return W.player.st.view * W.player.k; }
 function newWorld(S, rs) {
+  if (S.stage === "land") return newLand(S, rs);
   const W = { S, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], pods: [], mate: null,
     nid: 1, nextRelic: 28, lastEvo: 0, mateWait: 20, mateCool: 0, popT: 0, sp: {}, over: null,
     sea: S.stage === "sea", nest: null, inNest: true, boss: null, bossNext: 20, deepT: 0, warnT: 0, foe: null, foeT: -99 };
@@ -626,7 +684,7 @@ function hurt(W, B, dmg, src, x, y) {
   B.hp -= dmg; B.hurtT = W.t;
   if (B.team && src && src.kind === "npc") { W.foe = src; W.foeT = W.t; }
   if (B.kind === "npc" && src && src !== B) {
-    if (B.st.bite > 0 && B.diet !== "plant" && src.k <= B.k * 1.6) { B.ai.tg = src; B.ai.chase = 5; B.ai.rest = 0; }
+    if ((B.st.bite > 0 && B.diet !== "plant" && src.k <= B.k * 1.6) || (W.land && B.st.spk > 0)) { B.ai.tg = src; B.ai.chase = W.land ? 8 : 5; B.ai.rest = 0; } // on land, horned grazers stand and fight
     else { B.ai.fear = src; B.ai.fearT = 3; }
   }
   if (B.kind === "player") W.ev.push({ t: "hurt", f: dmg / B.max });
@@ -635,7 +693,13 @@ function hurt(W, B, dmg, src, x, y) {
 function kill(W, B, src) {
   if (B.kind === "player") { if (!W.over) { W.over = "dead"; W.ev.push({ t: "die", by: src && src.sp ? src.sp.key : null, rel: src ? Math.round(Math.log(src.k / B.k) / Math.log(1.7)) : 0, how: W.how, diet: src ? src.diet : "" }); } return; }
   B.dead = true; W.cr = W.cr.filter(c => c !== B);
-  if (B.kind === "ally") { const c = cur(W.S); c.young = Math.max(0, (c.young || 0) - 1); W.ev.push({ t: "allyDie", x: B.x, y: B.y }); return; }
+  if (B.kind === "ally") {
+    const c = cur(W.S);
+    if (W.land) { if (B.joined != null) { const k = c.joined.indexOf(B.joined); if (k >= 0) c.joined.splice(k, 1); } else c.pack = Math.max(0, (c.pack || 0) - 1); }
+    else c.young = Math.max(0, (c.young || 0) - 1);
+    W.ev.push({ t: "allyDie", x: B.x, y: B.y }); return;
+  }
+  if (W.land) landKilled(W, B, src);
   const P = W.player, rel = Math.min(1.5, (B.k / P.k) ** 2), n = clamp(Math.round(2 + 3 * rel), 1, 7);
   for (let i = 0; i < n; i++) { const it = item(W, "meat", B.x + (W.R() - .5) * B.g.R * B.k, B.y + (W.R() - .5) * B.g.R * B.k, B.k, 3.2); it.life = 45; W.items.push(it); }
   W.ev.push({ t: "kill", x: B.x, y: B.y, k: B.k, h: B.d.h, by: src === P });
@@ -690,6 +754,7 @@ function useAb(W, P, ab) {
 }
 
 function stepWorld(W, dt, inp) {
+  if (W.land) return stepLand(W, dt);
   if (W.over) return;
   W.t += dt; const P = W.player, S = W.S, c0 = cur(S); S.time += dt;
   // the player swims where the stick points
@@ -853,6 +918,7 @@ function applyEvolve(W, d) {
     else { c.done = true; done = true; S.nature = natureOf(c); }
   }
   if (W.sea) c.young = Math.min(3, c.tier); // the nest hatches a new brood each time you evolve
+  if (W.land) { c.packMax = Math.min(4, (c.packMax || 2) + 1); c.pack = c.packMax; } // and on land, one more grows up each time
   const P = W.player; placePlayer(W, P.x, P.y, P.a); W.player.inv = 1.5;
   if (W.mate) { W.cr = W.cr.filter(q => q !== W.mate); W.mate = null; }
   W.lastEvo = W.t; W.mateWait = 10;
@@ -861,10 +927,430 @@ function applyEvolve(W, d) {
 function respawn(W) {
   const S = W.S, P = W.player, lost = Math.floor(cur(S).dna * .1), V = viewR(W);
   cur(S).deaths++; cur(S).dna -= lost;
-  if (W.sea) { const N = W.nest; W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.hypot(c.x - N.x, c.y - N.y) > V * 2); placePlayer(W, N.x, N.y, Math.PI / 2); W.inNest = true; }
+  if (W.land) { const H = W.home; W.cr = W.cr.filter(c => c.kind !== "npc" || !c.ai.tg || Math.hypot(c.x - H.x, c.y - H.y) > LT * 10); W.cr.forEach(c => { if (c.ai && c.ai.tg && c.ai.tg.team) c.ai.tg = null; }); placePlayer(W, H.x, H.y, -Math.PI / 2); W.inNest = true; }
+  else if (W.sea) { const N = W.nest; W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.hypot(c.x - N.x, c.y - N.y) > V * 2); placePlayer(W, N.x, N.y, Math.PI / 2); W.inNest = true; }
   else { W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.sqrt(d2(c, P)) > V * 1.6); placePlayer(W, P.x, P.y, P.a); }
   W.player.inv = 3; W.over = null; W.clouds = [];
   return lost;
+}
+/* ================= Land =================
+   Tap to walk on an island (a tile map, LN x LN tiles of LT units, made from the save's seed). Other species live
+   in nests; befriend each by impressing three of them (copy their show), or hunt four of them to drive the species
+   out. Every species dealt with grows the brain bar; a full brain ends the stage. Your pack follows your trail. */
+const LAND_TIERS = [{ n: "Walker", g: 100 }];
+const LT = 40, LN = 110, DAY = 240, FRIEND_NEED = 3, HUNT_NEED = 4;
+const T_SEA = 0, T_SAND = 1, T_GRASS = 2, T_FOREST = 3, T_SWAMP = 4, T_HILL = 5, T_ROCK = 6, T_LAVA = 7;
+const TSPD = [0, .85, 1, .8, .55, .62, 0, 0];
+const SOC = [["call", "🎵", "Call"], ["dance", "💃", "Dance"], ["show", "🦚", "Show off"], ["pose", "💪", "Pose"]];
+const LMOVES = { charge: ["💥", "Charge", 5], pounce: ["🐾", "Pounce", 4], spit: ["💦", "Spit", 3], roar: ["📣", "Roar", 8] };
+const LSPEC = [["plant", 0], ["plant", 0], ["plant", 1], ["plant", 2], ["meat", 0], ["meat", 1], ["meat", 2], ["both", 1]];
+const EPIC_NAMES = ["Old Thunderfoot", "The Tall One", "Mossback", "Grandfather Horn", "Nightjaw"];
+const LSYL = ["mo", "ra", "ki", "tu", "bel", "sha", "gro", "pim", "da", "lo", "zer", "fen", "wa", "nok", "il", "ub"];
+const LKIND = { plant: ["grazers", "nibblers", "browsers", "munchers"], meat: ["prowlers", "snappers", "stalkers", "biters"], both: ["scroungers", "foragers"] };
+
+function landStart(S) {
+  const c = S.sea || S.cell, d = cloneD(c.design);
+  d.p = d.p.filter(q => { const P = PART[q.id]; if (q.id === "legfin") { q.id = "leg"; return true; } if (q.id === "tailfin") { q.id = "tail"; return true; } return P && !P.water && (!P.sea || P.both); });
+  if (d.p.filter(q => q.id === "leg").length < 2) d.p.push({ id: "leg", s: d.s.length - 1, a: -1.9, m: true });
+  d.p.push({ id: "leg", s: 0, a: -1.5, m: true }); // front legs to walk on
+  if (!d.p.some(q => q.id === "voice")) d.p.push({ id: "voice", s: 0, a: -1.8, m: false }); // and a voice, now there's air
+  const ok = id => PART[id] && !PART[id].water && (!PART[id].sea || PART[id].both);
+  return { tier: 0, grow: 0, ready: false, dna: Math.round(50 + Math.min(80, (c.dna || 0) * .3)), unlocked: [...new Set([...c.unlocked.filter(ok), "leg", "tail", "voice", "crest"])],
+    design: d, ate: { plant: 0, meat: 0 }, kills: 0, deaths: 0, evolves: 0, done: false, lean: c.lean != null ? c.lean : 0,
+    pack: 2, packMax: 2, joined: [], friends: {}, hunted: {}, epics: {}, x: null, y: null, day: .08, eaten: 0 };
+}
+function goToLand(S) { if (S.sea) S.sea.done = true; S.land = S.land || landStart(S); S.stage = "land"; return S; }
+
+function mkNoise(R, n) {
+  const g = new Float32Array((n + 1) * (n + 1)); for (let i = 0; i < g.length; i++) g[i] = R();
+  return (u, v) => {
+    const x = u * n, y = v * n, x0 = Math.min(n - 1, x | 0), y0 = Math.min(n - 1, y | 0), fx = x - x0, fy = y - y0, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), w = n + 1;
+    const a = g[y0 * w + x0], b = g[y0 * w + x0 + 1], c = g[(y0 + 1) * w + x0], d = g[(y0 + 1) * w + x0 + 1];
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  };
+}
+function makeIsland(R) {
+  const m = new Uint8Array(LN * LN), n1 = mkNoise(R, 6), n2 = mkNoise(R, 13), n3 = mkNoise(R, 8);
+  for (let y = 0; y < LN; y++) for (let x = 0; x < LN; x++) {
+    const u = x / LN, v = y / LN, dx = u - .5, dy = v - .5, d = Math.sqrt(dx * dx + dy * dy) * 2;
+    const h = n1(u, v) * .55 + n2(u, v) * .25 + (1 - Math.pow(d, 1.8)) * .85 - .55, mo = n3(u, v);
+    let t;
+    if (h < 0 || d > .97) t = T_SEA; else if (h < .07) t = T_SAND; else if (d < .1) t = d < .05 ? T_LAVA : T_ROCK;
+    else if (h > .5) t = h > .62 && n2(u, v) > .64 ? T_ROCK : T_HILL;
+    else if (mo > .63 && h < .32) t = T_SWAMP; else if (mo > .46) t = T_FOREST; else t = T_GRASS;
+    m[y * LN + x] = t;
+  }
+  return m;
+}
+function tileAt(W, x, y) { const tx = Math.floor(x / LT), ty = Math.floor(y / LT); return tx < 0 || ty < 0 || tx >= LN || ty >= LN ? T_SEA : W.map[ty * LN + tx]; }
+function passXY(W, x, y) { return TSPD[tileAt(W, x, y)] > 0; }
+function flood(W, start) {
+  const r = new Uint8Array(LN * LN), q = [start]; r[start] = 1;
+  while (q.length) { const i = q.pop(), x = i % LN, y = (i / LN) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= LN || ny >= LN) continue; const j = ny * LN + nx; if (!r[j] && TSPD[W.map[j]] > 0) { r[j] = 1; q.push(j); } } }
+  return r;
+}
+function tileXY(i) { return [(i % LN + .5) * LT, (((i / LN) | 0) + .5) * LT]; }
+function randReach(W, R, test) { for (let k = 0; k < 400; k++) { const i = Math.floor(R() * LN * LN); if (W.reach[i] && (!test || test(i))) return i; } return W.homeTile; }
+function speciesName(R, diet) { const p = a => a[Math.floor(R() * a.length)], n = p(LSYL) + p(LSYL); return n[0].toUpperCase() + n.slice(1) + " " + p(LKIND[diet]); }
+
+/* Land creatures: four legs, tails, crests and horns; hunters get claws and jaws. */
+function landDesign(R, diet, tier) {
+  const pick = a => a[Math.floor(R() * a.length)];
+  const ns = 2 + (R() < .6 ? 1 : 0) + (tier >= 2 && R() < .4 ? 1 : 0);
+  const s = []; for (let i = 0; i < ns; i++) s.push(Math.round(i === 0 ? 9 + R() * 6 : Math.max(7, 14 - i + R() * 5)));
+  const L = ns - 1, p = [], add = (id, si, a, m) => p.push({ id, s: si, a, m: !!m });
+  add(diet === "plant" ? "filter" : diet === "meat" ? pick(["jaw", "beak"]) : "siphon", 0, 0);
+  add(diet === "meat" ? pick(["slit", "cluster"]) : pick(["moon", "stalk", "moon"]), 0, -(.55 + R() * .35), true);
+  add("leg", Math.min(1, L), -(1.45 + R() * .3), true); add("leg", L, -(1.8 + R() * .4), true);
+  if (R() < .7) add("tail", L, Math.PI);
+  if (diet === "meat") { if (R() < .6) add("claw", 0, .75, true); if (R() < .35) add("horn", 0, .3, true); if (R() < .3) add("spitter", 0, -.2); if (R() < .3) add("ear", 0, -1.25, true); }
+  else { if (R() < .55) add(pick(["crest", "frill"]), 0, -2.3, true); if (R() < .4) add("horn", 0, .3, true); if (R() < .35) add("plate", Math.min(1, L), -1.65, true); if (R() < .3) add("voice", 0, -1.8); if (R() < .3) add("ear", 0, -1.25, true); }
+  const h = diet === "meat" ? pick([350, 10, 20, 290, 30]) + R() * 15 : diet === "plant" ? pick([60, 90, 120, 160, 200, 40]) + R() * 20 : pick([30, 45, 260]) + R() * 20;
+  return { s, p, h: Math.round(h) % 360, l: Math.round(diet === "meat" ? 36 + R() * 12 : 50 + R() * 16), h2: Math.round(h + 120 + R() * 120) % 360,
+    pat: Math.floor(R() * 6), edge: diet === "meat" ? (R() < .6 ? 1 : 2) : (R() < .6 ? 0 : 2) };
+}
+
+function newLand(S, rs) {
+  const c = cur(S), R0 = rng(hash(S.seed, 777)); // the island is the same for this species every time
+  const W = { S, land: true, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], pods: [], shots: [], mate: null,
+    nid: 1, nextRelic: 45, mateCool: 0, sp: {}, over: null, inNest: true, foe: null, foeT: -99, trail: [], trailT: 0, respT: 25, freeze: false, night: false, trees: [], bushes: [] };
+  W.map = makeIsland(R0);
+  // the main island: flood from near the middle; home is on the sand nearest the south shore
+  let mid = -1, md = 1e9;
+  for (let i = 0; i < LN * LN; i++) { const t = W.map[i]; if (t !== T_GRASS && t !== T_FOREST && t !== T_HILL) continue; const x = i % LN, y = (i / LN) | 0, d = (x - LN / 2) ** 2 + (y - LN * .62) ** 2; if (d < md) { md = d; mid = i; } }
+  W.reach = flood(W, mid);
+  let home = mid, hd = 1e9;
+  for (let i = 0; i < LN * LN; i++) { if (!W.reach[i] || W.map[i] !== T_SAND) continue; const x = i % LN, y = (i / LN) | 0, d = (x - LN / 2) ** 2 + (y - LN * .95) ** 2; if (d < hd) { hd = d; home = i; } }
+  W.homeTile = home; const [hx, hy] = tileXY(home); W.home = { kind: "home", x: hx, y: hy };
+  for (let i = 0; i < LN * LN; i++) {
+    const t = W.map[i]; if (!W.reach[i]) continue; const [x, y] = tileXY(i), j = () => (R0() - .5) * LT * .8;
+    if (Math.hypot(x - hx, y - hy) < LT * 3) continue;
+    if (t === T_FOREST && R0() < .42) W.trees.push({ kind: "tree", x: x + j(), y: y + j(), r: 34 + R0() * 22, fruit: R0() < .18, food: 3, max: 3, t: 0 });
+    else if (t === T_GRASS && R0() < .035) W.trees.push({ kind: "tree", x: x + j(), y: y + j(), r: 34 + R0() * 20, fruit: R0() < .5, food: 3, max: 3, t: 0 });
+    else if ((t === T_GRASS && R0() < .07) || (t === T_SAND && R0() < .03) || (t === T_SWAMP && R0() < .07) || (t === T_FOREST && R0() < .04)) W.bushes.push({ kind: "bush", x: x + j(), y: y + j(), food: 3, max: 3, t: 0, hue: [330, 210, 280, 20][Math.floor(R0() * 4)] });
+  }
+  for (const tr of W.trees) if (!tr.fruit) tr.food = 0;
+  // species and their nests
+  const nests = [];
+  W.lsp = LSPEC.map(([diet, tier], i) => {
+    const R = rng(hash(S.seed, 900, i)), d = landDesign(R, diet, tier), g = geom(d), st = stats(d, g);
+    const likes = [Math.floor(R() * 4)]; likes.push((likes[0] + 1 + Math.floor(R() * 3)) % 4);
+    const nt = randReach(W, R0, k => { const [x, y] = tileXY(k); return W.map[k] !== T_SAND && Math.hypot(x - hx, y - hy) > LT * (diet === "plant" && tier === 0 ? 10 : 16) && nests.every(n => Math.hypot(n[0] - x, n[1] - y) > LT * 11); });
+    const [x, y] = tileXY(nt); nests.push([x, y]);
+    return { i, diet, tier, d, g, st, likes, name: speciesName(R, diet), n: tier >= 2 ? 3 : 4, night: i === 6, k: KT(tier) * .8, x, y, key: "l" + i };
+  });
+  W.epics = [0, 1].map(j => {
+    const R = rng(hash(S.seed, 950, j)), diet = j ? "meat" : "plant", d = landDesign(R, diet, 4), g = geom(d), st = stats(d, g);
+    const nt = randReach(W, R0, k => { const [x, y] = tileXY(k); return Math.hypot(x - hx, y - hy) > LT * 26; }), [x, y] = tileXY(nt);
+    const likes = [Math.floor(R() * 4)]; likes.push((likes[0] + 1 + Math.floor(R() * 3)) % 4);
+    return { j, diet, tier: 4, d, g, st, likes, name: EPIC_NAMES[(S.seed + j * 3) % EPIC_NAMES.length], k: 3.4, x, y, key: "e" + j };
+  });
+  placePlayer(W, c.x == null ? hx : c.x, c.y == null ? hy : c.y, -Math.PI / 2);
+  for (const L of W.lsp) if (lspStatus(c, L.i) !== "gone") for (let n = 0; n < L.n; n++) spawnMember(W, L.i);
+  for (const E of W.epics) if (c.epics[E.j] !== "gone") spawnEpic(W, E.j);
+  return W;
+}
+function lspStatus(c, i) { return (c.friends[i] || 0) >= FRIEND_NEED ? "friend" : (c.hunted[i] || 0) >= HUNT_NEED ? "gone" : null; }
+function isFriend(W, q) { const c = cur(W.S); return q.lsp != null ? lspStatus(c, q.lsp) === "friend" : q.epic != null ? c.epics[q.epic] === "friend" : q.team === 1; }
+function landK(c) { c.max *= 2.5; c.hp = c.max; return c; }
+function spawnMember(W, i) {
+  const L = W.lsp[i], a = W.R() * TAU, r = LT * (1 + W.R() * 2); let x = L.x + Math.cos(a) * r, y = L.y + Math.sin(a) * r; if (!passXY(W, x, y)) { x = L.x; y = L.y; }
+  const q = landK(mkC(W, L.d, "npc", L.tier, L.k * (.9 + W.R() * .2), x, y, L)); q.lsp = i; q.ai.hx = L.x; q.ai.hy = L.y; W.cr.push(q); return q;
+}
+function spawnEpic(W, j) {
+  const E = W.epics[j], q = mkC(W, E.d, "npc", 4, E.k, E.x, E.y, E); q.max *= 4; landK(q); q.epic = j; q.epicName = E.name; q.ai.hx = E.x; q.ai.hy = E.y; W.cr.push(q); return q;
+}
+function addAllyLand(W, design, k, joined) {
+  const P = W.player, A = landK(mkC(W, design, "ally", 0, k, P.x + (W.R() - .5) * 60, P.y + 40 + W.R() * 40)); if (!passXY(W, A.x, A.y)) { A.x = P.x; A.y = P.y; }
+  A.biteMul = P.biteMul || 1; if (joined != null) A.joined = joined; W.cr.push(A); return A;
+}
+function landSpeed(W, c) {
+  const t = tileAt(W, c.x, c.y); let f = TSPD[t] || .5; if (t === T_HILL && (c.st.climb || c.st.walk >= 4)) f = .82;
+  return c.st.lspd * 1.8 * Math.pow(c.k, .5) * f * (c.slow > W.t ? .55 : 1);
+}
+/* Walk towards a point, sliding along water and rock instead of walking into it. */
+function moveC(W, c, tx, ty, sp, dt) {
+  const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy); if (d < 2) { c.vx *= .6; c.vy *= .6; return true; }
+  const f = Math.min(1, dt * 8), s = Math.min(sp, d / Math.max(dt, .001)); c.vx += (dx / d * s - c.vx) * f; c.vy += (dy / d * s - c.vy) * f;
+  let nx = c.x + c.vx * dt, ny = c.y + c.vy * dt;
+  if (!passXY(W, nx, ny) && passXY(W, c.x, c.y)) { /* (if somehow already in the water, just walk out) */ if (passXY(W, nx, c.y)) ny = c.y; else if (passXY(W, c.x, ny)) nx = c.x; else { c.vx = c.vy = 0; return false; } }
+  c.x = nx; c.y = ny;
+  if (c.vx * c.vx + c.vy * c.vy > 9) c.a += clamp(wrapA(Math.atan2(c.vy, c.vx) - c.a), -9 * dt, 9 * dt);
+  return true;
+}
+/* Is the way clear in a straight line, allowing for a body's width (so nobody cuts a corner between two rocks)? */
+function los(W, x0, y0, x1, y1) {
+  const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / (LT * .25)), ox = d ? -(y1 - y0) / d * 13 : 0, oy = d ? (x1 - x0) / d * 13 : 0;
+  for (let i = 1; i < n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n; if (!passXY(W, x, y) || !passXY(W, x + ox, y + oy) || !passXY(W, x - ox, y - oy)) return false; }
+  return true;
+}
+/* Route finding on the tile map (A*, 8 directions, slow ground costs more), then straightened where the way is clear. */
+function findPath(W, x0, y0, x1, y1, noShort) {
+  const m = W.map, cl = v => clamp(v, 0, LN - 1), sx = cl(Math.floor(x0 / LT)), sy = cl(Math.floor(y0 / LT));
+  let tx = cl(Math.floor(x1 / LT)), ty = cl(Math.floor(y1 / LT)), exact = true;
+  if (!TSPD[m[ty * LN + tx]] || !W.reach[ty * LN + tx]) { // aim for the nearest reachable ground instead
+    let best = -1, bd = 1e9; for (let r = 1; r < 12 && best < 0; r++) for (let yy = ty - r; yy <= ty + r; yy++) for (let xx = tx - r; xx <= tx + r; xx++) { if (xx < 0 || yy < 0 || xx >= LN || yy >= LN) continue; const j = yy * LN + xx; if (W.reach[j] && TSPD[m[j]]) { const dd = (xx - tx) ** 2 + (yy - ty) ** 2; if (dd < bd) { bd = dd; best = j; } } }
+    if (best < 0) return null; tx = best % LN; ty = (best / LN) | 0; exact = false;
+  }
+  const start = sy * LN + sx, goal = ty * LN + tx;
+  if (start === goal || (!noShort && los(W, x0, y0, x1, y1))) return [exact ? [x1, y1] : tileXY(goal)];
+  const N = LN * LN, g = new Float32Array(N).fill(1e9), from = new Int32Array(N).fill(-1), done = new Uint8Array(N), heap = [];
+  const H = i => { const dx = Math.abs(i % LN - tx), dy = Math.abs(((i / LN) | 0) - ty); return (dx + dy - .59 * Math.min(dx, dy)); };
+  const push = (f, i) => { heap.push([f, i]); let k = heap.length - 1; while (k > 0) { const p = (k - 1) >> 1; if (heap[p][0] <= heap[k][0]) break; [heap[p], heap[k]] = [heap[k], heap[p]]; k = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let k = 0; for (;;) { const l = 2 * k + 1, r = l + 1; let s = k; if (l < heap.length && heap[l][0] < heap[s][0]) s = l; if (r < heap.length && heap[r][0] < heap[s][0]) s = r; if (s === k) break; [heap[s], heap[k]] = [heap[k], heap[s]]; k = s; } } return top; };
+  g[start] = 0; push(H(start), start); let it = 0;
+  while (heap.length && it++ < 30000) {
+    const [, i] = pop(); if (done[i]) continue; done[i] = 1; if (i === goal) break;
+    const x = i % LN, y = (i / LN) | 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= LN || ny >= LN) continue;
+      const j = ny * LN + nx, sp = TSPD[m[j]]; if (!sp || done[j]) continue;
+      if (dx && dy && (!TSPD[m[y * LN + nx]] || !TSPD[m[ny * LN + x]])) continue;
+      const ng = g[i] + (dx && dy ? 1.414 : 1) / sp; if (ng < g[j]) { g[j] = ng; from[j] = i; push(ng + H(j), j); }
+    }
+  }
+  if (from[goal] < 0) return null;
+  const tiles = []; for (let i = goal; i !== start && i >= 0; i = from[i]) tiles.push(i); tiles.reverse();
+  const pts = tiles.map(tileXY); if (exact) pts[pts.length - 1] = [x1, y1];
+  const out = []; let cx = x0, cy = y0, k = 0; // pull the string tight
+  if (noShort) return pts;
+  while (k < pts.length) { let far = k; while (far + 1 < pts.length && los(W, cx, cy, pts[far + 1][0], pts[far + 1][1])) far++; out.push(pts[far]); [cx, cy] = pts[far]; k = far + 1; }
+  return out;
+}
+/* What the page (or a test bot) asks the player to do. */
+function landGo(W, x, y) { const P = W.player; P.path = findPath(W, P.x, P.y, x, y); P.goal = null; P.eating = false; P.mode = "walk"; P.tg = null; P.repath = 0; return !!P.path; }
+function landGoTo(W, G) { const P = W.player; P.path = findPath(W, P.x, P.y, G.x, G.y); P.goal = G; P.eating = false; P.mode = "walk"; P.tg = null; P.repath = .7; return !!P.path; }
+function landHunt(W, T) { const P = W.player; P.mode = "hunt"; P.tg = T; P.goal = null; P.eating = false; P.path = null; W.foe = T; W.foeT = W.t; }
+function landLeave(W) { const P = W.player; P.mode = "walk"; P.tg = null; P.goal = null; P.path = null; P.eating = false; }
+function nearestFoe(W, r) { const P = W.player; let b = null, bd = r; for (const q of W.cr) if (q.kind === "npc" && !isFriend(W, q)) { const d = Math.hypot(q.x - P.x, q.y - P.y); if (d < bd) { bd = d; b = q; } } return b; }
+function landMove(W, id) {
+  const P = W.player; if (!P.st.ab[id] || P.ab[id] > 0) return false;
+  if (!LMOVES[id]) { useAb(W, P, id); return true; }
+  if (id === "roar") {
+    for (const q of W.cr) if (q.kind === "npc" && !isFriend(W, q) && Math.hypot(q.x - P.x, q.y - P.y) < LT * 5) { q.stun = 1.5; if (q.diet === "plant") { q.ai.fear = P; q.ai.fearT = 3; } }
+    P.ab.roar = 8; W.ev.push({ t: "zap", x: P.x, y: P.y, r: LT * 5 }, { t: "ab", ab: id }); return true;
+  }
+  const T = P.tg && !P.tg.dead ? P.tg : nearestFoe(W, LT * 6); if (!T) return false;
+  if (id === "pounce" && Math.hypot(T.x - P.x, T.y - P.y) > LT * 4.5) return false;
+  landHunt(W, T);
+  if (id === "charge") { P.charge = .6; P.ab.charge = 5; }
+  else if (id === "pounce") { P.pounce = .25; P.ab.pounce = 4; }
+  else if (id === "spit") { W.shots.push({ x: P.x, y: P.y, tg: T, dmg: 6 * Math.pow(P.k, 1.2), src: P, life: 3 }); P.ab.spit = 3; }
+  W.ev.push({ t: "ab", ab: id }); return true;
+}
+/* Impressing: the other creature shows three rounds of moves (4, 5 and 6 long; giants 5, 6, 7), mostly the two it
+   likes. You copy them; a move you have the parts for scores up to 1.5, one you can't do scores nothing. */
+function impressPlan(W, T) {
+  const L = T.epic != null ? W.epics[T.epic] : W.lsp[T.lsp], rounds = T.epic != null ? [5, 6, 7] : [4, 5, 6];
+  return rounds.map(n => { const s = []; for (let i = 0; i < n; i++) s.push(W.R() < .7 ? L.likes[Math.floor(W.R() * 2)] : Math.floor(W.R() * 4)); return s; });
+}
+function socialQ(st, d) {
+  return [st.call ? Math.min(1.5, .7 + .3 * st.call) : 0, st.walk >= 2 ? Math.min(1.5, .4 + .15 * st.walk) : 0,
+    st.show ? Math.min(1.5, .6 + .3 * st.show) : (d.pat ? .3 : 0), Math.min(1.5, .4 + .3 * st.pose + (st.mass > 2 ? .2 : 0))];
+}
+function impressEnd(W, T, frac) {
+  const c = cur(W.S), epic = T.epic != null, win = frac >= (epic ? .7 : .6);
+  if (win && T.wooed) { W.ev.push({ t: "impress", win, again: true }); return win; } // each friendship needs different members
+  if (win) {
+    T.wooed = true;
+    c.dna += 8;
+    if (epic) { if (!c.epics[T.epic]) { c.epics[T.epic] = "friend"; brain(W, 15); W.ev.push({ t: "epicFriend", n: T.epicName }); } }
+    else {
+      c.friends[T.lsp] = (c.friends[T.lsp] || 0) + 1;
+      if (c.friends[T.lsp] === FRIEND_NEED) {
+        brain(W, 10); W.ev.push({ t: "friend", n: W.lsp[T.lsp].name });
+        if (W.cr.filter(q => q.kind === "ally").length < 6) { const L = W.lsp[T.lsp]; addAllyLand(W, L.d, L.k * .9, T.lsp); c.joined.push(T.lsp); W.ev.push({ t: "joined", n: L.name }); }
+      }
+    }
+    T.ai.tg = null; T.ai.fear = null;
+  } else if (T.diet !== "plant") { T.ai.tg = W.player; T.ai.chase = 8; T.ai.rest = 0; }
+  else { T.ai.fear = W.player; T.ai.fearT = 3; }
+  W.ev.push({ t: "impress", win }); return win;
+}
+function brain(W, v) {
+  const S = W.S, c = cur(S); if (c.done) return; c.grow = Math.min(100, c.grow + v);
+  if (c.grow >= 100) {
+    c.done = true; const f = W.lsp.filter(L => lspStatus(c, L.i) === "friend").length, h = W.lsp.filter(L => lspStatus(c, L.i) === "gone").length;
+    S.landNature = f > h + 1 ? "friendly" : h > f + 1 ? "fierce" : "mixed"; W.ev.push({ t: "landDone" });
+  }
+}
+function landKilled(W, B, src) {
+  const c = cur(W.S), mine = src === W.player || (src && src.kind === "ally"); if (!mine) return;
+  if (B.lsp != null && lspStatus(c, B.lsp) == null) {
+    c.hunted[B.lsp] = (c.hunted[B.lsp] || 0) + 1; c.dna += 5;
+    if (c.hunted[B.lsp] === HUNT_NEED) { brain(W, 10); W.ev.push({ t: "extinct", n: W.lsp[B.lsp].name }); W.cr = W.cr.filter(q => q.kind !== "npc" || q.lsp !== B.lsp); }
+  }
+  if (B.epic != null && !c.epics[B.epic]) { c.epics[B.epic] = "gone"; brain(W, 15); c.dna += 40; W.ev.push({ t: "epicDown", n: B.epicName }); }
+}
+function landEat(W, v, ty, x, y) {
+  const c = cur(W.S), P = W.player, lean = ty === "meat" ? c.lean : -c.lean; v *= .75 + .45 * lean;
+  c.lean = clamp(c.lean + (ty === "meat" ? 1 : -1) * Math.min(1, v) * .006, -1, 1); c.ate[ty] += v; c.dna += v * 1.2; c.eaten = (c.eaten || 0) + 1;
+  P.hp = Math.min(P.max, P.hp + P.max * .06 * v); brain(W, .05 * v); W.ev.push({ t: "eat", x, y, ty, hue: ty === "meat" ? 355 : 110 });
+}
+function arrive(W, G) {
+  const P = W.player; P.path = null;
+  if (G.kind === "bush" || G.kind === "tree") {
+    P.goal = null;
+    if (!P.st.eat.plant) { W.ev.push({ t: "cantEat" }); return; }
+    if (G.kind === "tree" && !P.st.reach) { W.ev.push({ t: "tooHigh" }); return; }
+    if (G.food <= 0) { W.ev.push({ t: "empty" }); return; }
+    P.goal = G; P.eating = true; P.eatT = .3; return;
+  }
+  P.goal = null;
+  if (G.kind === "home") { W.ev.push({ t: "mate" }); return; }
+  if (G.kind === "npc") W.ev.push({ t: "meet", c: G });
+}
+function playerLand(W, dt) {
+  const P = W.player; let sp = landSpeed(W, P), tx = null, ty = null;
+  if (P.stun > 0) { P.stun -= dt; P.vx *= .8; P.vy *= .8; return; }
+  const T = P.tg && !P.tg.dead ? P.tg : null; if (P.tg && !T) { P.tg = null; P.mode = "walk"; P.charge = 0; P.pounce = 0; }
+  if (P.pounce > 0 && T) { // a leap: land right beside it
+    P.pounce -= dt; const f = Math.min(1, dt / Math.max(.02, P.pounce + dt)); P.x += (T.x - P.x) * f * .85; P.y += (T.y - P.y) * f * .85;
+    if (P.pounce <= 0) { hurt(W, T, 9 * Math.pow(P.k, 1.2) * (P.biteMul || 1), P); T.stun = .6; W.ev.push({ t: "bite", x: T.x, y: T.y, by: true }); }
+    return;
+  }
+  if (P.charge > 0 && T) {
+    P.charge -= dt; tx = T.x; ty = T.y; sp *= 3;
+    if (distBody(T, P.x, P.y) < P.g.R * P.k * .7) { hurt(W, T, 12 * Math.pow(P.k, 1.2) * (P.biteMul || 1), P); T.stun = 1.2; P.charge = 0; W.ev.push({ t: "bite", x: T.x, y: T.y, by: true }); }
+  } else if (P.mode === "hunt" && T) {
+    P.repath -= dt;
+    if (los(W, P.x, P.y, T.x, T.y)) { tx = T.x; ty = T.y; P.path = null; }
+    else { if (!P.path || P.repath <= 0) { P.path = findPath(W, P.x, P.y, T.x, T.y); P.repath = .6; } }
+    if (Math.hypot(T.x - P.x, T.y - P.y) > LT * 14) { landLeave(W); W.ev.push({ t: "gotAway" }); }
+  } else if (P.goal && P.goal.kind === "npc") { // walking up to a creature that moves about
+    const G = P.goal; P.repath -= dt; if (G.dead) { P.goal = null; P.path = null; }
+    else { if (distBody(G, P.x, P.y) < P.g.R * P.k * 2.5 + 30) { arrive(W, G); } else if (P.repath <= 0) { P.path = findPath(W, P.x, P.y, G.x, G.y); P.repath = .7; } }
+  } else if (P.goal && !P.path && !P.eating) {
+    const G = P.goal, near = G.kind === "tree" ? G.r + P.g.R * P.k + 10 : G.kind === "home" ? 70 : P.g.R * P.k + 34;
+    if (Math.hypot(G.x - P.x, G.y - P.y) < near) arrive(W, G); else P.path = findPath(W, P.x, P.y, G.x, G.y);
+  }
+  if (tx == null && P.path && P.path.length) {
+    const [px, py] = P.path[0];
+    if (Math.hypot(px - P.x, py - P.y) < 14) { P.path.shift(); if (!P.path.length) { P.path = null; if (P.goal && P.goal.kind !== "npc") { const G = P.goal, near = G.kind === "tree" ? G.r + P.g.R * P.k + 30 : G.kind === "home" ? 90 : P.g.R * P.k + 50; if (Math.hypot(G.x - P.x, G.y - P.y) < near) arrive(W, G); } } }
+    else { tx = px; ty = py; }
+  }
+  if (tx != null) {
+    const ox = P.x, oy = P.y; moveC(W, P, tx, ty, sp, dt);
+    // stuck on a corner? work out a proper tile-by-tile route instead
+    if (Math.hypot(P.x - ox, P.y - oy) < sp * dt * .2) { P.stuckT = (P.stuckT || 0) + dt; if (P.stuckT > .8) { P.stuckT = 0; const G = P.goal || P.tg, end = P.path && P.path.length ? P.path[P.path.length - 1] : G ? [G.x, G.y] : null; if (end) { P.path = findPath(W, P.x, P.y, end[0], end[1], true); P.repath = 2; } } }
+    else P.stuckT = 0;
+  } else { P.vx *= .7; P.vy *= .7; }
+}
+function scanLand(W, c, friend) {
+  const ai = c.ai, P = W.player, hunter = c.st.bite > 0 && c.diet !== "plant";
+  if (c.diet !== "meat") { // grazers (and scroungers) keep away from hunters, and from you if you're hunting them
+    let f = null, fd = (LT * 4) ** 2;
+    for (const o of W.cr) if (o !== c && o.kind === "npc" && o.diet === "meat" && o.ai.tg && o.k >= c.k * .7) { const d = d2(o, c); if (d < fd) { fd = d; f = o; } }
+    if (P.mode === "hunt" && P.tg === c && d2(P, c) < (LT * 7) ** 2 && !c.st.spk) f = P;
+    if (f) { ai.fear = f; ai.fearT = 2; }
+  }
+  if (!hunter || friend || ai.rest > 0 || ai.tg || ai.hunger < .45) return;
+  const seeR = LT * (c.epic != null ? 6 : 4.5) * (W.night ? 1.25 : 1); let best = null, bd = 1e18;
+  for (const o of allC(W)) {
+    if (o === c || o.kind === "mate" || (o.sp && o.sp === c.sp) || o.inv > 0) continue;
+    if (o.kind === "npc" && (o.diet === "meat" || W.R() < .6)) continue; // hunters mostly leave each other alone
+    const rel = o.k / c.k; if (rel > 1.4 || rel < .3) continue;
+    const seen = o.team ? (o.st.show ? 1.25 : 1) * (o.st.call ? 1.15 : 1) * (o.st.hide ? .6 : 1) : 1, d = d2(o, c);
+    if (d < (seeR * seen) ** 2 && d < bd) { bd = d; best = o; }
+  }
+  if (best && W.R() < ai.hunger * .5) { ai.tg = best; ai.chase = 7 + W.R() * 4; }
+}
+function thinkLand(W, c, dt) {
+  const ai = c.ai, sp = landSpeed(W, c); ai.t -= dt; ai.scan -= dt; ai.rest -= dt; ai.hunger = Math.min(1, ai.hunger + dt * .02);
+  if (c.stun > 0) { c.stun -= dt; c.vx *= .8; c.vy *= .8; return; }
+  const L = c.lsp != null ? W.lsp[c.lsp] : null, friend = isFriend(W, c);
+  c.asleep = !!(L && L.night && !W.night && !ai.tg);
+  if (c.asleep) { if (Math.hypot(c.x - ai.hx, c.y - ai.hy) > LT * 1.5) moveC(W, c, ai.hx, ai.hy, sp * .6, dt); else { c.vx = c.vy = 0; } return; }
+  if (ai.scan <= 0) { ai.scan = .4 + W.R() * .3; scanLand(W, c, friend); }
+  if (ai.fear && !ai.fear.dead && ai.fearT > 0) { ai.fearT -= dt; const f = ai.fear, a = Math.atan2(c.y - f.y, c.x - f.x); if (!moveC(W, c, c.x + Math.cos(a) * 80, c.y + Math.sin(a) * 80, sp * .85, dt)) moveC(W, c, c.x + Math.cos(a + 1.2) * 80, c.y + Math.sin(a + 1.2) * 80, sp * .85, dt); return; }
+  if (ai.tg) {
+    const T = ai.tg; ai.chase -= dt;
+    if (T.dead || ai.chase <= 0 || Math.hypot(c.x - ai.hx, c.y - ai.hy) > LT * (c.epic != null ? 30 : 16) || (T.team && friend)) { ai.tg = null; ai.rest = 5 + W.R() * 4; }
+    else { moveC(W, c, T.x, T.y, sp * 1.02, dt); return; }
+  }
+  if (ai.wx == null || ai.t <= 0) {
+    ai.t = 3 + W.R() * 5; ai.pause = W.R() < .4 ? 2 + W.R() * 3 : 0; const R = LT * (c.epic != null ? 16 : 6);
+    for (let k = 0; k < 8; k++) { const a = W.R() * TAU, r = W.R() * R, x = ai.hx + Math.cos(a) * r, y = ai.hy + Math.sin(a) * r; if (passXY(W, x, y)) { ai.wx = x; ai.wy = y; break; } }
+  }
+  if (ai.pause > 0) { ai.pause -= dt; c.vx *= .8; c.vy *= .8; return; }
+  if (ai.wx != null && !moveC(W, c, ai.wx, ai.wy, sp * .4, dt)) ai.t = 0;
+}
+function allyLand(W, c, dt) {
+  const P = W.player, ai = c.ai, sp = Math.max(landSpeed(W, c), landSpeed(W, P) * 1.1);
+  if (c.stun > 0) { c.stun -= dt; return; }
+  if (W.callTg && (W.callTg.dead || isFriend(W, W.callTg))) W.callTg = null;
+  if (ai.tg && (ai.tg.dead || d2(ai.tg, P) > (LT * 9) ** 2 || isFriend(W, ai.tg))) ai.tg = null;
+  if (!ai.tg) { if (W.callTg && !W.callTg.dead && !isFriend(W, W.callTg)) ai.tg = W.callTg; else if (P.mode === "hunt" && P.tg && !P.tg.dead) ai.tg = P.tg; else if (W.foe && !W.foe.dead && W.t - W.foeT < 6 && !isFriend(W, W.foe)) ai.tg = W.foe; }
+  if (ai.tg) { moveC(W, c, ai.tg.x, ai.tg.y, sp, dt); return; }
+  const idx = W.cr.filter(q => q.kind === "ally").indexOf(c), pt = W.trail[Math.min(W.trail.length - 1, (idx + 1) * 5)] || [P.x, P.y];
+  const d = Math.hypot(pt[0] - c.x, pt[1] - c.y);
+  if (d > LT * 12) { c.x = P.x; c.y = P.y; return; }
+  const nearP = Math.hypot(P.x - c.x, P.y - c.y) < (P.g.R * P.k + c.g.R * c.k) * 1.6; // wait politely, don't shove
+  if (d > 18 && !nearP) moveC(W, c, pt[0], pt[1], sp * clamp(d / 60, .3, 1.1), dt); else { c.vx *= .7; c.vy *= .7; }
+}
+function landFight(W) {
+  const P = W.player;
+  for (const A of allC(W)) {
+    const T = A === P ? (P.mode === "hunt" ? P.tg : null) : A.ai.tg;
+    if (!T || T.dead || A.stun > 0 || A.asleep || (A.atk || 0) > W.t) continue;
+    if (A.kind === "npc" && isFriend(W, A) && T.team) continue;
+    if (distBody(T, A.x, A.y) > A.g.R * A.k * .55 + 10) continue;
+    A.atk = W.t + (A === P ? .8 : 1.1);
+    const dmg = (2 + A.st.bite + (A.st.spk > 0 ? 1.5 : 0)) * Math.pow(A.k, 1.2) * 1.4 * (A.biteMul || 1) * (T === P ? .7 : 1);
+    W.how = "bite"; hurt(W, T, dmg, A); W.ev.push({ t: "bite", x: T.x, y: T.y, by: A === P, on: T === P });
+    if (A.team && T.kind === "npc") { W.foe = T; W.foeT = W.t; }
+  }
+}
+function stepLand(W, dt) {
+  if (W.over || W.freeze) return;
+  W.t += dt; const S = W.S, c = cur(S), P = W.player; S.time += dt;
+  c.day = (c.day + dt / DAY) % 1; W.night = c.day > .7;
+  const L = allC(W), px = L.map(q => q.x), py = L.map(q => q.y);
+  playerLand(W, dt);
+  for (const k in P.ab) if (P.ab[k] > 0) P.ab[k] -= dt;
+  W.trailT -= dt; if (W.trailT <= 0 && (!W.trail.length || Math.hypot(W.trail[0][0] - P.x, W.trail[0][1] - P.y) > 10)) { W.trailT = .15; W.trail.unshift([P.x, P.y]); if (W.trail.length > 80) W.trail.pop(); }
+  for (const q of W.cr) { if (q.kind === "npc") thinkLand(W, q, dt); else if (q.kind === "ally") allyLand(W, q, dt); }
+  for (const q of L) if (q.inv > 0) q.inv -= dt;
+  collide(W, L); L.forEach((q, i) => { if (!passXY(W, q.x, q.y)) { q.x = px[i]; q.y = py[i]; } });
+  landFight(W);
+  for (const s of W.shots) {
+    s.life -= dt; const T = s.tg; if (T.dead) { s.life = 0; continue; }
+    const dx = T.x - s.x, dy = T.y - s.y, d = Math.hypot(dx, dy);
+    if (d < T.g.R * T.k) { hurt(W, T, s.dmg, s.src); T.slow = W.t + 2; s.life = 0; W.ev.push({ t: "spike", x: T.x, y: T.y }); } else { s.x += dx / d * 450 * dt; s.y += dy / d * 450 * dt; }
+  }
+  W.shots = W.shots.filter(s => s.life > 0);
+  for (const cl of W.clouds) { cl.t -= dt; for (const q of W.cr) if (q.kind === "npc" && distBody(q, cl.x, cl.y) < cl.r) hurt(W, q, 5 * Math.pow(P.k, 1.5) * dt, P); }
+  W.clouds = W.clouds.filter(cl => cl.t > 0);
+  // eating
+  if (P.eating && P.goal) {
+    P.eatT -= dt;
+    if (P.eatT <= 0) { const G = P.goal; P.eatT = .7; if (G.food > 0) { G.food--; G.t = 25; landEat(W, G.kind === "tree" ? 2 : 1, "plant", G.x, G.y); } if (G.food <= 0) { P.eating = false; P.goal = null; } }
+  }
+  if (P.st.eat.meat) for (let i = W.items.length - 1; i >= 0; i--) { const it = W.items[i]; if (Math.hypot(it.x - P.x, it.y - P.y) < P.g.R * P.k + it.r + 8) { W.items.splice(i, 1); landEat(W, it.v * .6, "meat", it.x, it.y); } }
+  for (const it of W.items) if (it.life !== undefined) it.life -= dt;
+  W.items = W.items.filter(it => !(it.life <= 0));
+  for (const b of W.bushes) if (b.food < b.max) { b.t -= dt; if (b.t <= 0) { b.food++; b.t = 25; } }
+  for (const b of W.trees) if (b.fruit && b.food < b.max) { b.t -= dt; if (b.t <= 0) { b.food++; b.t = 40; } }
+  for (const q of allC(W)) if (W.t - q.hurtT > 4 && q.hp < q.max) q.hp = Math.min(q.max, q.hp + q.max * (q.team ? .04 : .02) * dt);
+  // members come back to nests that still stand
+  W.respT -= dt;
+  if (W.respT <= 0) { W.respT = 30; for (const Ls of W.lsp) if (lspStatus(c, Ls.i) !== "gone" && W.cr.filter(q => q.lsp === Ls.i).length < Ls.n) spawnMember(W, Ls.i); }
+  // bones in the ground hold parts
+  if (!W.pods.some(q => q.nat) && W.t >= W.nextRelic) {
+    const SP = stageParts(S), id = pickLocked(S, W.R) || SP[Math.floor(W.R() * SP.length)].id;
+    for (let k = 0; k < 10; k++) { const a = W.R() * TAU, r = LT * (5 + W.R() * 8), x = P.x + Math.cos(a) * r, y = P.y + Math.sin(a) * r; if (passXY(W, x, y)) { W.pods.push({ x, y, r: 14, ph: 0, id, nat: true }); W.ev.push({ t: "relicSpawn" }); break; } }
+    W.nextRelic = W.t + 5;
+  }
+  for (let i = W.pods.length - 1; i >= 0; i--) {
+    const R = W.pods[i]; R.ph += dt; if (R.life !== undefined) R.life -= dt;
+    if (R.life <= 0) { W.pods.splice(i, 1); continue; }
+    if (Math.hypot(R.x - P.x, R.y - P.y) < P.g.R * P.k + R.r + 6) {
+      W.pods.splice(i, 1);
+      if (!c.unlocked.includes(R.id)) { c.unlocked.push(R.id); W.ev.push({ t: "relic", id: R.id }); } else { c.dna += 10; W.ev.push({ t: "relic", id: null }); }
+      if (R.nat) W.nextRelic = W.t + (lockedParts(S).length ? 55 + W.R() * 30 : 90);
+    }
+  }
+  if (W.t - (W.homeT || -9) > 1) { W.homeT = W.t; W.inNest = Math.hypot(W.home.x - P.x, W.home.y - P.y) < 90; }
 }
 /*CORE-END*/
 
@@ -893,7 +1379,7 @@ function snd(kind) {
 }
 
 /* ---------- drawing a creature (in its own design units, facing +x) ---------- */
-const BACK = { whip: 1, fringe: 1, jet: 1, thorn: 1, stink: 1, frill: 1, feeler: 1, glow: 1, bristle: 1, paddle: 1, sidefin: 1, tailfin: 1, tentacle: 1, legfin: 1 };
+const BACK = { whip: 1, fringe: 1, jet: 1, thorn: 1, stink: 1, frill: 1, feeler: 1, glow: 1, bristle: 1, paddle: 1, sidefin: 1, tailfin: 1, tentacle: 1, legfin: 1, leg: 1, tail: 1, wing: 1, neck: 1, crest: 1 };
 /* A long body bends as it swims: each section is turned a little from the one in front (ang[i]), and the parts go with it. */
 function bentG(g, ang) {
   const n = g.r.length, cx = [g.cx[0]], cy = [0], th = [0];
@@ -1110,6 +1596,52 @@ function drawPart(ctx, q, d, g, t, C, mv, o, noJaw) {
       ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-1, -2.4, 10, 4.8, 2.2) : ctx.rect(-1, -2.4, 10, 4.8); ctx.fill(); ctx.stroke();
       ctx.fillStyle = C.line; for (const y of [-2, 0, 2]) { ctx.beginPath(); ctx.arc(9.5, y, 1.2, 0, TAU); ctx.fill(); } break;
     }
+    case "leg": {
+      const sw = Math.sin(t * (4 + 9 * mv) + (q.y < 0 ? 0 : Math.PI) + q.x * .2) * .55 * (mv + .05); ctx.rotate(sw);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 4.2; ctx.beginPath(); ctx.moveTo(-1, 0); ctx.lineTo(6, 1.5); ctx.lineTo(11, -.5); ctx.stroke();
+      ctx.strokeStyle = C.fill; ctx.lineWidth = 2.4; ctx.stroke();
+      ctx.fillStyle = C.dark; ctx.beginPath(); ctx.ellipse(12, -.5, 2.4, 2, 0, 0, TAU); ctx.fill(); break;
+    }
+    case "tail": {
+      const ph = t * (2 + 4 * mv) + q.y; ctx.fillStyle = C.fill; ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-1, -4); for (let i = 0; i <= 8; i++) ctx.lineTo(i * 2.2, -4 * (1 - i / 9) + Math.sin(ph - i * .5) * i * .25);
+      for (let i = 8; i >= 0; i--) ctx.lineTo(i * 2.2, 4 * (1 - i / 9) + Math.sin(ph - i * .5) * i * .25); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+    }
+    case "hand": {
+      ctx.strokeStyle = C.line; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-1, 0); ctx.lineTo(7, 0); ctx.stroke(); ctx.strokeStyle = C.fill; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.2; for (const a of [-.6, 0, .6]) { ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(7 + Math.cos(a) * 4, Math.sin(a) * 4); ctx.stroke(); } break;
+    }
+    case "voice": {
+      const pu = 1 + .12 * Math.sin(t * 3); ctx.fillStyle = "rgba(255,150,170,.75)"; ctx.strokeStyle = "rgba(150,50,80,.7)"; ctx.lineWidth = .8;
+      ctx.beginPath(); ctx.ellipse(-3, 0, 3.4 * pu, 4.2 * pu, 0, 0, TAU); ctx.fill(); ctx.stroke(); break;
+    }
+    case "ear": {
+      ctx.fillStyle = C.fill; ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-1, -3); ctx.quadraticCurveTo(9, -6, 10, 0); ctx.quadraticCurveTo(9, 6, -1, 3); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,160,180,.6)"; ctx.beginPath(); ctx.ellipse(4, 0, 3.2, 1.8, 0, 0, TAU); ctx.fill(); break;
+    }
+    case "crest": {
+      for (let j = -2; j <= 2; j++) { ctx.save(); ctx.rotate(j * .28 + Math.sin(t * 3 + j) * .05); ctx.fillStyle = `hsl(${(d.h2 + j * 18 + 360) % 360} 85% 60%)`; ctx.beginPath(); ctx.ellipse(6, 0, 7, 1.7, 0, 0, TAU); ctx.fill(); ctx.restore(); }
+      break;
+    }
+    case "horn": {
+      ctx.fillStyle = "#EFE6D2"; ctx.strokeStyle = "#5A4630"; ctx.lineWidth = .9; ctx.beginPath(); ctx.moveTo(-1, -3); ctx.quadraticCurveTo(6, -3, 11, -5.5); ctx.quadraticCurveTo(7, 0, -1, 3); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+    }
+    case "claw": {
+      ctx.strokeStyle = "#2A1A14"; ctx.lineWidth = 1.4; for (const y of [-2.2, 0, 2.2]) { ctx.beginPath(); ctx.moveTo(-1, y); ctx.quadraticCurveTo(6, y - .5, 7.5, y + 2); ctx.stroke(); } break;
+    }
+    case "spitter": {
+      ctx.fillStyle = "#9ADB5A"; ctx.strokeStyle = "#3E6A1E"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(2.5, 0, 3.4, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#3E6A1E"; ctx.fillRect(5, -1, 4, 2); break;
+    }
+    case "neck": {
+      ctx.strokeStyle = C.line; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-2, 0); ctx.quadraticCurveTo(8, -2 * Math.sin(t), 15, 0); ctx.stroke(); ctx.strokeStyle = C.fill; ctx.lineWidth = 4; ctx.stroke();
+      ctx.fillStyle = C.fill; ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(16, 0, 3.6, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(17.3, -1.4, .8, 0, TAU); ctx.arc(17.3, 1.4, .8, 0, TAU); ctx.fill(); break;
+    }
+    case "wing": {
+      ctx.rotate(Math.sin(t * 6 + q.y) * .15); ctx.fillStyle = `hsla(${d.h2} 60% 65% / .7)`; ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-1, -2); ctx.lineTo(14, -6); ctx.quadraticCurveTo(10, 0, 13, 4); ctx.quadraticCurveTo(6, 2, -1, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(13, -5); ctx.moveTo(0, 0); ctx.lineTo(12, 3); ctx.stroke(); break;
+    }
     case "clear": {
       ctx.fillStyle = "rgba(225,250,255,.35)"; ctx.strokeStyle = "rgba(225,250,255,.6)"; ctx.lineWidth = .7;
       ctx.beginPath(); ctx.ellipse(-4.5, 0, 3.6, 5, 0, 0, TAU); ctx.fill(); ctx.stroke();
@@ -1137,7 +1669,7 @@ function partIcon(cv, id, d) {
 /* ---------- menu ---------- */
 function slotKey(i) { return "lf.slot." + i; }
 function loadSlot(i) { const s = store.get(slotKey(i), null); return s && s.cell ? migrate(s) : null; }
-function saveSlot() { if (!S || slot < 0) return; if (W && W.sea && W.player && S.sea) { S.sea.x = Math.round(W.player.x); S.sea.y = Math.round(W.player.y); } S.at = Date.now(); store.set(slotKey(slot), S); store.set("lf.last", slot); }
+function saveSlot() { if (!S || slot < 0) return; if (W && W.sea && W.player && S.sea) { S.sea.x = Math.round(W.player.x); S.sea.y = Math.round(W.player.y); } if (W && W.land && W.player && S.land) { S.land.x = Math.round(W.player.x); S.land.y = Math.round(W.player.y); } S.at = Date.now(); store.set(slotKey(slot), S); store.set("lf.last", slot); }
 function fmtTime(s) { const m = Math.round(s / 60); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; }
 function preview(cv, d, w, h) {
   const dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = w * dpr; cv.height = h * dpr; const ctx = cv.getContext("2d");
@@ -1154,20 +1686,21 @@ function renderMenu() {
     const nm = document.createElement("b"); nm.textContent = s.name; const chip = document.createElement("span"); chip.className = "chip" + (s.mode === "hard" ? " hc" : ""); chip.textContent = s.mode === "hard" ? "☠ Hardcore" : "Normal"; nm.append(chip);
     if (s.test) { const tc = document.createElement("span"); tc.className = "chip"; tc.textContent = "Test start"; nm.append(tc); }
     const sm = document.createElement("span"); sm.className = "sm";
-    const sea = s.stage === "sea", cs = cur(s), TT = TS(s), stg = sea ? "Sea" : "Cell", tm = fmtTime(s.time);
-    sm.textContent = s.dead ? `Died out in the ${stg.toLowerCase()} stage at ${TT[cs.tier].n} size · ${tm}` : sea && cs.done ? `Sea stage complete: crawled onto land · ${tm}`
+    const sea = s.stage === "sea", land = s.stage === "land", cs = cur(s), TT = TS(s), stg = land ? "Land" : sea ? "Sea" : "Cell", tm = fmtTime(s.time);
+    sm.textContent = land ? (s.dead ? `Died out in the land stage · ${tm}` : cs.done ? `Land stage complete: a clever species · ${tm}` : `Land stage · brain ${Math.floor(cs.grow)} of 100 · ${tm}`)
+      : s.dead ? `Died out in the ${stg.toLowerCase()} stage at ${TT[cs.tier].n} size · ${tm}` : sea && cs.done ? `Sea stage complete: ready for land · ${tm}`
       : !sea && cs.done ? `Cell stage complete · ${NATURES[s.nature] ? NATURES[s.nature].n : ""} · ready for the sea · ${tm}` : `${stg} stage · ${TT[cs.tier].n} (size ${cs.tier + 1} of 5) · ${tm}`;
     const row = document.createElement("div"); row.className = "row";
     if (!s.dead) {
-      const toSea = !sea && cs.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : "Play";
-      p.onclick = () => { if (toSea) { goToSea(s); store.set(slotKey(i), s); } startSlot(i); }; row.append(p);
+      const toSea = !sea && !land && cs.done, toLand = sea && cs.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : toLand ? "Onto the land ▶" : "Play";
+      p.onclick = () => { if (toSea) { goToSea(s); store.set(slotKey(i), s); } if (toLand) { goToLand(s); store.set(slotKey(i), s); } startSlot(i); }; row.append(p);
     }
     const del = document.createElement("button"); del.className = "btn small bad"; del.textContent = s.dead ? "Clear" : "Delete";
     del.onclick = () => dialog(`<h2>${s.dead ? "Clear" : "Delete"} ${esc(s.name)}?</h2><p>${s.dead ? "This clears the fossil from this slot." : "This species and all its progress will be gone for good."}</p><div class="row"><button class="btn" data-a="no">Keep</button><button class="btn bad" data-a="yes">${s.dead ? "Clear" : "Delete"}</button></div>`, { yes: () => { store.del(slotKey(i)); closeDlg(); renderMenu(); }, no: closeDlg });
     row.append(del); info.append(nm, sm, row); el.append(info); box.append(el);
     preview(cv, cs.design, 84, 72); if (s.dead) cv.style.filter = "grayscale(1) brightness(.6)";
   }
-  $("road").innerHTML = STAGES.map((n, i) => `<li class="${i < 2 ? "on" : ""}">${i + 1}. ${n}${i > 1 ? " · soon" : ""}</li>`).join("");
+  $("road").innerHTML = STAGES.map((n, i) => `<li class="${i < 3 ? "on" : ""}">${i + 1}. ${n}${i > 2 ? " · soon" : ""}</li>`).join("");
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
 const SYL = ["zo", "bli", "qua", "mi", "ru", "xe", "po", "lo", "vin", "ka", "fli", "nu", "tor", "gla", "pip", "oz", "wib", "sna", "dro", "ul", "ki", "mop", "zee", "bo"];
@@ -1193,7 +1726,7 @@ function newLifeDlg(i) {
     <button class="opt" data-a="hard"><b>☠ Hardcore</b><span>One life. If you're eaten, your species is gone for good.</span></button></div>
     <div class="lbl">Start at</div>
     <div class="pick" id="startPick">${STARTS.map((x, j) => `<button class="opt${j ? "" : " on"}" data-a="st_${x[0]}"><b>${x[1]}</b><span>${j ? x[2] + ". For testing: every part and 300 DNA." : "The normal way to play."}</span></button>`).join("")}
-    ${STAGES.slice(2).map(n => `<button class="opt" disabled style="opacity:.45"><b>${n} stage</b><span>Not built yet.</span></button>`).join("")}</div>
+    ${STAGES.slice(3).map(n => `<button class="opt" disabled style="opacity:.45"><b>${n} stage</b><span>Not built yet.</span></button>`).join("")}</div>
     <div class="row"><button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="go">Begin</button></div>`, {
     dice: () => { $("nmIn").value = randName(); },
     plant: b => { diet = "plant"; mark("dietPick", b); }, meat: b => { diet = "meat"; mark("dietPick", b); },
@@ -1215,15 +1748,16 @@ addEventListener("resize", resize);
 function show(v) { view = v; $("menu").hidden = v !== "menu"; $("play").hidden = v !== "play"; $("edit").hidden = v !== "edit"; if (v === "edit") sizeEditor(); }
 function startSlot(i) {
   const s = loadSlot(i); if (!s || s.dead) return;
-  S = s; slot = i; W = newWorld(S); paused = false; parts = []; fx = []; saveT = 15; abilKeys = "";
+  S = s; slot = i; W = newWorld(S); paused = false; parts = []; fx = []; saveT = 15; abilKeys = ""; ENC = null; IMP = null; CALL = false; cam.z = 1; cam.free = false; LUI_KEY = ""; $("imp").hidden = true;
   cam.x = W.player.x; cam.y = W.player.y; cam.s = Math.min(CW, CH) * .62 / viewR(W);
   show("play"); resize(); store.set("lf.last", i); hintT = 1; updateAbil();
 }
 function quitToMenu() { saveSlot(); W = null; S = null; slot = -1; closeDlg(); show("menu"); renderMenu(); }
 function pause() {
   if (!W || W.over) return; paused = true; saveSlot();
-  const c = cur(S), gl = W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>` : "";
-  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${TS(S)[c.tier].n} size · ${W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : ""}${fmtTime(S.time)} played</p>${gl}
+  const c = cur(S), gl = W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>`
+    : W.land ? `<div class="lbl">Species on the island</div><p>${W.lsp.map(L => { const st = lspStatus(c, L.i); return (st === "friend" ? "💚 " : st === "gone" ? "✖ " : "○ ") + esc(L.name) + (st ? "" : ` (won over ${c.friends[L.i] || 0}/${FRIEND_NEED}, hunted ${c.hunted[L.i] || 0}/${HUNT_NEED})`); }).join("<br>")}<br>${W.epics.map(E => (c.epics[E.j] === "friend" ? "💚 " : c.epics[E.j] === "gone" ? "✖ " : "○ ") + esc(E.name) + " (giant)").join("<br>")}</p>` : "";
+  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${TS(S)[c.tier].n} size · ${W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : W.land ? `🧠 ${Math.floor(c.grow)}/100 · ` : ""}${fmtTime(S.time)} played</p>${gl}
     <div class="row"><button class="btn primary" data-a="go">Carry on</button></div>
     <div class="row"><button class="btn" data-a="snd">Sound: ${opts.sound ? "on" : "off"}</button><button class="btn" data-a="help">How to play</button></div>
     <div class="row"><button class="btn" data-a="quit">Save and leave</button></div>`, {
@@ -1244,22 +1778,33 @@ function helpDlg() {
     <p><b>Your nest ⌂:</b> swim into it to evolve. When your green bar is full, evolving there grows you a size and hatches young that swim with you and help you fight. If you're eaten, you come back at the nest.</p>
     <p><b>Diet:</b> the bar under your health slides towards 🌿 or 🦷 as you eat. Food you're used to feeds you better, so you settle into being a plant eater or a meat eater, or stay in the middle.</p>
     <p><b>Leaving the sea:</b> at the last size, grow lungs and two leg fins, then swim up to the shore.</p>` : ""}
+    ${W && W.land ? `<p><b>On land:</b> tap the ground to walk, drag to look around, pinch (or ＋ －) to zoom. Tap a bush or a fruit tree to eat.</p>
+    <p><b>Meeting creatures:</b> tap one to walk up to it, then choose 🍖 Hunt, 🎵 Impress or ↩ Leave.</p>
+    <p><b>Impress:</b> it shows you three rounds of moves (🎵 call, 💃 dance, 🦚 show off, 💪 pose). Copy them in order. Moves you have the parts for score well: a voice to call, legs to dance, a crest or wings to show off, horns or armour to pose. Win over three different members of a species to make friends; one may join your pack.</p>
+    <p><b>Hunt:</b> your pack joins in. Tap the move buttons (💥 charge, 🐾 pounce, 💦 spit, 📣 roar) when they're ready. Hunt four of a species and it's gone from the island. Tap 🏃 Run to get away.</p>
+    <p><b>Brain 🧠:</b> every species you befriend or drive out, and each giant, fills it. A full brain ends the land stage.</p>
+    <p><b>Your pack:</b> they follow and fight with you. 📣 then tap a creature sends them after it. One more grows up each time you evolve at the nest ⌂.</p>` : ""}
     <div class="row"><button class="btn primary" data-a="ok">Got it</button></div>`, { ok: () => { if (W && !W.over && view === "play") pause(); else closeDlg(); } }, () => { if (W && view === "play") pause(); else closeDlg(); });
 }
 $("pauseBtn").onclick = pause;
+$("lHome").onclick = () => { if (W && W.land) { ENC = null; landGoTo(W, W.home); cam.free = false; renderLandUI(true); } };
+$("lCall").onclick = () => { CALL = !CALL; if (CALL) toast("Now tap a creature to send your pack after it (or tap yourself to call them back)."); renderLandUI(true); };
+$("lZin").onclick = () => { cam.z = clamp((cam.z || 1) * 1.25, .5, 2.5); }; $("lZout").onclick = () => { cam.z = clamp((cam.z || 1) * .8, .5, 2.5); };
 
 /* thumb stick: anywhere on the water */
 let stickId = null, sx0 = 0, sy0 = 0;
 cv.addEventListener("pointerdown", e => {
+  if (W && W.land) return landDown(e);
   if (stickId != null || paused) return; stickId = e.pointerId; sx0 = e.clientX; sy0 = e.clientY; cv.setPointerCapture(e.pointerId);
   const st = $("stick"); st.hidden = false; st.style.left = sx0 + "px"; st.style.top = sy0 + "px"; $("knob").style.transform = ""; inp.mx = inp.my = 0;
 });
 cv.addEventListener("pointermove", e => {
+  if (W && W.land) return landMoveP(e);
   if (e.pointerId !== stickId) return; let dx = e.clientX - sx0, dy = e.clientY - sy0; const R = 50, d = Math.hypot(dx, dy);
   if (d > R) { sx0 += dx / d * (d - R); sy0 += dy / d * (d - R); dx = e.clientX - sx0; dy = e.clientY - sy0; const st = $("stick"); st.style.left = sx0 + "px"; st.style.top = sy0 + "px"; }
   inp.mx = dx / R; inp.my = dy / R; $("knob").style.transform = `translate(${dx}px,${dy}px)`; moved += 1;
 });
-const endStick = e => { if (e.pointerId !== stickId) return; stickId = null; inp.mx = inp.my = 0; $("stick").hidden = true; };
+const endStick = e => { if (W && W.land) return landUp(e); if (e.pointerId !== stickId) return; stickId = null; inp.mx = inp.my = 0; $("stick").hidden = true; };
 cv.addEventListener("pointerup", endStick); cv.addEventListener("pointercancel", endStick);
 addEventListener("keydown", e => { keys[e.key.toLowerCase()] = 1; if (e.key === " " && W) inp.ab = "dash"; if (e.key === "Escape" && view === "play" && !paused) pause(); });
 addEventListener("keyup", e => { keys[e.key.toLowerCase()] = 0; });
@@ -1267,6 +1812,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) { if 
 
 const AB = { dash: ["⚡", "Dash"], poison: ["☁", "Stink"], zap: ["✶", "Zap"], ink: ["✺", "Ink"] };
 function updateAbil() {
+  if (W.land) { $("abil").textContent = ""; abilKeys = "land"; return; } // on land, moves sit in the bar at the bottom
   const P = W.player, ks = Object.keys(P.st.ab).sort().join(","); if (ks === abilKeys) return; abilKeys = ks;
   const box = $("abil"); box.textContent = "";
   for (const k of Object.keys(AB)) if (P.st.ab[k]) {
@@ -1277,10 +1823,17 @@ function updateAbil() {
 
 /* hints for a new player, each shown once (bits in S.hints) */
 let hintT = 0, moved = 0, hintOn = -1, hintEnd = 0;
-function hint(n, text, secs) { if (S.hints & (1 << n) || hintOn >= 0) return; S.hints |= 1 << n; hintOn = n; hintEnd = performance.now() + (secs || 6) * 1000; $("hint").textContent = text; $("hint").hidden = false; }
+function hint(n, text, secs) { if (S.hints & (1 << n) || hintOn >= 0) return; $("hint").classList.toggle("top", !!(W && W.land)); S.hints |= 1 << n; hintOn = n; hintEnd = performance.now() + (secs || 6) * 1000; $("hint").textContent = text; $("hint").hidden = false; }
 function hints() {
   if (hintOn >= 0 && performance.now() > hintEnd && !(hintOn === 0 && moved < 30)) { hintOn = -1; $("hint").hidden = true; }
   if (!W) return; const P = W.player;
+  if (W.land) {
+    if (W.t > 1) hint(12, "Tap the ground to walk there. Tap a creature to meet it, then choose Hunt, Impress or Leave.", 9);
+    if (W.t > 25) hint(13, "Win over three of a species, or hunt four of them, to deal with it. Each species fills your brain bar 🧠.", 9);
+    if (W.t > 50) hint(14, "Your nest ⌂ is where you evolve: voices, crests, horns and legs all help you impress or fight.", 9);
+    if (W.night) hint(15, "Night falls. Some hunters only come out in the dark, and they're hard to see.", 7);
+    return;
+  }
   if (W.sea) {
     if (W.t > 1) hint(8, "Welcome to the sea! Your nest ⌂ is where you evolve. Deeper water has bigger food, and bigger danger.", 8);
     if (W.t > 25) hint(9, "The bar under your health is your diet: it slides towards what you eat, and food you're used to feeds you better.", 8);
@@ -1311,6 +1864,17 @@ function handleEvents() {
     else if (e.t === "allyDie") { toast("One of your young was eaten."); }
     else if (e.t === "needLegs") { toast("To crawl onto land you need lungs and two leg fins. Evolve at your nest ⌂."); }
     else if (e.t === "ashore") { saveSlot(); seaDone(); }
+    else if (e.t === "meet") { if (!ENC || ENC.T !== e.c) ENC = { T: e.c, met: true }; else ENC.met = true; renderLandUI(true); }
+    else if (e.t === "cantEat") toast("Your mouth can't eat plants. You'd need a filter mouth or a siphon.");
+    else if (e.t === "tooHigh") toast("Too high! You need a long neck or a grabbing hand to reach the fruit.");
+    else if (e.t === "empty") toast("Nothing left on it. It'll grow back.");
+    else if (e.t === "friend") { snd("grow"); toast(`The ${e.n} are your friends now! 🧠`); }
+    else if (e.t === "joined") toast(`One of the ${e.n} joins your pack.`);
+    else if (e.t === "extinct") { snd("grow"); toast(`The ${e.n} are gone from the island. 🧠`); }
+    else if (e.t === "epicFriend") { snd("grow"); toast(`${e.n} is your friend! 🧠`); }
+    else if (e.t === "epicDown") { snd("grow"); toast(`You brought down ${e.n}! 🧠`); }
+    else if (e.t === "gotAway") toast("It got away.");
+    else if (e.t === "landDone") { saveSlot(); landDone(); }
     else if (e.t === "relic") { snd("relic"); toast(e.id ? `New part: ${PART[e.id].n}! It's in your builder next time you evolve.` : "You already have that part: +10 DNA 🧬"); }
     else if (e.t === "mateSpawn") { snd("mate"); }
     else if (e.t === "mate") { openEditor(); }
@@ -1339,6 +1903,7 @@ function died() {
 const DEPTH = [["#13646A", "#06303A"], ["#0F5868", "#052634"], ["#18476E", "#081A36"], ["#2B3A70", "#0C1030"], ["#3E2A66", "#120A26"]];
 const BG = [{ x: .2, y: .3, ph: 0, sp: 3 }, { x: .75, y: .7, ph: 2, sp: 5 }];
 function draw(dt) {
+  if (W.land) return drawLand(dt);
   const P = W.player, T = P.tier, t = performance.now() / 1000;
   const ts = Math.min(CW, CH) * .62 / viewR(W); cam.s += (ts - cam.s) * Math.min(1, dt * 2);
   cam.x += (P.x - cam.x) * Math.min(1, dt * 6); cam.y += (P.y - cam.y) * Math.min(1, dt * 6);
@@ -1505,10 +2070,11 @@ function hud() {
   const P = W.player, c = cur(S), T = TS(S)[c.tier];
   $("hpFill").style.width = Math.max(0, P.hp / P.max * 100) + "%";
   $("grFill").style.width = (c.done ? 100 : c.grow / T.g * 100) + "%";
-  $("grBar").classList.toggle("ready", !!c.ready);
-  const lbl = W.sea ? (c.done ? `${S.name} · on land!` : c.ashore ? `${T.n} · swim up to the shore ⬆` : c.ready ? `${T.n} · fully grown: back to your nest ⌂` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5) · ${SEA.bands[bandAt(P.y)].n}`)
+  $("grBar").classList.toggle("ready", !!c.ready || (W.land && c.grow >= 90));
+  const lbl = W.land ? `${S.name} · 🧠 ${Math.floor(c.grow)}/100 · 💚 ${W.lsp.filter(L => lspStatus(c, L.i) === "friend").length} · ✖ ${W.lsp.filter(L => lspStatus(c, L.i) === "gone").length} · ${W.night ? "☾ night" : "☀ day"}`
+    : W.sea ? (c.done ? `${S.name} · on land!` : c.ashore ? `${T.n} · swim up to the shore ⬆` : c.ready ? `${T.n} · fully grown: back to your nest ⌂` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5) · ${SEA.bands[bandAt(P.y)].n}`)
     : c.done ? `${S.name} · cell stage complete` : c.ready ? `${T.n} · fully grown: find your mate ❤` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5)`;
-  $("dietBar").hidden = !W.sea; if (W.sea) $("dietMark").style.left = ((c.lean + 1) / 2 * 100) + "%";
+  $("dietBar").hidden = !(W.sea || W.land); if (W.sea || W.land) $("dietMark").style.left = ((c.lean + 1) / 2 * 100) + "%";
   if ($("grLabel").textContent !== lbl) $("grLabel").textContent = lbl;
   const dn = String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
   $("abil").querySelectorAll(".ab").forEach(b => { const k = b.dataset.ab, cd = { dash: 3.5, poison: 7, zap: 8, ink: 8 }[k]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
@@ -1535,8 +2101,8 @@ function refreshEditor() {
   $("eDone").textContent = c.ready ? "Grow ▲" : "Done";
   const diet = dietOf(st), dt = { plant: "🌿 Eats plants", meat: "🦷 Eats meat", both: "🌿🦷 Eats plants and meat", none: "⚠ No mouth: it can't eat!" }[diet];
   const bar = (n, v) => `<div>${n}<i><u style="width:${Math.round(clamp(v, 0, 1) * 100)}%"></u></i></div>`;
-  $("eStats").innerHTML = bar("Speed", (st.spd - 25) / 90) + bar("Turning", (st.turn - 2.6) / 4.5) + bar("Health", st.hp / 60) + bar("Bite", st.bite / 14) + bar("Defence", Math.min(1, st.shells / 3) * .6 + Math.min(1, st.spk / 25) * .4) + bar("Sight", (st.view - 140) / 90)
-    + `<div class="diet${diet === "none" ? " no" : ""}">${dt}${Object.keys(st.ab).length ? " · " + Object.keys(st.ab).map(k => AB[k][0] + " " + AB[k][1]).join(" ") : ""}</div>`;
+  $("eStats").innerHTML = bar("Speed", W && W.land ? (st.lspd - 18) / 50 : (st.spd - 25) / 90) + bar("Turning", (st.turn - 2.6) / 4.5) + bar("Health", st.hp / 60) + bar("Bite", st.bite / 14) + bar("Defence", Math.min(1, st.shells / 3) * .6 + Math.min(1, st.spk / 25) * .4) + bar("Sight", (st.view - 140) / 90)
+    + `<div class="diet${diet === "none" ? " no" : ""}">${dt}${Object.keys(st.ab).length ? " · " + Object.keys(st.ab).map(k => { const m = AB[k] || LMOVES[k]; return m[0] + " " + m[1]; }).join(" ") : ""}</div>`;
   renderSel(); renderChips(); if (ED.tab !== "look" && ED.tab !== "body") updateCards();
 }
 /* Every part on the creature as a row of names: tap one to pick it, however small it is on screen. */
@@ -1593,10 +2159,15 @@ function addPart(id) {
   const M = Math.min(1, L);
   const spots = { mouth: [0, 0], move: id === "whip" || id === "tailfin" ? [L, Math.PI] : id === "jet" ? [L, 2.7] : id === "paddle" ? [L, 2.45] : id === "sidefin" ? [M, -1.6] : id === "legfin" ? [L, -1.9] : [L, -2.1],
     fight: id === "thorn" ? [M, -1.9] : id === "shell" || id === "plate" ? [M, -1.7] : id === "stink" || id === "ink" ? [L, 2.8] : id === "pincer" || id === "tentacle" ? [0, .6] : id === "bristle" ? [L, -2.2] : [0, -1.2],
-    eye: [0, -.75], extra: id === "frill" ? [L, -2] : id === "glow" || id === "lamp" ? [0, -.15] : id === "clear" ? [0, -1.5] : id === "lungs" ? [M, -1.4] : [0, -.35] }[P.cat];
+    eye: id === "ear" ? [0, -1.25] : [0, -.75],
+    extra: id === "frill" ? [L, -2] : id === "glow" || id === "lamp" ? [0, -.15] : id === "clear" ? [0, -1.5] : id === "lungs" ? [M, -1.4] : id === "crest" ? [0, -2.4] : id === "voice" ? [0, -1.8] : id === "hand" ? [0, 1.1] : id === "neck" ? [0, -.4] : [0, -.35] }[P.cat];
+  if (id === "leg") { spots[0] = d.p.some(q => q.id === "leg" && q.s === 0) ? L : 0; spots[1] = spots[0] ? -1.85 : -1.5; }
+  if (id === "tail") { spots[0] = L; spots[1] = Math.PI; } if (id === "wing") { spots[0] = M; spots[1] = -1.5; }
+  if (id === "horn") { spots[0] = 0; spots[1] = .3; } if (id === "claw") { spots[0] = 0; spots[1] = .8; } if (id === "spitter") { spots[0] = 0; spots[1] = -.25; }
   let a = spots[1] + (same ? (same % 2 ? .45 : -.45) * Math.ceil(same / 2) * (spots[1] < 0 ? 1 : -1) : 0);
   if (P.cat === "mouth" && same) a = (same % 2 ? 1 : -1) * .55;
-  const q = { id, s: spots[0], a: wrapA(a), m: Math.abs(Math.sin(a)) > .2 && P.cat !== "mouth" && !["glow", "lamp", "lungs", "ink", "stink"].includes(id) };
+  if (["leg", "tail", "horn", "claw", "spitter", "wing", "hand"].includes(id)) a = spots[1] + (same && id !== "leg" ? .35 * same : 0);
+  const q = { id, s: spots[0], a: wrapA(a), m: Math.abs(Math.sin(a)) > .2 && P.cat !== "mouth" && !["glow", "lamp", "lungs", "ink", "stink", "voice", "spitter", "neck"].includes(id) };
   let after = cloneD(d); after.p.push(q);
   if (q.m && (stats(after).parts > partLimit(cur(S).tier, S) || designValue(after) - designValue(ED.d0) > cur(S).dna)) { q.m = false; after = cloneD(d); after.p.push(q); } // no room for a pair: just one
   if (stats(after).parts > partLimit(cur(S).tier, S)) { toast(`That's too many parts for a ${TS(S)[cur(S).tier].n}. Grow bigger for more.`); return; }
@@ -1618,7 +2189,7 @@ function renderSel() {
 }
 function edLayout() {
   const g = geom(ED.d); let x0 = g.minX, x1 = g.maxX, y1 = g.R;
-  for (const q of g.parts) { const ext = q.id === "whip" ? 34 : q.id === "tentacle" ? 18 : ["feeler", "glow", "stalk", "tailfin", "lamp"].includes(q.id) ? 16 : 11; const ex = q.x + Math.cos(q.a) * ext, ey = q.y + Math.sin(q.a) * ext; x0 = Math.min(x0, ex); x1 = Math.max(x1, ex); y1 = Math.max(y1, Math.abs(ey)); }
+  for (const q of g.parts) { const ext = q.id === "whip" ? 34 : q.id === "tentacle" || q.id === "tail" || q.id === "neck" ? 20 : ["feeler", "glow", "stalk", "tailfin", "lamp", "wing", "crest"].includes(q.id) ? 16 : 12; const ex = q.x + Math.cos(q.a) * ext, ey = q.y + Math.sin(q.a) * ext; x0 = Math.min(x0, ex); x1 = Math.max(x1, ex); y1 = Math.max(y1, Math.abs(ey)); }
   const sc = Math.min(EW / (x1 - x0 + 30), (EH - 80) / (y1 * 2 + 24), 7);
   return { g, sc, ox: EW / 2 - (x1 + x0) / 2 * sc, oy: (EH - 50) / 2 + 12 };
 }
@@ -1635,7 +2206,7 @@ function edPt(e) { const r = ecv.getBoundingClientRect(), L = ED.view; return [(
 /* Where a part looks like it is (eyes sit inside the body, tails stick out), for picking it with a finger. */
 function partCentre(q, g) {
   if (q.P.cat === "eye" && q.id !== "stalk") { const cx = g.cx[q.s]; return [cx + (q.x - cx) * .7, q.y * .7]; }
-  const out = { whip: 12, tailfin: 8, paddle: 7, tentacle: 9, stalk: 9, feeler: 8, glow: 8, lamp: 7, thorn: 5, legfin: 6, sidefin: 6, lungs: -5, clear: -5 }[q.id] || 3;
+  const out = { whip: 12, tailfin: 8, paddle: 7, tentacle: 9, stalk: 9, feeler: 8, glow: 8, lamp: 7, thorn: 5, legfin: 6, sidefin: 6, lungs: -5, clear: -5, leg: 7, tail: 9, neck: 12, wing: 7, crest: 6, horn: 6, voice: -3 }[q.id] || 3;
   return [q.x + Math.cos(q.a) * out, q.y + Math.sin(q.a) * out];
 }
 ecv.addEventListener("pointerdown", e => {
@@ -1685,9 +2256,254 @@ function seaDone() {
   paused = true; const c = cur(S);
   dialog(`<h2>Onto the land!</h2><p>${esc(S.name)} hauled itself out of the sea on its new legs and took its first breath of air.</p>
     <div class="stats"><div>Diet<b>${c.lean > .35 ? "Meat eater" : c.lean < -.35 ? "Plant eater" : "Eats both"}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Creatures eaten<b>${c.kills}</b></div><div>Goals<b>${Object.keys(c.goals).length} of ${SEA_GOALS.length}</b></div></div>
-    <p>The land stage is coming in a later update: you'll walk and explore instead of swimming. Your species is saved and will carry on from here. Until then, you can keep exploring the sea.</p>
-    <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="go">Keep swimming</button></div>`, { menu: quitToMenu, go: resume }, resume);
+    <p>On land you'll tap to walk, raise a pack, and meet the island's other species: win them over with a show, or hunt them.</p>
+    <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="land">Onto the land ▶</button></div>`,
+    { menu: quitToMenu, land: () => { goToLand(S); saveSlot(); const i = slot; closeDlg(); startSlot(i); } }, resume);
 }
+function landDone() {
+  paused = true; const c = cur(S), f = W.lsp.filter(L => lspStatus(c, L.i) === "friend").length, h = W.lsp.filter(L => lspStatus(c, L.i) === "gone").length;
+  const N = { friendly: ["Friendly", "Your species made friends wherever it went. Its tribe will trade and charm its way forward."], fierce: ["Fierce", "Your species ruled the island by force. Its tribe will be bold raiders."], mixed: ["Shrewd", "Your species made friends when it suited and fought when it had to."] }[S.landNature] || ["Shrewd", ""];
+  dialog(`<h2>A clever species!</h2><p>${esc(S.name)} has grown a brain big enough to make its first tools.</p>
+    <div class="stats"><div>Nature<b>${N[0]}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Friends<b>${f} species</b></div><div>Driven out<b>${h} species</b></div></div>
+    <p>${N[1]}</p><p>The tribe stage is coming in a later update. Your species is saved and will carry on from here. Until then, you can keep exploring the island.</p>
+    <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="go">Keep exploring</button></div>`, { menu: quitToMenu, go: resume }, resume);
+}
+
+/* ---------- the land: the island, tapping, meeting creatures ---------- */
+const TPX = 12, TCOL = [[46, 110, 170], [233, 214, 158], [125, 182, 92], [78, 138, 70], [94, 122, 88], [150, 138, 98], [105, 100, 94], [226, 88, 46]];
+let LTC = null, ENC = null, IMP = null, CALL = false;
+function landTerrain() {
+  if (LTC && LTC.W === W) return LTC;
+  const cvT = document.createElement("canvas"); cvT.width = cvT.height = LN * TPX; const x = cvT.getContext("2d");
+  const mini = document.createElement("canvas"); mini.width = mini.height = LN; const mx = mini.getContext("2d"), img = mx.createImageData(LN, LN);
+  for (let i = 0; i < LN * LN; i++) {
+    const t = W.map[i], tx = i % LN, ty = (i / LN) | 0, h = hash(tx, ty, 5), v = ((h & 255) / 255 - .5) * 14; let [r, g, b] = TCOL[t];
+    if (t === T_SEA) { let near = 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2]]) { const nx = tx + dx, ny = ty + dy; if (nx >= 0 && ny >= 0 && nx < LN && ny < LN && W.map[ny * LN + nx] !== T_SEA) near++; } if (near) { r += 34; g += 46; b += 22; } }
+    x.fillStyle = `rgb(${r + v | 0},${g + v | 0},${b + v | 0})`; x.fillRect(tx * TPX, ty * TPX, TPX, TPX);
+    img.data[i * 4] = r; img.data[i * 4 + 1] = g; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = 255;
+  }
+  for (let i = 0; i < LN * LN; i++) { // a little texture
+    const t = W.map[i], tx = i % LN, ty = (i / LN) | 0, h = hash(tx, ty, 9), X = tx * TPX, Y = ty * TPX;
+    if (t === T_GRASS && (h & 3) === 0) { x.fillStyle = "rgba(60,120,40,.55)"; x.fillRect(X + (h >>> 4) % 10, Y + (h >>> 8) % 10, 2, 3); }
+    else if (t === T_SWAMP && (h & 3) === 0) { x.fillStyle = "rgba(60,95,115,.65)"; x.beginPath(); x.ellipse(X + 6, Y + 6, 4, 2, 0, 0, TAU); x.fill(); }
+    else if (t === T_HILL && (h & 7) === 0) { x.fillStyle = "rgba(90,80,60,.6)"; x.fillRect(X + (h >>> 4) % 9, Y + (h >>> 8) % 9, 3, 2); }
+    else if (t === T_LAVA) { x.fillStyle = "rgba(255,210,90,.7)"; x.fillRect(X + (h >>> 4) % 8, Y + (h >>> 8) % 8, 3, 3); }
+    else if (t === T_SAND && (h & 7) === 0) { x.fillStyle = "rgba(190,160,100,.5)"; x.fillRect(X + (h >>> 4) % 10, Y + (h >>> 8) % 10, 2, 2); }
+  }
+  mx.putImageData(img, 0, 0);
+  return LTC = { W, cv: cvT, mini };
+}
+function nightLevel() { const d = cur(S).day; return d < .68 ? 0 : d < .73 ? (d - .68) / .05 : d > .97 ? (1 - d) / .03 : 1; }
+function drawLand(dt) {
+  const P = W.player, t = performance.now() / 1000, TT = landTerrain();
+  const ts = Math.min(CW, CH) / (LT * 11) * (cam.z || 1); cam.s += (ts - cam.s) * Math.min(1, dt * 6);
+  if (!cam.free) { cam.x += (P.x - cam.x) * Math.min(1, dt * 5); cam.y += (P.y - cam.y) * Math.min(1, dt * 5); }
+  const s = cam.s, shk = cam.shake; cam.shake = Math.max(0, shk - dt * 30);
+  const ox = CW / 2 - cam.x * s + (Math.random() - .5) * shk, oy = CH / 2 - cam.y * s + (Math.random() - .5) * shk;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = "#2E6EAA"; ctx.fillRect(0, 0, CW, CH);
+  const k = TPX / LT, sx = Math.max(0, -ox / s * k), sy = Math.max(0, -oy / s * k), sw = Math.min(LN * TPX - sx, CW / s * k + 2), sh = Math.min(LN * TPX - sy, CH / s * k + 2);
+  if (sw > 0 && sh > 0) ctx.drawImage(TT.cv, sx, sy, sw, sh, sx / k * s + ox, sy / k * s + oy, sw / k * s, sh / k * s);
+  const onS = (x, y, r) => { const X = x * s + ox, Y = y * s + oy, R = r * s; return X > -R && X < CW + R && Y > -R && Y < CH + R; };
+  // bushes and trees
+  for (const b of W.bushes) {
+    if (!onS(b.x, b.y, 30)) continue; const X = b.x * s + ox, Y = b.y * s + oy, R = 15 * s;
+    ctx.fillStyle = "#2F6A2A"; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.arc(X + R * .6, Y - R * .3, R * .7, 0, TAU); ctx.arc(X - R * .6, Y - R * .2, R * .7, 0, TAU); ctx.fill();
+    ctx.fillStyle = `hsl(${b.hue} 80% 62%)`; for (let i = 0; i < b.food * 2; i++) { ctx.beginPath(); ctx.arc(X + Math.cos(i * 2.4) * R * .6, Y + Math.sin(i * 2.4) * R * .5 - R * .2, Math.max(1.5, R * .17), 0, TAU); ctx.fill(); }
+  }
+  for (const tr of W.trees) {
+    if (!onS(tr.x, tr.y, tr.r * 1.3)) continue; const X = tr.x * s + ox, Y = tr.y * s + oy, R = tr.r * s;
+    ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.ellipse(X + R * .2, Y + R * .25, R, R * .8, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#2D5E2A"; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#3F7A35"; ctx.beginPath(); ctx.arc(X - R * .25, Y - R * .25, R * .62, 0, TAU); ctx.fill();
+    if (tr.fruit) { ctx.fillStyle = "#FF8A3D"; for (let i = 0; i < tr.food * 2; i++) { ctx.beginPath(); ctx.arc(X + Math.cos(i * 2.1 + 1) * R * .55, Y + Math.sin(i * 2.1 + 1) * R * .55, Math.max(2, R * .12), 0, TAU); ctx.fill(); } }
+  }
+  // nests: yours, and each species'
+  drawNest(W.home.x * s + ox, W.home.y * s + oy, 44 * s, t);
+  const c = cur(S);
+  for (const L of W.lsp) {
+    if (!onS(L.x, L.y, 80)) continue; const X = L.x * s + ox, Y = L.y * s + oy, R = 46 * s, st = lspStatus(c, L.i);
+    ctx.strokeStyle = st === "gone" ? "rgba(90,80,70,.6)" : "rgba(120,85,45,.85)"; ctx.lineWidth = Math.max(2, 6 * s); ctx.beginPath(); ctx.ellipse(X, Y, R, R * .75, 0, 0, TAU); ctx.stroke();
+    ctx.font = `${Math.max(14, 26 * s)}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(st === "friend" ? "💚" : st === "gone" ? "✖" : L.night ? "🌙" : "🪹", X, Y);
+  }
+  // part pods (old bones) and meat
+  for (const R of W.pods) {
+    if (!onS(R.x, R.y, 40)) continue; const X = R.x * s + ox, Y = R.y * s + oy, r = 16 * s * (1 + .06 * Math.sin(t * 3 + R.ph)), have = c.unlocked.includes(R.id);
+    const gr = ctx.createRadialGradient(X, Y, 0, X, Y, r * 2.4); gr.addColorStop(0, have ? "rgba(220,230,255,.4)" : "rgba(215,174,255,.7)"); gr.addColorStop(1, "rgba(215,174,255,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, r * 2.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = "rgba(240,232,210,.9)"; ctx.strokeStyle = have ? "#AFC4FF" : "#D7AEFF"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, r, 0, TAU); ctx.fill(); ctx.stroke();
+    const ic = podIcon(R.id); ctx.save(); ctx.translate(X, Y); ctx.scale(r / 12, r / 12); ctx.translate(ic.ox, 0); drawCreature(ctx, ic.d, ic.g, t, { mv: .4 }); ctx.restore();
+  }
+  for (const it of W.items) { if (!onS(it.x, it.y, 20)) continue; const X = it.x * s + ox, Y = it.y * s + oy, R = 7 * s; ctx.fillStyle = "#C2414F"; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.arc(X + R * .7, Y + R * .3, R * .6, 0, TAU); ctx.fill(); }
+  // where you're walking
+  if (P.path && P.path.length) {
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 3; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.moveTo(P.x * s + ox, P.y * s + oy); for (const [x, y] of P.path) ctx.lineTo(x * s + ox, y * s + oy); ctx.stroke(); ctx.setLineDash([]);
+    const [ex, ey] = P.path[P.path.length - 1]; ctx.strokeStyle = "#fff"; ctx.beginPath(); ctx.arc(ex * s + ox, ey * s + oy, 8 + 3 * Math.sin(t * 6), 0, TAU); ctx.stroke();
+  }
+  // creatures, back to front
+  const list = [...W.cr, P].filter(q => onS(q.x, q.y, q.g.R * q.k * 2.5)).sort((a, b) => a.y - b.y);
+  for (const q of list) {
+    const X = q.x * s + ox, Y = q.y * s + oy, R = q.g.R * q.k * s, hunting = q.kind === "npc" && q.ai.tg && q.ai.tg.team;
+    ctx.fillStyle = "rgba(0,0,0,.2)"; ctx.beginPath(); ctx.ellipse(X + R * .15, Y + R * .3, R * 1.05, R * .8, 0, 0, TAU); ctx.fill();
+    if (hunting) { const gr = ctx.createRadialGradient(X, Y, R * .5, X, Y, R * 1.8); gr.addColorStop(0, "rgba(255,40,60,.3)"); gr.addColorStop(1, "rgba(255,40,60,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X, Y, R * 1.8, 0, TAU); ctx.fill(); }
+    if (ENC && ENC.T === q) { ctx.strokeStyle = "#FFE08A"; ctx.lineWidth = 2.5; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(X, Y, R * 1.45, t * 2, t * 2 + TAU); ctx.stroke(); ctx.setLineDash([]); }
+    if (q.kind === "ally") { ctx.strokeStyle = "rgba(124,242,200,.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, R * 1.25, 0, TAU); ctx.stroke(); }
+    ctx.save(); ctx.translate(X, Y); ctx.rotate(q.a); ctx.scale(s * q.k, s * q.k);
+    if (q.kind === "player" && q.inv > 0 && Math.floor(t * 10) % 2) ctx.globalAlpha = .5;
+    const mv = clamp(Math.hypot(q.vx, q.vy) / (q.st.lspd * 1.8 * Math.pow(q.k, .5)), 0, 1);
+    let gg = q.g; if (q.g.r.length > 1) { const ang = [0]; for (let i = 1; i < q.g.r.length; i++) ang.push(Math.sin(t * (3 + 5 * mv) + q.id - i * 1.1) * .08 * (.3 + mv)); gg = bentG(q.g, ang); }
+    drawCreature(ctx, q.d, gg, q.asleep ? 0 : t + q.id, { mv: q.asleep ? 0 : mv, hurt: W.t - q.hurtT < .12, glare: hunting });
+    ctx.restore();
+    if (q.asleep) { ctx.fillStyle = "#E8F0FF"; ctx.font = `800 ${Math.max(12, R * .6)}px sans-serif`; ctx.textAlign = "center"; ctx.fillText("z", X + R * .8, Y - R - 4 - (t * 10 % 12)); }
+    if (q.epicName) { ctx.fillStyle = "#FFE3A8"; ctx.font = `800 ${Math.max(12, Math.min(20, R * .3))}px Figtree, sans-serif`; ctx.textAlign = "center"; ctx.fillText(q.epicName, X, Y - R - 10); }
+    if (q.kind === "npc" && isFriend(W, q)) { ctx.font = `${Math.max(10, R * .45)}px sans-serif`; ctx.textAlign = "center"; ctx.fillText("💚", X, Y - R - 2); }
+    if (q.hp < q.max && W.t - q.hurtT < 5) { const w = R * 1.6; ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(X - w / 2, Y + R + 4, w, 4); ctx.fillStyle = q.team ? "#7CF2C8" : "#FF6B86"; ctx.fillRect(X - w / 2, Y + R + 4, w * Math.max(0, q.hp / q.max), 4); }
+  }
+  for (const sh2 of W.shots) { ctx.fillStyle = "#B8F06A"; ctx.beginPath(); ctx.arc(sh2.x * s + ox, sh2.y * s + oy, Math.max(3, 6 * s), 0, TAU); ctx.fill(); }
+  // the show: what the other creature does, above its head
+  if (IMP && IMP.bubble != null && !IMP.T.dead) {
+    const X = IMP.T.x * s + ox, Y = IMP.T.y * s + oy - IMP.T.g.R * IMP.T.k * s - 34;
+    ctx.fillStyle = "rgba(255,255,255,.95)"; ctx.beginPath(); ctx.arc(X, Y, 26, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.moveTo(X - 8, Y + 22); ctx.lineTo(X, Y + 34); ctx.lineTo(X + 8, Y + 22); ctx.fill();
+    ctx.font = "28px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(SOC[IMP.bubble][1], X, Y + 1);
+  }
+  // night: dark but for a pool round you
+  const nl = nightLevel();
+  if (nl > 0) {
+    const X = P.x * s + ox, Y = P.y * s + oy, r0 = (P.g.R * 3 + P.st.eyes * 9 + P.st.light * 80) * P.k * s, g = ctx.createRadialGradient(X, Y, r0 * .5, X, Y, r0 * 2.2);
+    g.addColorStop(0, "rgba(6,10,30,0)"); g.addColorStop(1, `rgba(6,10,30,${.72 * nl})`); ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+    for (const q of W.cr) if (q.kind === "npc" && !q.asleep && q.diet === "meat" && onS(q.x, q.y, 50)) for (const pq of q.g.parts) if (pq.P.cat === "eye") { const [ex, ey] = toW(q, pq.x * .8, pq.y * .8); ctx.fillStyle = `rgba(255,220,120,${.8 * nl})`; ctx.beginPath(); ctx.arc(ex * s + ox, ey * s + oy, Math.max(1.5, 2 * q.k * s), 0, TAU); ctx.fill(); }
+  }
+  // sparkles and rings
+  for (const p of parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; ctx.globalAlpha = Math.max(0, p.life * 2); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x * s + ox, p.y * s + oy, Math.max(1.5, p.r * s), 0, TAU); ctx.fill(); }
+  parts = parts.filter(p => p.life > 0); ctx.globalAlpha = 1;
+  for (const f of fx) { f.life -= dt; ctx.strokeStyle = `rgba(255,240,120,${Math.max(0, f.life * 2.5)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x * s + ox, f.y * s + oy, f.r * s * (1.2 - f.life), 0, TAU); ctx.stroke(); }
+  fx = fx.filter(f => f.life > 0);
+  // the island map in the corner
+  const mw = 84, mx0 = CW - mw - 12, my0 = $("pauseBtn").getBoundingClientRect().bottom + 14;
+  ctx.save(); ctx.globalAlpha = .9; ctx.imageSmoothingEnabled = false; ctx.drawImage(TT.mini, mx0, my0, mw, mw); ctx.imageSmoothingEnabled = true; ctx.globalAlpha = 1;
+  ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.strokeRect(mx0 + .5, my0 + .5, mw - 1, mw - 1);
+  const mm = (x, y) => [mx0 + x / (LN * LT) * mw, my0 + y / (LN * LT) * mw];
+  for (const L of W.lsp) { const st = lspStatus(c, L.i), [a, b] = mm(L.x, L.y); ctx.fillStyle = st === "friend" ? "#7CF2C8" : st === "gone" ? "#555" : L.diet === "meat" ? "#FF6B6B" : "#FFE08A"; ctx.beginPath(); ctx.arc(a, b, 2.6, 0, TAU); ctx.fill(); }
+  { const [a, b] = mm(W.home.x, W.home.y); ctx.fillStyle = "#FFB7D5"; ctx.beginPath(); ctx.arc(a, b, 3, 0, TAU); ctx.fill(); }
+  { const [a, b] = mm(P.x, P.y); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(a, b, 3, 0, TAU); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.stroke(); }
+  if (cam.free) { const [a, b] = mm(cam.x, cam.y); ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.strokeRect(a - 6, b - 8, 12, 16); }
+  ctx.restore();
+}
+
+/* tapping, dragging to look around, pinching to zoom */
+const LPT = { pts: new Map(), pan: false, sx: 0, sy: 0, cx: 0, cy: 0, pinch: 0, z0: 1 };
+function landDown(e) {
+  cv.setPointerCapture(e.pointerId); LPT.pts.set(e.pointerId, [e.clientX, e.clientY]);
+  if (LPT.pts.size === 1) { LPT.sx = e.clientX; LPT.sy = e.clientY; LPT.cx = cam.x; LPT.cy = cam.y; LPT.pan = false; }
+  else if (LPT.pts.size === 2) { const [a, b] = [...LPT.pts.values()]; LPT.pinch = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1; LPT.z0 = cam.z || 1; LPT.pan = true; }
+}
+function landMoveP(e) {
+  if (!LPT.pts.has(e.pointerId)) return; LPT.pts.set(e.pointerId, [e.clientX, e.clientY]);
+  if (LPT.pts.size >= 2) { const [a, b] = [...LPT.pts.values()]; cam.z = clamp(LPT.z0 * Math.hypot(a[0] - b[0], a[1] - b[1]) / LPT.pinch, .5, 2.5); return; }
+  const dx = e.clientX - LPT.sx, dy = e.clientY - LPT.sy;
+  if (!LPT.pan && Math.hypot(dx, dy) > 12) LPT.pan = true;
+  if (LPT.pan) { cam.free = true; cam.x = LPT.cx - dx / cam.s; cam.y = LPT.cy - dy / cam.s; }
+}
+function landUp(e) {
+  if (!LPT.pts.has(e.pointerId)) return; LPT.pts.delete(e.pointerId);
+  if (!LPT.pts.size) { if (!LPT.pan && !paused && !IMP && !W.over) landTap(e.clientX, e.clientY); LPT.pan = false; }
+}
+function landTap(sx, sy) {
+  const P = W.player, wx = (sx - CW / 2) / cam.s + cam.x, wy = (sy - CH / 2) / cam.s + cam.y, near = 26 / cam.s;
+  let best = null, bd = 1e9;
+  for (const q of [...W.cr, P]) { const d = Math.hypot(q.x - wx, q.y - wy) - q.g.R * q.k; if (d < near && d < bd) { bd = d; best = q; } }
+  if (CALL) { CALL = false; if (best && best.kind === "npc" && !isFriend(W, best)) { W.callTg = best; toast("Your pack goes after it!"); } else { W.callTg = null; W.cr.forEach(q => { if (q.kind === "ally") q.ai.tg = null; }); toast("Your pack comes back to you."); } renderLandUI(true); return; }
+  if (best === P) return;
+  if (best && best.kind === "npc") { ENC = { T: best, met: false }; landGoTo(W, best); cam.free = false; renderLandUI(true); return; }
+  ENC = null; cam.free = false;
+  for (const b of [...W.bushes, ...W.trees.filter(t2 => t2.fruit)]) { const r = b.kind === "tree" ? b.r : 20; if (Math.hypot(b.x - wx, b.y - wy) < r + near * .6) { landGoTo(W, b); renderLandUI(true); return; } }
+  if (Math.hypot(W.home.x - wx, W.home.y - wy) < 60 + near) { landGoTo(W, W.home); renderLandUI(true); return; }
+  if (!landGo(W, wx, wy)) toast("You can't get there.");
+  renderLandUI(true);
+}
+
+/* the buttons along the bottom: meeting a creature, or fighting */
+let LUI_KEY = "";
+function threatened() { const P = W.player; return W.cr.find(q => q.kind === "npc" && !q.asleep && q.ai.tg && q.ai.tg.team && Math.hypot(q.x - P.x, q.y - P.y) < LT * 6); }
+function renderLandUI(force) {
+  const box = $("lui"); if (!W || !W.land || view !== "play") { box.hidden = true; return; }
+  box.hidden = !!IMP; if (IMP) return;
+  const P = W.player, c = cur(S);
+  if (ENC && (ENC.T.dead || !W.cr.includes(ENC.T))) ENC = null;
+  const fight = (P.mode === "hunt" && P.tg && !P.tg.dead) || threatened();
+  const T = ENC && ENC.T, st = T ? (T.lsp != null ? lspStatus(c, T.lsp) : T.epic != null ? c.epics[T.epic] : null) : null;
+  const key = [fight ? "F" + Object.keys(P.st.ab).join() : "", T ? T.id + ":" + ENC.met + ":" + st + ":" + T.wooed + ":" + T.asleep + ":" + (c.friends[T.lsp] || 0) + ":" + (c.hunted[T.lsp] || 0) : "", CALL].join("|");
+  if (key !== LUI_KEY || force) {
+    LUI_KEY = key; const card = $("lCard"), bar = $("lBar");
+    if (T && !fight) {
+      const L = T.epic != null ? W.epics[T.epic] : W.lsp[T.lsp], diet = { plant: "🌿 plant eater", meat: "🦷 hunter", both: "🌿🦷 eats both" }[L.diet];
+      const prog = T.epic != null ? (st === "friend" ? "💚 A friend of yours" : "A giant! Its show is harder, and it's tough in a fight.") : st === "friend" ? "💚 Friends with your species" : `Won over ${c.friends[T.lsp] || 0} of ${FRIEND_NEED} · Hunted ${c.hunted[T.lsp] || 0} of ${HUNT_NEED}`;
+      card.hidden = false;
+      card.innerHTML = `<b>${esc(T.epicName || L.name)}</b><span>${diet} · likes ${L.likes.map(k => SOC[k][1]).join(" ")}</span><span>${prog}</span>${T.asleep ? "<span>💤 Asleep: it only comes out at night. Easy to hunt now, but you can't impress it.</span>" : ""}${T.wooed && st !== "friend" ? "<span>You've won this one over: try another of its kind.</span>" : ""}${ENC.met ? "" : "<span>Walking over…</span>"}`;
+      const can = !st && ENC.met;
+      bar.innerHTML = (can ? `<button class="lb" data-l="hunt">🍖<small>Hunt</small></button>` : "") + (can && !T.asleep && !T.wooed ? `<button class="lb" data-l="imp">🎵<small>Impress</small></button>` : "") + `<button class="lb" data-l="leave">↩<small>Leave</small></button>`;
+    } else if (fight) {
+      card.hidden = true;
+      const ids = Object.keys(LMOVES).filter(k => P.st.ab[k]).concat(Object.keys(AB).filter(k => P.st.ab[k] && !LMOVES[k]));
+      bar.innerHTML = ids.map(k => { const m = LMOVES[k] || AB[k]; return `<button class="lb mv" data-m="${k}">${m[0]}<small>${m[1]}</small></button>`; }).join("") + `<button class="lb" data-l="run">🏃<small>Run</small></button>`;
+    } else { card.hidden = true; bar.innerHTML = ""; }
+    bar.querySelectorAll("[data-l]").forEach(b => b.onclick = () => landAct(b.dataset.l));
+    bar.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { if (!landMove(W, b.dataset.m)) toast("Nothing in reach for that."); });
+    $("lCall").classList.toggle("on", CALL);
+  }
+  $("lBar").querySelectorAll("[data-m]").forEach(b => { const k = b.dataset.m, cd = (LMOVES[k] || [0, 0, { dash: 3.5, poison: 7, zap: 8, ink: 8 }[k]])[2]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
+}
+function landAct(a) {
+  const T = ENC && ENC.T;
+  if (a === "hunt" && T) { landHunt(W, T); }
+  else if (a === "imp" && T) startImpress(T);
+  else if (a === "leave" || a === "run") { landLeave(W); ENC = null; if (a === "run") { const P = W.player, H = W.home, d = Math.hypot(H.x - P.x, H.y - P.y), ux = (P.x - (threatened() || P).x) || .01, uy = (P.y - (threatened() || P).y) || .01, n = Math.hypot(ux, uy); landGo(W, P.x + ux / n * LT * 6, P.y + uy / n * LT * 6); } }
+  renderLandUI(true);
+}
+/* the show: watch three rounds, copy each one */
+function startImpress(T) {
+  const P = W.player; W.freeze = true;
+  IMP = { T, seqs: impressPlan(W, T), round: 0, step: 0, phase: "show", score: 0, total: 0, q: socialQ(P.st, P.d), bubble: null };
+  IMP.total = IMP.seqs.reduce((a, s2) => a + s2.length, 0);
+  $("imp").hidden = false; renderImp("Watch closely…"); renderLandUI(true); setTimeout(showRound, 600);
+}
+function renderImp(msg) {
+  if (!IMP) return; $("imMsg").textContent = msg;
+  $("imBtns").innerHTML = SOC.map(([id, ic, n], i) => `<button class="ib${IMP.q[i] ? "" : " off"}${IMP.flash === i ? " hit" : ""}" data-i="${i}" ${IMP.phase === "input" ? "" : "disabled"}>${ic}<small>${n}${IMP.q[i] ? "" : " (no part)"}</small></button>`).join("");
+  $("imBtns").querySelectorAll("[data-i]").forEach(b => b.onclick = () => impTap(+b.dataset.i));
+}
+const SOCSND = ["mate", "eat", "relic", "kill"];
+function showRound() {
+  if (!IMP) return; const seq = IMP.seqs[IMP.round]; IMP.phase = "show"; let i = 0;
+  renderImp(`Round ${IMP.round + 1} of 3: watch…`);
+  const next = () => {
+    if (!IMP) return;
+    if (i >= seq.length) { IMP.bubble = null; IMP.phase = "input"; IMP.step = 0; renderImp("Your turn: copy it!"); return; }
+    IMP.bubble = seq[i]; IMP.flash = seq[i]; snd(SOCSND[seq[i]]); renderImp(`Round ${IMP.round + 1} of 3: watch… (${i + 1} of ${seq.length})`); i++;
+    setTimeout(() => { if (IMP) { IMP.bubble = null; IMP.flash = null; renderImp(`Round ${IMP.round + 1} of 3: watch…`); } setTimeout(next, 180); }, 620);
+  };
+  next();
+}
+function impTap(k) {
+  if (!IMP || IMP.phase !== "input") return;
+  const seq = IMP.seqs[IMP.round], want = seq[IMP.step];
+  if (k === want) {
+    IMP.score += IMP.q[k]; IMP.step++; snd(SOCSND[k]); IMP.flash = k;
+    const P = W.player; for (let j = 0; j < 5; j++) parts.push({ x: P.x, y: P.y - 20, vx: (Math.random() - .5) * 120, vy: -40 - Math.random() * 80, life: .6, col: IMP.q[k] ? "#FFE08A" : "#8899AA", r: 3 });
+    if (IMP.step >= seq.length) endRound(IMP.q[k] ? "Lovely!" : "Done.");
+    else renderImp(IMP.q[k] ? `Yes! ${seq.length - IMP.step} to go` : `Right move, but you haven't the parts for it. ${seq.length - IMP.step} to go`);
+  } else { snd("hurt"); endRound(`Wrong one: it wanted ${SOC[want][1]}.`); }
+}
+function endRound(msg) {
+  IMP.phase = "wait"; IMP.round++; renderImp(msg);
+  if (IMP.round < 3) setTimeout(showRound, 1100); else setTimeout(finishImpress, 900);
+}
+function finishImpress() {
+  if (!IMP) return; const T = IMP.T, frac = IMP.score / IMP.total, win = impressEnd(W, T, frac); W.freeze = false;
+  const pct = Math.round(Math.min(1, frac / (T.epic != null ? .7 : .6)) * 100);
+  IMP = null; $("imp").hidden = true; ENC = win ? null : ENC;
+  toast(win ? `It liked that! (${pct}%)` : T.diet === "plant" ? `Not impressed (${pct}% of what it wanted). It wanders off.` : `Not impressed (${pct}%)… and now it's angry!`);
+  snd(win ? "grow" : "hurt"); renderLandUI(true);
+}
+function cancelImpress() { if (!IMP) return; IMP = null; W.freeze = false; $("imp").hidden = true; renderLandUI(true); }
 
 /* ---------- main loop ---------- */
 let last = 0;
@@ -1700,11 +2516,13 @@ function frame(ts) {
       stepWorld(W, dt, inp); handleEvents(); hints();
       saveT -= dt; if (saveT <= 0) { saveT = 15; saveSlot(); }
     }
-    draw(paused ? 0 : dt); hud();
+    draw(paused ? 0 : dt); hud(); if (W.land) renderLandUI();
   } else if (view === "edit") drawEditor(ts / 1000);
 }
 window.SG_BACK = () => {
   if (!$("dlg").hidden) { if (dlgBack) dlgBack(); else closeDlg(); return true; }
+  if (view === "play" && IMP) { cancelImpress(); return true; }
+  if (view === "play" && W && W.land && (ENC || CALL)) { ENC = null; CALL = false; landLeave(W); renderLandUI(true); return true; }
   if (view === "edit") { leaveEditor(); return true; }
   if (view === "play") { pause(); return true; }
   return false;

@@ -401,6 +401,20 @@
         "At the last size, grow lungs and two leg fins and crawl up onto the shore.",
         "In the builder, tap a part's name in the new list to pick it, then drag anywhere to move it. You can also nudge it round the body with the arrow buttons."
       ]
+    },
+    {
+      "id": 37,
+      "type": "features",
+      "headline": "Life: the land stage",
+      "details": [
+        "Crawl out of the sea and tap Onto the land: your fins become legs, and you explore an island made just for your species.",
+        "Tap the ground to walk there, drag to look around, pinch or use + and − to zoom. Tap bushes and fruit trees to eat.",
+        "Tap a creature to meet it, then choose Hunt, Impress or Leave. To impress, copy its show: 🎵 call, 💃 dance, 🦚 show off, 💪 pose. The right parts (voice sacs, legs, crests, horns) score better.",
+        "Win over three of a species to make friends (one may join your pack), or hunt four to drive it off the island. Two giants roam too.",
+        "Your pack follows you and fights beside you; tap 📣 then a creature to send them after it. In fights, tap 💥 charge, 🐾 pounce, 💦 spit or 📣 roar.",
+        "Day turns to night, when some hunters come out. Eleven new land parts, including legs, hands, horns, claws, crests, ears and little wings.",
+        "Every species you deal with grows your brain. A full brain makes your species clever enough for the tribe stage, coming later."
+      ]
     }
   ]
 }

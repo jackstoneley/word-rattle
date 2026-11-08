@@ -6,7 +6,7 @@ const fs = require("fs"), path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "..", "games", "life", "index.html"), "utf8");
 const core = html.match(/\/\*CORE-START\*\/([\s\S]*?)\/\*CORE-END\*\//);
 if (!core) { console.error("life: CORE not found"); process.exit(1); }
-const C = new Function(core[1] + ";return {newSave, newWorld, stepWorld, applyEvolve, respawn, viewR, designValue, partLimit, segLimit, stats, cloneD, PART, PARTS, TIERS, cur, goToSea, bandMid, bandAt, SEA};")();
+const C = new Function(core[1] + ";return {newSave, newWorld, stepWorld, applyEvolve, respawn, viewR, designValue, partLimit, segLimit, stats, cloneD, PART, PARTS, TIERS, cur, goToSea, bandMid, bandAt, SEA, goToLand, landGo, landGoTo, landHunt, landLeave, landMove, lspStatus, impressPlan, socialQ, impressEnd, LT};")();
 const verbose = process.argv.includes("-v");
 
 // What the bot buys when it evolves, in order (skips parts it hasn't found or can't afford).
@@ -16,14 +16,17 @@ const SEAPLAN = { plant: ["tailfin", "sidefin", "baleen", "plate", "frill", "ink
 const SPOT = { whip: [-1, 3.14, false], fringe: [-1, -2.1, true], moon: [0, -.5, true], shell: [0, -1.7, true], frill: [-1, -2.2, true], thorn: [0, -1.2, true],
   jet: [-1, 2.6, true], stalk: [0, -.9, true], cluster: [0, -.3, true], feeler: [0, -.4, true], slit: [0, -.6, true], jaw: [0, .5, true], spark: [0, -1.5, false],
   tailfin: [-1, 3.14, false], sidefin: [1, -1.6, true], baleen: [0, .45, true], beak: [0, .45, true], plate: [1, -1.6, true], tentacle: [0, .8, true], ink: [-1, 2.7, false],
-  lamp: [0, -.1, false], lungs: [0, -1.4, false], legfin: [-1, -1.9, true] };
+  lamp: [0, -.1, false], lungs: [0, -1.4, false], legfin: [-1, -1.9, true],
+  leg: [1, -1.7, true], crest: [0, -2.4, true], voice: [0, -1.8, false], claw: [0, .8, true], horn: [0, .3, true], ear: [0, -1.25, true], spitter: [0, -.25, false],
+  tail: [-1, 3.14, false], hand: [0, 1.1, true], wing: [1, -1.5, true] };
+const LANDPLAN = { plant: ["crest", "leg", "horn", "crest", "ear", "wing", "plate", "hand", "tail"], meat: ["claw", "crest", "horn", "leg", "spitter", "ear", "plate", "tail", "wing"] };
 function evolve(W, diet) {
   const S = W.S, c = C.cur(S), d = C.cloneD(c.design), sea = S.stage === "sea";
   if (d.s.length < C.segLimit(c.tier, S) && c.tier >= 2) d.s.push(11);
   const have = {}; for (const q of d.p) have[q.id] = (have[q.id] || 0) + 1;
   const want = {};
   // in the sea, lungs and leg fins come first once it's nearly ready to leave
-  const plan = sea ? (c.tier >= 4 ? ["lungs", "legfin", ...SEAPLAN[diet]] : SEAPLAN[diet]) : PLAN[diet];
+  const plan = S.stage === "land" ? LANDPLAN[diet] : sea ? (c.tier >= 4 ? ["lungs", "legfin", ...SEAPLAN[diet]] : SEAPLAN[diet]) : PLAN[diet];
   if (sea && c.tier >= 4 && !have.lungs) { // make room by dropping the newest extras
     while (d.p.length && C.stats(d).parts + 3 > C.partLimit(c.tier, S)) { const i = d.p.findIndex(q => !["tailfin", "baleen", "beak", "jaw", "filter", "siphon"].includes(q.id)); if (i < 0) break; d.p.splice(i, 1); }
   }
@@ -76,7 +79,36 @@ function seaBot(W, diet, inp) {
   }
   const dx = tx - P.x, dy = ty - P.y, n = Math.hypot(dx, dy) || 1; inp.mx = dx / n; inp.my = dy / n;
 }
-let bad = 0; const out = [], seaOut = [], grown = [];
+/* Land: walk to the nearest species not yet dealt with; impress if its show is one this design can copy, otherwise hunt;
+   fight back when attacked, go home to heal and to evolve. */
+function landBot(W, diet, B) {
+  const P = W.player, c = C.cur(W.S), LT = C.LT;
+  if (P.mode === "hunt" && P.tg && !P.tg.dead) {
+    for (const id of ["charge", "pounce", "spit", "roar"]) if (P.st.ab[id] && !(P.ab[id] > 0) && Math.hypot(P.tg.x - P.x, P.tg.y - P.y) < LT * 4) { C.landMove(W, id); break; }
+    if (P.hp < P.max * .3) { C.landLeave(W); C.landGoTo(W, W.home); }
+    return;
+  }
+  const att = W.cr.find(q => q.kind === "npc" && q.ai.tg && q.ai.tg.team && Math.hypot(q.x - P.x, q.y - P.y) < LT * 4);
+  if (att && P.hp > P.max * .35) { C.landHunt(W, att); return; }
+  if (P.hp < P.max * .4) { if (!P.goal || P.goal.kind !== "home") C.landGoTo(W, W.home); return; }
+  if (P.goal || P.path || P.eating) return;
+  if (c.dna >= 50 && W.t - B.evoT > 150) { C.landGoTo(W, W.home); return; }
+  let best = null, bd = 1e18;
+  for (const q of W.cr) if (q.kind === "npc") {
+    const st = q.lsp != null ? C.lspStatus(c, q.lsp) : c.epics[q.epic]; if (st || q.wooed || W.t < (q.botSkip || 0)) continue;
+    const d = (q.x - P.x) ** 2 + (q.y - P.y) ** 2 * 1 + (q.epic != null ? 1e7 : 0); if (d < bd) { bd = d; best = q; }
+  }
+  if (best) C.landGoTo(W, best);
+}
+function landMeet(W, diet, T) {
+  const P = W.player, q = C.socialQ(P.st, P.d), seqs = C.impressPlan(W, T); let sc = 0, n = 0;
+  for (const s of seqs) for (const k of s) { sc += q[k]; n++; }
+  const need = T.epic != null ? .7 : .6;
+  // the show takes about as long as a person would: ~1.8 s a move
+  if (!T.asleep && (sc / n >= need || (T.epic == null && T.st.bite > P.st.bite + 4))) { W.S.time += n * 1.8; if (!C.impressEnd(W, T, sc / n)) T.botSkip = W.t + 60; return; }
+  C.landHunt(W, T);
+}
+let bad = 0; const out = [], seaOut = [], landOut = [], grown = [];
 for (const diet of ["plant", "meat"]) for (const seed of [11, 12]) {
   const S = C.newSave({ name: "Bot", diet, seed }), W = C.newWorld(S, seed), inp = { mx: 0, my: 0, ab: null };
   const sizeAt = [];
@@ -111,7 +143,24 @@ for (const [diet, seed, S] of grown) {
   if (!c.done) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) didn't finish the sea stage in 90 min (size ${c.tier + 1}${c.ashore ? ", ready to go ashore" : ""})`); continue; }
   if (min < 12) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) finished the sea stage in ${min} min: too quick`); }
   seaOut.push(`${diet} ${min} min (${c.deaths} deaths)`);
+  // and the land
+  C.goToLand(S); const t1 = S.time, LW = C.newWorld(S, seed + 200), L = S.land, B = { evoT: 0 };
+  let lg = 0, dead = 0;
+  while (!L.done && S.time - t1 < 9000 && lg++ < 9000 * 20) {
+    landBot(LW, diet, B); C.stepWorld(LW, 1 / 20, {});
+    for (const e of LW.ev) {
+      if (e.t === "mate") { evolve(LW, diet); B.evoT = LW.t; }
+      if (e.t === "meet") landMeet(LW, diet, e.c);
+      if (e.t === "die") { dead++; L.deaths++; C.respawn(LW); }
+    }
+    LW.ev.length = 0;
+  }
+  const lmin = Math.round((S.time - t1) / 60), fr = LW.lsp.filter(x => C.lspStatus(L, x.i) === "friend").length, gone = LW.lsp.filter(x => C.lspStatus(L, x.i) === "gone").length;
+  if (!L.done) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) didn't finish the land stage in 150 min (brain ${Math.round(L.grow)}, ${fr} friends, ${gone} hunted out)`); continue; }
+  if (lmin < 15) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) finished the land stage in ${lmin} min: too quick`); }
+  landOut.push(`${diet} ${lmin} min (${fr} befriended, ${gone} hunted, ${dead} deaths)`);
+  if (verbose) console.log("land", diet, seed, "done", lmin, "min; friends", fr, "hunted", gone, "epics", JSON.stringify(L.epics), "deaths", dead, "evolves", L.evolves, "dna", Math.round(L.dna), "lean", L.lean.toFixed(2), "nature", S.landNature);
   if (verbose) console.log("sea", diet, seed, "sizes at", sizeAt.join(", "), "min; done", min, "min; deaths", c.deaths, "kills", c.kills, "goals", Object.keys(c.goals).join(" "), "lean", c.lean.toFixed(2), "young", c.young, "dna left", Math.round(c.dna));
 }
 if (bad) process.exit(1);
-console.log("life: cell stage finished by bots: " + out.join(", ") + "; sea stage: " + seaOut.join(", "));
+console.log("life: cell stage finished by bots: " + out.join(", ") + "; sea stage: " + seaOut.join(", ") + "; land stage: " + landOut.join(", "));

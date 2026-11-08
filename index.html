@@ -369,8 +369,8 @@ function renderStats(){
       stars=wl.reduce((a,r)=>a+(r&&r.stars?r.stars.reduce((x,y)=>x+y,0):1),0);
     if(won||hdg)setHTML("stHD",[{b:String(won)}," of 20 realms · ",{b:"★ "+stars},hdg?" · a game in progress":""])}
   {const li=load("lf.last",0),lf=load("lf.slot."+li,null),T=["Speck","Mote","Droplet","Bloom","Titan"],ST=["Fry","Finling","Glider","Roamer","Leviathan"];
-    if(lf&&lf.cell){const sea=lf.stage==="sea"&&lf.sea,c=sea?lf.sea:lf.cell,TT=sea?ST:T,stg=sea?"sea":"cell";
-      setHTML("stLF",lf.dead?[String(lf.name)," · ",{b:"died out"},` in the ${stg} stage`]:sea&&c.done?[String(lf.name)," · ",{b:"crawled onto land"}]:!sea&&c.done?[String(lf.name)," · ",{b:"ready for the sea"}]:[String(lf.name),` · ${stg} stage, `,{b:TT[c.tier]||""},` (size ${c.tier+1} of 5)`])}}
+    if(lf&&lf.cell){const land=lf.stage==="land"&&lf.land,sea=lf.stage==="sea"&&lf.sea,c=land?lf.land:sea?lf.sea:lf.cell,TT=sea?ST:T,stg=land?"land":sea?"sea":"cell";
+      setHTML("stLF",land?(lf.dead?[String(lf.name)," · ",{b:"died out"}," on land"]:c.done?[String(lf.name)," · ",{b:"a clever species"}]:[String(lf.name)," · land stage, brain ",{b:Math.floor(c.grow)+" of 100"}]):lf.dead?[String(lf.name)," · ",{b:"died out"},` in the ${stg} stage`]:sea&&c.done?[String(lf.name)," · ",{b:"ready for land"}]:!sea&&c.done?[String(lf.name)," · ",{b:"ready for the sea"}]:[String(lf.name),` · ${stg} stage, `,{b:TT[c.tier]||""},` (size ${c.tier+1} of 5)`])}}
   const gb=load("gembastion.meta",null)||{},run=load("gembastion.run",null);
   {const cleared=Object.values(gb.cleared||{}).filter(Boolean).length;
     if(cleared||gb.shards||(run&&run.state==="play"))setHTML("stGB",[{b:String(cleared)}," of 6 maps cleared · ",{b:String(gb.shards||0)}," shards",run&&run.state==="play"?` · run in progress, wave ${run.wave}`:""])}
