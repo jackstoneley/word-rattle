@@ -415,6 +415,21 @@
         "Day turns to night, when some hunters come out. Eleven new land parts, including legs, hands, horns, claws, crests, ears and little wings.",
         "Every species you deal with grows your brain. A full brain makes your species clever enough for the tribe stage, coming later."
       ]
+    },
+    {
+      "id": 38,
+      "type": "features",
+      "headline": "Life: a whole new land stage",
+      "details": [
+        "The island is seen at an angle now, more like 3D: trees, palms, pines, cacti and rocks stand up and cast shadows, hills are shaded, and creatures walk on their legs.",
+        "A bigger island with beaches, meadows, forests, jungle, swamp, dry scrub, hills, cliffs, snowy peaks, lakes and rivers.",
+        "Fog: you only know the beach at first, and the map fills in as you explore. You see creatures only when they're close, so eyes, ears and a long neck help.",
+        "Ten places to discover, like the Great Falls, Hot Springs (they heal you) and a Field of Bones (part pods). Each adds to your brain.",
+        "Animals live differently now: herds roam the island and panic together, hunting packs roam and attack as one, some animals live alone, and homebodies stay by their nest and defend it.",
+        "Twelve species to meet, from little six-legged critters to long-necked giants, plus birds, butterflies and fireflies.",
+        "Leftover sea parts (fins and the like) are dead weight on land. They're gone from the builder; tap one on your creature to evolve it away.",
+        "If you'd already started the land stage, you're on the new island: your brain, DNA, pack and design are kept, but the species tally starts again."
+      ]
     }
   ]
 }

@@ -1865,7 +1865,7 @@ function quitToMenu() { saveSlot(); W = null; S = null; slot = -1; closeDlg(); s
 function pause() {
   if (!W || W.over) return; paused = true; saveSlot();
   const c = cur(S), gl = W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>`
-    : W.land ? `<div class="lbl">Species on the island</div><p>${W.lsp.map(L => { const st = lspStatus(c, L.i); if (!(c.met || {})[L.i] && !st) return "? Not met yet"; return (st === "friend" ? "💚 " : st === "gone" ? "✖ " : "○ ") + esc(L.name) + ` (${LIFE[L.life]})` + (st ? "" : ` · won over ${c.friends[L.i] || 0}/${FRIEND_NEED}, hunted ${c.hunted[L.i] || 0}/${HUNT_NEED}`); }).join("<br>")}<br>${W.epics.map(E => (c.epics[E.j] === "friend" ? "💚 " : c.epics[E.j] === "gone" ? "✖ " : "○ ") + esc(E.name) + " (giant)").join("<br>")}</p>
+    : W.land ? `<div class="lbl">Species on the island</div><p>${W.lsp.filter(L => (c.met || {})[L.i] || lspStatus(c, L.i)).map(L => { const st = lspStatus(c, L.i); return (st === "friend" ? "💚 " : st === "gone" ? "✖ " : "○ ") + esc(L.name) + ` (${LIFE[L.life]})` + (st ? "" : ` · won over ${c.friends[L.i] || 0}/${FRIEND_NEED}, hunted ${c.hunted[L.i] || 0}/${HUNT_NEED}`); }).join("<br>")}${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length ? `<br>? ${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length} species not met yet` : ""}<br>${W.epics.map(E => (c.epics[E.j] === "friend" ? "💚 " : c.epics[E.j] === "gone" ? "✖ " : "○ ") + esc(E.name) + " (giant)").join("<br>")}</p>
       <div class="lbl">Places found</div><p>${W.marks.filter(m => c.found[m.id]).map(m => "✦ " + m.name).join("<br>") || "None yet."}${W.marks.length - Object.keys(c.found).length ? `<br>${W.marks.length - Object.keys(c.found).length} more to discover` : ""}</p>` : "";
   dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${TS(S)[c.tier].n} size · ${W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : W.land ? `🧠 ${Math.floor(c.grow)}/100 · ` : ""}${fmtTime(S.time)} played</p>${gl}
     <div class="row"><button class="btn primary" data-a="go">Carry on</button></div>
@@ -2437,7 +2437,7 @@ function drawLand(dt) {
   const SX = x => x * s + ox, SY = y => y * s * TILT + oy;
   for (const i of W.seenNew) TT.fx.clearRect(i % LN, (i / LN) | 0, 1, 1); W.seenNew.length = 0;
   // sky-blue sea, then the ground seen at an angle
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = "#0B1220"; ctx.fillRect(0, 0, CW, CH);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = "#133150"; ctx.fillRect(0, 0, CW, CH); // the open ocean beyond the map
   const wx0 = Math.max(0, -ox / s), wy0 = Math.max(0, -oy / (s * TILT)), wx1 = Math.min(LN * LT, (CW - ox) / s), wy1 = Math.min(LN * LT, (CH - oy) / (s * TILT));
   ctx.setTransform(DPR * s, 0, 0, DPR * s * TILT, DPR * ox, DPR * oy);
   if (wx1 > wx0 && wy1 > wy0) {

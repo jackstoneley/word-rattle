@@ -303,19 +303,25 @@ value. `SEA_GOALS` pay DNA and a pod; a boss (`W.boss`, name from `BOSS_NAMES`) 
 growth bar sets `ashore`; with lungs and two leg fins, reaching the surface finishes the stage (`done`, `S.seaNature`).
 No songs or friendship mini-game in the sea; species mostly don't get along. Long bodies are drawn bent (`bentG`).
 **Land** (`W.land`, own code after the sea in CORE: `newLand`, `stepLand`; page: `drawLand`, `landTap`, `renderLandUI`,
-`startImpress`): tap to move. The island is an `LN`×`LN` tile map of `LT` units (`makeIsland`, from `hash(seed, 777)`, so the same
-island every time; `W.reach` is the main island from `flood`). `findPath` is A* plus string-pulling with a body-width `los`;
-`moveC` slides along water/rock; a stuck walker re-plans tile by tile. Eight species (`LSPEC`, `W.lsp`: design, two liked
-moves `likes`, nest, `night` for the nocturnal one) and two giants (`W.epics`). Progress per species in `S.land.friends[i]`
-(impress three *different* members, `wooed`) and `hunted[i]` (four kills); `lspStatus` → friend / gone; giants in `epics`.
-Each species dealt with: brain +10, giants +15, food a little (`brain`); 100 finishes (`done`, `S.landNature`). Impress:
-`impressPlan` (three rounds, 4/5/6 moves, mostly the two liked; giants 5/6/7), `socialQ` (what this design can do: call =
-voice, dance = legs, show = crest/frill/wing, pose = horns/armour/size), win at 60% (giants 70%) in `impressEnd`; the page
-runs the copy game with `W.freeze`. Fights: `landHunt`, `landFight` (melee in reach), moves `landMove` (`LMOVES`: charge
-horn, pounce claw, spit, roar voice). Pack: young (`pack`, `packMax` +1 per evolve up to 4) and one joiner per befriended
-species (`joined`), following `W.trail`; `W.callTg` sends them. Day/night `S.land.day` over `DAY` seconds; the nocturnal
-species sleeps by day. Land parts carry `land: 1`; swimming parts `water: 1` don't come ashore; `both: 1` sea parts do
-(`stageParts`). `landStart` swaps leg fins → legs, tail fin → tail, adds front legs and a voice sac.
+`startImpress`): tap to move, drawn as a tilted 3D-style view (`TILT`: ground pre-painted once by `landTerrain` with
+blended biomes, hill shading and a smooth shoreline from the heights; trees, rocks, bushes, landmarks and creatures stand
+up as billboards with shadows, depth-sorted; creatures are drawn on the tilted plane). The island (`makeIsland`, from
+`hash(seed, 777, ISLAND_V)`): `LN`×`LN` tiles of `LT` units, heights `W.hgt`, biomes incl. lakes, rivers (slow), snow and
+cliffs; `W.reach` is the main island. Saves made on an older island (`S.land.iv` ≠ `ISLAND_V`) keep brain, DNA, pack and
+design but restart the species tally on the new island. Fog: `W.seen` (saved packed in `S.land.seen`) filled by `reveal`
+within `sightR`; creatures show only within sight; `S.land.met` lists species met (pause list). Landmarks (`LANDMARKS`,
+`W.marks`, found in `S.land.found`: DNA, brain +3; springs heal, bones drop pods, the Old Tree always fruits).
+`findPath` is A* plus string-pulling with a body-width `los`; `moveC` slides along water/rock; `toLand` rescues anything
+in the water; the player and pack don't collide with animals (no deadlocks). Twelve species (`LSPEC`: diet, size, `life`
+herd / pack / solo / home, biomes, extras) plus two giants. Herds and packs follow a leader along a `route` (`W.lead`),
+herds panic together, packs share a target; solo animals keep their own `homes`; home animals defend their nest
+(`scanLand`). Befriend: impress three *different* members (`wooed`); hunt four to drive a species out (`lspStatus`).
+Brain: species +8, giants +12, landmarks +3, food a little; 100 finishes (`done`, `S.landNature`). Impress: `impressPlan`,
+`socialQ` (call = voice, dance = legs, show = crest/frill/wing, pose = horns/armour/size), win at 60% (giants 70%).
+Fights: `landHunt`, `landFight`, `landMove` (`LMOVES`). Pack: young (`pack`, `packMax`) and joiners (`joined`) follow
+`W.trail`; `W.callTg` sends them. Day/night `S.land.day` over `DAY`. Parts: `land: 1` land-only; `water: 1` swimming
+parts are not offered on land, and any still on the body are dead weight there (`stats(d, g, "land")`: no effect, double
+weight, -2 health; `designValue(d, "land")` gives no DNA back for them); `both: 1` sea parts work on land too.
 The builder picks parts by a fingertip-sized reach (`partCentre`), a chip list of every part (`renderChips`), drag-anywhere
 to move the picked part, and ↺ ↻ / section buttons.
 Sizes: `TIERS` (growth needed per size), world scale `KT(t)` = 1.7^t; the camera zooms out as you grow. Eating fills
