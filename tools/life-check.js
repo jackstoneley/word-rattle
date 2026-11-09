@@ -153,13 +153,13 @@ function tribeChief(W, B) {
   if (P.hp < P.max * .45) { W.rally = false; if (!P.goal || P.goal.kind !== "home") C.landGoTo(W, W.home); return; }
   if (P.path || P.goal) return;
   // explore for deposits early on
-  const D = W.deps.filter(d => !T.deps[d.n] && Math.hypot(d.x - W.home.x, d.y - W.home.y) < LT * 32).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0];
-  if (D && T.t < 900) { C.landGo(W, D.x, D.y); return; }
+  const D = W.deps.filter(d => !T.deps[d.n] && (Math.hypot(d.x - W.home.x, d.y - W.home.y) < LT * 32 || !W.deps.some(e => e.m === d.m && T.deps[e.n]))).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0];
+  if (D && (T.t < 900 || !T.found[D.m])) { C.landGo(W, D.x, D.y); return; }
   if (!O.state && C.canImpress(W, oj)) { const q = C.socialQ(P.st, P.d), seqs = C.impressPlan(W, { lsp: O.i }); let sc = 0, n = 0; for (const s of seqs) for (const k of s) { sc += q[k]; n++; } W.S.time += n * 1.8; C.tribeImpressEnd(W, oj, sc / n); return; }
   if (!O.state && O.mood >= 0 && T.t >= (O.cd.imp || 0) && Math.hypot(P.x - O.x, P.y - O.y) > LT * 3) { C.landGoTo(W, W.fires[oj + 1]); return; }
   if (H.state) return;
   const guards = C.jobCount(W, "guard");
-  if (guards < 4 || !T.tools.spear) { if (Math.hypot(P.x - W.home.x, P.y - W.home.y) > LT * 4) C.landGoTo(W, W.home); return; }
+  if (guards < (T.tools.spear ? 4 : 7)) { if (Math.hypot(P.x - W.home.x, P.y - W.home.y) > LT * 4) C.landGoTo(W, W.home); return; }
   W.rally = true;
   if (C.canTake(W, hj)) { C.tribeTake(W, hj); return; }
   if (W.cap) return;
