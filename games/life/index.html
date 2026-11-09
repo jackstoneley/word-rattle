@@ -526,12 +526,12 @@ function mkC(W, d, kind, tier, k, x, y, sp) {
 }
 function placePlayer(W, x, y, a) {
   if (W.player) W.player.dead = true; // anything chasing the old body lets it go
-  const S = W.S, c = cur(S), T = c.tier, P = mkC(W, c.design, "player", T, W.land ? 1.3 : KT(T), x, y); P.a = a; W.player = P;
+  const S = W.S, c = cur(S), T = c.tier, P = mkC(W, c.design, "player", T, W.land ? 1.3 * LK : KT(T), x, y); P.a = a; W.player = P;
   if (W.land) {
     landK(P); const n = S.seaNature; if (n === "hunter") P.biteMul = 1.25; else if (n === "grazer") { P.max *= 1.25; P.hp = P.max; } else P.st.lspd *= 1.1;
     W.cr = W.cr.filter(q => q.kind !== "ally");
     if (W.tribe) { P.max *= 1.5; P.hp = P.max; return; } // the Chief: no pack now, the tribe instead
-    for (let i = 0; i < (c.pack || 0); i++) addAllyLand(W, c.design, 1.05);
+    for (let i = 0; i < (c.pack || 0); i++) addAllyLand(W, c.design, 1.05 * LK);
     for (const j of c.joined || []) if (W.lsp && W.lsp[j]) addAllyLand(W, W.lsp[j].d, W.lsp[j].k * .9, j);
     return;
   }
@@ -969,6 +969,7 @@ function respawn(W) {
    Befriend a species by impressing three of its members (copy their show), or hunt four of them to drive it out.
    Species, giants and discovered landmarks grow the brain bar; a full brain ends the stage. */
 const LAND_TIERS = [{ n: "Walker", g: 100 }];
+const LK = .75; // land creatures are this much smaller than they first were, so the island feels bigger (speeds are kept)
 const LT = 40, LN = 150, DAY = 300, FRIEND_NEED = 3, HUNT_NEED = 4, ISLAND_V = 2;
 const T_SEA = 0, T_SAND = 1, T_GRASS = 2, T_FOREST = 3, T_SWAMP = 4, T_HILL = 5, T_ROCK = 6, T_LAVA = 7, T_LAKE = 8, T_RIVER = 9, T_SNOW = 10, T_SCRUB = 11, T_JUNGLE = 12;
 const TSPD = [0, .85, 1, .8, .55, .65, 0, 0, 0, .45, .55, .95, .7];
@@ -1136,7 +1137,7 @@ function newLand(S, rs) {
   const inBio = L => i => L.bio.includes(W.map[i]);
   W.lsp = LSPEC.map((L0, i) => {
     const R = rng(hash(S.seed, 900, i)), L = Object.assign({ i, key: "l" + i }, L0);
-    L.d = landDesign(R, L); L.g = geom(L.d); L.st = stats(L.d, L.g, "land"); L.k = KT(L.tier) * .8; L.name = speciesName(R, L.diet);
+    L.d = landDesign(R, L); L.g = geom(L.d); L.st = stats(L.d, L.g, "land"); L.k = KT(L.tier) * .8 * LK; L.name = speciesName(R, L.diet);
     L.likes = [Math.floor(R() * 4)]; L.likes.push((L.likes[0] + 1 + Math.floor(R() * 3)) % 4);
     const pickSpot = (dist, minHome) => { const t = randReach(W, R0, k => { const [x, y] = tileXY(k); return inBio(L)(k) && Math.hypot(x - hx, y - hy) > LT * minHome && far(x, y, dist); }); return tileXY(t); };
     [L.x, L.y] = pickSpot(9, L.diet === "plant" && L.tier === 0 ? 10 : 16); spots.push([L.x, L.y]);
@@ -1146,7 +1147,7 @@ function newLand(S, rs) {
   });
   W.epics = [0, 1].map(j => {
     const R = rng(hash(S.seed, 950, j)), E = { j, key: "e" + j, diet: j ? "meat" : "plant", tier: 4, life: "solo", temper: j ? "aggro" : "defend", bio: j ? [T_HILL, T_SCRUB] : [T_GRASS, T_FOREST], n: 1, neck: !j, horn: j };
-    E.d = landDesign(R, E); E.g = geom(E.d); E.st = stats(E.d, E.g, "land"); E.k = 3.4; E.name = EPIC_NAMES[(S.seed + j * 3) % EPIC_NAMES.length];
+    E.d = landDesign(R, E); E.g = geom(E.d); E.st = stats(E.d, E.g, "land"); E.k = 3.4 * LK; E.name = EPIC_NAMES[(S.seed + j * 3) % EPIC_NAMES.length];
     E.likes = [Math.floor(R() * 4)]; E.likes.push((E.likes[0] + 1 + Math.floor(R() * 3)) % 4);
     const t = randReach(W, R0, k => { const [x, y] = tileXY(k); return Math.hypot(x - hx, y - hy) > LT * 30; }); [E.x, E.y] = tileXY(t);
     return E;
@@ -1219,7 +1220,7 @@ function reveal(W) {
 function toLand(W, q) { const tx = Math.floor(q.x / LT), ty = Math.floor(q.y / LT); for (let r = 1; r < 20; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const x = tx + dx, y = ty + dy; if (x < 0 || y < 0 || x >= LN || y >= LN) continue; const i = y * LN + x; if (W.reach[i]) { [q.x, q.y] = tileXY(i); q.vx = q.vy = 0; if (q.path) q.path = null; return; } } }
 function landSpeed(W, c) {
   const t = tileAt(W, c.x, c.y); let f = TSPD[t] || .5; if ((t === T_HILL || t === T_SNOW) && (c.st.climb || c.st.walk >= 4)) f = .82;
-  return c.st.lspd * 1.8 * Math.pow(c.k, .5) * f * (c.slow > W.t ? .55 : 1);
+  return c.st.lspd * 1.8 * Math.pow(c.k / LK, .5) * f * (c.slow > W.t ? .55 : 1);
 }
 function moveC(W, c, tx, ty, sp, dt) {
   const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy); if (d < 2) { c.vx *= .6; c.vy *= .6; return true; }
@@ -1817,12 +1818,12 @@ function tribeArm(W, u) {
   u.atkD = (4 + Math.min(8, u.st.bite * .6) + (u.st.spk ? 1 : 0) + (tl.spear ? 4 : 0) + (u.kind === "vill" && W.S.landNature === "fierce" ? 1.5 : 0)) * (u.champ ? 1.6 : 1);
 }
 function addVill(W, sp, x, y) {
-  const d = sp == null ? cur(W.S).design : W.lsp[sp].d, u = mkC(W, d, "vill", 0, sp == null ? 1 : 1.05, x + (W.R() - .5) * LT * 2.5, y + (W.R() - .5) * LT * 2.5);
+  const d = sp == null ? cur(W.S).design : W.lsp[sp].d, u = mkC(W, d, "vill", 0, (sp == null ? 1 : 1.05) * LK, x + (W.R() - .5) * LT * 2.5, y + (W.R() - .5) * LT * 2.5);
   if (!passXY(W, u.x, u.y)) { u.x = x; u.y = y; } u.spn = sp; u.job = "food"; u.team = 1; u.max = 0; tribeArm(W, u); W.cr.push(u); return u;
 }
 function addRival(W, j, champ) {
   const r = W.S.tribe.rv[j], L = W.lsp[r.i], a = W.R() * TAU, d = LT * (champ ? 1.5 : 1 + W.R() * 2.5);
-  const u = mkC(W, L.d, "rival", 0, champ ? 1.5 : 1.1, r.x + Math.cos(a) * d, r.y + Math.sin(a) * d); if (!passXY(W, u.x, u.y)) { u.x = r.x; u.y = r.y; }
+  const u = mkC(W, L.d, "rival", 0, (champ ? 1.5 : 1.1) * LK, r.x + Math.cos(a) * d, r.y + Math.sin(a) * d); if (!passXY(W, u.x, u.y)) { u.x = r.x; u.y = r.y; }
   u.team = 2; u.tr = j; u.role = "work"; u.champ = !!champ; u.max = 0; tribeArm(W, u);
   if (champ) { u.max *= .55 + r.spirit / 110; u.hp = u.max; } W.cr.push(u); return u;
 }
@@ -3848,9 +3849,9 @@ function draw3D(dt) {
   const T = T3, P = W.player, t = performance.now() / 1000, c = cur(S), cam3 = G3.cam, sr = sightR(W);
   if (!cam.free) { cam.x += (P.x - cam.x) * Math.min(1, dt * 5); cam.y += (P.y - cam.y) * Math.min(1, dt * 5); }
   reveal3(); G3.ft += dt; if (G3.dirty && G3.ft > .2) { const d = G3.dirty; fog3(d[0] - 3, d[1] + 4, d[2] - 3, d[3] + 4); G3.dirty = null; G3.ft = 0; }
-  // the camera looks down at an angle and follows you; +/- and pinching zoom it
+  // the camera looks down at an angle and follows you; +/- and pinching zoom it (further back for the tribe, closer in on land)
   const tx = cam.x / LT, tz = cam.y / LT, th = hAt3(tx, tz); cam.h = cam.h == null || !isFinite(cam.h) ? th : cam.h + (th - cam.h) * Math.min(1, dt * 4);
-  const D = (CH > CW ? 19 : 15) / (cam.z || 1), pitch = .86, shk = cam.shake; cam.shake = Math.max(0, shk - dt * 30);
+  const D = (CH > CW ? 19 : 15) * (W.tribe ? 1.75 : .8) / (cam.z || 1), pitch = .86, shk = cam.shake; cam.shake = Math.max(0, shk - dt * 30);
   cam3.position.set(tx + (Math.random() - .5) * shk * .02, cam.h + D * Math.sin(pitch), tz + D * Math.cos(pitch) + (Math.random() - .5) * shk * .02); cam3.lookAt(tx, cam.h + .5, tz);
   // light through the day: warm by day, orange in the evening, dark blue at night with a glow round you
   const n = nightLevel(), dd = c.day, eve = dd > .6 && dd < .76 ? Math.max(0, 1 - Math.abs(dd - .68) / .08) : 0;
@@ -4405,7 +4406,7 @@ function tribe3(t, dt) {
 }
 function tribeVis(q) {
   if (q.kind !== "vill" && q.kind !== "rival") return false; const i = tileI(q.x, q.y);
-  if (!W.seen[i] || Math.hypot(q.x - cam.x, q.y - cam.y) > LT * 28) return false;
+  if (!W.seen[i] || Math.hypot(q.x - cam.x, q.y - cam.y) > LT * 45) return false;
   return q.kind === "vill" || W.own[i] === 1 || S.tribe.builds.some(b => b.k === "watch" && b.done && Math.hypot(b.x - q.x, b.y - q.y) < LT * WATCH_R);
 }
 function tribeOverlay(t) {

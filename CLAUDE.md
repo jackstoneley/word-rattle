@@ -355,8 +355,8 @@ paid for at once and put up by builders; `TOOLS` need materials (`MATS`), found 
 that the Chief discovers (`S.tribe.deps`) and a totem claims; hides come from hunting. Two rivals (`S.tribe.rv`, `makeRivals`: kind
 `rival`, team 2, `rivalThink`): an open one (`mood`; gifts, trade and impressing its chief, `befriend`; joins at 100 when your tribe is
 at least as big) and a hostile one (`spirit`, `rivalStep`: heals slowly, drains while hemmed in (`W.hem`) or outnumbered; raids in
-waves, gather → march → loot → home; beaten raids, burnt totems, raided stores, kills and duels with its champion lower it; at 50
-or below the Chief can take its fire; at 0 it gives in). `tribeResolve` turns a settled rival's camp into your settlement; both
+waves, gather → march → loot → home; beaten raids, burnt totems, raided stores, kills and duels with its champion lower it; at 30
+or below (`TAKE_AT`) the Chief can take its fire; at 0 it gives in). `tribeResolve` turns a settled rival's camp into your settlement; both
 settled ends the stage (`S.tribeNature`). `MATS`, `BUILDS`, `TOOLS`, `JOBS` are saved by id: append only. `tools/life-check.js`
 plays the tribe stage with a bot after the land (about 25-75 min; fails if not done in 120 or under 15); `--tribe` runs it alone.
 
