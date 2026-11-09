@@ -128,6 +128,9 @@ h1 span{color:var(--accent)}
 .emid span em.neg{color:var(--bad)}
 .ewrap{position:relative;flex:1;min-height:150px}
 #ecv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.e3d{position:absolute;right:8px;top:8px;width:44%;max-width:210px;aspect-ratio:1;border-radius:16px;background:radial-gradient(circle at 50% 35%,#1f5a66,#08232b);border:1px solid var(--line);touch-action:none;z-index:2}
+.ewrap.has3d .ehelp{padding-right:48%}
+.shp .lbl2{font-size:.78rem;font-weight:900;color:var(--ink);margin-top:2px}
 .esel{position:absolute;left:10px;right:10px;bottom:6px;background:rgba(4,22,29,.88);border:1px solid var(--line);border-radius:14px;padding:9px 11px;display:flex;flex-direction:column;gap:6px}
 .esel[hidden]{display:none}
 .esel .t{display:flex;align-items:center;gap:8px}
@@ -228,6 +231,7 @@ h1 span{color:var(--accent)}
   </div>
   <div class="ewrap">
     <canvas id="ecv"></canvas>
+    <canvas class="e3d" id="e3d" hidden></canvas>
     <div class="ehelp" id="eHelp">Tap a part below to add it. To move one, tap it (or its name in the list), then drag anywhere. Drag a part right off the body to remove it.</div>
     <div class="esel" id="eSel" hidden></div>
   </div>
@@ -334,14 +338,14 @@ function cloneD(d) { return JSON.parse(JSON.stringify(d)); }
    with mirrored copies. */
 function geom(d) {
   const r = d.s, cx = [0];
-  for (let i = 1; i < r.length; i++) cx[i] = cx[i - 1] - (r[i - 1] + r[i]) * .72;
+  const sp = d.sp || 1; for (let i = 1; i < r.length; i++) cx[i] = cx[i - 1] - (r[i - 1] + r[i]) * .72 * sp;
   let A = 0, M = 0; r.forEach((v, i) => { A += v * v; M += v * v * cx[i]; });
   const off = M / A; for (let i = 0; i < cx.length; i++) cx[i] -= off;
   const parts = [];
   d.p.forEach((q, qi) => {
     const P = PART[q.id]; if (!P || q.s >= r.length) return;
     const sides = q.m && Math.abs(Math.sin(q.a)) > .08 ? [1, -1] : [1];
-    for (const sg of sides) { const a = q.a * sg; parts.push({ id: q.id, P, qi, s: q.s, sg, a, x: cx[q.s] + r[q.s] * Math.cos(a), y: r[q.s] * Math.sin(a) }); }
+    for (const sg of sides) { const a = q.a * sg; parts.push({ id: q.id, P, qi, s: q.s, sg, a, x: cx[q.s] + r[q.s] * Math.cos(a), y: r[q.s] * Math.sin(a), l: q.l || 1, z: q.z || 1 }); }
   });
   let R = 0, minX = 0, maxX = 0;
   r.forEach((v, i) => { R = Math.max(R, Math.abs(cx[i]) + v); minX = Math.min(minX, cx[i] - v); maxX = Math.max(maxX, cx[i] + v); });
@@ -351,16 +355,21 @@ function geom(d) {
 function stats(d, g, env) {
   g = g || geom(d);
   let vest = 0, spd = 0, turn = 0, hp = 0, spk = 0, sen = 0, bite = 0, lure = 0, w = 0, eyes = 0, shells = 0, hide = 0, smell = 0, slit = 0, light = 0, lungs = 0, legs = 0, walk = 0, call = 0, show = 0, pose = 0, reach = 0, climb = 0, glide = 0; const ab = {}, eat = { plant: 0, meat: 0 };
+  let tall = 0;
   for (const q of g.parts) {
     const P = q.P, back = -Math.cos(q.a); // 1 when pointing straight back
     if (env === "land" && P.water) { w += (P.w || 0) * 2 + .6; hp -= 2; vest++; continue; } // a leftover from the sea: just dead weight on land
+    const z = env === "land" ? q.z || 1 : 1, ln = env === "land" ? q.l || 1 : 1; // on land, bigger parts do more and weigh more; long legs stride further
     if (P.push) { spd += P.spd * Math.max(.15, back); turn += P.spd * .05 * Math.abs(Math.sin(q.a)); } else spd += P.spd || 0;
-    turn += P.turn || 0; hp += P.hp || 0; spk += P.spk || 0; sen += P.sen || 0; bite += P.bite || 0; lure += P.lure || 0; w += P.w || 0;
-    light += P.light || 0; lungs += P.lungs || 0; legs += P.legs || 0; walk += P.walk || 0; call += P.call || 0; show += P.show || q.id === "frill" ? 1 : 0; pose += P.pose || P.arm ? 1 : 0; reach += P.reach || 0; climb += P.climb || 0; glide += P.glide || 0;
+    turn += (P.turn || 0) - (q.id === "leg" ? (ln - 1) * .12 : 0); hp += (P.hp || 0) * z; spk += (P.spk || 0) * z * (q.id === "horn" ? Math.sqrt(ln) : 1); sen += (P.sen || 0) * z * (q.id === "neck" || q.id === "stalk" ? Math.sqrt(ln) : 1); bite += (P.bite || 0) * z; lure += P.lure || 0; w += (P.w || 0) * z * z * (1 + Math.max(0, ln - 1) * .4);
+    if (q.id === "leg" && ln >= 1.8) tall++;
+    light += P.light || 0; lungs += P.lungs || 0; legs += P.legs || 0; walk += (P.walk || 0) * (.72 + .28 * ln); call += (P.call || 0) * z; show += P.show || q.id === "frill" ? 1 : 0; pose += P.pose || P.arm ? 1 : 0; reach += P.reach || 0; climb += P.climb || 0; glide += P.glide || 0;
     if (P.cat === "eye") eyes++; if (P.arm) shells++; if (P.hide) hide = 1; if (P.smell) smell = 1; if (q.id === "slit") slit = 1;
     if (P.ab) ab[P.ab] = 1;
     if (P.eat === "plant" || P.eat === "both") eat.plant++; if (P.eat === "meat" || P.eat === "both") eat.meat++;
   }
+  if (tall >= 2) reach++; // legs long enough to reach the fruit
+  if (env === "land") { if (d.sh) d.sh.forEach(v => { hp += ((v || 1) - 1) * 5; }); if (d.sy && d.sy[0] > 0) sen += d.sy[0] * 4; } // a deep chest is tougher; a raised head sees further
   const mass = d.s.reduce((a, r) => a + r * r, 0) / 144;
   return { spd: (36 + 72 * (1 - Math.exp(-Math.max(0, spd) / 26))) / Math.pow(Math.max(.5, mass), .15) / (1 + w * .035), turn: clamp(3.2 + turn, 1.6, 7.5),
     hp: Math.max(8, Math.round(14 + hp + mass * 10)), shells, spk, sen, eyes, view: eyes ? 150 + Math.min(80, sen * 2.2) : 105 + Math.min(20, sen),
@@ -369,7 +378,7 @@ function stats(d, g, env) {
 }
 function dietOf(st) { return st.eat.plant && st.eat.meat ? "both" : st.eat.plant ? "plant" : st.eat.meat ? "meat" : "none"; }
 function designValue(d, env) {
-  let v = 0; for (const p of geom(d).parts) if (!(env === "land" && p.P.water)) v += p.P.c; // (dropping a useless leftover gives no DNA back)
+  let v = 0; for (const p of geom(d).parts) if (!(env === "land" && p.P.water)) v += Math.round(p.P.c * (p.z > 1 ? 1 + (p.z - 1) * 1.5 : 1) * (p.l > 1.2 ? 1 + (p.l - 1.2) * .4 : 1)); // (dropping a useless leftover gives no DNA back)
   d.s.forEach((r, i) => { v += (i ? 8 : 0) + Math.max(0, Math.round((r - 12) * .8)); });
   return v;
 }
@@ -1015,6 +1024,7 @@ function landStart(S) {
   d.p = d.p.filter(q => { if (q.id === "legfin") q.id = "leg"; if (q.id === "tailfin") q.id = "tail"; return !!PART[q.id]; }); // other water parts stay: useless on land until evolved away
   if (d.p.filter(q => q.id === "leg").length < 2) d.p.push({ id: "leg", s: d.s.length - 1, a: -1.9, m: true });
   d.p.push({ id: "leg", s: 0, a: -1.5, m: true });
+  d.p.forEach(q => { if (q.id === "leg") q.l = 1.2; }); d.sy = d.s.map((_, i) => i ? 0 : .4); d.sh = d.s.map(() => 1);
   if (!d.p.some(q => q.id === "voice")) d.p.push({ id: "voice", s: 0, a: -1.8, m: false });
   const ok = id => PART[id] && !PART[id].water && (!PART[id].sea || PART[id].both);
   return { tier: 0, grow: 0, ready: false, dna: Math.round(50 + Math.min(80, (c.dna || 0) * .3)), unlocked: [...new Set([...c.unlocked.filter(ok), "leg", "tail", "voice", "crest"])],
@@ -1073,6 +1083,34 @@ const BIOHUE = { [T_GRASS]: [70, 110], [T_FOREST]: [25, 45], [T_JUNGLE]: [150, 2
 
 /* Land creatures, built to how they live: long necks on big grazers, horns on homebodies, wings on gliders, claws and big
    ears on hunters, six legs on some small critters. */
+/* Body plans: long-legged browsers with raised necks, low flat crawlers, deep-chested herds, hunched hunters with long tails,
+   and two-legged runners standing upright. Only shapes the design (its own random stream, so nothing else on the island moves). */
+function shapeUp(d, R, L) {
+  const n = d.s.length, meat = L.diet === "meat", pr = (a, b) => a + R() * (b - a), legs = d.p.filter(q => q.id === "leg");
+  d.sy = d.s.map(() => +pr(-.15, .2).toFixed(2)); d.sh = d.s.map(() => +pr(.85, 1.2).toFixed(2)); d.sp = +pr(.85, 1.15).toFixed(2);
+  let plan = L.tier === 4 ? (meat ? "biped" : "tall") : L.neck ? "tall" : L.tier === 0 && !meat ? (R() < .5 ? "crawl" : "round") : meat ? (R() < .35 && n > 1 ? "biped" : "hunch") : L.life === "herd" ? "deep" : R() < .25 && n > 1 ? "biped" : R() < .5 ? "crawl" : "deep";
+  const setL = (f, z) => legs.forEach(q => { q.l = +f(q).toFixed(2); if (z) q.z = +z.toFixed(2); });
+  if (plan === "tall") { setL(() => pr(2, 2.5)); d.sy[0] = +pr(1.6, 2.4).toFixed(2); if (n > 1) d.sy[1] = +pr(.5, .9).toFixed(2); d.sh = d.sh.map(v => +(v * 1.15).toFixed(2)); }
+  else if (plan === "crawl") { setL(() => pr(.55, .8)); d.sh = d.sh.map(() => +pr(.65, .8).toFixed(2)); d.sp = +pr(1.05, 1.3).toFixed(2); }
+  else if (plan === "round") { setL(() => pr(.7, .95)); d.sh = d.sh.map(() => +pr(1.25, 1.5).toFixed(2)); d.sp = +pr(.7, .85).toFixed(2); }
+  else if (plan === "deep") { setL(() => pr(1.4, 1.9)); d.sh[0] = +pr(1, 1.2).toFixed(2); if (n > 1) d.sh[1] = +pr(1.3, 1.5).toFixed(2); d.sy[0] = +pr(.4, 1).toFixed(2); }
+  else if (plan === "hunch") { setL(q => q.s === 0 ? pr(1.5, 1.9) : pr(1.1, 1.4)); d.sy[0] = +pr(.3, .7).toFixed(2); if (n > 1) d.sy[1] = +pr(.5, .9).toFixed(2); d.sh = d.sh.map((v, i) => i === 1 ? +pr(1.2, 1.45).toFixed(2) : v); }
+  else if (plan === "biped") { // two strong legs at the back, the body leaning up and forward
+    const last = n - 1; d.p = d.p.filter(q => q.id !== "leg"); d.p.push({ id: "leg", s: last, a: -1.75, m: true, l: +pr(1.9, 2.4).toFixed(2), z: +pr(1.15, 1.4).toFixed(2) });
+    for (let i = 0; i < n; i++) d.sy[i] = +((last - i) * pr(.55, .85)).toFixed(2);
+    if (!d.p.some(q => q.id === "hand" || q.id === "claw") && R() < .6) d.p.push({ id: meat ? "claw" : "hand", s: 0, a: .9, m: true, l: .8 });
+  }
+  for (const q of d.p) {
+    if (q.id === "tail") { q.l = +pr(meat ? 1.3 : .7, meat ? 2 : 1.4).toFixed(2); q.z = +pr(.9, 1.3).toFixed(2); }
+    else if (q.id === "neck") q.l = +pr(1.5, 2.2).toFixed(2);
+    else if (q.id === "horn") { q.l = +pr(1, 1.8).toFixed(2); q.z = +pr(1, 1.4).toFixed(2); }
+    else if (q.id === "jaw" || q.id === "beak") q.z = +pr(meat ? 1.15 : .9, meat ? 1.5 : 1.1).toFixed(2);
+    else if (q.id === "crest" || q.id === "frill" || q.id === "wing") q.z = +pr(1, 1.5).toFixed(2);
+    else if (q.id === "stalk") q.l = +pr(1, 1.8).toFixed(2);
+  }
+  if (L.tier === 4) { d.p.forEach(q => { if (q.id === "jaw" || q.id === "horn") q.z = 1.6; }); }
+  d.plan = plan; return d;
+}
 function landDesign(R, L) {
   const pick = a => a[Math.floor(R() * a.length)], diet = L.diet, tier = L.tier, meat = diet === "meat";
   const ns = 2 + (R() < .55 ? 1 : 0) + (tier >= 2 && R() < .5 ? 1 : 0);
@@ -1137,7 +1175,7 @@ function newLand(S, rs) {
   const inBio = L => i => L.bio.includes(W.map[i]);
   W.lsp = LSPEC.map((L0, i) => {
     const R = rng(hash(S.seed, 900, i)), L = Object.assign({ i, key: "l" + i }, L0);
-    L.d = landDesign(R, L); L.g = geom(L.d); L.st = stats(L.d, L.g, "land"); L.k = KT(L.tier) * .8 * LK; L.name = speciesName(R, L.diet);
+    L.d = shapeUp(landDesign(R, L), rng(hash(S.seed, 940, i)), L); L.g = geom(L.d); L.st = stats(L.d, L.g, "land"); L.k = KT(L.tier) * .8 * LK; L.name = speciesName(R, L.diet);
     L.likes = [Math.floor(R() * 4)]; L.likes.push((L.likes[0] + 1 + Math.floor(R() * 3)) % 4);
     const pickSpot = (dist, minHome) => { const t = randReach(W, R0, k => { const [x, y] = tileXY(k); return inBio(L)(k) && Math.hypot(x - hx, y - hy) > LT * minHome && far(x, y, dist); }); return tileXY(t); };
     [L.x, L.y] = pickSpot(9, L.diet === "plant" && L.tier === 0 ? 10 : 16); spots.push([L.x, L.y]);
@@ -1147,7 +1185,7 @@ function newLand(S, rs) {
   });
   W.epics = [0, 1].map(j => {
     const R = rng(hash(S.seed, 950, j)), E = { j, key: "e" + j, diet: j ? "meat" : "plant", tier: 4, life: "solo", temper: j ? "aggro" : "defend", bio: j ? [T_HILL, T_SCRUB] : [T_GRASS, T_FOREST], n: 1, neck: !j, horn: j };
-    E.d = landDesign(R, E); E.g = geom(E.d); E.st = stats(E.d, E.g, "land"); E.k = 3.4 * LK; E.name = EPIC_NAMES[(S.seed + j * 3) % EPIC_NAMES.length];
+    E.d = shapeUp(landDesign(R, E), rng(hash(S.seed, 945, j)), E); E.g = geom(E.d); E.st = stats(E.d, E.g, "land"); E.k = 3.4 * LK; E.name = EPIC_NAMES[(S.seed + j * 3) % EPIC_NAMES.length];
     E.likes = [Math.floor(R() * 4)]; E.likes.push((E.likes[0] + 1 + Math.floor(R() * 3)) % 4);
     const t = randReach(W, R0, k => { const [x, y] = tileXY(k); return Math.hypot(x - hx, y - hy) > LT * 30; }); [E.x, E.y] = tileXY(t);
     return E;
@@ -3019,7 +3057,7 @@ function hud() {
 const envNow = () => (W && W.land ? "land" : null), statsE = (d, g) => stats(d, g, envNow()), dvE = d => designValue(d, envNow());
 const ecv = $("ecv"), ectx = ecv.getContext("2d");
 let ED = null, EW = 0, EH = 0;
-const TABS = [["body", "Body"], ["mouth", "Mouths"], ["move", "Move"], ["fight", "Fight"], ["eye", "Senses"], ["extra", "Extras"], ["look", "Look"]];
+const TABS = [["body", "Body"], ["shape", "Shape"], ["mouth", "Mouths"], ["move", "Move"], ["fight", "Fight"], ["eye", "Senses"], ["extra", "Extras"], ["look", "Look"]];
 function openEditor() {
   if (!W) return; paused = true; inp.mx = inp.my = 0; stickId = null; $("stick").hidden = true;
   ED = { d: cloneD(cur(S).design), d0: cloneD(cur(S).design), sel: null, drag: null, tab: "mouth", view: { sc: 4, ox: 0, oy: 0 } };
@@ -3028,8 +3066,10 @@ function openEditor() {
 function sizeEditor() { const r = ecv.getBoundingClientRect(); EW = r.width; EH = r.height; ecv.width = EW * DPR; ecv.height = EH * DPR; }
 function edCost() { return dvE(ED.d) - dvE(ED.d0); }
 function edLeft() { return Math.floor(cur(S).dna - edCost()); }
-function refreshEditor() {
-  const c = cur(S), st = statsE(ED.d), left = edLeft(), lim = partLimit(c.tier, S), n = st.parts;
+const LENGTHY = new Set(["leg", "tail", "neck", "horn", "stalk", "feeler", "hand", "claw", "tentacle", "whip"]);
+function syncShape(d) { if (d.sy || d.sh) { d.sy = d.s.map((_, i) => (d.sy && d.sy[i]) || 0); d.sh = d.s.map((_, i) => (d.sh && d.sh[i]) || 1); } }
+function refreshEditor(keep) {
+  syncShape(ED.d); const c = cur(S), st = statsE(ED.d), left = edLeft(), lim = partLimit(c.tier, S), n = st.parts;
   $("eTitle").textContent = c.ready ? (c.tier < TS(S).length - 1 ? `Evolve and grow to ${TS(S)[c.tier + 1].n}` : (W.sea ? "Evolve: get ready for land" : "Evolve: ready to leave the pond")) : (W.sea && c.ashore ? "Evolve: get ready for land" : "Evolve");
   $("eInfo").innerHTML = `🧬 <em class="${left < 0 ? "neg" : ""}">${left}</em> DNA left · parts ${n} of ${lim}`;
   $("eDone").textContent = c.ready ? "Grow ▲" : "Done";
@@ -3038,7 +3078,7 @@ function refreshEditor() {
   $("eStats").innerHTML = bar("Speed", W && W.land ? (st.lspd - 18) / 50 : (st.spd - 25) / 90) + bar("Turning", (st.turn - 2.6) / 4.5) + bar("Health", st.hp / 60) + bar("Bite", st.bite / 14) + bar("Defence", Math.min(1, st.shells / 3) * .6 + Math.min(1, st.spk / 25) * .4) + bar("Sight", (st.view - 140) / 90)
     + (st.vest ? `<div class="diet no">🌊 ${st.vest} leftover sea part${st.vest > 1 ? "s" : ""}: dead weight on land. Tap ${st.vest > 1 ? "them" : "it"} to evolve away.</div>` : "")
     + `<div class="diet${diet === "none" ? " no" : ""}">${dt}${Object.keys(st.ab).length ? " · " + Object.keys(st.ab).map(k => { const m = AB[k] || LMOVES[k]; return m[0] + " " + m[1]; }).join(" ") : ""}</div>`;
-  renderSel(); renderChips(); if (ED.tab !== "look" && ED.tab !== "body") updateCards();
+  if (!keep) { renderSel(); renderChips(); } if (ED.tab !== "look" && ED.tab !== "body" && ED.tab !== "shape") updateCards();
 }
 /* Every part on the creature as a row of names: tap one to pick it, however small it is on screen. */
 function renderChips() {
@@ -3050,7 +3090,7 @@ function renderChips() {
 }
 function renderTabs() {
   const box = $("eTabs"); box.textContent = "";
-  for (const [id, n] of TABS) { const b = document.createElement("button"); b.textContent = n; b.className = ED.tab === id ? "on" : ""; b.onclick = () => { ED.tab = id; renderTabs(); renderTray(); }; box.append(b); }
+  for (const [id, n] of TABS) { if (id === "shape" && !(W && W.land)) continue; const b = document.createElement("button"); b.textContent = n; b.className = ED.tab === id ? "on" : ""; b.onclick = () => { ED.tab = id; renderTabs(); renderTray(); }; box.append(b); }
 }
 function renderTray() {
   const box = $("eTray"), d = ED.d, c = cur(S); box.textContent = "";
@@ -3067,6 +3107,16 @@ function renderTray() {
     $("lEdge").onclick = e => { const v = e.target.dataset.v; if (v == null) return; d.edge = +v; renderTray(); refreshEditor(); };
     return;
   }
+  if (ED.tab === "shape") {
+    if (!d.sy) d.sy = d.s.map(() => 0); if (!d.sh) d.sh = d.s.map(() => 1); syncShape(d);
+    const B = document.createElement("div"); B.className = "look shp";
+    B.innerHTML = `<p style="margin:0;font-size:.78rem;color:var(--muted)">Shape your creature in 3D (free). Raise the head for a neck, lift the front to stand up on two legs, make sections tall and deep or low and flat. Pick a part to change its size and length (long legs, big jaws).</p>
+      <label>Spine length <input type="range" min="60" max="150" value="${Math.round((d.sp || 1) * 100)}" data-k="sp"></label>`
+      + d.s.map((r, i) => `<div class="lbl2">${i === 0 ? "Head" : "Body " + (i + 1)}</div><label>Low ⟷ raised <input type="range" min="-10" max="26" value="${Math.round(d.sy[i] * 10)}" data-k="sy" data-i="${i}"></label><label>Flat ⟷ tall <input type="range" min="55" max="165" value="${Math.round(d.sh[i] * 100)}" data-k="sh" data-i="${i}"></label>`).join("");
+    box.append(B);
+    B.querySelectorAll("input[type=range]").forEach(r => r.oninput = e => { const k = e.target.dataset.k, v = +e.target.value; if (k === "sp") d.sp = v / 100; else if (k === "sy") d.sy[+e.target.dataset.i] = v / 10; else d.sh[+e.target.dataset.i] = v / 100; refreshEditor(true); });
+    return;
+  }
   if (ED.tab === "body") {
     const B = document.createElement("div"); B.className = "bodyp"; const lim = segLimit(c.tier, S);
     B.innerHTML = d.s.map((r, i) => `<label>${i === 0 ? "Head" : "Body " + (i + 1)} size <input type="range" min="8" max="20" value="${r}" data-i="${i}"></label>`).join("")
@@ -3074,7 +3124,7 @@ function renderTray() {
       + `<p style="margin:0;font-size:.78rem;color:var(--muted)">${d.s.length >= lim && c.tier < 4 ? "Grow bigger to have more sections. " : ""}Bigger bodies are tougher but slower. Each size step costs a little DNA.</p>`;
     box.append(B);
     B.querySelectorAll("input[type=range]").forEach(inp2 => inp2.oninput = e => { d.s[+e.target.dataset.i] = +e.target.value; refreshEditor(); });
-    $("bAdd").onclick = () => { if (d.s.length < lim) { d.s.push(10); renderTray(); refreshEditor(); } };
+    $("bAdd").onclick = () => { if (d.s.length < lim) { d.s.push(10); syncShape(d); renderTray(); refreshEditor(); } };
     $("bDel").onclick = () => { if (d.s.length > 1) { const L = d.s.length - 1; d.s.pop(); d.p = d.p.filter(q => q.s < L); ED.sel = null; renderTray(); refreshEditor(); } };
     return;
   }
@@ -3118,6 +3168,13 @@ function renderSel() {
     $("sDel").onclick = () => { ED.d.p.splice(ED.sel, 1); ED.sel = null; refreshEditor(); }; return; }
   box.innerHTML = `<div class="t"><b>${P.n}${q.m && canM ? " ×2" : ""}</b><button class="btn small" id="sL" aria-label="Move round the body one way">↺</button><button class="btn small" id="sR" aria-label="Move round the body the other way">↻</button>${ED.d.s.length > 1 ? `<button class="btn small" id="sN">Section ${q.s + 1} ⇄</button>` : ""}</div>
     <div class="t">${canM ? `<button class="btn small" id="sM">${q.m ? "Mirrored ⟷" : "Mirror ⟷"}</button>` : ""}<button class="btn small bad" id="sDel">Remove</button></div><p>👍 ${P.good}</p>${P.bad ? `<p>👎 ${P.bad}</p>` : ""}`;
+  if (W && W.land) {
+    const sl = document.createElement("div"); sl.className = "look";
+    sl.innerHTML = `<label>Size <input type="range" min="60" max="160" value="${Math.round((q.z || 1) * 100)}" id="sZ"></label>` + (LENGTHY.has(q.id) ? `<label>Length <input type="range" min="50" max="250" value="${Math.round((q.l || 1) * 100)}" id="sLn"></label>` : "");
+    box.insertBefore(sl, box.querySelector("p"));
+    $("sZ").oninput = e => { q.z = +e.target.value / 100; if (Math.abs(q.z - 1) < .04) delete q.z; refreshEditor(true); };
+    if ($("sLn")) $("sLn").oninput = e => { q.l = +e.target.value / 100; if (Math.abs(q.l - 1) < .04) delete q.l; refreshEditor(true); };
+  }
   $("sL").onclick = () => { q.a = wrapA(q.a - .25); refreshEditor(); }; $("sR").onclick = () => { q.a = wrapA(q.a + .25); refreshEditor(); };
   if ($("sN")) $("sN").onclick = () => { q.s = (q.s + 1) % ED.d.s.length; refreshEditor(); };
   if (canM) $("sM").onclick = () => { const after = cloneD(ED.d); after.p[ED.sel].m = !q.m;
@@ -3139,6 +3196,35 @@ function drawEditor(t) {
   ectx.fillStyle = "rgba(124,242,200,.35)"; ectx.font = "12px Figtree, sans-serif"; ectx.textAlign = "left"; ectx.fillText("front →", (L.g.maxX + 16) * L.sc, -6);
   ectx.scale(L.sc, L.sc); drawCreature(ectx, ED.d, L.g, t, { mv: .35, sel: ED.sel, del: ED.drag && ED.drag.del });
   ectx.restore();
+  edPreview(t);
+}
+/* On land, the creature in 3D as you build it: it walks on the spot and turns slowly; drag to spin it. */
+let EP = null;
+function edPreview(t) {
+  const c3 = $("e3d"), on = !!(W && W.land && T3 && G3 && !G3FAIL); c3.hidden = !on; c3.parentNode.classList.toggle("has3d", on); if (!on) return;
+  if (!EP) {
+    let R; try { R = new T3.WebGLRenderer({ canvas: c3, antialias: true, alpha: true }); } catch (e) { c3.hidden = true; return; }
+    R.outputColorSpace = T3.SRGBColorSpace; R.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    const sc = new T3.Scene(), cam = new T3.PerspectiveCamera(32, 1, .5, 2000), sun = new T3.DirectionalLight(0xfff1d6, 2.2); sun.position.set(-40, 80, 60);
+    sc.add(new T3.HemisphereLight(0xdff2ff, 0x4a5a2a, 1), sun);
+    const disc = new T3.Mesh(new T3.CircleGeometry(1, 40), new T3.MeshLambertMaterial({ color: 0x5f9a48, transparent: true, opacity: .8 })); disc.rotation.x = -Math.PI / 2; sc.add(disc);
+    EP = { R, sc, cam, disc, key: null, I: null, spin: -.6, w: 0 };
+    c3.addEventListener("pointerdown", e => { EP.drag = e.clientX; c3.setPointerCapture(e.pointerId); e.stopPropagation(); });
+    c3.addEventListener("pointermove", e => { if (EP.drag == null) return; EP.spin += (e.clientX - EP.drag) * .012; EP.drag = e.clientX; });
+    const up = () => { EP.drag = null; }; c3.addEventListener("pointerup", up); c3.addEventListener("pointercancel", up);
+  }
+  const w = Math.round(c3.clientWidth); if (w && w !== EP.w) { EP.w = w; EP.R.setSize(w, w, false); }
+  const d = ED.d, key = JSON.stringify(d);
+  if (key !== EP.key) {
+    EP.key = key; if (EP.I) { EP.sc.remove(EP.I.grp); dropC3(EP.I); }
+    const st = statsE(d); EP.q = { d, g: geom(d), k: 1, x: 0, y: 0, vx: 20, vy: 0, a: 0, st, id: 3, ai: {}, kind: "preview", hurtT: -99, inv: 0, diet: dietOf(st) === "meat" ? "meat" : null };
+    EP.I = inst3(EP.q); G3.crg.remove(EP.I.grp); EP.sc.add(EP.I.grp); EP.I.ring.visible = false;
+    const tp = EP.I.tp, size = Math.max(tp.R * 1.25, tp.top); EP.size = size; EP.disc.scale.setScalar(tp.R * 1.3);
+  }
+  if (!EP.drag) EP.spin += .006;
+  anim3(EP.I, t, .016); const I = EP.I; I.grp.position.set(0, 0, 0); I.grp.scale.setScalar(1); I.grp.rotation.y = EP.spin; I.tilt.rotation.z = 0; I.ring.visible = false; I.grp.visible = true;
+  const s = EP.size, cam = EP.cam; cam.position.set(0, s * 1.1, s * 3.1); cam.lookAt(0, I.tp.top * .45, 0); cam.updateProjectionMatrix();
+  EP.R.render(EP.sc, cam);
 }
 function edPt(e) { const r = ecv.getBoundingClientRect(), L = ED.view; return [(e.clientX - r.left - L.ox) / L.sc, (e.clientY - r.top - L.oy) / L.sc]; }
 /* Where a part looks like it is (eyes sit inside the body, tails stick out), for picking it with a finger. */
@@ -3751,11 +3837,15 @@ function makeTpl(d, g, meat) {
   const belly = fill.clone().lerp(white, .4), topc = fill.clone().multiplyScalar(.82), L = [], add = (geo, m, c) => L.push([geo, m, c]);
   const V = (x, y, z) => new T.Vector3(x, y, z), Qy = a => new T.Quaternion().setFromAxisAngle(V(0, 1, 0), -a), Qto = (from, to) => new T.Quaternion().setFromUnitVectors(from, to.clone().normalize());
   const M = (p, q, s) => new T.Matrix4().compose(p, q || new T.Quaternion(), typeof s === "number" ? V(s, s, s) : s || V(1, 1, 1));
-  const legs = g.parts.filter(p => p.id === "leg"), rMax = Math.max(...g.r), legLen = legs.length ? Math.max(9, rMax * .95) : 0, bodyY = legs.length ? legLen + rMax * .2 : rMax * .62;
-  const segAt = i => V(g.cx[i], bodyY, 0);
+  const legs = g.parts.filter(p => p.id === "leg"), rMax = Math.max(...g.r), legBase = Math.max(9, rMax * .95);
+  const SY = i => ((d.sy && d.sy[i]) || 0) * rMax * .5, SH = i => (d.sh && d.sh[i]) || 1; // how high each section sits, and how tall it is
+  let bodyY = 0, legLen = 0;
+  if (legs.length) { for (const p of legs) { bodyY += legBase * p.l * .82 - SY(p.s) + g.r[p.s] * .35 * SH(p.s); legLen += legBase * p.l; } bodyY /= legs.length; legLen /= legs.length; }
+  let floor = 0; g.r.forEach((r, i) => { floor = Math.max(floor, r * .78 * SH(i) - SY(i)); }); bodyY = Math.max(bodyY, legs.length ? floor * .9 : floor);
+  const segAt = i => V(g.cx[i], bodyY + SY(i), 0);
   // the body: rounded sections, a pale belly, and the pattern painted on
   const bodyCol = i => (x, y, z) => {
-    const r = g.r[i], up = (y - bodyY) / (r * .84), p = d.pat; let c = up < -.2 ? belly.clone().lerp(fill, clamp((up + .7) / .5, 0, 1)) : fill.clone().lerp(topc, clamp(up, 0, 1)), on = false;
+    const r = g.r[i], up = (y - bodyY - SY(i)) / (r * .84 * SH(i)), p = d.pat; let c = up < -.2 ? belly.clone().lerp(fill, clamp((up + .7) / .5, 0, 1)) : fill.clone().lerp(topc, clamp(up, 0, 1)), on = false;
     if (p === 1) { const s = 5.5, a = Math.round(x / s), b = Math.round(y / s), e = Math.round(z / s); on = up > -.35 && (hash(a, b, e, 5) & 3) === 0 && Math.hypot(x - a * s, y - b * s, z - e * s) < 2.1; }
     else if (p === 2) on = up > -.15 && Math.sin(x * .6) > .5;
     else if (p === 3) on = up > -.4 && Math.abs(Math.abs(x - g.cx[i]) - r * .5) < 1.3;
@@ -3763,12 +3853,13 @@ function makeTpl(d, g, meat) {
     else if (p === 5) on = up > .25 && Math.abs(z) < r * .24;
     return on ? (p === 4 ? dark : acc) : c;
   };
-  g.r.forEach((r, i) => add(new T.SphereGeometry(r, 24, 16), M(segAt(i), null, V(1, .84, 1)), bodyCol(i)));
-  for (let i = 0; i + 1 < g.r.length; i++) { const r = Math.min(g.r[i], g.r[i + 1]) * .82; add(new T.SphereGeometry(r, 16, 12), M(V((g.cx[i] + g.cx[i + 1]) / 2, bodyY, 0), null, V(1, .84, 1)), bodyCol(i)); }
-  if (d.edge === 1 || d.edge === 2) g.r.forEach((r, i) => { for (let k = -1; k <= 1; k++) { const x = g.cx[i] + k * r * .45, y = bodyY + r * .78 - Math.abs(k) * r * .12;
+  g.r.forEach((r, i) => add(new T.SphereGeometry(r, 24, 16), M(segAt(i), null, V(1, .84 * SH(i), 1)), bodyCol(i)));
+  for (let i = 0; i + 1 < g.r.length; i++) for (const f of [.33, .67]) { // the body flows from one section into the next
+    const r = (g.r[i] * (1 - f) + g.r[i + 1] * f) * .8, a = segAt(i), b = segAt(i + 1); add(new T.SphereGeometry(r, 16, 12), M(a.lerp(b, f), null, V(1, .84 * (SH(i) * (1 - f) + SH(i + 1) * f), 1)), bodyCol(f < .5 ? i : i + 1)); }
+  if (d.edge === 1 || d.edge === 2) g.r.forEach((r, i) => { for (let k = -1; k <= 1; k++) { const x = g.cx[i] + k * r * .45, y = bodyY + SY(i) + r * .78 * SH(i) - Math.abs(k) * r * .12;
     if (d.edge === 1) add(new T.ConeGeometry(r * .13, r * .5, 5), M(V(x, y + r * .18, 0), new T.Quaternion().setFromEuler(new T.Euler(0, 0, .45))), dark);
     else add(new T.SphereGeometry(r * .14, 8, 6), M(V(x, y + r * .02, 0)), topc.clone().multiplyScalar(.85)); } });
-  const tp = { legs: [], chains: [], jaws: [], sacs: [], glows: [], bodyY, legLen, rMax, top: bodyY + rMax * .95, R: g.R };
+  const tp = { legs: [], chains: [], jaws: [], sacs: [], glows: [], bodyY, legLen: legLen || legBase, rMax, top: Math.max(...g.r.map((r, i) => bodyY + SY(i) + r * .9 * SH(i))), R: g.R };
   const eyeOut = [];
   const eye = (pos, dir, er, kind) => {
     const q = Qto(V(1, 0, 0), dir); add(new T.SphereGeometry(er, 16, 12), M(pos), white);
@@ -3790,10 +3881,11 @@ function makeTpl(d, g, meat) {
     tp.jaws.push({ pos: base, a, geo: merge3(jl) });
   };
   for (const p of g.parts) {
-    const r = g.r[p.s], ox = Math.cos(p.a), oz = Math.sin(p.a), C = segAt(p.s), S = C.clone().add(V(ox * r * .9, 0, oz * r * .9)), id = p.id, P = PART[id], out = V(ox, 0, oz);
+    const r = g.r[p.s], ox = Math.cos(p.a), oz = Math.sin(p.a), C = segAt(p.s), S = C.clone().add(V(ox * r * .9, 0, oz * r * .9)), id = p.id, P = PART[id], out = V(ox, 0, oz), ln = p.l || 1, zz = p.z || 1;
+    const n0 = L.length, j0 = tp.jaws.length, c0 = tp.chains.length, g0 = tp.glows.length, s0 = tp.sacs.length;
     if (id === "moon" || id === "slit" || id === "cluster" || id === "stalk") {
       const dir = V(ox * .7 + .45, .15, oz).normalize(), er = 2.3 + r * .17, ep = C.clone().add(V(ox * r * .7, r * .5, oz * r * .7));
-      if (id === "stalk") { for (let k = 0; k < 3; k++) add(new T.SphereGeometry(1.3, 8, 6), M(ep.clone().add(V(ox * k, 1.6 + k * 2.2, oz * k))), fill); eye(ep.clone().add(V(ox * 3, 8.5, oz * 3)), dir, er * .9, id); }
+      if (id === "stalk") { const n = Math.max(2, Math.round(3 * ln)); for (let k = 0; k < n; k++) add(new T.SphereGeometry(1.3, 8, 6), M(ep.clone().add(V(ox * k, 1.6 + k * 2.2, oz * k))), fill); eye(ep.clone().add(V(ox * n, 1.9 + n * 2.2, oz * n)), dir, er * .9, id); }
       else if (id === "cluster") for (let k = 0; k < 3; k++) eye(ep.clone().add(V(-k * er * .6, (k === 1 ? er * .9 : 0), (k - 1) * er * .5 * Math.sign(oz || 1))), dir, er * .58, id);
       else eye(ep, dir, er, id);
     } else if (id === "ear") { const e = new T.SphereGeometry(1, 10, 8); add(e, M(C.clone().add(V(ox * r * .55, r * .85, oz * r * .55)), new T.Quaternion().setFromEuler(new T.Euler(oz * .5, -p.a, 0)), V(r * .18, r * .5, r * .3)), fill);
@@ -3802,19 +3894,19 @@ function makeTpl(d, g, meat) {
     else if (P.cat === "mouth") { const t = new T.TorusGeometry(r * .28 + 1, r * .1 + .6, 8, 14); t.rotateY(Math.PI / 2); add(t, M(S.clone().add(V(0, -r * .1, 0)), Qy(p.a)), id === "baleen" ? dark : new T.Color(0xe88a9a));
       add(new T.SphereGeometry(r * .26 + .8, 10, 8), M(S.clone().add(V(0, -r * .1, 0)), Qy(p.a), V(.4, 1, 1)), new T.Color(0x4a1020));
       if (id === "siphon") add(new T.CylinderGeometry(1.4, 1.8, r * .6, 8), M(S.clone().addScaledVector(out, r * .3), Qto(V(0, 1, 0), out)), fill); }
-    else if (id === "horn") { let pt = S.clone().add(V(0, r * .35, 0)), dir = V(ox, .25, oz).normalize(); const n = 5, len = r * .9 + 5;
+    else if (id === "horn") { let pt = S.clone().add(V(0, r * .35, 0)), dir = V(ox, .25, oz).normalize(); const n = 5, len = (r * .9 + 5) * ln;
       for (let k = 0; k < n; k++) { const rr = (2.4 + r * .05) * (1 - k / n) + .3, sl = len / n, nd = dir.clone().add(V(0, .28, 0)).normalize(), c = new T.CylinderGeometry(rr * .75, rr, sl * 1.15, 7); c.translate(0, sl / 2, 0); add(c, M(pt, Qto(V(0, 1, 0), dir)), ivory); pt.addScaledVector(dir, sl); dir = nd; } }
     else if (id === "thorn") add(new T.ConeGeometry(1.6, 5 + r * .35, 6), M(S.clone().addScaledVector(out, 2), Qto(V(0, 1, 0), V(ox, .35, oz))), ivory);
     else if (id === "bristle") for (let k = -2; k <= 2; k++) { const a = p.a + k * .22, o2 = V(Math.cos(a), .3 + Math.abs(k) * .05, Math.sin(a)); add(new T.ConeGeometry(.7, 3.5 + r * .1, 4), M(C.clone().add(V(Math.cos(a) * r * .9, r * .1, Math.sin(a) * r * .9)), Qto(V(0, 1, 0), o2)), dark); }
-    else if (id === "claw") for (let k = -1; k <= 1; k++) { const b = C.clone().add(V(ox * r * .85 + 2, -r * .45, oz * r * .85 + k * 1.6)), c = new T.ConeGeometry(.8, 4 + r * .1, 5); c.translate(0, 2 + r * .05, 0); add(c, M(b, Qto(V(0, 1, 0), V(ox + .8, -.7, oz))), ivory); }
+    else if (id === "claw") for (let k = -1; k <= 1; k++) { const b = C.clone().add(V(ox * r * .85 + 2, -r * .45, oz * r * .85 + k * 1.6)), c = new T.ConeGeometry(.8, (4 + r * .1) * ln, 5); c.translate(0, (2 + r * .05) * ln, 0); add(c, M(b, Qto(V(0, 1, 0), V(ox + .8, -.7, oz))), ivory); }
     else if (id === "pincer") { const b = S.clone().addScaledVector(out, 3); add(new T.CylinderGeometry(1.4, 1.6, 6, 7), M(b, Qto(V(0, 1, 0), out)), dark);
       for (const s of [-1, 1]) { const c = new T.ConeGeometry(1.6, 6 + r * .15, 6); c.translate(0, 3, 0); add(c, M(b.clone().addScaledVector(out, 3), Qto(V(0, 1, 0), V(ox - s * oz * .4, 0, oz + s * ox * .4))), line); } }
     else if (id === "shell") add(new T.SphereGeometry(r * .78, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), M(C.clone().add(V(ox * r * .35, r * .25, oz * r * .35)), null, V(1, .7, 1)), (x, y, z) => (Math.floor(Math.hypot(x - C.x, z) / 2.2) % 2 ? dark : line));
     else if (id === "plate") for (let k = -1; k <= 1; k++) add(new T.SphereGeometry(r * .5, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), M(C.clone().add(V(k * r * .45 + ox * r * .3, r * .5 - Math.abs(k) * r * .08, oz * r * .3)), null, V(1, .55, 1)), dark.clone().lerp(line, .5));
-    else if (id === "tail" || id === "whip" || id === "tentacle") tp.chains.push({ base: C.clone().add(V(ox * r * .85, -r * .1, oz * r * .85)), dir: V(ox, id === "whip" ? -.3 : .08, oz).normalize(), n: id === "tail" ? 5 : 4, r0: id === "tail" ? r * .42 : 1.8, gap: id === "tail" ? r * .38 : 3.2, kind: id, col: id === "tentacle" ? acc : id === "whip" ? fill.clone().lerp(new T.Color(.5, .5, .5), .4) : fill });
-    else if (id === "leg") { const hip = C.clone().add(V(ox * r * .7, -r * .35, oz * r * .7)), side = V(0, 0, Math.sign(oz) || 1), foot = V(hip.x + ox * legLen * .15, 0, hip.z + side.z * legLen * .42), dd = hip.distanceTo(foot);
-      tp.legs.push({ hip, foot, L1: dd * .62, L2: dd * .62, out: V(ox * .3, 0, side.z).normalize(), side: side.z, seg: p.s, rad: 1.6 + rMax * .07 }); }
-    else if (id === "hand") { const sh = C.clone().add(V(ox * r * .8, -r * .25, oz * r * .8)), el = sh.clone().add(V(ox * 4 + 3, -5, oz * 4)), wr = el.clone().add(V(5, -2, 0));
+    else if (id === "tail" || id === "whip" || id === "tentacle") tp.chains.push({ base: C.clone().add(V(ox * r * .85, -r * .1, oz * r * .85)), dir: V(ox, id === "whip" ? -.3 : .08, oz).normalize(), n: id === "tail" ? 5 : 4, r0: id === "tail" ? r * .42 : 1.8, gap: (id === "tail" ? r * .38 : 3.2) * ln, kind: id, col: id === "tentacle" ? acc : id === "whip" ? fill.clone().lerp(new T.Color(.5, .5, .5), .4) : fill });
+    else if (id === "leg") { const LL = legBase * ln, hip = C.clone().add(V(ox * r * .7, -r * .35 * SH(p.s), oz * r * .7)), side = V(0, 0, Math.sign(oz) || 1), foot = V(hip.x + ox * LL * .12, 0, hip.z + side.z * LL * .34);
+      tp.legs.push({ hip, foot, L1: LL * .56, L2: LL * .56, out: V(ox * .3, 0, side.z).normalize(), side: side.z, seg: p.s, rad: (1.6 + rMax * .07) * zz * (ln < 1 ? 1.15 : 1) }); }
+    else if (id === "hand") { const sh = C.clone().add(V(ox * r * .8, -r * .25, oz * r * .8)), el = sh.clone().add(V((ox * 4 + 3) * ln, -5 * ln, oz * 4 * ln)), wr = el.clone().add(V(5 * ln, -2 * ln, 0));
       for (const [a, b] of [[sh, el], [el, wr]]) { const c = new T.CylinderGeometry(1.1, 1.3, a.distanceTo(b), 6); c.translate(0, a.distanceTo(b) / 2, 0); add(c, M(a, Qto(V(0, 1, 0), b.clone().sub(a))), fill); }
       for (let k = -1; k <= 1; k++) { const f = new T.ConeGeometry(.55, 3, 5); f.translate(0, 1.5, 0); add(f, M(wr, Qto(V(0, 1, 0), V(1, -.4, k * .5))), dark); } }
     else if (id === "voice") tp.sacs.push({ pos: C.clone().add(V(ox * r * .7 + 1, -r * .45, oz * r * .5)), r: r * .34 + 1.5 });
@@ -3823,15 +3915,24 @@ function makeTpl(d, g, meat) {
         const c = new T.ConeGeometry(1.2, len, 4); c.translate(0, len / 2, 0); c.scale(1, 1, .3); add(c, M(id === "crest" ? C.clone().add(V(u * r * .5, r * .75, 0)) : S.clone().add(V(0, r * .2, 0)), Qto(V(0, 1, 0), dir)), (x, y, z) => acc.clone().lerp(fill, clamp(1 - (y - bodyY - r * .4) / (r * .6), 0, 1) * .6)); } }
     else if (id === "wing") { const w = new T.SphereGeometry(1, 12, 6); add(w, M(C.clone().add(V(-r * .2, r * .6, oz * r * .6)), new T.Quaternion().setFromEuler(new T.Euler(oz > 0 ? .5 : -.5, 0, .25)), V(r * .9, .5, r * .5)), acc.clone().lerp(fill, .3)); }
     else if (id === "feeler") { let pt = C.clone().add(V(ox * r * .6, r * .7, oz * r * .6)), dir = V(ox + .3, 1, oz).normalize();
-      for (let k = 0; k < 4; k++) { const c = new T.CylinderGeometry(.35, .45, 3, 5); c.translate(0, 1.5, 0); add(c, M(pt, Qto(V(0, 1, 0), dir)), dark); pt.addScaledVector(dir, 3); dir = dir.clone().add(V(.3, -.15, 0)).normalize(); }
+      for (let k = 0; k < 4; k++) { const c = new T.CylinderGeometry(.35, .45, 3 * ln, 5); c.translate(0, 1.5 * ln, 0); add(c, M(pt, Qto(V(0, 1, 0), dir)), dark); pt.addScaledVector(dir, 3 * ln); dir = dir.clone().add(V(.3, -.15, 0)).normalize(); }
       add(new T.SphereGeometry(.9, 8, 6), M(pt), acc); }
-    else if (id === "neck") { for (let k = 1; k <= 3; k++) add(new T.SphereGeometry(r * (.55 - k * .07), 12, 10), M(C.clone().add(V(ox * r * .4 + k * r * .25, k * r * .35, oz * r * .3))), fill); }
+    else if (id === "neck") { for (let k = 1; k <= Math.max(2, Math.round(3 * ln)); k++) add(new T.SphereGeometry(r * (.55 - k * .07), 12, 10), M(C.clone().add(V(ox * r * .4 + k * r * .25, k * r * .35, oz * r * .3))), fill); }
     else if (id === "glow" || id === "lamp" || id === "spark") { const b = S.clone().add(V(0, r * .3, 0)); if (id !== "spark") { const c = new T.CylinderGeometry(.4, .5, 6, 5); c.translate(0, 3, 0); add(c, M(S, Qto(V(0, 1, 0), V(ox + .4, 1, oz))), dark); b.add(V((ox + .4) * 4, 5, oz * 4)); }
       tp.glows.push({ pos: b, r: id === "spark" ? r * .25 + 1 : 2, color: id === "spark" ? 0xffee55 : id === "lamp" ? 0xfff2b0 : 0xc8ff7a }); }
     else if (id === "stink" || id === "ink" || id === "lungs" || id === "clear") add(new T.SphereGeometry(r * .32 + 1, 10, 8), M(S.clone().add(V(0, -r * .05, 0))), id === "stink" ? new T.Color(0x8fbf3a) : id === "ink" ? new T.Color(0x2a2440) : id === "clear" ? fill.clone().lerp(white, .65) : fill.clone().lerp(new T.Color(0xff9ab0), .4));
     else if (id === "spitter") { add(new T.CylinderGeometry(1, 1.5, 5, 7), M(S.clone().addScaledVector(out, 1.5), Qto(V(0, 1, 0), V(ox, .3, oz))), fill); add(new T.SphereGeometry(1.3, 8, 6), M(S.clone().addScaledVector(out, 4.2).add(V(0, 1.2, 0))), new T.Color(0xa8f060)); }
     else if (P.water) add(new T.SphereGeometry(1, 10, 6), M(S.clone().add(V(0, -r * .25, 0)), new T.Quaternion().setFromEuler(new T.Euler(oz * .6, -p.a, -.5)), V(r * .55, .9, r * .3)), fill.clone().lerp(new T.Color(.55, .55, .58), .45)); // a fin from the sea: hangs limp on land
     else add(new T.SphereGeometry(r * .2 + 1, 8, 6), M(S), acc);
+    if (zz !== 1 && id !== "leg") {
+      const Z = new T.Matrix4().makeTranslation(S.x, S.y, S.z).multiply(new T.Matrix4().makeScale(zz, zz, zz)).multiply(new T.Matrix4().makeTranslation(-S.x, -S.y, -S.z));
+      for (let k = n0; k < L.length; k++) L[k][1] = L[k][1] ? Z.clone().multiply(L[k][1]) : Z.clone();
+      const mv = v => v.sub(S).multiplyScalar(zz).add(S);
+      for (let k = j0; k < tp.jaws.length; k++) { tp.jaws[k].sz = zz; mv(tp.jaws[k].pos); }
+      for (let k = c0; k < tp.chains.length; k++) { tp.chains[k].r0 *= zz; tp.chains[k].gap *= Math.sqrt(zz); }
+      for (let k = g0; k < tp.glows.length; k++) { tp.glows[k].r *= zz; mv(tp.glows[k].pos); }
+      for (let k = s0; k < tp.sacs.length; k++) { tp.sacs[k].r *= zz; mv(tp.sacs[k].pos); }
+    }
   }
   if (meat) for (const e of eyeOut) tp.glows.push({ pos: e, r: 1.2, color: 0xffd060, night: 1 });
   tp.geo = merge3(L);
@@ -3849,7 +3950,7 @@ function inst3(q) {
   const I = { q, tp, key, mat, grp, tilt, body: mk(tp.geo), legs: [], chains: [], jaws: [], sacs: [], glows: [], kt: 0 };
   for (const l of tp.legs) I.legs.push({ l, u: mk(l.gU), d: mk(l.gL) });
   for (const c of tp.chains) { const a = []; for (let k = 0; k < c.n; k++) a.push(mk(c.geo)); I.chains.push({ c, a }); }
-  for (const j of tp.jaws) { const h = new T.Group(); h.position.copy(j.pos); h.rotation.y = -j.a; tilt.add(h); I.jaws.push(mk(j.geo, h)); }
+  for (const j of tp.jaws) { const h = new T.Group(); h.scale.setScalar(j.sz || 1); h.position.copy(j.pos); h.rotation.y = -j.a; tilt.add(h); I.jaws.push(mk(j.geo, h)); }
   for (const s of tp.sacs) { const m = mk(s.geo); m.position.copy(s.pos); I.sacs.push(m); }
   for (const gl of tp.glows) { const m = new T.Mesh(new T.SphereGeometry(gl.r, 10, 8), new T.MeshBasicMaterial({ color: gl.color, transparent: true })); m.position.copy(gl.pos); m.userData.night = gl.night; tilt.add(m); I.glows.push(m); }
   I.ring = new T.Mesh(new T.RingGeometry(1.15, 1.4, 40), new T.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: .9, depthWrite: false })); I.ring.rotation.x = -Math.PI / 2; I.ring.position.y = .6; I.ring.scale.setScalar(tp.R); grp.add(I.ring);
