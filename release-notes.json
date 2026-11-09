@@ -478,6 +478,20 @@
         "Ten land goals to tick off (see the pause menu), each worth 25 DNA and a part pod.",
         "Even fewer trees in the woods, so you can see through them."
       ]
+    },
+    {
+      "id": 43,
+      "type": "features",
+      "headline": "Life: the Tribe stage",
+      "details": [
+        "Finish the land stage and your species starts a tribe on the same island. Tap Start a tribe.",
+        "You're the Chief: tap to walk as before. Your villagers work on their own. Tap Jobs to choose who chops wood, digs stone, fetches materials, hunts, builds or guards. Everyone else gathers food.",
+        "Build huts so the tribe can grow, totems to claim more land, and watch fires to guard it. Villagers only gather inside your land.",
+        "Explore to find flint, clay and reeds, claim them with a totem, and bring them home to make tools: axes, spears, baskets, pots, shields and slings.",
+        "Two neighbouring tribes share the island. Win over the friendly one with gifts, trade and a show for its chief, until it joins you.",
+        "The hostile one raids your camp. Break its spirit to make it give in: hem it in with totems, beat its raids, burn its totems, raid its stores or beat its champion in a duel.",
+        "Settle both neighbours to finish the stage. To try it straight away, start a new life and pick Tribe stage under Start at."
+      ]
     }
   ]
 }

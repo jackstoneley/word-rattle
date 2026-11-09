@@ -279,9 +279,8 @@ pass to the winner (`destroyRealm`). Any keeper raises `alarmAt` when enemy figh
 ### Life (`games/life`)
 
 An evolve-a-creature game (in the genre of the evolution sims, with its own names and art), built a stage at a time:
-`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell**, **sea** and **land** stages exist (tribe onwards
-planned as tap / turn-based, not live action). `S.stage` is "cell", "sea" or "land"; `cur(S)` is that stage's state
-(`S.cell` / `S.sea` / `S.land`) and `TS(S)` its sizes (`TIERS` / `SEA_TIERS` / `LAND_TIERS`, land has one: the brain bar). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
+`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell**, **sea**, **land** and **tribe** stages exist. `S.stage` is "cell", "sea", "land" or "tribe"; `cur(S)` is that stage's state
+(`S.cell` / `S.sea` / `S.land`; the tribe stage keeps `S.land` as `cur` and has its own `S.tribe`) and `TS(S)` its sizes (`TIERS` / `SEA_TIERS` / `LAND_TIERS`, land has one: the brain bar). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
 A creature is a design `{s: [segment radii, head first], p: [{id, s: segment, a: angle (0 = front), m: mirrored}], h, l, h2,
 pat, edge}`; `geom` places the parts, `stats` turns them into speed, bite, health, sight and so on, `designValue` is its DNA
 price. Every creature in the pond is drawn from the same parts (`randomDesign`, per-save `species(tier, i)`: 0-2 plant
@@ -347,6 +346,19 @@ perfect bot, so 20+ for a person) and fails if it can't finish or finishes in un
 (about 21-30 min for the bot; fails if not done in 90 or under 12), then the land (impress what its design can copy,
 else hunt; about 17-28 min for the bot; fails if not done in 150 or under 15). `window.LF` exposes the
 world for Playwright.
+**Tribe** (`S.tribe`, code after the land in CORE: `newTribe`, `tribeStep`; page: `renderTribeUI`, `tribeTap`, the Jobs / Build /
+Tools / Tribes panels, `tribe3` and `terr3` for the camp and land colours in 3D): the same island (`newLand` with `W.tribe`), the camp
+at `S.tribe.camp` (`campSpot`). You play the Chief (tap to walk); villagers (kind `vill`, team 1) work on their own from job counts
+(`S.tribe.jobs`, everyone else gathers food; `villThink`) and only gather inside your land. `W.own` (owner per tile: 1 you, 2 + j rival
+j; `landOwners`) comes from camp fires (`W.fires`, `CAMP_R`) and totems. `BUILDS` (hut, totem, watch fire) are planned by the Chief,
+paid for at once and put up by builders; `TOOLS` need materials (`MATS`), found in deposits (`W.deps`, `makeDeps`, from the seed)
+that the Chief discovers (`S.tribe.deps`) and a totem claims; hides come from hunting. Two rivals (`S.tribe.rv`, `makeRivals`: kind
+`rival`, team 2, `rivalThink`): an open one (`mood`; gifts, trade and impressing its chief, `befriend`; joins at 100 when your tribe is
+at least as big) and a hostile one (`spirit`, `rivalStep`: heals slowly, drains while hemmed in (`W.hem`) or outnumbered; raids in
+waves, gather → march → loot → home; beaten raids, burnt totems, raided stores, kills and duels with its champion lower it; at 50
+or below the Chief can take its fire; at 0 it gives in). `tribeResolve` turns a settled rival's camp into your settlement; both
+settled ends the stage (`S.tribeNature`). `MATS`, `BUILDS`, `TOOLS`, `JOBS` are saved by id: append only. `tools/life-check.js`
+plays the tribe stage with a bot after the land (about 30-75 min; fails if not done in 120 or under 15); `--tribe` runs it alone.
 
 ### Adding a new game
 

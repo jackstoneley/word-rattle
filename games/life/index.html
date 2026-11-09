@@ -56,6 +56,7 @@ h1 span{color:var(--accent)}
 .opt{border:2px solid var(--line);border-radius:14px;padding:10px 12px;text-align:left;background:var(--bg)}
 .opt b{display:block;font-size:1rem}
 .opt span{font-size:.85rem;color:var(--muted)}
+.pick .opt span{display:block}
 .opt.on{border-color:var(--accent);background:#0D3A3A}
 .namerow{display:flex;gap:8px}
 .namerow input{flex:1;min-width:0;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 12px;font-weight:700;font-size:1.05rem}
@@ -166,6 +167,16 @@ h1 span{color:var(--accent)}
 .bodyp .row{display:flex;gap:8px;flex-wrap:wrap}
 .bodyp label{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:800;color:var(--muted)}
 .bodyp label input{flex:1}
+.jobs{display:flex;flex-direction:column;gap:6px}
+.jrow{display:grid;grid-template-columns:1fr 40px 34px 40px;align-items:center;gap:6px;background:var(--bg);border-radius:12px;padding:6px 8px;font-weight:700;font-size:.92rem}
+.jrow b{text-align:center;font-size:1.1rem}
+.lb.off{opacity:.5}
+.opt.rv{display:flex;flex-direction:column;gap:6px}
+.opt.rv span{display:block}
+.rvh{display:flex;gap:10px;align-items:center}
+.rvh canvas{width:84px;height:60px;flex:none;border-radius:10px;background:rgba(0,0,0,.25)}
+.stats.tri{grid-template-columns:repeat(4,1fr)}
+.stats.tri div{font-size:.75rem;padding:6px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -180,7 +191,7 @@ h1 span{color:var(--accent)}
     <div class="road">
       <h3>The stages of life</h3>
       <ol id="road"></ol>
-      <p>The cell, sea and land stages are here now. The tribe and the stages after it arrive in later updates, and your species carries on into them.</p>
+      <p>The cell, sea, land and tribe stages are here now. Civilisation and Space arrive in later updates, and your species carries on into them.</p>
     </div>
   </div>
 </div>
@@ -195,7 +206,7 @@ h1 span{color:var(--accent)}
       <div class="grl" id="grLabel"></div>
       <div class="dietbar" id="dietBar" hidden aria-label="Diet"><span>🌿</span><i><b id="dietMark"></b></i><span>🦷</span></div>
     </div>
-    <div class="dna" aria-label="DNA">🧬 <b id="dnaN">0</b></div>
+    <div class="dna" aria-label="DNA"><span id="dnaIc">🧬</span> <b id="dnaN">0</b></div>
   </div>
   <div class="vig" id="vig"></div>
   <div class="hint" id="hint" hidden></div>
@@ -239,8 +250,8 @@ const TAU = Math.PI * 2;
 const TIERS = [{ n: "Speck", g: 50 }, { n: "Mote", g: 85 }, { n: "Droplet", g: 120 }, { n: "Bloom", g: 160 }, { n: "Titan", g: 200 }];
 const KT = t => Math.pow(1.7, t);
 const SEA_TIERS = [{ n: "Fry", g: 95 }, { n: "Finling", g: 140 }, { n: "Glider", g: 185 }, { n: "Roamer", g: 230 }, { n: "Leviathan", g: 265 }];
-function cur(S) { return S.stage === "land" && S.land ? S.land : S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
-function TS(S) { return S && S.stage === "land" ? LAND_TIERS : S && S.stage === "sea" ? SEA_TIERS : TIERS; }
+function cur(S) { return (S.stage === "land" || S.stage === "tribe") && S.land ? S.land : S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
+function TS(S) { return S && (S.stage === "land" || S.stage === "tribe") ? LAND_TIERS : S && S.stage === "sea" ? SEA_TIERS : TIERS; }
 /* The sea: a bounded world, surface (and the shore) at y = 0, bands of depth going down. Each band has its own food
    size (it), plant and meat density, and share of hunters. Creatures belong to the band that suits their size. */
 const SEA = { W: 6000, D: 10000, bands: [
@@ -390,10 +401,12 @@ function goToSea(S) { if (!S.nature) S.nature = natureOf(S.cell); S.cell.done = 
 const STARTS = [["s0", "Cell stage, from the start", ""], ["s2", "Cell stage, Droplet size", "Size 3 of 5"], ["s4", "Cell stage, Titan size", "Size 5 of 5"],
   ["grown", "End of the cell stage", "A fully grown Titan: meet your mate to finish"], ["sea0", "Sea stage, from the start", "Fresh out of the pond"],
   ["sea2", "Sea stage, Glider size", "Size 3 of 5"], ["seaend", "End of the sea stage", "Fully grown, with lungs and leg fins: swim up to the shore"],
-  ["land0", "Land stage, from the start", "Just out of the sea"], ["land50", "Land stage, halfway", "Brain half full"], ["land95", "End of the land stage", "One more friend or hunt fills the brain"]];
+  ["land0", "Land stage, from the start", "Just out of the sea"], ["land50", "Land stage, halfway", "Brain half full"], ["land95", "End of the land stage", "One more friend or hunt fills the brain"],
+  ["tribe0", "Tribe stage, from the start", "Your first camp, with two neighbouring tribes"]];
 function testStart(S, start) {
   if (!start || start === "s0") return S;
   S.test = true; const all = PARTS.map(p => p.id);
+  if (start.startsWith("tribe")) { testStart(S, "land0"); S.landNature = "mixed"; goToTribe(S); return S; }
   if (start.startsWith("land")) {
     S.cell.tier = TIERS.length - 1; S.nature = "forager"; goToSea(S); S.sea.tier = 4; S.seaNature = "forager"; goToLand(S);
     const c = S.land; c.unlocked = all.filter(id => stageParts(S).some(p => p.id === id)); c.dna = 300;
@@ -433,6 +446,10 @@ function migrate(S) {
     const N3 = landStart(S); for (const k in N3) if (S.land[k] === undefined) S.land[k] = N3[k];
     S.land.design.p = (S.land.design.p || []).filter(q => PART[q.id]); S.land.tier = 0;
   } else if (S.stage === "land") S.stage = S.sea ? "sea" : "cell";
+  if (S.tribe && S.land) {
+    const N4 = tribeStart(S); for (const k in N4) if (S.tribe[k] === undefined) S.tribe[k] = N4[k];
+    for (const k in N4.res) if (S.tribe.res[k] === undefined) S.tribe.res[k] = 0; for (const k in N4.jobs) if (S.tribe.jobs[k] === undefined) S.tribe.jobs[k] = 0;
+  } else if (S.stage === "tribe") S.stage = S.land ? "land" : "cell";
   return S;
 }
 function natureOf(c) { const t = c.ate.plant + c.ate.meat || 1, m = c.ate.meat / t; return m > .66 ? "hunter" : m < .34 ? "grazer" : "forager"; }
@@ -508,10 +525,12 @@ function mkC(W, d, kind, tier, k, x, y, sp) {
   c.hp = c.max; return c;
 }
 function placePlayer(W, x, y, a) {
+  if (W.player) W.player.dead = true; // anything chasing the old body lets it go
   const S = W.S, c = cur(S), T = c.tier, P = mkC(W, c.design, "player", T, W.land ? 1.3 : KT(T), x, y); P.a = a; W.player = P;
   if (W.land) {
     landK(P); const n = S.seaNature; if (n === "hunter") P.biteMul = 1.25; else if (n === "grazer") { P.max *= 1.25; P.hp = P.max; } else P.st.lspd *= 1.1;
     W.cr = W.cr.filter(q => q.kind !== "ally");
+    if (W.tribe) { P.max *= 1.5; P.hp = P.max; return; } // the Chief: no pack now, the tribe instead
     for (let i = 0; i < (c.pack || 0); i++) addAllyLand(W, c.design, 1.05);
     for (const j of c.joined || []) if (W.lsp && W.lsp[j]) addAllyLand(W, W.lsp[j].d, W.lsp[j].k * .9, j);
     return;
@@ -530,6 +549,7 @@ function addAlly(W) {
 }
 function viewR(W) { return W.player.st.view * W.player.k; }
 function newWorld(S, rs) {
+  if (S.stage === "tribe") return newTribe(S, rs);
   if (S.stage === "land") return newLand(S, rs);
   const W = { S, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], pods: [], mate: null,
     nid: 1, nextRelic: 28, lastEvo: 0, mateWait: 20, mateCool: 0, popT: 0, sp: {}, over: null,
@@ -681,8 +701,10 @@ function guardAt(B, x, y) {
   return Math.max(.2, f);
 }
 function hurt(W, B, dmg, src, x, y) {
-  if (B.inv > 0 || B.kind === "mate" || B.dead) return;
+  if (B.inv > 0 || B.kind === "mate" || B.dead || (B.kind === "player" && B !== W.player)) return;
   if (x !== undefined) dmg *= guardAt(B, x, y);
+  if (W.duel && B.kind === "player" && src === W.duel.T) dmg = Math.min(dmg, B.hp - 1); // a duel is lost, not died in
+  if ((B.kind === "vill" || B.kind === "rival") && src && src !== B) { B.hitBy = src; B.hitT = W.t; }
   B.hp -= dmg; B.hurtT = W.t;
   if (B.team && src && src.kind === "npc") { W.foe = src; W.foeT = W.t; }
   if (B.kind === "npc" && src && src !== B) {
@@ -701,7 +723,10 @@ function kill(W, B, src) {
     else c.young = Math.max(0, (c.young || 0) - 1);
     W.ev.push({ t: "allyDie", x: B.x, y: B.y }); return;
   }
+  if (B.kind === "vill" || B.kind === "rival") { tribeDied(W, B, src); return; }
   if (W.land) landKilled(W, B, src);
+  if (W.tribe && src && src.kind === "vill") { src.carry = { food: 4 + (W.S.tribe.tools.spear ? 2 : 0), hide: 1 }; src.tg = null; W.ev.push({ t: "kill", x: B.x, y: B.y, k: B.k, h: B.d.h, by: false }); return; } // the hunter carries it home
+  if (W.tribe && src && src.kind === "rival") { W.ev.push({ t: "kill", x: B.x, y: B.y, k: B.k, h: B.d.h, by: false }); return; }
   const P = W.player, rel = Math.min(1.5, (B.k / P.k) ** 2), n = clamp(Math.round(2 + 3 * rel), 1, 7);
   for (let i = 0; i < n; i++) { const it = item(W, "meat", B.x + (W.R() - .5) * B.g.R * B.k, B.y + (W.R() - .5) * B.g.R * B.k, B.k, 3.2); it.life = 45; W.items.push(it); }
   W.ev.push({ t: "kill", x: B.x, y: B.y, k: B.k, h: B.d.h, by: src === P });
@@ -716,7 +741,7 @@ function kill(W, B, src) {
     }
   }
   if (mine && B.k > P.k * 1.05) goal(W, "big");
-  if (src === P) {
+  if (src === P && !W.tribe) {
     cur(W.S).kills++;
     // sometimes it leaves behind one of its own parts for you to pick up
     const ids = [...new Set(B.d.p.map(q => q.id))].filter(id => !cur(W.S).unlocked.includes(id));
@@ -730,7 +755,7 @@ function grow(W, v, ty) {
 function lockedParts(S) { return stageParts(S).filter(p => !cur(S).unlocked.includes(p.id)); }
 /* Sea goals: each pays 25 DNA and leaves a pod with a part you haven't got. */
 function goal(W, id) {
-  const c = cur(W.S); if ((!W.sea && !W.land) || !c.goals || c.goals[id]) return;
+  const c = cur(W.S); if ((!W.sea && !W.land) || W.tribe || !c.goals || c.goals[id]) return;
   c.goals[id] = 1; c.dna += 25; const P = W.player, pid = pickLocked(W.S, W.R);
   if (pid && W.land) { const x = P.x + Math.cos(P.a) * LT * 1.5, y = P.y + Math.sin(P.a) * LT * 1.5, ok = passXY(W, x, y); W.pods.push({ x: ok ? x : P.x, y: ok ? y : P.y + 30, r: 14, ph: 0, id: pid, life: 90 }); }
   else if (pid) W.pods.push({ x: clamp(P.x + Math.cos(P.a) * P.g.R * P.k * 4, -SEA.W, SEA.W), y: clamp(P.y + Math.sin(P.a) * P.g.R * P.k * 4, 10, SEA.D), r: 11 * P.k, ph: 0, id: pid, life: 60 });
@@ -930,6 +955,7 @@ function applyEvolve(W, d) {
 function respawn(W) {
   const S = W.S, P = W.player, lost = Math.floor(cur(S).dna * .1), V = viewR(W);
   cur(S).deaths++; cur(S).dna -= lost;
+  if (W.tribe) { const T = S.tribe; T.res.food = Math.floor(T.res.food * .9); if (W.duel) duelLost(W, "fell"); W.burn = W.cap = null; }
   if (W.land) { const H = W.home; W.cr = W.cr.filter(c => c.kind !== "npc" || !c.ai.tg || Math.hypot(c.x - H.x, c.y - H.y) > LT * 10); W.cr.forEach(c => { if (c.ai && c.ai.tg && c.ai.tg.team) c.ai.tg = null; }); placePlayer(W, H.x, H.y, -Math.PI / 2); W.inNest = true; }
   else if (W.sea) { const N = W.nest; W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.hypot(c.x - N.x, c.y - N.y) > V * 2); placePlayer(W, N.x, N.y, Math.PI / 2); W.inNest = true; }
   else { W.cr = W.cr.filter(c => c.kind !== "npc" || c.diet === "plant" || Math.sqrt(d2(c, P)) > V * 1.6); placePlayer(W, P.x, P.y, P.a); }
@@ -1071,7 +1097,7 @@ function newLand(S, rs) {
   if (c.iv !== ISLAND_V) { c.iv = ISLAND_V; c.friends = {}; c.hunted = {}; c.epics = {}; c.joined = []; c.found = {}; c.nests = {}; c.quake = null; c.seen = ""; c.x = c.y = null; } // older saves: a new island
   const W = { S, land: true, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], pods: [], shots: [], mate: null,
     nid: 1, nextRelic: 45, mateCool: 0, sp: {}, over: null, inNest: true, foe: null, foeT: -99, trail: [], trailT: 0, respT: 25, freeze: false, night: false,
-    trees: [], bushes: [], rocks: [], marks: [], seenT: 0, seenNew: [], leadT: 0, lead: {} };
+    trees: [], bushes: [], rocks: [], marks: [], seenT: 0, seenNew: [], leadT: 0, lead: {}, tribe: S.stage === "tribe" };
   const isl = makeIsland(R0); W.map = isl.m; W.hgt = isl.hg;
   let mid = -1, md = 1e9;
   for (let i = 0; i < LN * LN; i++) { const t = W.map[i]; if (t !== T_GRASS && t !== T_FOREST && t !== T_HILL && t !== T_SCRUB) continue; const x = i % LN, y = (i / LN) | 0, d = (x - LN / 2) ** 2 + (y - LN * .6) ** 2; if (d < md) { md = d; mid = i; } }
@@ -1295,6 +1321,7 @@ function brain(W, v) {
   }
 }
 function landKilled(W, B, src) {
+  if (W.tribe) return;
   const c = cur(W.S), mine = src === W.player || (src && src.kind === "ally"); if (!mine) return;
   if (B.lsp != null && W.lsp[B.lsp].late) { c.invK = (c.invK || 0) + 1; if (c.invK >= 3) goal(W, "invade"); }
   if (B.lsp != null && lspStatus(c, B.lsp) == null) {
@@ -1318,7 +1345,8 @@ function arrive(W, G) {
     P.goal = G; P.eating = true; P.eatT = .3; return;
   }
   P.goal = null;
-  if (G.kind === "home") { W.ev.push({ t: "mate" }); return; }
+  if (G.kind === "home") { W.ev.push({ t: W.tribe ? "atHome" : "mate" }); return; }
+  if (G.kind === "fire" || G.kind === "rtotem" || G.kind === "dep" || G.kind === "build") { W.ev.push({ t: "at", g: G }); return; }
   if (G.kind === "npc") W.ev.push({ t: "meet", c: G });
 }
 function playerLand(W, dt) {
@@ -1342,12 +1370,12 @@ function playerLand(W, dt) {
     const G = P.goal; P.repath -= dt; if (G.dead) { P.goal = null; P.path = null; }
     else { if (distBody(G, P.x, P.y) < P.g.R * P.k * 2.5 + 30) { arrive(W, G); } else if (P.repath <= 0) { P.path = findPath(W, P.x, P.y, G.x, G.y); P.repath = .7; } }
   } else if (P.goal && !P.path && !P.eating) {
-    const G = P.goal, near = G.kind === "tree" ? G.r + P.g.R * P.k + 10 : G.kind === "home" ? 70 : P.g.R * P.k + 34;
+    const G = P.goal, near = G.kind === "tree" ? G.r + P.g.R * P.k + 10 : G.kind === "home" || G.kind === "fire" ? 70 : G.kind === "rtotem" ? LT * 1.8 : G.kind === "dep" || G.kind === "build" ? LT * 1.4 : P.g.R * P.k + 34;
     if (Math.hypot(G.x - P.x, G.y - P.y) < near) arrive(W, G); else P.path = findPath(W, P.x, P.y, G.x, G.y);
   }
   if (tx == null && P.path && P.path.length) {
     const [px, py] = P.path[0];
-    if (Math.hypot(px - P.x, py - P.y) < 14) { P.path.shift(); if (!P.path.length) { P.path = null; if (P.goal && P.goal.kind !== "npc") { const G = P.goal, near = G.kind === "tree" ? G.r + P.g.R * P.k + 30 : G.kind === "home" ? 90 : P.g.R * P.k + 50; if (Math.hypot(G.x - P.x, G.y - P.y) < near) arrive(W, G); } } }
+    if (Math.hypot(px - P.x, py - P.y) < 14) { P.path.shift(); if (!P.path.length) { P.path = null; if (P.goal && P.goal.kind !== "npc") { const G = P.goal, near = G.kind === "tree" ? G.r + P.g.R * P.k + 30 : G.kind === "home" || G.kind === "fire" ? 90 : G.kind === "rtotem" ? LT * 2.2 : G.kind === "dep" || G.kind === "build" ? LT * 1.8 : P.g.R * P.k + 50; if (Math.hypot(G.x - P.x, G.y - P.y) < near) arrive(W, G); } } }
     else { tx = px; ty = py; }
   }
   if (tx != null) {
@@ -1371,7 +1399,7 @@ function scanLand(W, c, friend) {
   const tp = temperOf(W, c);
   if (tp !== "flee" && !(ai.calm > W.t)) { // defenders guard their nest; aggressive ones go for anything that comes close
     const home = L && L.life === "home", cx = home ? L.x : c.x, cy = home ? L.y : c.y, r = tp === "aggro" ? LT * (home ? 5.5 : 3.6) * (W.night ? 1.2 : 1) : home ? LT * 3.5 : 0;
-    if (r) for (const o of allC(W)) if (o.team && !(o.inv > 0) && Math.hypot(o.x - cx, o.y - cy) < r && o.k < c.k * 3) { landAlarm(W, c, o); return; }
+    if (r) for (const o of allC(W)) if (o.team && !(o.inv > 0) && !(W.tribe && W.own[tileI(o.x, o.y)] === 1) && Math.hypot(o.x - cx, o.y - cy) < r && o.k < c.k * 3) { landAlarm(W, c, o); return; }
   } else if (tp === "flee" && L && L.life === "home") { // shy homebodies leave their nest when a hunter comes for it
     if (P.mode === "hunt" && Math.hypot(P.x - L.x, P.y - L.y) < LT * 3) { landAlarm(W, c, P); return; }
   }
@@ -1380,6 +1408,7 @@ function scanLand(W, c, friend) {
   const seeR = LT * (c.epic != null ? 6 : 4.5) * (W.night ? 1.25 : 1); let best = null, bd = 1e18;
   for (const o of allC(W)) {
     if (o === c || o.kind === "mate" || (o.sp && o.sp === c.sp) || o.inv > 0) continue;
+    if (W.tribe && o.team && W.own[tileI(o.x, o.y)] === 1) continue; // your camp's land scares hunters off
     if (o.kind === "npc" && (o.diet === "meat" || W.R() < .6)) continue;
     const rel = o.k / c.k; if (rel > (L && L.life === "pack" ? 2 : 1.4) || rel < .3) continue;
     const seen = o.team ? (o.st.show ? 1.25 : 1) * (o.st.call ? 1.15 : 1) * (o.st.hide ? .6 : 1) : 1, d = d2(o, c);
@@ -1451,7 +1480,7 @@ function landFight(W) {
     if (A.kind === "npc" && isFriend(W, A) && T.team) continue;
     if (distBody(T, A.x, A.y) > A.g.R * A.k * .55 + 10) continue;
     A.atk = W.t + (A === P ? .8 : 1.1);
-    const dmg = (2 + A.st.bite + (A.st.spk > 0 ? 1.5 : 0)) * Math.pow(A.k, 1.2) * 1.4 * (A.biteMul || 1) * (A.pow || 1) * (T === P ? .7 : 1);
+    const dmg = (2 + A.st.bite + (A.st.spk > 0 ? 1.5 : 0)) * Math.pow(A.k, 1.2) * 1.4 * (A.biteMul || 1) * (A.pow || 1) * (T === P ? .7 : T.kind === "vill" || T.kind === "rival" ? .5 : 1);
     W.how = "bite"; hurt(W, T, dmg, A); W.ev.push({ t: "bite", x: T.x, y: T.y, by: A === P, on: T === P });
     if (A.team && T.kind === "npc") { W.foe = T; W.foeT = W.t; landAlarm(W, T, A); }
   }
@@ -1562,7 +1591,7 @@ function stepLand(W, dt) {
   if (W.over || W.freeze) return;
   W.t += dt; const S = W.S, c = cur(S), P = W.player; S.time += dt; c.lt = (c.lt || 0) + dt;
   c.day = (c.day + dt / DAY) % 1; W.night = c.day > .7;
-  quakeStep(W, dt); stampStep(W, dt);
+  if (!W.tribe) quakeStep(W, dt); stampStep(W, dt);
   W.leadT -= dt; if (W.leadT <= 0) { W.leadT = 1; W.lead = {}; for (const q of W.cr) if (q.kind === "npc" && q.lsp != null && !W.lead[q.lsp]) W.lead[q.lsp] = q; }
   const L = allC(W), px = L.map(q => q.x), py = L.map(q => q.y);
   playerLand(W, dt);
@@ -1570,7 +1599,7 @@ function stepLand(W, dt) {
   W.trailT -= dt; if (W.trailT <= 0 && (!W.trail.length || Math.hypot(W.trail[0][0] - P.x, W.trail[0][1] - P.y) > 10)) { W.trailT = .15; W.trail.unshift([P.x, P.y]); if (W.trail.length > 80) W.trail.pop(); }
   for (const q of W.cr) { if (q.kind === "npc") thinkLand(W, q, dt); else if (q.kind === "ally") allyLand(W, q, dt); }
   for (const q of L) if (q.inv > 0) q.inv -= dt;
-  collide(W, W.cr.filter(q => q.kind === "npc")); // you and your pack step round other animals rather than getting stuck behind them
+  collide(W, W.cr.filter(q => q.kind === "npc" || q.kind === "vill" || q.kind === "rival")); // you and your pack step round other animals rather than getting stuck behind them
   L.forEach((q, i) => { if (!passXY(W, q.x, q.y)) { q.x = px[i]; q.y = py[i]; } if (!passXY(W, q.x, q.y)) toLand(W, q); });
   landFight(W);
   for (const s of W.shots) {
@@ -1588,14 +1617,15 @@ function stepLand(W, dt) {
   if (P.st.eat.meat) for (let i = W.items.length - 1; i >= 0; i--) { const it = W.items[i]; if (Math.hypot(it.x - P.x, it.y - P.y) < P.g.R * P.k + it.r + 8) { W.items.splice(i, 1); landEat(W, it.v * .6, "meat", it.x, it.y); } }
   for (const it of W.items) if (it.life !== undefined) it.life -= dt;
   W.items = W.items.filter(it => !(it.life <= 0));
-  for (const b of W.bushes) if (b.food < b.max) { b.t -= dt; if (b.t <= 0) { b.food++; b.t = 25; } }
-  for (const b of W.trees) if (b.fruit && b.food < b.max) { b.t -= dt; if (b.t <= 0) { b.food++; b.t = b.type === "old" ? 10 : 40; } }
+  for (const b of W.bushes) if (b.food < b.max) { b.t -= dt; if (b.t <= 0) { b.food++; b.t = W.tribe ? 9 : 25; } }
+  for (const b of W.trees) if (b.fruit && b.food < b.max) { b.t -= dt; if (b.t <= 0) { b.food++; b.t = b.type === "old" ? 10 : W.tribe ? 16 : 40; } }
   const spring = c.found.springs && W.marks.find(mk => mk.id === "springs");
   for (const q of allC(W)) if (W.t - q.hurtT > 4 && q.hp < q.max) q.hp = Math.min(q.max, q.hp + q.max * (q.team ? .04 : .02) * dt);
   if (spring && Math.hypot(spring.x - P.x, spring.y - P.y) < LT * 2.5) { P.hp = Math.min(P.max, P.hp + P.max * .2 * dt); for (const q of W.cr) if (q.kind === "ally") q.hp = Math.min(q.max, q.hp + q.max * .2 * dt); }
   W.respT -= dt;
-  if (W.respT <= 0) { W.respT = 30; for (const Ls of W.lsp) if (lspStatus(c, Ls.i) !== "gone" && (!Ls.late || (c.quake && c.quake.inv)) && W.cr.filter(q => q.lsp === Ls.i).length < Ls.n) spawnMember(W, Ls.i); }
+  if (W.respT <= 0) { W.respT = 30; for (const Ls of W.lsp) if (lspStatus(c, Ls.i) !== "gone" && !Ls.tribe && (!Ls.late || (c.quake && c.quake.inv)) && W.cr.filter(q => q.lsp === Ls.i).length < Ls.n) spawnMember(W, Ls.i); }
   W.seenT -= dt; if (W.seenT <= 0) { W.seenT = .3; reveal(W); }
+  if (W.tribe) { tribeStep(W, dt); return; }
   if (!W.pods.some(q => q.nat) && W.t >= W.nextRelic) {
     const SP = stageParts(S), id = pickLocked(S, W.R) || SP[Math.floor(W.R() * SP.length)].id;
     for (let k = 0; k < 10; k++) { const a = W.R() * TAU, r = LT * (5 + W.R() * 8), x = P.x + Math.cos(a) * r, y = P.y + Math.sin(a) * r; if (passXY(W, x, y)) { W.pods.push({ x, y, r: 14, ph: 0, id, nat: true }); W.ev.push({ t: "relicSpawn" }); break; } }
@@ -1614,6 +1644,562 @@ function stepLand(W, dt) {
     landGoals(W);
     for (const Ls of W.lsp) if (Ls.life === "home" && !c.nests[Ls.i] && lspStatus(c, Ls.i) !== "friend" && Math.hypot(P.x - Ls.x, P.y - Ls.y) < LT * 1.8
       && !W.cr.some(q => q.lsp === Ls.i && Math.hypot(q.x - Ls.x, q.y - Ls.y) < LT * 6 && !(q.ai.fear && q.ai.fearT > 0))) nestWon(W, Ls); }
+}
+/* ================= Tribe =================
+   The land stage's island, now with a camp. You play the Chief (tap to walk, as on land); villagers (kind "vill") work on
+   their own from job counts (S.tribe.jobs; everyone not given a job gathers food). Builders put up what you plan (BUILDS).
+   The camp fire and totems claim land (W.own: 1 you, 2 + j rival j); villagers only gather inside your land. Materials lie
+   in deposits round the island (W.deps, made from the seed): the Chief finds them (S.tribe.deps), a totem claims them, and
+   the first load home discovers the material (S.tribe.found), which lets the tribe make tools (TOOLS).
+   Two neighbouring tribes (S.tribe.rv), each a species of the island: an open one (mood rises with gifts, trade and
+   impressing its chief; at 100 it joins you) and a hostile one (Spirit falls while you hem it in with your land, outnumber
+   it, raid its stores, burn its totems, beat its raids, kill its warriors or beat its champion; it heals a little over time
+   and rises when its raids succeed; at 0 it gives in). Both settled finishes the stage. Rival units are kind "rival", team 2.
+   Saves: S.tribe {t, pop, res, jobs, builds [{kind, k, x, y, prog, done, hp}], found, deps, tools, rv [...], ...}.
+   MATS, BUILDS and TOOLS are saved by id: append only. */
+const TRIBE_V = 1, TAKE_AT = 30, CAMP_R = 8, TOTEM_R = 6, WATCH_R = 9;
+const MATS = [["food", "🍖", "Food"], ["wood", "🪵", "Wood"], ["stone", "🪨", "Stone"], ["flint", "🔷", "Flint"], ["clay", "🟤", "Clay"], ["reeds", "🌾", "Reeds"], ["hide", "🐾", "Hides"]];
+const MAT = {}; MATS.forEach(([id, ic, n]) => MAT[id] = { id, ic, n });
+const DEP_MATS = ["flint", "clay", "reeds"];
+const JOBS = [["food", "🍓", "Gather food"], ["wood", "🪵", "Chop wood"], ["stone", "🪨", "Dig stone"], ["fetch", "🧺", "Fetch materials"], ["hunt", "🍖", "Hunt"], ["build", "🔨", "Build"], ["guard", "🛡️", "Guard"]];
+const BUILDS = [
+  { id: "hut", ic: "🛖", n: "Hut", c: { wood: 30 }, work: 22, hp: 60, max: 8, d: "Room for three more villagers. The tribe only grows while there's room." },
+  { id: "totem", ic: "🗿", n: "Totem", c: { wood: 12, stone: 8 }, work: 18, hp: 80, max: 8, d: "Claims the land round it. Plant it at the edge of your land, next to something you want." },
+  { id: "watch", ic: "🔥", n: "Watch fire", c: { wood: 10, stone: 6 }, work: 15, hp: 50, max: 6, d: "Lights up the land round it. Guards keep watch here." }];
+const BUILD = {}; BUILDS.forEach(b => BUILD[b.id] = b);
+const TOOLS = [
+  { id: "axe", ic: "🪓", n: "Stone axes", c: { wood: 10, flint: 6 }, d: "Wood is chopped twice as fast, and building goes quicker." },
+  { id: "spear", ic: "🗡️", n: "Spears", c: { wood: 15, flint: 8 }, d: "Villagers hit much harder, and hunters bring home more meat." },
+  { id: "basket", ic: "🧺", n: "Baskets", c: { reeds: 10 }, d: "Everyone carries more home on each trip." },
+  { id: "pots", ic: "🏺", n: "Clay pots", c: { clay: 10, wood: 5 }, d: "Food brought home goes half as far again." },
+  { id: "shield", ic: "🛡️", n: "Hide shields", c: { hide: 6, wood: 10 }, d: "Villagers are half as tough again." },
+  { id: "sling", ic: "🎯", n: "Slings", c: { hide: 4, stone: 10 }, d: "Guards throw stones at enemies from a distance." }];
+const TOOL = {}; TOOLS.forEach(t => TOOL[t.id] = t);
+const TRIBE_NATURES = { peaceful: ["Peaceful", "Your tribe grew by friendship and trade."], conquering: ["Conquering", "Your tribe grew by force."], shrewd: ["Shrewd", "Your tribe made friends where it could and fought where it had to."] };
+
+function tribeStart(S) {
+  return { v: TRIBE_V, t: 0, pop: 5, res: { food: 30, wood: 25, stone: 6, flint: 0, clay: 0, reeds: 0, hide: 0 }, jobs: { wood: 2, stone: 1, fetch: 0, hunt: 0, build: 0, guard: 0 },
+    builds: [], found: {}, deps: {}, tools: {}, rv: null, births: 0, peace: 0, force: 0, done: false, hungry: false, eatT: 0, birthT: 0 };
+}
+function goToTribe(S) {
+  if (S.land) { S.land.done = true; if (!S.tribe) { S.land.x = S.land.y = null; } }
+  S.tribe = S.tribe || tribeStart(S); S.stage = "tribe"; return S;
+}
+const tileI = (x, y) => clamp(Math.floor(y / LT), 0, LN - 1) * LN + clamp(Math.floor(x / LT), 0, LN - 1);
+function ownAt(W, x, y) { return W.own ? W.own[tileI(x, y)] : 0; }
+function nearT(W, i, ts, r) { const x = i % LN, y = (i / LN) | 0; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < LN && ny < LN && ts.includes(W.map[ny * LN + nx])) return true; } return false; }
+function nearOwn(W, i, o, r) { const x = i % LN, y = (i / LN) | 0; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < LN && ny < LN && W.own[ny * LN + nx] === o) return true; } return false; }
+function popAll(T) { return T.pop + T.rv.reduce((a, r) => a + (r.state ? r.pop : 0), 0); }
+function room(T) { return 6 + 3 * T.builds.filter(b => b.k === "hut" && b.done).length + 6 * T.rv.filter(r => r.state).length; }
+const tribeName = L => L.name.split(" ")[0] + " tribe";
+
+/* The two neighbours: the hostile one is the island's most aggressive species (one you drove out comes back holding a grudge);
+   the open one is a gentle one, best of all one you made friends with on land. Their camps are far from yours. */
+function makeRivals(W) {
+  const S = W.S, c = S.land, R = rng(hash(S.seed, 1400)), st = L => lspStatus(c, L.i), C = W.lsp.filter(L => !L.late);
+  const hs = L => (L.temper === "aggro" ? 4 : L.temper === "defend" ? 1 : 0) + (st(L) === "gone" ? 5 : 0) - (st(L) === "friend" ? 20 : 0) + (L.diet === "meat" ? 1 : 0) + L.i * .01;
+  const H = C.slice().sort((a, b) => hs(b) - hs(a))[0];
+  const os = L => (st(L) === "friend" ? 6 : 0) + (L.temper === "flee" ? 2 : L.temper === "defend" ? 1.5 : -4) + (L.diet !== "meat" ? 1 : 0) - (st(L) === "gone" ? 3 : 0) + L.i * .01;
+  const O = C.filter(L => L !== H).sort((a, b) => os(b) - os(a))[0];
+  const camps = [], hx = W.home.x, hy = W.home.y, ok = [T_GRASS, T_FOREST, T_SCRUB, T_JUNGLE, T_HILL, T_SAND];
+  const pick = L => {
+    let best = null, bs = -1e9;
+    for (let pass = 0; pass < 2 && !best; pass++) for (let k = 0; k < 3000; k++) {
+      const i = Math.floor(R() * LN * LN); if (!W.reach[i] || !ok.includes(W.map[i])) continue;
+      const [x, y] = tileXY(i), d = Math.hypot(x - hx, y - hy) / LT; if (d < (pass ? 18 : 28)) continue;
+      if (camps.some(([a, b]) => Math.hypot(a - x, b - y) < LT * (pass ? 20 : 30))) continue;
+      if (!pass && W.burnt && Math.hypot(x - W.burnt.peak[0], y - W.burnt.peak[1]) < W.burnt.rmax + LT * 4) continue;
+      const sc = -Math.abs(d - 40) + (L.bio.includes(W.map[i]) ? 6 : 0) + R() * 4; if (sc > bs) { bs = sc; best = [x, y]; }
+    }
+    if (!best) best = tileXY(randReach(W, R)); camps.push(best); return best;
+  };
+  const nat = S.landNature;
+  const mk = (L, kind) => { const [x, y] = pick(L), grudge = st(L) === "gone" ? 1 : 0;
+    return { i: L.i, kind, x, y, pop: kind === "hostile" ? 6 : 5, mood: kind === "open" ? clamp(10 + (nat === "friendly" ? 10 : nat === "fierce" ? -10 : 0) + (st(L) === "friend" ? 15 : 0), -50, 40) : 0,
+      spirit: 100, state: null, res: { food: 40, wood: 30 }, stock: { flint: 0, clay: 0, reeds: 0, hide: 0 }, totems: [], cd: {}, giftN: 0, raidN: 0, raidAt: (grudge ? 380 : 470) + R() * 60,
+      growT: 45, totAt: 150 + R() * 60, beat: 0, won: 0, burnt: 0, duels: [0, 0], raided: 0, grudge, tools: {} }; };
+  return [mk(O, "open"), mk(H, "hostile")];
+}
+/* Deposits of flint, clay and reeds: one of each fairly near your camp, the rest spread over the island. */
+function makeDeps(W) {
+  const R = rng(hash(W.S.seed, 1450)), hx = W.home.x, hy = W.home.y, out = [];
+  const rule = { flint: i => [T_HILL, T_SCRUB, T_GRASS].includes(W.map[i]) && nearT(W, i, [T_ROCK, T_SNOW], 2),
+    clay: i => [T_GRASS, T_SWAMP, T_FOREST, T_SAND, T_JUNGLE].includes(W.map[i]) && nearT(W, i, [T_LAKE, T_RIVER], 1),
+    reeds: i => W.map[i] === T_SWAMP || ([T_GRASS, T_SAND].includes(W.map[i]) && nearT(W, i, [T_LAKE, T_RIVER], 1)) };
+  for (const m of DEP_MATS) for (let n = 0; n < 5; n++) {
+    const lo = n === 0 ? 11 : 16, hi = n === 0 ? 20 : 75; let got = -1;
+    for (let k = 0; k < 5000 && got < 0; k++) {
+      const i = Math.floor(R() * LN * LN); if (!W.reach[i] || !TSPD[W.map[i]] || W.map[i] === T_RIVER) continue;
+      const [x, y] = tileXY(i), d = Math.hypot(x - hx, y - hy) / LT; if (d < lo || d > hi + (k > 3500 ? 10 : 0)) continue;
+      if (out.some(o => Math.hypot(o.x - x, o.y - y) < LT * (o.m === m ? 14 : 4))) continue;
+      if (k < 3500 && !rule[m](i)) continue; got = i;
+    }
+    if (got < 0) continue; const [x, y] = tileXY(got); out.push({ kind: "dep", m, x, y, t: got, n: out.length });
+  }
+  return out;
+}
+/* Who owns each tile: the nearest claim (relative to its reach) wins. Also how hemmed in each rival is: the share of the
+   free land along its border that is now yours. */
+function landOwners(W) {
+  const T = W.S.tribe, N = LN, own = W.own || (W.own = new Uint8Array(N * N)), best = new Float32Array(N * N).fill(9), cl = [];
+  for (const F of W.fires) cl.push([F.x, F.y, CAMP_R, F.o]);
+  for (const b of T.builds) if (b.k === "totem" && b.done) cl.push([b.x, b.y, TOTEM_R, 1]);
+  T.rv.forEach((r, j) => { for (const t of r.totems) cl.push([t.x, t.y, TOTEM_R, r.state ? 1 : 2 + j]); });
+  own.fill(0);
+  for (const [x, y, r, o] of cl) {
+    const tx = x / LT, ty = y / LT;
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const X = Math.floor(tx) + dx, Y = Math.floor(ty) + dy; if (X < 0 || Y < 0 || X >= N || Y >= N) continue;
+      const i = Y * N + X, d = Math.hypot(X + .5 - tx, Y + .5 - ty) / r; if (d > 1 || d >= best[i] || !TSPD[W.map[i]]) continue; best[i] = d; own[i] = o;
+    }
+  }
+  W.hem = T.rv.map((r, j) => {
+    if (r.state) return 0; const o = 2 + j; let mine = 0, free = 0;
+    for (let i = 0; i < N * N; i++) { if (own[i] !== o) continue; const x = i % N, y = (i / N) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue; const j2 = ny * N + nx; if (!TSPD[W.map[j2]] || own[j2] === o) continue; if (own[j2] === 1) mine++; else free++; } }
+    return mine + free ? mine / (mine + free) : 0;
+  });
+  W.ownRev = (W.ownRev || 0) + 1; W.srcRev = -1;
+}
+function tribeFires(W) {
+  const T = W.S.tribe;
+  if (!W.fires) { W.fires = [{ kind: "fire", x: W.home.x, y: W.home.y, o: 1, main: 1 }]; T.rv.forEach((r, j) => W.fires.push({ kind: "fire", x: r.x, y: r.y, o: 1, rv: j })); }
+  T.rv.forEach((r, j) => { W.fires[j + 1].o = r.state ? 1 : 2 + j; });
+}
+function newTribe(S, rs) {
+  const W = newLand(S, rs), T = S.tribe; W.tribe = true; W.tbRev = 1; W.duel = null; W.cap = null; W.burn = null; W.rally = false; W.alarmT2 = -99;
+  if (!T.camp) { T.camp = campSpot(W); if (S.land.x == null) { W.player.x = T.camp[0]; W.player.y = T.camp[1] + LT; } }
+  W.home.x = T.camp[0]; W.home.y = T.camp[1];
+  const clear = o => Math.hypot(o.x - W.home.x, o.y - W.home.y) > LT * 2.6; W.trees = W.trees.filter(clear); W.bushes = W.bushes.filter(clear); W.rocks = W.rocks.filter(clear);
+  if (!T.rv) T.rv = makeRivals(W);
+  for (const r of T.rv) { const L = W.lsp[r.i]; L.tribe = true; r.name = tribeName(L); for (const t of r.totems) { t.kind = "rtotem"; t.j = T.rv.indexOf(r); } }
+  for (const b of T.builds) b.kind = "build";
+  W.cr = W.cr.filter(q => !(q.kind === "ally" || (q.kind === "npc" && q.lsp != null && W.lsp[q.lsp].tribe)));
+  W.deps = makeDeps(W);
+  if (!T.depInit) { T.depInit = 1; if (S.landNature !== "friendly" && S.landNature !== "fierce") for (const m of DEP_MATS) { const D = W.deps.find(o => o.m === m); if (D) T.deps[D.n] = 1; } } // shrewd: knows where to look
+  W.foodSrc = W.bushes.concat(W.trees.filter(o => o.fruit)); W.woodSrc = W.trees.filter(o => o.type !== "old");
+  tribeFires(W); landOwners(W);
+  for (let n = 0; n < T.pop; n++) addVill(W, null, W.home.x, W.home.y);
+  T.rv.forEach((r, j) => { if (r.state) for (let n = 0; n < r.pop; n++) addVill(W, r.i, r.x, r.y); else { for (let n = 0; n < r.pop; n++) addRival(W, j); rivalRoles(W, j); } });
+  assignJobs(W);
+  revealAt(W, W.home.x, W.home.y, CAMP_R + 2); for (const b of T.builds) if (b.k === "watch" && b.done) revealAt(W, b.x, b.y, WATCH_R);
+  return W;
+}
+/* The camp goes on open ground not far from where the land stage left off, with wood, stone and food close by. */
+function campSpot(W) {
+  const N = LN, start = tileI(W.home.x, W.home.y), dist = new Int16Array(N * N).fill(-1), q = [start]; dist[start] = 0;
+  const okT = [T_GRASS, T_FOREST, T_SCRUB, T_JUNGLE, T_HILL], cand = [];
+  for (let h = 0; h < q.length; h++) {
+    const i = q[h], x = i % N, y = (i / N) | 0; if (dist[i] > 26) break;
+    if (okT.includes(W.map[i]) && !nearT(W, i, [T_SEA, T_LAKE, T_RIVER, T_ROCK, T_LAVA], 3) && !(W.burnt && Math.hypot(...tileXY(i).map((v, k) => v - W.burnt.peak[k])) < W.burnt.rmax)) cand.push(i);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, j = ny * N + nx; if (nx >= 0 && ny >= 0 && nx < N && ny < N && dist[j] < 0 && W.reach[j]) { dist[j] = dist[i] + 1; q.push(j); } }
+  }
+  if (!cand.length) return [W.home.x, W.home.y];
+  const grid = new Map(), B = LT * 4, put = (o, k) => { const key = Math.floor(o.x / B) + "," + Math.floor(o.y / B); if (!grid.has(key)) grid.set(key, []); grid.get(key).push(k); };
+  W.trees.forEach(o => put(o, o.type === "dead" || o.type === "old" ? 0 : 1)); W.bushes.forEach(o => put(o, 2)); W.trees.forEach(o => { if (o.fruit) put(o, 2); }); W.rocks.forEach(o => put(o, 3));
+  let best = cand[0], bs = -1e9;
+  for (let k = 0; k < cand.length; k += Math.max(1, Math.floor(cand.length / 500))) {
+    const i = cand[k], [x, y] = tileXY(i), n = [0, 0, 0, 0], gx = Math.floor(x / B), gy = Math.floor(y / B);
+    for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (const t of grid.get((gx + a) + "," + (gy + b)) || []) n[t]++;
+    const sc = Math.min(18, n[1]) + Math.min(14, n[2]) * 1.3 + Math.min(6, n[3]) * 2 - dist[i] * .25;
+    if (sc > bs) { bs = sc; best = i; }
+  }
+  return tileXY(best);
+}
+function revealAt(W, x, y, r) {
+  const cx = Math.floor(x / LT), cy = Math.floor(y / LT);
+  for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = cx + dx, Y = cy + dy; if (X < 0 || Y < 0 || X >= LN || Y >= LN || dx * dx + dy * dy > r * r) continue; const i = Y * LN + X; if (!W.seen[i]) { W.seen[i] = 1; W.seenNew.push(i); } }
+}
+/* Health and blows come from the body (and the tools): villagers fight with what they carry more than with their teeth. */
+function tribeArm(W, u) {
+  const T = W.S.tribe, tl = u.kind === "vill" ? T.tools : (T.rv[u.tr].tools || {}), f = u.max ? u.hp / u.max : 1;
+  u.max = (40 + u.st.hp * .8) * (tl.shield ? 1.5 : 1) * (u.champ ? 2.4 : 1); u.hp = u.max * f;
+  u.atkD = (4 + Math.min(8, u.st.bite * .6) + (u.st.spk ? 1 : 0) + (tl.spear ? 4 : 0) + (u.kind === "vill" && W.S.landNature === "fierce" ? 1.5 : 0)) * (u.champ ? 1.6 : 1);
+}
+function addVill(W, sp, x, y) {
+  const d = sp == null ? cur(W.S).design : W.lsp[sp].d, u = mkC(W, d, "vill", 0, sp == null ? 1 : 1.05, x + (W.R() - .5) * LT * 2.5, y + (W.R() - .5) * LT * 2.5);
+  if (!passXY(W, u.x, u.y)) { u.x = x; u.y = y; } u.spn = sp; u.job = "food"; u.team = 1; u.max = 0; tribeArm(W, u); W.cr.push(u); return u;
+}
+function addRival(W, j, champ) {
+  const r = W.S.tribe.rv[j], L = W.lsp[r.i], a = W.R() * TAU, d = LT * (champ ? 1.5 : 1 + W.R() * 2.5);
+  const u = mkC(W, L.d, "rival", 0, champ ? 1.5 : 1.1, r.x + Math.cos(a) * d, r.y + Math.sin(a) * d); if (!passXY(W, u.x, u.y)) { u.x = r.x; u.y = r.y; }
+  u.team = 2; u.tr = j; u.role = "work"; u.champ = !!champ; u.max = 0; tribeArm(W, u);
+  if (champ) { u.max *= .55 + r.spirit / 110; u.hp = u.max; } W.cr.push(u); return u;
+}
+function rivalRoles(W, j) {
+  const r = W.S.tribe.rv[j], U = W.cr.filter(u => u.kind === "rival" && u.tr === j && !u.champ && !u.raid).sort((a, b) => a.id - b.id);
+  const g = Math.round(U.length * (r.kind === "hostile" ? .5 : .3)); U.forEach((u, k) => { u.role = k < g ? "guard" : "work"; });
+}
+function assignJobs(W) {
+  const T = W.S.tribe, V = W.cr.filter(q => q.kind === "vill").sort((a, b) => a.id - b.id); let k = 0;
+  for (const [id] of JOBS) { if (id === "food") continue; const n = T.jobs[id] || 0; for (let m = 0; m < n && k < V.length; m++, k++) if (V[k].job !== id) { V[k].job = id; V[k].src = null; V[k].tg = null; } }
+  for (; k < V.length; k++) if (V[k].job !== "food") { V[k].job = "food"; V[k].src = null; V[k].tg = null; }
+}
+function setJob(W, id, n) {
+  const T = W.S.tribe, tot = W.cr.filter(q => q.kind === "vill").length; let others = 0;
+  for (const [k] of JOBS) if (k !== "food" && k !== id) others += T.jobs[k] || 0;
+  T.jobs[id] = clamp(Math.round(n), 0, Math.max(0, tot - others)); assignJobs(W);
+}
+function jobCount(W, id) { return W.cr.filter(q => q.kind === "vill" && q.job === id).length; }
+
+/* ---- walking ---- */
+function goTo(W, u, x, y, sp, dt, near) {
+  const d = Math.hypot(x - u.x, y - u.y); if (d < (near || 20)) { u.vx *= .7; u.vy *= .7; u.path = null; return true; }
+  const key = Math.floor(x / LT) + "," + Math.floor(y / LT);
+  u.repath = (u.repath || 0) - dt;
+  if (u.pk !== key || (!u.path && u.repath <= 0)) { u.pk = key; u.repath = 2.5; u.path = findPath(W, u.x, u.y, x, y); if (!u.path) { u.noway = (u.noway || 0) + 1; } }
+  if (u.path && u.path.length) {
+    const [px, py] = u.path[0]; if (Math.hypot(px - u.x, py - u.y) < 16) { u.path.shift(); if (!u.path.length) u.path = null; return false; }
+    const ox = u.x, oy = u.y; moveC(W, u, px, py, sp, dt);
+    if (Math.hypot(u.x - ox, u.y - oy) < sp * dt * .2) { u.stuck = (u.stuck || 0) + dt; if (u.stuck > 1.2) { u.stuck = 0; u.path = findPath(W, u.x, u.y, x, y, true); u.noway = (u.noway || 0) + .5; } } else u.stuck = 0;
+  } else moveC(W, u, x, y, sp, dt);
+  return false;
+}
+function chase(W, u, T, sp, dt) { if (los(W, u.x, u.y, T.x, T.y)) { u.path = null; u.pk = null; moveC(W, u, T.x, T.y, sp, dt); } else goTo(W, u, T.x, T.y, sp, dt, 10); }
+function homeFire(W, u) { let b = W.fires[0], bd = 1e18; for (const F of W.fires) if (F.o === 1) { const d = d2(F, u); if (d < bd) { bd = d; b = F; } } return b; }
+function guardPosts(W) { return W.fires.filter(F => F.o === 1).concat(W.S.tribe.builds.filter(b => b.k === "watch" && b.done)); }
+function srcList(W, kind) {
+  if (W.srcRev !== W.ownRev) { W.srcRev = W.ownRev; W.srcC = {}; }
+  if (!W.srcC[kind]) { const all = kind === "food" ? W.foodSrc : kind === "wood" ? W.woodSrc : kind === "stone" ? W.rocks : W.deps; W.srcC[kind] = all.filter(s => W.own[tileI(s.x, s.y)] === 1); }
+  return W.srcC[kind];
+}
+function pickSource(W, u, kind) {
+  const T = W.S.tribe, F = homeFire(W, u); let best = null, bs = 1e18;
+  for (const s of srcList(W, kind)) {
+    if (kind === "food" && s.food <= 0) continue; if (kind === "fetch" && !T.deps[s.n]) continue;
+    const d = Math.hypot(s.x - u.x, s.y - u.y) * .5 + Math.hypot(s.x - F.x, s.y - F.y) + (s.busy || 0) * LT * (kind === "food" ? 6 : 3) + (kind === "fetch" ? (T.res[s.m] || 0) * LT * .4 : 0);
+    if (d < bs) { bs = d; best = s; }
+  }
+  if (best) best.busy = (best.busy || 0) + 1; return best;
+}
+function deliver(W, u) {
+  const T = W.S.tribe;
+  for (const m in u.carry) { let n = u.carry[m]; if (m === "food" && T.tools.pots) n *= 1.5; T.res[m] = (T.res[m] || 0) + n;
+    if (!T.found[m] && m !== "food" && m !== "wood" && m !== "stone") { T.found[m] = 1; W.ev.push({ t: "matFound", m }); } }
+  u.carry = null;
+}
+function villFoe(W, o) {
+  if (o.dead) return false;
+  if (o.kind === "rival") { const r = W.S.tribe.rv[o.tr]; if (o.champ || r.state) return false; return !!o.raid || ((r.kind === "hostile" || r.mood < -30) && W.own[tileI(o.x, o.y)] === 1) || !!(o.tg && o.tg.team === 1); }
+  if (o.kind === "npc") return !isFriend(W, o) && !!o.ai.tg && o.ai.tg.team === 1 && !o.asleep && W.own[tileI(o.x, o.y)] === 1;
+  return false;
+}
+function villScan(W, u) {
+  const P = W.player, guard = u.job === "guard", hunter = u.job === "hunt";
+  let thr = null, td = (LT * 4) ** 2;
+  for (const o of W.cr) { if (o.dead) continue; if ((o.kind === "npc" && o.ai.tg === u) || (o.kind === "rival" && o.tg === u)) { const d = d2(o, u); if (d < td) { td = d; thr = o; } } }
+  if (thr) { if (guard || hunter || u.hp > u.max * .6) u.tg = thr; else { u.fear = 3; u.tg = null; } return; }
+  if (!guard) for (const o of W.cr) if (o.kind === "rival" && o.raid && o.rph !== "gather" && o.rph !== "home" && d2(o, u) < (LT * 4) ** 2) { u.fear = 3; u.tg = null; return; } // workers run from raiders
+  if (u.tg) return;
+  if (guard) {
+    if (W.rally && P.mode === "hunt" && P.tg && !P.tg.dead && !(W.duel && P.tg === W.duel.T)) { u.tg = P.tg; return; }
+    const posts = guardPosts(W), c = W.rally ? P : posts[u.id % posts.length], R = LT * (W.rally ? 6 : 8); let b = null, bd = R * R;
+    for (const o of W.cr) { if (!villFoe(W, o)) continue; const d = d2(o, c); if (d < bd) { bd = d; b = o; } }
+    if (b) u.tg = b; return;
+  }
+  if (hunter && !u.carry) {
+    const F = homeFire(W, u); let b = null, bd = (LT * 15) ** 2;
+    for (const o of W.cr) if (o.kind === "npc" && o.epic == null && o.lsp != null && !isFriend(W, o) && !o.asleep && temperOf(W, o) === "flee" && W.seen[tileI(o.x, o.y)]) { const d = d2(o, F); if (d < bd) { bd = d; b = o; } }
+    if (b) { u.tg = b; u.chaseT = 0; }
+  }
+}
+function villThink(W, u, dt) {
+  const T = W.S.tribe, P = W.player;
+  if (u.stun > 0) { u.stun -= dt; u.vx *= .8; u.vy *= .8; return; }
+  const sp = landSpeed(W, u) * (T.hungry ? .8 : 1);
+  u.scan = (u.scan || 0) - dt; if (u.scan <= 0) { u.scan = .4 + W.R() * .3; villScan(W, u); }
+  if (u.tg && (u.tg.dead || Math.hypot(u.tg.x - u.x, u.tg.y - u.y) > LT * 16 || (u.tg.kind === "npc" && isFriend(W, u.tg)) || (u.tg.kind === "rival" && T.rv[u.tg.tr].state) || (u.tg.kind === "npc" && u.job !== "hunt" && W.own[tileI(u.tg.x, u.tg.y)] !== 1 && !W.rally))) u.tg = null;
+  if (u.fear > 0) { u.fear -= dt; const F = homeFire(W, u); goTo(W, u, F.x, F.y, sp * 1.1, dt, LT); return; }
+  if (u.tg) { u.chaseT = (u.chaseT || 0) + dt; if (u.chaseT > (u.job === "hunt" ? 25 : 40)) { u.tg = null; u.chaseT = 0; } else { chase(W, u, u.tg, sp * 1.05, dt); return; } }
+  if (u.carry) { const F = homeFire(W, u); if (goTo(W, u, F.x, F.y, sp, dt, LT * 1.3)) deliver(W, u); return; }
+  const job = u.job;
+  if (job === "guard") {
+    if (W.rally) { const G = W.cr.filter(q => q.kind === "vill" && q.job === "guard"), idx = G.indexOf(u), pt = W.trail[Math.min(W.trail.length - 1, (idx + 1) * 4)] || [P.x, P.y], d = Math.hypot(pt[0] - u.x, pt[1] - u.y);
+      if (d > LT * 14) { u.x = P.x; u.y = P.y; u.path = null; return; } if (d > 18) goTo(W, u, pt[0], pt[1], Math.max(sp, landSpeed(W, P) * 1.1) * clamp(d / 60, .4, 1.15), dt, 14); else { u.vx *= .7; u.vy *= .7; } return; }
+    const posts = guardPosts(W), p = posts[u.id % posts.length], a = u.id * 2.4;
+    if (goTo(W, u, p.x + Math.cos(a) * LT * 1.5, p.y + Math.sin(a) * LT * 1.5, sp * .8, dt, 16)) { u.vx *= .8; u.vy *= .8; } return;
+  }
+  if (job === "build") {
+    let s = null, sd = 1e18; for (const b of T.builds) if (!b.done) { const d = d2(b, u); if (d < sd) { sd = d; s = b; } }
+    if (s) { if (goTo(W, u, s.x, s.y, sp, dt, LT * 1.3)) { s.prog += dt * (T.tools.axe ? 1.3 : 1); if (s.prog >= BUILD[s.k].work) siteDone(W, s); } return; }
+  }
+  if (job === "hunt") { const F = homeFire(W, u), a = u.id * 2.4; goTo(W, u, F.x + Math.cos(a) * LT * 3, F.y + Math.sin(a) * LT * 3, sp * .6, dt, 20); return; }
+  const kind = job === "build" ? "wood" : job;
+  if (u.src && (W.own[tileI(u.src.x, u.src.y)] !== 1 || (kind === "food" && u.src.food <= 0))) u.src = null;
+  if (!u.src) {
+    u.srcT = (u.srcT || 0) - dt;
+    if (u.srcT > 0) { const F = homeFire(W, u), a = u.id * 1.7; goTo(W, u, F.x + Math.cos(a) * LT * 1.4, F.y + Math.sin(a) * LT * 1.4, sp * .5, dt, 16); return; }
+    u.src = pickSource(W, u, kind); u.work = 0; u.noway = 0; if (!u.src) { u.srcT = 4; return; }
+  }
+  const s = u.src;
+  if (!goTo(W, u, s.x, s.y, sp, dt, s.kind === "tree" ? Math.min(40, (s.r || 30) * .6) + 16 : s.kind === "dep" ? LT * .8 : 28)) { if (u.noway > 2) { u.src = null; u.srcT = 2; } return; }
+  u.work = (u.work || 0) + dt; const wt = { food: 2.5, wood: T.tools.axe ? 4 : 8, stone: 9, fetch: 7 }[kind];
+  if (u.work >= wt) {
+    u.work = 0; const n = T.tools.basket ? 5 : 3;
+    if (kind === "food") { const g = Math.min(n, s.food); s.food -= g; s.t = s.kind === "tree" ? 16 : 9; if (g > 0) u.carry = { food: g }; u.src = null; }
+    else u.carry = { [kind === "fetch" ? s.m : kind]: kind === "fetch" ? n : n - 1 };
+  }
+}
+function siteDone(W, s) {
+  s.done = true; s.hp = BUILD[s.k].hp; W.tbRev++;
+  if (s.k === "totem") landOwners(W); if (s.k === "watch") revealAt(W, s.x, s.y, WATCH_R);
+  W.ev.push({ t: "built", k: s.k, x: s.x, y: s.y });
+}
+function buildLost(W, b) {
+  const T = W.S.tribe, k = T.builds.indexOf(b); if (k < 0) return; T.builds.splice(k, 1); W.tbRev++;
+  if (b.k === "totem") landOwners(W); W.ev.push({ t: "buildLost", k: b.k });
+}
+/* ---- the neighbours ---- */
+function rivalScan(W, u, r) {
+  const P = W.player, j = u.tr, hostile = r.kind === "hostile" || r.mood < -30, duelMe = o => W.duel && W.duel.j === j && o === P;
+  if (u.raid) {
+    if (u.rph !== "march" && u.rph !== "loot") return;
+    if (u.tg && (u.tg.dead || Math.hypot(u.tg.x - u.x, u.tg.y - u.y) > LT * 6)) u.tg = null; if (u.tg) return;
+    let b = null, bd = (LT * 3.5) ** 2; for (const o of [P, ...W.cr]) { if (o.dead || o.team !== 1 || o.kind === "ally" || duelMe(o)) continue; if (o.kind === "vill" && o.job !== "guard" && !(o.tg && o.tg.kind === "rival") && u.hitBy !== o) continue; const d = d2(o, u); if (d < bd) { bd = d; b = o; } }
+    u.tg = b; return;
+  }
+  if (u.hitBy && !u.hitBy.dead && W.t - u.hitT < 6 && u.hitBy.team === 1 && !duelMe(u.hitBy)) { if (u.role === "guard" || hostile) u.tg = u.hitBy; else { u.fear = 3; u.tg = null; } u.hitBy = null; return; }
+  if (u.tg || u.role !== "guard" || !hostile) return;
+  let b = null, bd = (LT * 12) ** 2;
+  for (const o of [P, ...W.cr]) { if (o.dead || o.team !== 1 || o.kind === "ally" || duelMe(o)) continue; if (W.own[tileI(o.x, o.y)] !== 2 + j && Math.hypot(o.x - r.x, o.y - r.y) > LT * 6) continue; const d = d2(o, u); if (d < bd) { bd = d; b = o; } }
+  if (b) u.tg = b;
+}
+function rivalThink(W, u, dt) {
+  const T = W.S.tribe, r = T.rv[u.tr], P = W.player; if (!r) return;
+  if (u.stun > 0) { u.stun -= dt; u.vx *= .8; u.vy *= .8; return; }
+  const sp = landSpeed(W, u);
+  if (u.champ) { if (W.duel && W.duel.T === u) chase(W, u, P, sp * 1.05, dt); else goTo(W, u, r.x, r.y, sp, dt, LT); return; }
+  u.scan = (u.scan || 0) - dt; if (u.scan <= 0) { u.scan = .5 + W.R() * .3; rivalScan(W, u, r); }
+  if (u.tg && (u.tg.dead || (W.duel && W.duel.j === u.tr && u.tg === P))) u.tg = null;
+  if (u.raid && r.raid) {
+    const R = r.raid, F = W.fires[0];
+    if (u.rph === "gather") { if (R.ph !== "gather") u.rph = "march"; else goTo(W, u, R.gx + Math.cos(u.id) * LT, R.gy + Math.sin(u.id) * LT, sp, dt, 20); return; }
+    if (u.rph === "home") { u.tg = null; if (goTo(W, u, r.x, r.y, sp, dt, LT * 1.6)) { u.raid = false; r.res.food += u.loot || 0; u.loot = 0; rivalRoles(W, u.tr); } return; }
+    if (u.tg) { chase(W, u, u.tg, sp, dt); return; }
+    if (u.rph === "march") {
+      if (goTo(W, u, F.x, F.y, sp, dt, LT * 1.8)) {
+        u.rph = "loot"; u.lootT = 0; const g = Math.min(6, Math.floor(T.res.food)), w = Math.min(4, Math.floor(T.res.wood)); T.res.food -= g; T.res.wood -= w; u.loot = g; R.stolen += g + w;
+        if (g + w > 0 && W.t - (W.stolenT || -99) > 8) { W.stolenT = W.t; W.ev.push({ t: "stolen", j: u.tr }); }
+      }
+      return;
+    }
+    if (u.rph === "loot") {
+      u.lootT += dt; let b = null, bd = (LT * 4.5) ** 2; for (const o of T.builds) if (o.done) { const d = d2(o, u); if (d < bd) { bd = d; b = o; } }
+      if (b) { if (goTo(W, u, b.x, b.y, sp, dt, LT * 1.1)) { b.hp -= dt * 5; if (b.hp <= 0) buildLost(W, b); } } else { u.vx *= .8; u.vy *= .8; }
+      if (u.lootT > 12) u.rph = "home"; return;
+    }
+  }
+  if (u.tg) { if (Math.hypot(u.x - r.x, u.y - r.y) > LT * 18) u.tg = null; else { chase(W, u, u.tg, sp, dt); return; } }
+  if (u.fear > 0) { u.fear -= dt; goTo(W, u, r.x, r.y, sp, dt, LT); return; }
+  if (u.role === "guard") { const a = u.id * 2.4; if (goTo(W, u, r.x + Math.cos(a) * LT * 2, r.y + Math.sin(a) * LT * 2, sp * .7, dt, 16)) { u.vx *= .8; u.vy *= .8; } return; }
+  if (u.wait > 0) { u.wait -= dt; u.vx *= .8; u.vy *= .8; return; }
+  if (!u.wto) {
+    if (u.back) u.wto = [r.x + (W.R() - .5) * LT * 2, r.y + (W.R() - .5) * LT * 2];
+    else for (let k = 0; k < 15 && !u.wto; k++) { const a = W.R() * TAU, d = LT * (2 + W.R() * 7), x = r.x + Math.cos(a) * d, y = r.y + Math.sin(a) * d; if (passXY(W, x, y) && W.own[tileI(x, y)] === 2 + u.tr) u.wto = [x, y]; }
+    if (!u.wto) { u.wait = 3; return; }
+  }
+  if (goTo(W, u, u.wto[0], u.wto[1], sp * .6, dt, 22) || u.noway > 2) { u.wto = null; u.noway = 0; u.back = !u.back; u.wait = 3 + W.R() * 5; }
+}
+function rivalTotemSpot(W, r, j) {
+  let best = null, bs = -1e9;
+  for (let k = 0; k < 300; k++) {
+    const a = W.R() * TAU, d = LT * (7 + W.R() * 6), x = r.x + Math.cos(a) * d, y = r.y + Math.sin(a) * d, i = tileI(x, y);
+    if (!W.reach[i] || !TSPD[W.map[i]] || W.map[i] === T_RIVER || W.own[i] === 1 || !nearOwn(W, i, 2 + j, 3)) continue;
+    if (r.totems.some(t => Math.hypot(t.x - x, t.y - y) < LT * 6) || Math.hypot(x - r.x, y - r.y) < LT * 6) continue;
+    let sc = W.R() * 3; for (const D of W.deps) if (Math.hypot(D.x - x, D.y - y) < LT * TOTEM_R && W.own[D.t] !== 1 && W.own[D.t] !== 2 + j) sc += 4;
+    const dh = Math.hypot(W.home.x - x, W.home.y - y) / LT; sc += r.kind === "hostile" ? -dh * .08 : dh * .05;
+    if (sc > bs) { bs = sc; best = [x, y]; }
+  }
+  return best;
+}
+function rivalStep(W, r, j, dt) {
+  const T = W.S.tribe, hostile = r.kind === "hostile", mine = popAll(T);
+  r.cap = Math.min(hostile ? 14 : 12, 6 + Math.floor(T.t / 240));
+  const weak = hostile && r.spirit <= TAKE_AT; // a broken spirit: no one new joins, and now and then someone slips away
+  r.growT -= dt; if (r.growT <= 0) { r.growT = weak ? 50 : r.pop < r.cap / 2 ? 25 : hostile ? 40 : 50;
+    if (weak) { const U = W.cr.filter(u => u.kind === "rival" && u.tr === j && !u.champ && !u.raid); if (U.length > 1) { const u = U[U.length - 1]; W.cr = W.cr.filter(o => o !== u); u.dead = true; r.pop--; rivalRoles(W, j); if (!r.leftT || W.t - r.leftT > 120) { r.leftT = W.t; W.ev.push({ t: "deserter", j }); } } }
+    else if (r.pop < r.cap) { r.pop++; addRival(W, j); rivalRoles(W, j); } }
+  r.res.food = Math.min(200, r.res.food + r.pop * .05 * dt); r.res.wood = Math.min(150, r.res.wood + r.pop * .03 * dt);
+  for (const D of W.deps) if (W.own[D.t] === 2 + j) r.stock[D.m] = Math.min(40, r.stock[D.m] + dt / 20);
+  r.stock.hide = Math.min(30, r.stock.hide + dt / (W.lsp[r.i].diet === "plant" ? 120 : 50));
+  const want = { spear: T.t > (hostile ? 600 : 900), shield: hostile && T.t > 1300 };
+  for (const k in want) if (want[k] && !r.tools[k]) { r.tools[k] = 1; for (const u of W.cr) if (u.kind === "rival" && u.tr === j) tribeArm(W, u); }
+  for (const t of r.totems) if (!(W.burn && W.burn.t === t)) t.hp = Math.min(80, t.hp + dt);
+  if (T.t >= r.totAt && r.totems.length < 4) { r.totAt = T.t + 200 + W.R() * 80; const p = rivalTotemSpot(W, r, j); if (p) { r.totems.push({ kind: "rtotem", j, x: Math.round(p[0]), y: Math.round(p[1]), hp: 80 }); landOwners(W); W.tbRev++; W.ev.push({ t: "rivalTotem", j }); } }
+  if (!hostile) { if (r.mood >= 100) befriend(W, j, 0); return; }
+  // Spirit: heals slowly; drains while hemmed in or outnumbered
+  const hem = W.hem[j] || 0; let d = weak ? 0 : .6;
+  if (hem > .15) d -= hem * 4.5; if (mine >= r.pop * 1.5) d -= 1.2;
+  r.drain = d; r.spirit = clamp(r.spirit + d * dt / 60, 0, 100);
+  // raids: warriors gather on the border, then march on your camp
+  if (!r.raid && T.t >= r.raidAt) {
+    const G = W.cr.filter(u => u.kind === "rival" && u.tr === j && u.role === "guard" && !u.champ), n = Math.min(G.length, 2 + r.raidN);
+    if (n < 2) r.raidAt = T.t + 60;
+    else {
+      r.raidN++; r.raidAt = T.t + 230 + W.R() * 90; const F = W.fires[0];
+      let gx = r.x + (F.x - r.x) * .45, gy = r.y + (F.y - r.y) * .45; const gi = tileI(gx, gy); if (!W.reach[gi]) { const p = findPath(W, r.x, r.y, F.x, F.y, true); if (p && p.length) [gx, gy] = p[Math.floor(p.length * .45)]; }
+      G.slice(0, n).forEach(u => { u.raid = true; u.rph = "gather"; u.tg = null; u.loot = 0; });
+      r.raid = { t: 0, ph: "gather", gx, gy, n, dead: 0, stolen: 0 }; W.ev.push({ t: "raidWarn", j, n, x: gx, y: gy });
+    }
+  }
+  if (r.raid) {
+    const R = r.raid; R.t += dt;
+    if (R.ph === "gather" && R.t > 30) { R.ph = "march"; W.ev.push({ t: "raidGo", j }); }
+    if (R.t > 200) for (const u of W.cr) if (u.kind === "rival" && u.tr === j && u.raid) u.rph = "home";
+    if (!W.cr.some(u => u.kind === "rival" && u.tr === j && u.raid)) {
+      if (R.dead >= Math.ceil(R.n / 2)) { r.beat++; r.spirit = Math.max(0, r.spirit - 10); T.force += .5; W.ev.push({ t: "raidBeaten", j }); }
+      else { r.won++; r.spirit = Math.min(100, r.spirit + 6); W.ev.push({ t: "raidWon", j, n: R.stolen }); }
+      r.raid = null; rivalRoles(W, j);
+    }
+  }
+  if (r.spirit <= 0) tribeResolve(W, j);
+}
+function tribeDied(W, B, src) {
+  const T = W.S.tribe;
+  if (B.kind === "vill") {
+    if (B.spn == null) T.pop = Math.max(0, T.pop - 1); else { const r = T.rv.find(x => x.i === B.spn); if (r) r.pop = Math.max(0, r.pop - 1); }
+    assignJobs(W); W.ev.push({ t: "villDied", x: B.x, y: B.y, by: src && src.kind === "rival" ? "rival" : "animal", who: [B.job, src ? src.kind + (src.lsp != null ? ":" + src.lsp + ":" + W.lsp[src.lsp].temper : "") : W.how, W.own[tileI(B.x, B.y)], !!(src && src.ai && src.ai.tg === B)].join(" ") }); return;
+  }
+  const r = T.rv[B.tr]; if (!r) return;
+  if (B.champ) { if (W.duel && W.duel.T === B) { W.duel = null; r.duels[0]++; r.spirit = Math.max(0, r.spirit - 30); T.force += 3; landLeave(W); W.ev.push({ t: "duelWon", j: B.tr }); if (r.spirit <= 0) tribeResolve(W, B.tr); } return; }
+  r.pop = Math.max(0, r.pop - 1); if (B.raid && r.raid) r.raid.dead++;
+  if (src && src.team === 1) { if (r.kind === "hostile") { r.spirit = Math.max(0, r.spirit - 2); T.force += .3; } else r.mood -= 15; }
+  rivalRoles(W, B.tr); W.ev.push({ t: "rivalDied", j: B.tr, x: B.x, y: B.y });
+  if (r.kind === "hostile" && r.spirit <= 0) tribeResolve(W, B.tr);
+}
+/* A neighbour settles: the open one joins you, the hostile one gives in. Its camp becomes one of your settlements, its
+   people become your villagers and its stores are yours. */
+function tribeResolve(W, j) {
+  const T = W.S.tribe, r = T.rv[j]; if (r.state) return;
+  r.state = r.kind === "open" ? "joined" : "broken"; r.raid = null;
+  if (W.duel && W.duel.j === j) W.duel = null; if (W.cap && W.cap.j === j) W.cap = null; if (W.burn && W.burn.j === j) W.burn = null;
+  const U = W.cr.filter(u => u.kind === "rival" && u.tr === j); W.cr = W.cr.filter(u => !U.includes(u));
+  r.pop = U.filter(u => !u.champ).length; for (const u of U) if (!u.champ) { const v = addVill(W, r.i, u.x, u.y); v.x = u.x; v.y = u.y; }
+  for (const m in r.stock) T.res[m] = (T.res[m] || 0) + Math.floor(r.stock[m]); T.res.food += Math.floor(r.res.food * .5); T.res.wood += Math.floor(r.res.wood * .5);
+  for (const m of DEP_MATS) if (r.stock[m] >= 1 && !T.found[m]) T.found[m] = 1;
+  tribeFires(W); landOwners(W); W.tbRev++; assignJobs(W);
+  W.ev.push({ t: r.state, j });
+  if (!T.done && T.rv.every(x => x.state)) {
+    T.done = true; W.S.tribeNature = T.force > T.peace * 1.3 ? "conquering" : T.peace > T.force * 1.3 ? "peaceful" : "shrewd"; W.ev.push({ t: "tribeDone" });
+  }
+}
+/* ---- what the Chief can do ---- */
+function canBuild(W, k, x, y) {
+  const T = W.S.tribe, B = BUILD[k], i = tileI(x, y); if (!B) return "?";
+  if (T.builds.filter(b => b.k === k).length >= B.max) return "max";
+  for (const m in B.c) if ((T.res[m] || 0) < B.c[m]) return "cost";
+  if (!W.reach[i] || !TSPD[W.map[i]] || W.map[i] === T_RIVER) return "ground";
+  const o = W.own[i];
+  if (k === "totem") { if (o >= 2) return "theirs"; if (o !== 1 && !nearOwn(W, i, 1, 3)) return "far"; }
+  else if (o !== 1) return "outside";
+  if (T.builds.some(b => Math.hypot(b.x - x, b.y - y) < LT * 1.6) || W.fires.some(F => Math.hypot(F.x - x, F.y - y) < LT * 2)) return "crowded";
+  return null;
+}
+function tribeBuild(W, k, x, y) {
+  const why = canBuild(W, k, x, y); if (why) return why; const T = W.S.tribe;
+  for (const m in BUILD[k].c) T.res[m] -= BUILD[k].c[m];
+  T.builds.push({ kind: "build", k, x: Math.round(x), y: Math.round(y), prog: 0, done: false, hp: BUILD[k].hp }); W.tbRev++; return null;
+}
+function canMake(T, id) { const t = TOOL[id]; if (!t || T.tools[id]) return false; for (const m in t.c) if ((T.res[m] || 0) < t.c[m]) return false; return true; }
+function tribeMake(W, id) {
+  const T = W.S.tribe; if (!canMake(T, id)) return false; for (const m in TOOL[id].c) T.res[m] -= TOOL[id].c[m]; T.tools[id] = 1;
+  for (const u of W.cr) if (u.kind === "vill") tribeArm(W, u); W.ev.push({ t: "toolMade", id }); return true;
+}
+function giftCost(r) { return Math.min(80, 20 + 8 * r.giftN); }
+/* Friendship comes quickly at first, then more slowly; they only join a tribe at least as big as their own. */
+function befriend(W, j, v) {
+  const T = W.S.tribe, r = T.rv[j]; r.mood = Math.min(100, r.mood + (v > 0 && r.mood >= 60 ? v * .5 : v));
+  if (r.mood >= 100) { if (popAll(T) >= r.pop) tribeResolve(W, j); else if (W.t - (r.bigT || -99) > 60) { r.bigT = W.t; W.ev.push({ t: "tooSmall", j }); } }
+}
+const atCamp = (W, r, d) => Math.hypot(W.player.x - r.x, W.player.y - r.y) < LT * (d || 3.5);
+function tribeGift(W, j, what) {
+  const T = W.S.tribe, r = T.rv[j], c = giftCost(r); if (r.state) return "no";
+  if (r.kind === "hostile" || r.mood < -30) { W.ev.push({ t: "refused", j }); return "refused"; }
+  if (T.t < (r.cd.gift || 0)) return "wait"; if ((T.res[what] || 0) < c) return "poor";
+  T.res[what] -= c; r.res[what] = (r.res[what] || 0) + c; r.giftN++; r.cd.gift = T.t + 45; T.peace += 1;
+  W.ev.push({ t: "gift", j }); befriend(W, j, 6); return "ok";
+}
+function tradeOffers(r) { return DEP_MATS.concat(["hide"]).filter(m => r.stock[m] >= 6); }
+function tribeTrade(W, j, m) {
+  const T = W.S.tribe, r = T.rv[j]; if (r.state) return "no";
+  if (r.kind === "hostile" || r.mood < -30) { W.ev.push({ t: "refused", j }); return "refused"; }
+  if (T.t < (r.cd.trade || 0)) return "wait"; if (!(r.stock[m] >= 6)) return "none";
+  const pay = T.res.food >= 12 ? "food" : T.res.wood >= 12 ? "wood" : null; if (!pay) return "poor";
+  T.res[pay] -= 12; r.res[pay] = (r.res[pay] || 0) + 12; r.stock[m] -= 6; T.res[m] = (T.res[m] || 0) + 6; r.cd.trade = T.t + 40; T.peace += .5;
+  if (!T.found[m]) { T.found[m] = 1; W.ev.push({ t: "matFound", m, trade: 1 }); }
+  W.ev.push({ t: "traded", j, m, pay }); befriend(W, j, 2); return "ok";
+}
+function canImpress(W, j) { const T = W.S.tribe, r = T.rv[j]; return !r.state && r.kind === "open" && r.mood >= 0 && T.t >= (r.cd.imp || 0) && atCamp(W, r, 4.5); }
+function tribeImpressEnd(W, j, frac) {
+  const T = W.S.tribe, r = T.rv[j], win = frac >= .6; r.cd.imp = T.t + 150;
+  if (win) { T.peace += 2; befriend(W, j, 16); } else r.mood -= 4;
+  return win;
+}
+const defenders = (W, j, r, R) => W.cr.filter(u => u.kind === "rival" && u.tr === j && !u.champ && !u.raid && Math.hypot(u.x - r.x, u.y - r.y) < LT * (R || 5));
+function tribeDuel(W, j) {
+  const T = W.S.tribe, r = T.rv[j]; if (r.state || r.kind !== "hostile" || W.duel) return "no"; if (!atCamp(W, r, 4.5)) return "far"; if (T.t < (r.cd.duel || 0)) return "wait";
+  r.cd.duel = T.t + 150; const C = addRival(W, j, true); W.duel = { j, T: C }; for (const u of W.cr) if (u.kind === "rival" && u.tr === j && u.tg === W.player) u.tg = null;
+  landHunt(W, C); W.ev.push({ t: "duel", j }); return "ok";
+}
+function duelLost(W, why) {
+  const T = W.S.tribe, D = W.duel; if (!D) return; const r = T.rv[D.j]; W.duel = null; r.duels[1]++; r.spirit = Math.min(100, r.spirit + 12);
+  W.cr = W.cr.filter(u => u !== D.T); D.T.dead = true; landLeave(W); W.player.inv = 2.5; W.ev.push({ t: "duelLost", j: D.j, why });
+}
+function tribeRaidStores(W, j) {
+  const T = W.S.tribe, r = T.rv[j]; if (r.state || r.kind !== "hostile") return "no"; if (!atCamp(W, r)) return "far"; if (T.t < (r.cd.raid || 0)) return "wait";
+  if (defenders(W, j, r).length) return "guarded";
+  const f = Math.min(30, Math.floor(r.res.food)), w = Math.min(20, Math.floor(r.res.wood)); r.res.food -= f; r.res.wood -= w; T.res.food += f; T.res.wood += w;
+  r.cd.raid = T.t + 90; r.raided++; r.spirit = Math.max(0, r.spirit - 12); T.force += 2; W.ev.push({ t: "raidedThem", j, f, w });
+  if (r.spirit <= 0) tribeResolve(W, j); return "ok";
+}
+function canTake(W, j) { const r = W.S.tribe.rv[j]; return !r.state && r.kind === "hostile" && r.spirit <= TAKE_AT && atCamp(W, r) && !defenders(W, j, r).length; }
+function tribeTake(W, j) { if (!canTake(W, j)) return "no"; W.cap = { j, t: 0 }; W.ev.push({ t: "capStart", j }); return "ok"; }
+function tribeBurn(W, t) {
+  const T = W.S.tribe, r = T.rv[t.j]; if (!r || r.state || r.kind !== "hostile" || !r.totems.includes(t)) return "no";
+  if (Math.hypot(W.player.x - t.x, W.player.y - t.y) > LT * 2.6) return "far"; W.burn = { j: t.j, t }; W.ev.push({ t: "burnStart" }); return "ok";
+}
+function tribeStep(W, dt) {
+  const S = W.S, T = S.tribe, P = W.player; T.t += dt;
+  for (const u of W.cr) { if (u.kind === "vill") villThink(W, u, dt); else if (u.kind === "rival") rivalThink(W, u, dt); }
+  // blows between villagers, neighbours and animals (the Chief's own fighting is landFight's)
+  for (const u of W.cr) {
+    if ((u.kind !== "vill" && u.kind !== "rival") || !u.tg || u.tg.dead || u.stun > 0 || (u.atk || 0) > W.t) continue;
+    const Tg = u.tg, d = distBody(Tg, u.x, u.y);
+    if (u.kind === "vill" && T.tools.sling && u.job === "guard" && d > u.g.R * u.k + 24 && d < LT * 5 && los(W, u.x, u.y, Tg.x, Tg.y)) { u.atk = W.t + 1.7; W.shots.push({ x: u.x, y: u.y, tg: Tg, dmg: u.atkD * .8, src: u, life: 3 }); continue; }
+    if (d > u.g.R * u.k * .55 + 14) continue;
+    u.atk = W.t + 1.1; hurt(W, Tg, u.atkD * (Tg.kind === "npc" ? 2 : 1), u); W.ev.push({ t: "bite", x: Tg.x, y: Tg.y, on: Tg === P });
+    if (Tg.kind === "npc") landAlarm(W, Tg, u);
+  }
+  // who is working where (so they spread out)
+  W.busyT = (W.busyT || 0) - dt;
+  if (W.busyT <= 0) { W.busyT = 2; for (const k in W.srcC || {}) for (const s of W.srcC[k]) s.busy = 0; for (const u of W.cr) if (u.kind === "vill" && u.src) u.src.busy = (u.src.busy || 0) + 1; }
+  // the stores: everyone eats; a full larder and a free bed grow the tribe
+  const all = popAll(T); T.eatT += dt;
+  if (T.eatT >= 40) { T.eatT = 0; if (T.res.food >= all) { T.res.food -= all; T.hungry = false; } else { T.res.food = 0; if (!T.hungry) { T.hungry = true; W.ev.push({ t: "hungry" }); } } }
+  T.birthT += dt;
+  if (T.birthT >= 30) { T.birthT = 0; if (!T.hungry && all < room(T) && T.res.food >= 30) { T.res.food -= 20; T.pop++; T.births++; addVill(W, null, W.home.x, W.home.y); assignJobs(W); W.ev.push({ t: "born" }); } }
+  if (all < 3) { T.lostT = (T.lostT || 0) + dt; if (T.lostT > 60) { T.lostT = 0; T.pop++; addVill(W, null, W.home.x, W.home.y); assignJobs(W); W.ev.push({ t: "wanderer" }); } } // a tribe never quite dies out: stragglers find the fire
+  T.rv.forEach((r, j) => { if (!r.state) rivalStep(W, r, j, dt); });
+  // a duel, a fire being taken, a totem burning
+  if (W.duel) { const D = W.duel, r = T.rv[D.j]; if (P.hp < P.max * .22) duelLost(W, "hurt"); else if (Math.hypot(P.x - r.x, P.y - r.y) > LT * 14) duelLost(W, "ran"); else if (P.mode !== "hunt" && !P.path) landHunt(W, D.T); }
+  if (W.cap) { const C = W.cap; if (!canTake(W, C.j)) { W.cap = null; W.ev.push({ t: "capStop", j: C.j }); } else if ((C.t += dt) >= 8) { W.cap = null; T.force += 3; tribeResolve(W, C.j); } }
+  if (W.burn) {
+    const B = W.burn, r = T.rv[B.j], t = B.t;
+    if (!r || r.state || !r.totems.includes(t)) W.burn = null;
+    else if (Math.hypot(P.x - t.x, P.y - t.y) > LT * 6) { W.burn = null; W.ev.push({ t: "burnStop" }); }
+    else if (Math.hypot(P.x - t.x, P.y - t.y) < LT * 2.8) {
+      const help = W.cr.filter(u => u.kind === "vill" && Math.hypot(u.x - t.x, u.y - t.y) < LT * 3).length; t.hp -= dt * (6 + 3 * help);
+      if (t.hp <= 0) { r.totems.splice(r.totems.indexOf(t), 1); W.burn = null; r.burnt++; r.spirit = Math.max(0, r.spirit - 15); T.force += 2; landOwners(W); W.tbRev++; W.ev.push({ t: "totemBurnt", j: B.j }); if (r.spirit <= 0) tribeResolve(W, B.j); }
+    }
+  }
+  // the Chief finds deposits; villagers and watch fires light up the land round them
+  W.depT = (W.depT || 0) - dt;
+  if (W.depT <= 0) {
+    W.depT = .5;
+    for (const D of W.deps) if (!T.deps[D.n] && Math.hypot(D.x - P.x, D.y - P.y) < LT * 4) { T.deps[D.n] = 1; W.ev.push({ t: "depFound", m: D.m, mine: W.own[D.t] === 1 }); }
+    for (const u of W.cr) if (u.kind === "vill") revealAt(W, u.x, u.y, 3);
+    if (W.t - W.alarmT2 > 40 && W.cr.some(u => u.kind === "rival" && u.raid && u.rph !== "gather" && W.own[tileI(u.x, u.y)] === 1)) { W.alarmT2 = W.t; W.ev.push({ t: "alarm" }); }
+  }
 }
 /*CORE-END*/
 
@@ -1949,21 +2535,21 @@ function renderMenu() {
     const nm = document.createElement("b"); nm.textContent = s.name; const chip = document.createElement("span"); chip.className = "chip" + (s.mode === "hard" ? " hc" : ""); chip.textContent = s.mode === "hard" ? "☠ Hardcore" : "Normal"; nm.append(chip);
     if (s.test) { const tc = document.createElement("span"); tc.className = "chip"; tc.textContent = "Test start"; nm.append(tc); }
     const sm = document.createElement("span"); sm.className = "sm";
-    const sea = s.stage === "sea", land = s.stage === "land", cs = cur(s), TT = TS(s), stg = land ? "Land" : sea ? "Sea" : "Cell", tm = fmtTime(s.time);
-    sm.textContent = land ? (s.dead ? `Died out in the land stage · ${tm}` : cs.done ? `Land stage complete: a clever species · ${tm}` : `Land stage · brain ${Math.floor(cs.grow)} of 100 · ${tm}`)
+    const sea = s.stage === "sea", land = s.stage === "land", tribe = s.stage === "tribe", cs = cur(s), TT = TS(s), stg = tribe ? "Tribe" : land ? "Land" : sea ? "Sea" : "Cell", tm = fmtTime(s.time);
+    sm.textContent = tribe ? (s.dead ? `Died out in the tribe stage · ${tm}` : s.tribe.done ? `Tribe stage complete: ${s.tribe.rv.length + 1} settlements · ${tm}` : `Tribe stage · 👥 ${popAll(s.tribe)} · ${s.tribe.rv ? s.tribe.rv.filter(r => r.state).length : 0} of 2 neighbours settled · ${tm}`) : land ? (s.dead ? `Died out in the land stage · ${tm}` : cs.done ? `Land stage complete: a clever species · ${tm}` : `Land stage · brain ${Math.floor(cs.grow)} of 100 · ${tm}`)
       : s.dead ? `Died out in the ${stg.toLowerCase()} stage at ${TT[cs.tier].n} size · ${tm}` : sea && cs.done ? `Sea stage complete: ready for land · ${tm}`
       : !sea && cs.done ? `Cell stage complete · ${NATURES[s.nature] ? NATURES[s.nature].n : ""} · ready for the sea · ${tm}` : `${stg} stage · ${TT[cs.tier].n} (size ${cs.tier + 1} of 5) · ${tm}`;
     const row = document.createElement("div"); row.className = "row";
     if (!s.dead) {
-      const toSea = !sea && !land && cs.done, toLand = sea && cs.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : toLand ? "Onto the land ▶" : "Play";
-      p.onclick = () => { if (toSea) { goToSea(s); store.set(slotKey(i), s); } if (toLand) { goToLand(s); store.set(slotKey(i), s); } startSlot(i); }; row.append(p);
+      const toSea = !sea && !land && !tribe && cs.done, toLand = sea && cs.done, toTribe = land && cs.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : toLand ? "Onto the land ▶" : toTribe ? "Start a tribe ▶" : "Play";
+      p.onclick = () => { if (toSea) { goToSea(s); store.set(slotKey(i), s); } if (toLand) { goToLand(s); store.set(slotKey(i), s); } if (toTribe) { goToTribe(s); store.set(slotKey(i), s); } startSlot(i); }; row.append(p);
     }
     const del = document.createElement("button"); del.className = "btn small bad"; del.textContent = s.dead ? "Clear" : "Delete";
     del.onclick = () => dialog(`<h2>${s.dead ? "Clear" : "Delete"} ${esc(s.name)}?</h2><p>${s.dead ? "This clears the fossil from this slot." : "This species and all its progress will be gone for good."}</p><div class="row"><button class="btn" data-a="no">Keep</button><button class="btn bad" data-a="yes">${s.dead ? "Clear" : "Delete"}</button></div>`, { yes: () => { store.del(slotKey(i)); closeDlg(); renderMenu(); }, no: closeDlg });
     row.append(del); info.append(nm, sm, row); el.append(info); box.append(el);
     preview(cv, cs.design, 84, 72); if (s.dead) cv.style.filter = "grayscale(1) brightness(.6)";
   }
-  $("road").innerHTML = STAGES.map((n, i) => `<li class="${i < 3 ? "on" : ""}">${i + 1}. ${n}${i > 2 ? " · soon" : ""}</li>`).join("");
+  $("road").innerHTML = STAGES.map((n, i) => `<li class="${i < 4 ? "on" : ""}">${i + 1}. ${n}${i > 3 ? " · soon" : ""}</li>`).join("");
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
 const SYL = ["zo", "bli", "qua", "mi", "ru", "xe", "po", "lo", "vin", "ka", "fli", "nu", "tor", "gla", "pip", "oz", "wib", "sna", "dro", "ul", "ki", "mop", "zee", "bo"];
@@ -1989,7 +2575,7 @@ function newLifeDlg(i) {
     <button class="opt" data-a="hard"><b>☠ Hardcore</b><span>One life. If you're eaten, your species is gone for good.</span></button></div>
     <div class="lbl">Start at</div>
     <div class="pick" id="startPick">${STARTS.map((x, j) => `<button class="opt${j ? "" : " on"}" data-a="st_${x[0]}"><b>${x[1]}</b><span>${j ? x[2] + ". For testing: every part and 300 DNA." : "The normal way to play."}</span></button>`).join("")}
-    ${STAGES.slice(3).map(n => `<button class="opt" disabled style="opacity:.45"><b>${n} stage</b><span>Not built yet.</span></button>`).join("")}</div>
+    ${STAGES.slice(4).map(n => `<button class="opt" disabled style="opacity:.45"><b>${n} stage</b><span>Not built yet.</span></button>`).join("")}</div>
     <div class="row"><button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="go">Begin</button></div>`, {
     dice: () => { $("nmIn").value = randName(); },
     plant: b => { diet = "plant"; mark("dietPick", b); }, meat: b => { diet = "meat"; mark("dietPick", b); },
@@ -2009,7 +2595,7 @@ let parts = [], fx = [], abilKeys = "";
 function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); CW = innerWidth; CH = innerHeight; cv.width = CW * DPR; cv.height = CH * DPR; const e = $("ecv"); if (!$("edit").hidden) sizeEditor(); }
 addEventListener("resize", () => { resize(); if (typeof resize3 === "function") resize3(); });
 function show(v) { view = v; $("menu").hidden = v !== "menu"; $("play").hidden = v !== "play"; $("edit").hidden = v !== "edit"; if (v === "edit") sizeEditor(); }
-function startSlot(i) {
+function startSlot(i) { PLACE = null;
   const s = loadSlot(i); if (!s || s.dead) return;
   S = s; slot = i; W = newWorld(S); paused = false; parts = []; fx = []; saveT = 15; abilKeys = ""; ENC = null; IMP = null; CALL = false; cam.z = 1; cam.free = false; LUI_KEY = ""; $("imp").hidden = true;
   cam.x = W.player.x; cam.y = W.player.y; cam.s = Math.min(CW, CH) * .62 / viewR(W);
@@ -2018,10 +2604,11 @@ function startSlot(i) {
 function quitToMenu() { saveSlot(); W = null; S = null; slot = -1; closeDlg(); show("menu"); renderMenu(); }
 function pause() {
   if (!W || W.over) return; paused = true; saveSlot();
-  const c = cur(S), gl = W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>`
+  const c = cur(S), Tt = S.tribe, gl = W.tribe ? `<div class="lbl">Your tribe</div><p>👥 ${popAll(Tt)} of ${room(Tt)} · 🍖 ${fl0(Tt.res.food)} · 🪵 ${fl0(Tt.res.wood)} · 🪨 ${fl0(Tt.res.stone)}<br>Tools: ${TOOLS.filter(t => Tt.tools[t.id]).map(t => t.ic + " " + t.n).join(", ") || "none yet"}</p>
+      <div class="lbl">Neighbours</div><p>${Tt.rv.map(r => `<span style="color:${rvCol(r)}">●</span> ${esc(r.name)}: ${r.state === "joined" ? "joined you 💚" : r.state === "broken" ? "gave in to you" : r.kind === "open" ? `friendship ${fl0(r.mood)}/100` : `spirit ${fl0(r.spirit)}/100`}`).join("<br>")}</p><p>💡 ${esc(tribeAdvice())}</p>` : W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>`
     : W.land ? `<div class="lbl">Goals</div><p>${LAND_GOALS.map(g => (c.goals && c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><div class="lbl">Species on the island</div><p>${W.lsp.filter(L => (c.met || {})[L.i] || lspStatus(c, L.i)).map(L => { const st = lspStatus(c, L.i); return (st === "friend" ? "💚 " : st === "gone" ? "✖ " : "○ ") + esc(L.name) + ` (${LIFE[L.life]})` + (st ? "" : ` · won over ${c.friends[L.i] || 0}/${FRIEND_NEED}, hunted ${c.hunted[L.i] || 0}/${HUNT_NEED}`); }).join("<br>")}${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length ? `<br>? ${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length} species not met yet` : ""}<br>${W.epics.map(E => (c.epics[E.j] === "friend" ? "💚 " : c.epics[E.j] === "gone" ? "✖ " : "○ ") + esc(E.name) + " (giant)").join("<br>")}</p>
       <div class="lbl">Places found</div><p>${W.marks.filter(m => c.found[m.id]).map(m => "✦ " + m.name).join("<br>") || "None yet."}${W.marks.length - Object.keys(c.found).length ? `<br>${W.marks.length - Object.keys(c.found).length} more to discover` : ""}</p>` : "";
-  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${TS(S)[c.tier].n} size · ${W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : W.land ? `🧠 ${Math.floor(c.grow)}/100 · ` : ""}${fmtTime(S.time)} played</p>${gl}
+  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${W.tribe ? "tribe stage" : TS(S)[c.tier].n + " size"} · ${W.tribe ? "" : W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : W.land ? `🧠 ${Math.floor(c.grow)}/100 · ` : ""}${fmtTime(S.time)} played</p>${gl}
     <div class="row"><button class="btn primary" data-a="go">Carry on</button></div>
     <div class="row"><button class="btn" data-a="snd">Sound: ${opts.sound ? "on" : "off"}</button><button class="btn" data-a="help">How to play</button></div>
     <div class="row"><button class="btn" data-a="quit">Save and leave</button></div>`, {
@@ -2042,7 +2629,12 @@ function helpDlg() {
     <p><b>Your nest ⌂:</b> swim into it to evolve. When your green bar is full, evolving there grows you a size and hatches young that swim with you and help you fight. If you're eaten, you come back at the nest.</p>
     <p><b>Diet:</b> the bar under your health slides towards 🌿 or 🦷 as you eat. Food you're used to feeds you better, so you settle into being a plant eater or a meat eater, or stay in the middle.</p>
     <p><b>Leaving the sea:</b> at the last size, grow lungs and two leg fins, then swim up to the shore.</p>` : ""}
-    ${W && W.land ? `<p><b>On land:</b> tap the ground to walk, drag to look around, pinch (or ＋ －) to zoom. Tap a bush or a fruit tree to eat.</p>
+    ${W && W.tribe ? `<p><b>Your tribe:</b> you are the Chief. Tap the ground to walk, drag to look around, pinch (or ＋ －) to zoom. Your villagers work on their own.</p>
+    <p><b>👥 Jobs:</b> choose how many chop wood, dig stone, fetch materials, hunt, build or guard. Everyone else gathers food. Villagers only gather inside your land (the ground edged in green).</p>
+    <p><b>🔨 Build:</b> huts give room for three more (the tribe grows while there's food and room), totems claim more land, watch fires light up the land and give guards a post.</p>
+    <p><b>🪓 Tools:</b> find flint, clay and reeds by exploring (flint by rocky hills, clay and reeds by water), claim them with a totem, and fetch them home. Hunters bring hides. Tools make your tribe stronger.</p>
+    <p><b>🏕 Tribes:</b> two neighbours share the island. The open one joins you when its friendship reaches 100: send gifts, trade, and impress its chief at its fire. The hostile one gives in when its spirit reaches 0: hem it in with your totems, outnumber it, beat its raids, burn its totems, raid its stores or beat its champion in a duel. At spirit 30 or below you can take its fire.</p>
+    <p><b>📣:</b> your guards follow you and fight beside you. Tap it again to send them back to their posts.</p>` : W && W.land ? `<p><b>On land:</b> tap the ground to walk, drag to look around, pinch (or ＋ －) to zoom. Tap a bush or a fruit tree to eat.</p>
     <p><b>Meeting creatures:</b> tap one to walk up to it, then choose 🍖 Hunt, 🎵 Impress or ↩ Leave.</p>
     <p><b>Impress:</b> it shows you three rounds of moves (🎵 call, 💃 dance, 🦚 show off, 💪 pose). Copy them in order. Moves you have the parts for score well: a voice to call, legs to dance, a crest or wings to show off, horns or armour to pose. Win over three different members of a species to make friends; one may join your pack.</p>
     <p><b>Hunt:</b> your pack joins in. Tap the move buttons (💥 charge, 🐾 pounce, 💦 spit, 📣 roar) when they're ready. Hunt four of a species and it's gone from the island. Tap 🏃 Run to get away.</p>
@@ -2052,7 +2644,7 @@ function helpDlg() {
 }
 $("pauseBtn").onclick = pause;
 $("lHome").onclick = () => { if (W && W.land) { ENC = null; landGoTo(W, W.home); cam.free = false; renderLandUI(true); } };
-$("lCall").onclick = () => { CALL = !CALL; if (CALL) toast("Now tap a creature to send your pack after it (or tap yourself to call them back)."); renderLandUI(true); };
+$("lCall").onclick = () => { if (W && W.tribe) return tribeCall(); CALL = !CALL; if (CALL) toast("Now tap a creature to send your pack after it (or tap yourself to call them back)."); renderLandUI(true); };
 $("lZin").onclick = () => { cam.z = clamp((cam.z || 1) * 1.25, .5, 2.5); }; $("lZout").onclick = () => { cam.z = clamp((cam.z || 1) * .8, .5, 2.5); };
 
 /* thumb stick: anywhere on the water */
@@ -2091,6 +2683,16 @@ function hint(n, text, secs) { if (S.hints & (1 << n) || hintOn >= 0) return; $(
 function hints() {
   if (hintOn >= 0 && performance.now() > hintEnd && !(hintOn === 0 && moved < 30)) { hintOn = -1; $("hint").hidden = true; }
   if (!W) return; const P = W.player;
+  if (W.tribe) {
+    const T = S.tribe;
+    if (W.t > 1) hint(16, "You're the Chief now! Your villagers work by themselves: tap 👥 Jobs to choose who does what.", 9);
+    if (W.t > 30) hint(17, "Tap 🔨 Build for huts (room to grow), totems (more land) and watch fires.", 9);
+    if (W.t > 70) hint(18, "Explore to find flint, clay and reeds. Claim them with a totem, then fetch them home to make tools.", 10);
+    if (W.t > 120) hint(19, "Tap 🏕 Tribes to meet your two neighbours: one open to friendship, one hostile.", 9);
+    if (T.rv.some(r => r.raid)) hint(20, "Raiders! Give villagers the 🛡️ Guard job. 📣 makes your guards follow you.", 9);
+    if (T.builds.some(b => !b.done) && !jobCount(W, "build") && W.t > 20) hint(21, "Building sites need builders: give someone the 🔨 Build job.", 8);
+    return;
+  }
   if (W.land) {
     if (W.t > 1) hint(12, "Tap the ground to walk there. Tap a creature to meet it, then choose Hunt, Impress or Leave.", 9);
     if (W.t > 25) hint(13, "Win over three of a species, or hunt four of them, to deal with it. Each species fills your brain bar 🧠.", 9);
@@ -2117,6 +2719,7 @@ function toast(t) { const el = $("toast"); el.textContent = t; el.hidden = false
 function handleEvents() {
   const P = W.player;
   for (const e of W.ev) {
+    if (W.tribe && tribeEvent(e)) continue;
     if (e.t === "eat") { snd(e.ty === "plant" ? "eat" : "meat"); for (let i = 0; i < 4; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 40 * P.k, vy: (Math.random() - .5) * 40 * P.k, life: .5, col: `hsl(${e.hue} 90% 70%)`, r: 1.5 * P.k }); }
     else if (e.t === "hurt") { snd("hurt"); cam.shake = Math.min(12, cam.shake + 4 + e.f * 30); $("vig").style.opacity = Math.min(1, .3 + e.f * 3); }
     else if (e.t === "kill") { snd("kill"); for (let i = 0; i < 14; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90 * e.k, vy: (Math.random() - .5) * 90 * e.k, life: .8, col: `hsl(${e.h} 70% 60%)`, r: 2.4 * e.k }); }
@@ -2161,7 +2764,7 @@ function handleEvents() {
 }
 function died() {
   saveSlot();
-  const c = cur(S), how = W.land && W.how === "fire" ? ["caught by the fire", "You were caught by the fire!"] : W.land && W.how === "trample" ? ["trampled", "You were trampled!"] : ["eaten", "You were eaten!"];
+  const c = cur(S), how = W.tribe ? ["killed", "Your Chief fell!"] : W.land && W.how === "fire" ? ["caught by the fire", "You were caught by the fire!"] : W.land && W.how === "trample" ? ["trampled", "You were trampled!"] : ["eaten", "You were eaten!"];
   if (S.mode === "hard") {
     S.dead = { at: Date.now(), tier: c.tier }; saveSlot();
     setTimeout(() => dialog(`<h2>Your species has died out</h2><p>${esc(S.name)} was ${how[0]}. In hardcore there's only one life.</p>
@@ -2169,7 +2772,7 @@ function died() {
       <div class="row"><button class="btn primary" data-a="ok">Back to the menu</button></div>`, { ok: quitToMenu }, quitToMenu), 700);
   } else {
     setTimeout(() => { const lost = Math.floor(c.dna * .1);
-      dialog(`<h2>${how[1]}</h2><p>Your species carries on. You lost ${lost} DNA 🧬.</p><div class="row"><button class="btn primary" data-a="ok">${W.land ? "Carry on" : "Swim again"}</button></div>`,
+      dialog(`<h2>${how[1]}</h2><p>${W.tribe ? "Your tribe carries on: the Chief is back at the camp fire, and a little food was lost." : `Your species carries on. You lost ${lost} DNA 🧬.`}</p><div class="row"><button class="btn primary" data-a="ok">${W.land ? "Carry on" : "Swim again"}</button></div>`,
         { ok: () => { respawn(W); closeDlg(); saveSlot(); } }, () => { respawn(W); closeDlg(); }); }, 700);
   }
 }
@@ -2344,14 +2947,15 @@ function drawMap() {
 function hud() {
   const P = W.player, c = cur(S), T = TS(S)[c.tier];
   $("hpFill").style.width = Math.max(0, P.hp / P.max * 100) + "%";
-  $("grFill").style.width = (c.done ? 100 : c.grow / T.g * 100) + "%";
-  $("grBar").classList.toggle("ready", !!c.ready || (W.land && c.grow >= 90));
-  const lbl = W.land ? `${S.name} · 🧠 ${Math.floor(c.grow)}/100 · 💚 ${W.lsp.filter(L => lspStatus(c, L.i) === "friend").length} · ✖ ${W.lsp.filter(L => lspStatus(c, L.i) === "gone").length} · ${W.night ? "☾ night" : "☀ day"}`
+  $("grFill").style.width = (W.tribe ? tribeProgress(S.tribe) * 100 : c.done ? 100 : c.grow / T.g * 100) + "%";
+  $("grBar").classList.toggle("ready", !W.tribe && (!!c.ready || (W.land && c.grow >= 90)));
+  const lbl = W.tribe ? tribeLabel() : W.land ? `${S.name} · 🧠 ${Math.floor(c.grow)}/100 · 💚 ${W.lsp.filter(L => lspStatus(c, L.i) === "friend").length} · ✖ ${W.lsp.filter(L => lspStatus(c, L.i) === "gone").length} · ${W.night ? "☾ night" : "☀ day"}`
     : W.sea ? (c.done ? `${S.name} · on land!` : c.ashore ? `${T.n} · swim up to the shore ⬆` : c.ready ? `${T.n} · fully grown: back to your nest ⌂` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5) · ${SEA.bands[bandAt(P.y)].n}`)
     : c.done ? `${S.name} · cell stage complete` : c.ready ? `${T.n} · fully grown: find your mate ❤` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5)`;
-  $("dietBar").hidden = !(W.sea || W.land); if (W.sea || W.land) $("dietMark").style.left = ((c.lean + 1) / 2 * 100) + "%";
+  $("dietBar").hidden = !(W.sea || W.land) || !!W.tribe; if (W.sea || W.land) $("dietMark").style.left = ((c.lean + 1) / 2 * 100) + "%";
   if ($("grLabel").textContent !== lbl) $("grLabel").textContent = lbl;
-  const dn = String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
+  const ic = W.tribe ? "👥" : "🧬"; if ($("dnaIc").textContent !== ic) $("dnaIc").textContent = ic;
+  const dn = W.tribe ? `${popAll(S.tribe)}/${room(S.tribe)}` : String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
   $("abil").querySelectorAll(".ab").forEach(b => { const k = b.dataset.ab, cd = { dash: 3.5, poison: 7, zap: 8, ink: 8 }[k]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
   const v = $("vig"); if (+v.style.opacity > 0) v.style.opacity = Math.max(0, +v.style.opacity - .03);
   if (toastT && performance.now() > toastT) { $("toast").hidden = true; toastT = 0; }
@@ -2545,8 +3149,8 @@ function landDone() {
   const N = { friendly: ["Friendly", "Your species made friends wherever it went. Its tribe will trade and charm its way forward."], fierce: ["Fierce", "Your species ruled the island by force. Its tribe will be bold raiders."], mixed: ["Shrewd", "Your species made friends when it suited and fought when it had to."] }[S.landNature] || ["Shrewd", ""];
   dialog(`<h2>A clever species!</h2><p>${esc(S.name)} has grown a brain big enough to make its first tools.</p>
     <div class="stats"><div>Nature<b>${N[0]}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>Friends<b>${f} species</b></div><div>Driven out<b>${h} species</b></div></div>
-    <p>${N[1]}</p><p>The tribe stage is coming in a later update. Your species is saved and will carry on from here. Until then, you can keep exploring the island.</p>
-    <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="go">Keep exploring</button></div>`, { menu: quitToMenu, go: resume }, resume);
+    <p>${N[1]}</p><p>Now your species gathers round a fire: build a camp, claim land, make tools, and meet the island's other tribes.</p>
+    <div class="row"><button class="btn" data-a="go">Keep exploring</button><button class="btn primary" data-a="tribe">Start a tribe ▶</button></div>`, { go: resume, tribe: () => { goToTribe(S); saveSlot(); const i = slot; closeDlg(); startSlot(i); } }, resume);
 }
 
 /* ---------- the land: a tilted, 3D-style view of the island ---------- */
@@ -2963,8 +3567,8 @@ function build3D() {
     const floor = new T.Mesh(new T.CircleGeometry(r, 16), mat(0xb8955e)); floor.rotation.x = -Math.PI / 2; floor.position.y = .05; g.add(floor);
     for (let i = 0; i < eggs; i++) { const e = new T.Mesh(new T.SphereGeometry(.22, 10, 8), new T.MeshLambertMaterial({ color: 0xfff5dc })); e.scale.y = 1.3; e.position.set(Math.cos(i * 2.1) * r * .4, .3, Math.sin(i * 2.1) * r * .4); e.castShadow = true; g.add(e); }
     g.traverse(o => { o.receiveShadow = true; if (o !== g) o.castShadow = true; }); g.position.set(x / LT, h, y / LT); g.visible = false; world.add(g); later(tileOf(x, y), () => { g.visible = true; }); return g; };
-  nest(W.home.x, W.home.y, 1.15, 4, 0x8c5f32);
-  for (const L of W.lsp) if (L.life === "home") G3.nests.push({ L, g: nest(L.x, L.y, 1.2, 2, 0x7a5530) });
+  if (!W.tribe) nest(W.home.x, W.home.y, 1.15, 4, 0x8c5f32);
+  for (const L of W.lsp) if (L.life === "home" && !L.tribe) G3.nests.push({ L, g: nest(L.x, L.y, 1.2, 2, 0x7a5530) });
   // the landmarks
   for (const mk of W.marks) { const g = mark3(mk, mat); if (!g) continue; g.position.set(mk.x / LT, h3(mk.x, mk.y), mk.y / LT); g.visible = false; g.traverse(o => { if (o.isMesh) { o.castShadow = !o.userData.noShadow; o.receiveShadow = true; } }); world.add(g); later(tileOf(mk.x, mk.y), () => { g.visible = true; }); }
   // the path you're walking, and where it ends
@@ -3221,7 +3825,7 @@ function anim3(I, t, dt) {
   for (const j of I.jaws) j.rotation.z = -(fighting ? .22 + .22 * Math.sin(t * 12 + q.id) : sleep ? 0 : .04 + .04 * Math.sin(t * 1.7 + q.id));
   for (const m of I.sacs) m.scale.setScalar(1 + .12 * Math.sin(t * 3 + q.id));
   const night = nightLevel(); for (const m of I.glows) { const v = m.userData.night ? night : .7 + .3 * Math.sin(t * 3 + q.id); m.visible = v > .05; m.material.opacity = v; }
-  const hurt = W.t - q.hurtT < .12, hunting0 = q.kind === "npc" && q.ai.tg && q.ai.tg.team; I.mat.emissive.setRGB(hurt ? .55 : hunting0 ? .14 + .06 * Math.sin(t * 8) : 0, hurt ? .2 : 0, hurt ? .2 : 0);
+  const hurt = W.t - q.hurtT < .12, hunting0 = (q.kind === "npc" && q.ai.tg && q.ai.tg.team) || (q.kind === "rival" && q.tg && q.tg.team === 1); I.mat.emissive.setRGB(hurt ? .55 : hunting0 ? .14 + .06 * Math.sin(t * 8) : 0, hurt ? .2 : 0, hurt ? .2 : 0);
   grp.visible = !(q.kind === "player" && q.inv > 0 && Math.floor(t * 10) % 2);
   const hunting = q.kind === "npc" && q.ai.tg && q.ai.tg.team, sel = ENC && ENC.T === q;
   I.ring.visible = !!(sel || q.kind === "ally"); I.ring.material.color.setHex(sel ? 0xffe08a : q.kind === "ally" ? 0x7cf2c8 : 0xff4058); I.ring.material.opacity = sel ? .7 + .25 * Math.sin(t * 6) : q.kind === "ally" ? .5 : .35;
@@ -3258,6 +3862,7 @@ function draw3D(dt) {
   G3.glow.intensity = n * 7; G3.glow.distance = sr / LT * 1.6; G3.glow.position.set(P.x / LT, h3(P.x, P.y) + 4, P.y / LT);
   G3.sea.position.y = -.05 + Math.sin(t * .8) * .03;
   for (const f of G3.anim) f(t);
+  if (W.tribe) tribe3(t, dt);
   // fruit on the plants near you
   G3.foodT = (G3.foodT || 0) - dt; if (G3.foodT <= 0) { G3.foodT = .4; const Z0 = new T.Matrix4().makeScale(0, 0, 0);
     for (const F of G3.food) { if (Math.abs(F.o.x - P.x) > LT * 40 || Math.abs(F.o.y - P.y) > LT * 40) continue; const want = W.seen[F.i] ? Math.min(6, Math.round(F.o.food / (F.o.max || 3) * 6)) : 0; if (want === F.shown) continue;
@@ -3265,7 +3870,7 @@ function draw3D(dt) {
     for (const N2 of G3.nests) N2.g.children.forEach((o, i) => { if (i > 1) o.visible = lspStatus(c, N2.L.i) !== "gone" && !(c.nests || {})[N2.L.i]; }); }
   // the creatures you can see
   const live = new Set();
-  for (const q of [...W.cr, P]) { if (!q.g || q.dead) continue; if (!(q === P || q.kind === "ally" || Math.hypot(q.x - P.x, q.y - P.y) < sr * 1.1)) continue;
+  for (const q of [...W.cr, P]) { if (!q.g || q.dead) continue; if (!(q === P || q.kind === "ally" || (q.kind !== "vill" && Math.hypot(q.x - P.x, q.y - P.y) < sr * 1.1) || (W.tribe && tribeVis(q)))) continue;
     let I = G3.cr.get(q); if (I && q === P && (G3.pk = (G3.pk || 0) - dt) <= 0) { G3.pk = .5; if (tpl3(q).key !== I.key) { dropC3(I); I = null; } }
     if (!I) { I = inst3(q); G3.cr.set(q, I); } live.add(q); anim3(I, t, dt); }
   for (const [q, I] of G3.cr) if (!live.has(q)) { dropC3(I); G3.cr.delete(q); }
@@ -3339,9 +3944,10 @@ function overlay3D(dt, t, night, sr) {
       else { const [ax, ay] = P3(W.player.x, W.player.y, 0), a = Math.atan2(Y - ay, X - ax) + (ok ? 0 : Math.PI), ex = clamp(CW / 2 + Math.cos(a) * CW * .4, 30, CW - 30), tx = clamp(ex, 85, CW - 85), ey = clamp(CH / 2 + Math.sin(a) * CH * .36, 130, CH - 150);
         ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.fillStyle = "#7CF2A0"; ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-10, -12); ctx.lineTo(-4, 0); ctx.lineTo(-10, 12); ctx.closePath(); ctx.fill(); ctx.restore();
         ctx.fillStyle = "#E8FFF0"; ctx.font = "800 13px Figtree, sans-serif"; ctx.textAlign = "center"; ctx.fillText(q.phase === "warn" ? "Get ready: safe ground" : "Run! Safe ground", tx, ey + 30); } } }
+  if (W.tribe) tribeOverlay(t);
   // the corner map: only what you've explored
   const M = landMini(), mw = 90, mx0 = CW - mw - 12, my0 = $("pauseBtn").getBoundingClientRect().bottom + 14;
-  ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(M.mini, mx0, my0, mw, mw); ctx.globalAlpha = .96; ctx.drawImage(M.fog, mx0, my0, mw, mw); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = true;
+  ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(M.mini, mx0, my0, mw, mw); if (W.tribe) ctx.drawImage(ownMini(), mx0, my0, mw, mw); ctx.globalAlpha = .96; ctx.drawImage(M.fog, mx0, my0, mw, mw); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = true;
   ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.strokeRect(mx0 + .5, my0 + .5, mw - 1, mw - 1);
   const mm = (x, y) => [mx0 + x / (LN * LT) * mw, my0 + y / (LN * LT) * mw];
   for (const L of W.lsp) if (L.life === "home" && seenAt(L.x, L.y)) { const st = lspStatus(c, L.i), [a, b] = mm(L.x, L.y); ctx.fillStyle = st === "friend" ? "#7CF2C8" : st === "gone" ? "#555" : L.diet === "meat" ? "#FF6B6B" : "#FFE08A"; ctx.beginPath(); ctx.arc(a, b, 2.4, 0, TAU); ctx.fill(); }
@@ -3349,7 +3955,8 @@ function overlay3D(dt, t, night, sr) {
   { const q = c.quake; if (q) { const Q = quakeSites(W), [a, b] = mm(Q.peak[0], Q.peak[1]), r = (q.phase === "erupt" ? W.fireR || 0 : q.phase === "after" ? Q.rmax : 0) / (LN * LT) * mw;
       if (r > 0) { ctx.fillStyle = q.phase === "erupt" ? "rgba(255,90,30,.45)" : "rgba(40,30,25,.45)"; ctx.beginPath(); ctx.arc(a, b, r, 0, TAU); ctx.fill(); }
       if (q.phase !== "after") { const [g, h] = mm(Q.safe[0], Q.safe[1]); ctx.fillStyle = "#7CF2A0"; ctx.beginPath(); ctx.arc(g, h, 4 + Math.sin(t * 6), 0, TAU); ctx.fill(); ctx.font = "10px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🌋", a, b); } } }
-  { const [a, b] = mm(W.home.x, W.home.y); ctx.fillStyle = "#FFB7D5"; ctx.beginPath(); ctx.arc(a, b, 3, 0, TAU); ctx.fill(); }
+  if (W.tribe) tribeMini(mx0, my0, mw, t);
+  else { const [a, b] = mm(W.home.x, W.home.y); ctx.fillStyle = "#FFB7D5"; ctx.beginPath(); ctx.arc(a, b, 3, 0, TAU); ctx.fill(); }
   { const [a, b] = mm(P.x, P.y); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(a, b, 3, 0, TAU); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.stroke(); }
   if (cam.free) { const [a, b] = mm(cam.x, cam.y); ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.strokeRect(a - 6, b - 8, 12, 16); }
   ctx.restore();
@@ -3377,7 +3984,8 @@ function landUp(e) {
 function landTap(sx, sy) {
   const P = W.player, s = cam.s, on3 = g3on(), toS = on3 ? (x, y) => P3(x, y, 0) : (x, y) => [(x - cam.x) * s + CW / 2, (y - cam.y) * s * TILT + CH / 2], [wx, wy] = on3 ? ground3(sx, sy) : [(sx - CW / 2) / s + cam.x, (sy - CH / 2) / (s * TILT) + cam.y], sr = sightR(W);
   let best = null, bd = 1e9; // creatures are picked where they're drawn (standing up), not where their feet are
-  for (const q of [...W.cr, P]) { if (q.kind === "npc" && Math.hypot(q.x - P.x, q.y - P.y) > sr * 1.1) continue; const I3 = on3 && G3.cr.get(q), [X, Y] = I3 ? P3(q.x, q.y, I3.tp.bodyY * q.k) : toS(q.x, q.y), R = q.g.R * q.k * s, d = Math.hypot(sx - X, sy - (I3 ? Y : Y - R * .5)) - R; if (d < 28 && d < bd) { bd = d; best = q; } }
+  for (const q of [...W.cr, P]) { if (q.kind === "npc" && Math.hypot(q.x - P.x, q.y - P.y) > sr * 1.1) continue; if (on3 && q !== P && !G3.cr.get(q)) continue; const I3 = on3 && G3.cr.get(q), [X, Y] = I3 ? P3(q.x, q.y, I3.tp.bodyY * q.k) : toS(q.x, q.y), R = q.g.R * q.k * s, d = Math.hypot(sx - X, sy - (I3 ? Y : Y - R * .5)) - R; if (d < 28 && d < bd) { bd = d; best = q; } }
+  if (W.tribe) return tribeTap(sx, sy, wx, wy, best, toS);
   if (CALL) { CALL = false; if (best && best.kind === "npc" && !isFriend(W, best)) { W.callTg = best; toast("Your pack goes after it!"); } else { W.callTg = null; W.cr.forEach(q => { if (q.kind === "ally") q.ai.tg = null; }); toast("Your pack comes back to you."); } renderLandUI(true); return; }
   if (best === P) return;
   if (best && best.kind === "npc") { ENC = { T: best, met: false }; landGoTo(W, best); cam.free = false; renderLandUI(true); return; }
@@ -3394,6 +4002,7 @@ function threatened() { const P = W.player; return W.cr.find(q => q.kind === "np
 function renderLandUI(force) {
   const box = $("lui"); if (!W || !W.land || view !== "play") { box.hidden = true; return; }
   box.hidden = !!IMP; if (IMP) return;
+  if (W.tribe) return renderTribeUI(force);
   const P = W.player, c = cur(S);
   if (ENC && (ENC.T.dead || !W.cr.includes(ENC.T))) ENC = null;
   const fight = (P.mode === "hunt" && P.tg && !P.tg.dead) || threatened();
@@ -3426,9 +4035,9 @@ function landAct(a) {
   else if (a === "leave" || a === "run") { landLeave(W); ENC = null; if (a === "run") { const P = W.player, th = threatened() || P, ux = (P.x - th.x) || .01, uy = (P.y - th.y) || .01, n = Math.hypot(ux, uy); landGo(W, P.x + ux / n * LT * 6, P.y + uy / n * LT * 6); } }
   renderLandUI(true);
 }
-function startImpress(T) {
+function startImpress(T, rv) {
   const P = W.player; W.freeze = true;
-  IMP = { T, seqs: impressPlan(W, T), round: 0, step: 0, phase: "show", score: 0, total: 0, q: socialQ(P.st, P.d), bubble: null };
+  IMP = { T, rv, seqs: impressPlan(W, rv != null ? { lsp: S.tribe.rv[rv].i } : T), round: 0, step: 0, phase: "show", score: 0, total: 0, q: socialQ(P.st, P.d), bubble: null };
   IMP.total = IMP.seqs.reduce((a, s2) => a + s2.length, 0);
   $("imp").hidden = false; renderImp("Watch closely…"); renderLandUI(true); setTimeout(showRound, 600);
 }
@@ -3464,13 +4073,363 @@ function endRound(msg) {
   if (IMP.round < 3) setTimeout(showRound, 1100); else setTimeout(finishImpress, 900);
 }
 function finishImpress() {
-  if (!IMP) return; const T = IMP.T, frac = IMP.score / IMP.total, win = impressEnd(W, T, frac); W.freeze = false;
+  if (!IMP) return; const T = IMP.T, rv = IMP.rv, frac = IMP.score / IMP.total, win = rv != null ? tribeImpressEnd(W, rv, frac) : impressEnd(W, T, frac); W.freeze = false;
+  if (rv != null) { IMP = null; $("imp").hidden = true; toast(win ? `Their chief loved it! (${Math.round(Math.min(1, frac / .6) * 100)}%) Friendship grows. 💛` : `Their chief wasn't impressed (${Math.round(Math.min(1, frac / .6) * 100)}%). Try again later.`); snd(win ? "grow" : "hurt"); handleEvents(); renderLandUI(true); return; }
   const pct = Math.round(Math.min(1, frac / (T.epic != null ? .7 : .6)) * 100);
   IMP = null; $("imp").hidden = true; ENC = win ? null : ENC;
   toast(win ? `It liked that! (${pct}%)` : T.diet === "plant" ? `Not impressed (${pct}% of what it wanted). It wanders off.` : `Not impressed (${pct}%)… and now it's angry!`);
   snd(win ? "grow" : "hurt"); renderLandUI(true);
 }
 function cancelImpress() { if (!IMP) return; IMP = null; W.freeze = false; $("imp").hidden = true; renderLandUI(true); }
+
+/* ---------- the tribe: buttons, panels, taps and the camp in 3D ---------- */
+let PLACE = null;
+const rvCol = r => r.kind === "open" ? "#FFC857" : "#FF5A6E";
+const rvRGB = r => r.kind === "open" ? [255, 200, 87] : [255, 90, 110];
+const costLine = (c, T) => Object.keys(c).map(m => `<em style="font-style:normal;color:${(T.res[m] || 0) >= c[m] ? "inherit" : "var(--bad)"}">${MAT[m].ic} ${c[m]}</em>`).join(" ");
+const fl0 = v => Math.floor(v), andList = a => a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : a.join("");
+const TWHY = { wait: "Not yet: give it a little time.", poor: "Your stores haven't enough for that.", far: "Walk right up to their fire first.", guarded: "Their warriors are guarding the fire. Beat them first: 📣 brings your guards with you.",
+  none: "They haven't enough of that to trade.", no: "You can't do that now.", refused: "" };
+const PLACE_WHY = { max: "You've built as many of those as you can.", cost: "Your stores haven't enough for that.", ground: "You can't build there.", theirs: "That's another tribe's land.",
+  far: "Too far from your land: put totems at the edge of your land.", outside: "Build inside your own land (the green-edged ground).", crowded: "Too close to something else." };
+function closeTD() { closeDlg(); paused = false; renderLandUI(true); }
+function tribeProgress(T) { return T.rv.reduce((a, r) => a + (r.state ? 1 : r.kind === "open" ? clamp(r.mood, 0, 100) / 100 : (100 - r.spirit) / 100), 0) / T.rv.length; }
+function tribeLabel() { const T = S.tribe; return `${S.name} · 🍖 ${fl0(T.res.food)} 🪵 ${fl0(T.res.wood)} 🪨 ${fl0(T.res.stone)}${T.hungry ? " · hungry!" : ""} · ${W.night ? "☾" : "☀"}`; }
+function tThreat() { const P = W.player; return W.cr.find(q => ((q.kind === "npc" && !q.asleep && q.ai.tg === P) || (q.kind === "rival" && q.tg === P)) && Math.hypot(q.x - P.x, q.y - P.y) < LT * 6); }
+function nearestRivalUnit(j) { const r = S.tribe.rv[j]; let b = null, bd = 1e18; for (const u of W.cr) if (u.kind === "rival" && u.tr === j && !u.champ) { const d = Math.hypot(u.x - r.x, u.y - r.y); if (d < bd) { bd = d; b = u; } } return b; }
+/* What to do next, for the Tribes panel and the pause screen. */
+function tribeAdvice() {
+  const T = S.tribe, sites = T.builds.filter(b => !b.done).length, hut = T.builds.filter(b => b.k === "hut").length;
+  if (T.hungry) return "Your stores are empty: set fewer people to other jobs, so more gather food.";
+  if (sites && !jobCount(W, "build")) return "You have building sites waiting: give someone the 🔨 Build job.";
+  if (popAll(T) >= room(T) && !sites) return "Your camp is full. Build a 🛖 hut so the tribe can grow.";
+  if (T.rv.some(r => r.raid)) return "Raiders are coming! Give villagers the 🛡️ Guard job, and stand with them.";
+  const lost = DEP_MATS.find(m => !T.found[m] && W.deps.some(D => D.m === m && T.deps[D.n] && W.own[D.t] !== 1));
+  if (lost) return `You know where to find ${MAT[lost].n.toLowerCase()}: plant a 🗿 totem next to it so your villagers can fetch it.`;
+  if (W.deps.some(D => T.deps[D.n] && W.own[D.t] === 1) && !jobCount(W, "fetch") && TOOLS.some(t => !T.tools[t.id])) return "Materials lie in your land: give someone the 🧺 Fetch job.";
+  const unknown = DEP_MATS.filter(m => !T.found[m] && !W.deps.some(D => D.m === m && T.deps[D.n]));
+  if (unknown.length) return `Explore to find ${andList(unknown.map(m => MAT[m].n.toLowerCase()))}: flint lies by rocky hills, clay and reeds by lakes, rivers and swamps.`;
+  const mk = TOOLS.find(t => !T.tools[t.id] && canMake(T, t.id)); if (mk) return `You can make ${mk.n.toLowerCase()} now: tap 🪓 Tools.`;
+  const O = T.rv.find(r => !r.state && r.kind === "open"); if (O && O.mood < 100) return `Win over the ${O.name}: send gifts, trade, and visit their chief to impress them.`;
+  const H = T.rv.find(r => !r.state && r.kind === "hostile"); if (H) return H.spirit <= TAKE_AT ? `The ${H.name} are weak: walk to their fire with your guards and take it.` : `Break the ${H.name}' spirit: hem them in with totems, beat their raids, burn their totems, raid their stores or beat their champion.`;
+  return hut < 2 ? "Build huts so your tribe can grow." : "Keep growing your tribe.";
+}
+
+/* ---- the bar along the bottom ---- */
+function encKey(E) {
+  const T = S.tribe;
+  if (E.kind === "fire" && E.rv != null) { const r = T.rv[E.rv]; return ["f", E.rv, ENC.met, r.state, fl0(r.mood / 5), fl0(r.spirit / 5), T.t >= (r.cd.gift || 0), T.t >= (r.cd.imp || 0), T.t >= (r.cd.duel || 0), T.t >= (r.cd.raid || 0), defenders(W, E.rv, r).length > 0, giftCost(r), fl0(T.res.food / 5), fl0(T.res.wood / 5)].join(); }
+  if (E.kind === "rtotem") return ["t", E.j, ENC.met, fl0(E.hp / 10)].join();
+  if (E.kind === "build") return ["b", E.k, E.done, fl0(E.prog), fl0(E.hp / 10)].join();
+  if (E.kind === "fire") return ["h", popAll(T), fl0(T.res.food / 5)].join();
+  if (E.kind === "dep") return ["d", E.n, W.own[E.t]].join();
+  return [E.kind, E.id, ENC.met, E.job, E.carry ? 1 : 0, E.kind === "rival" ? fl0(T.rv[E.tr].spirit) + ":" + fl0(T.rv[E.tr].mood) : ""].join();
+}
+function renderTribeUI(force) {
+  const P = W.player, T = S.tribe, card = $("lCard"), bar = $("lBar");
+  if (ENC && ENC.T.g && (ENC.T.dead || !W.cr.includes(ENC.T))) ENC = null;
+  if (ENC && ENC.T.kind === "rtotem" && (!T.rv[ENC.T.j] || !T.rv[ENC.T.j].totems.includes(ENC.T))) ENC = null;
+  if (ENC && ENC.T.kind === "build" && !T.builds.includes(ENC.T)) ENC = null;
+  const fight = (P.mode === "hunt" && P.tg && !P.tg.dead) || tThreat(), E = ENC && ENC.T;
+  const key = [fight ? "F" + Object.keys(P.st.ab).join() + (W.duel ? "d" : "") : "", PLACE ? PLACE.k : "", E ? encKey(E) : "", W.rally, W.burn ? fl0(W.burn.t.hp / 10) : "", W.cap ? fl0(W.cap.t) : ""].join("|");
+  if (key !== LUI_KEY || force) {
+    LUI_KEY = key; let C = null, B = "";
+    const btn = (a, ic, n, off) => `<button class="lb${off ? " off" : ""}" data-t="${a}">${ic}<small>${n}</small></button>`;
+    if (PLACE) { const b = BUILD[PLACE.k]; C = `<b>Place a ${b.n.toLowerCase()} ${b.ic}</b><span>Tap the ground ${PLACE.k === "totem" ? "at the edge of your land, or just beyond it" : "inside your land"}. Builders put it up.</span>`; B = btn("cancel", "✖", "Cancel"); }
+    else if (fight) {
+      if (W.duel) C = `<b>Duel with the ${T.rv[W.duel.j].name}' champion!</b><span>Win and their spirit breaks a long way. Their warriors stay out of it.</span>`;
+      if (W.burn) C = `<b>Burning their totem 🔥 ${Math.max(0, fl0(W.burn.t.hp))}</b><span>Stay next to it. Your guards help.</span>`;
+      const ids = Object.keys(LMOVES).filter(k => P.st.ab[k]).concat(Object.keys(AB).filter(k => P.st.ab[k] && !LMOVES[k]));
+      B = ids.map(k => { const m = LMOVES[k] || AB[k]; return `<button class="lb mv" data-m="${k}">${m[0]}<small>${m[1]}</small></button>`; }).join("") + (W.duel ? btn("run", "🏳️", "Give up") : P.mode === "hunt" ? btn("run", "🏃", "Run") : btn("fight", "⚔️", "Fight back"));
+    } else if (E) {
+      const r = E.kind === "rival" ? T.rv[E.tr] : E.kind === "fire" && E.rv != null ? T.rv[E.rv] : E.kind === "rtotem" ? T.rv[E.j] : null, j = r ? T.rv.indexOf(r) : -1, L = r ? W.lsp[r.i] : null;
+      const rel = r ? (r.state === "joined" ? "💚 joined you" : r.state === "broken" ? "🏳️ gave in to you" : r.kind === "open" ? `🤝 open · mood ${fl0(r.mood)}/100` : `⚔️ hostile · spirit ${fl0(r.spirit)}/100`) : "";
+      if (E.kind === "rival") {
+        C = `<b>${esc(r.name)}${E.champ ? " · champion" : ""}</b><span>${esc(L.name)} · ${E.raid ? "⚔️ raiding" : E.role === "guard" ? "🛡️ warrior" : "🧺 worker"}</span><span>${rel}</span>`;
+        B = (r.kind === "hostile" && !r.state ? btn("fight", "⚔️", "Fight") : !r.state ? btn("visit", "🏕", "Their camp") : "") + btn("leave", "↩", "Leave");
+      } else if (E.kind === "vill") {
+        const jb = JOBS.find(x => x[0] === E.job);
+        C = `<b>${E.spn == null ? `One of your ${esc(S.name)}` : `One of your ${esc(W.lsp[E.spn].name)}`}</b><span>${jb[1]} ${jb[2]}${E.carry ? " · carrying " + Object.keys(E.carry).map(m => MAT[m].ic).join("") : ""}${E.tg ? " · fighting" : ""}</span>`;
+        B = btn("jobs", "👥", "Jobs") + btn("leave", "↩", "OK");
+      } else if (E.kind === "npc") {
+        const Ls = E.epic != null ? W.epics[E.epic] : W.lsp[E.lsp];
+        C = `<b>${esc(E.epicName || Ls.name)}</b><span>${{ plant: "🌿 plant eater", meat: "🦷 hunter", both: "🌿🦷 eats both" }[Ls.diet]} · ${isFriend(W, E) ? "💚 friendly" : TEMPER[Ls.temper] || ""}</span>${ENC.met ? "" : "<span>Walking over…</span>"}`;
+        B = (ENC.met && !isFriend(W, E) ? btn("hunt", "🍖", "Hunt") : "") + btn("leave", "↩", "Leave");
+      } else if (E.kind === "fire" && E.rv == null || (E.kind === "fire" && r && r.state)) {
+        const fd = T.hungry ? "empty!" : fl0(T.res.food);
+        C = `<b>${E.main ? "Your camp 🔥" : `Your settlement: the ${esc(r.name)}' old camp`}</b><span>👥 ${popAll(T)} of ${room(T)} · 🍖 ${fd} · 🪵 ${fl0(T.res.wood)} · 🪨 ${fl0(T.res.stone)}</span><span>💡 ${esc(tribeAdvice())}</span>`;
+        B = btn("jobs", "👥", "Jobs") + btn("build", "🔨", "Build") + btn("leave", "↩", "OK");
+      } else if (E.kind === "fire") {
+        C = `<b>The ${esc(r.name)}' camp</b><span>${esc(L.name)} · 👥 ${r.pop} · ${rel}</span>`;
+        if (!ENC.met) { C += "<span>Walking over…</span>"; B = btn("leave", "↩", "Leave"); }
+        else if (r.kind === "open") {
+          const ready = T.t >= (r.cd.gift || 0), gc = giftCost(r);
+          C += `<span>${r.mood < 0 ? "They're cross with you: gifts help." : "Gifts, trade and a good show win them over. At 100 they join you."}</span>`;
+          B = btn("gfood", "🎁", `🍖 ${gc}`, !ready || T.res.food < gc) + btn("gwood", "🎁", `🪵 ${gc}`, !ready || T.res.wood < gc) + btn("trade", "🔁", "Trade") + btn("imp", "🎵", "Impress", !canImpress(W, j)) + btn("leave", "↩", "Leave");
+        } else {
+          const guarded = defenders(W, j, r).length;
+          C += `<span>${guarded ? `🛡️ ${guarded} guarding the fire.` : "Nobody's guarding the fire!"}${r.spirit <= TAKE_AT ? " Their spirit is low enough to take it." : ""}</span>`;
+          B = btn("duel", "🏆", "Duel", T.t < (r.cd.duel || 0)) + btn("raid", "💰", "Raid", guarded || T.t < (r.cd.raid || 0)) + btn("take", "🔥", "Take it", !canTake(W, j)) + btn("leave", "↩", "Leave");
+          if (W.cap) C += `<span>Taking their fire… ${fl0(W.cap.t / 8 * 100)}%</span>`;
+        }
+      } else if (E.kind === "rtotem") {
+        C = `<b>A totem of the ${esc(r.name)}</b><span>${rel}</span><span>${r.kind === "hostile" ? (ENC.met ? "Burn it to shrink their land and break their spirit." : "Walking over…") : "It marks their land."}</span>`;
+        B = (r.kind === "hostile" && ENC.met && !W.burn ? btn("burn", "🔥", "Burn it") : "") + btn("leave", "↩", "Leave");
+      } else if (E.kind === "build") {
+        const b = BUILD[E.k];
+        C = `<b>${b.ic} ${b.n}${E.done ? "" : " (being built)"}</b><span>${E.done ? `Health ${fl0(E.hp)} of ${b.hp}` : `${fl0(E.prog / b.work * 100)}% built${jobCount(W, "build") ? "" : " · nobody has the 🔨 Build job"}`}</span><span>${esc(b.d)}</span>`;
+        B = (E.done ? "" : btn("jobs", "👥", "Jobs")) + btn("leave", "↩", "OK");
+      } else if (E.kind === "dep") {
+        const m = MAT[E.m], mine = W.own[E.t] === 1;
+        C = `<b>${m.ic} ${m.n}</b><span>${mine ? "In your land: villagers with the 🧺 Fetch job bring it home." : W.own[E.t] >= 2 ? "In another tribe's land. They trade what they gather." : "Not in your land yet: plant a 🗿 totem next to it."}</span>`;
+        B = (mine ? "" : btn("build", "🔨", "Build")) + btn("leave", "↩", "OK");
+      }
+    } else {
+      B = btn("build", "🔨", "Build") + btn("jobs", "👥", "Jobs") + btn("tools", "🪓", "Tools") + btn("tribes", "🏕", "Tribes");
+    }
+    card.hidden = !C; if (C) card.innerHTML = C; bar.innerHTML = B;
+    bar.querySelectorAll("[data-t]").forEach(b => b.onclick = () => tribeAct(b.dataset.t));
+    bar.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { if (!landMove(W, b.dataset.m)) toast("Nothing in reach for that."); });
+    $("lCall").classList.toggle("on", !!W.rally);
+  }
+  $("lBar").querySelectorAll("[data-m]").forEach(b => { const k = b.dataset.m, cd = (LMOVES[k] || [0, 0, { dash: 3.5, poison: 7, zap: 8, ink: 8 }[k]])[2]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
+}
+function tribeAct(a) {
+  const T = S.tribe, E = ENC && ENC.T, P = W.player, j = E ? (E.kind === "fire" ? E.rv : E.kind === "rtotem" ? E.j : E.kind === "rival" ? E.tr : null) : null;
+  const say = res => { if (res !== "ok" && TWHY[res]) toast(TWHY[res]); };
+  if (a === "leave") { landLeave(W); ENC = null; }
+  else if (a === "cancel") PLACE = null;
+  else if (a === "run") { if (W.duel) duelLost(W, "ran"); landLeave(W); ENC = null; const th = tThreat() || P, ux = (P.x - th.x) || .01, uy = (P.y - th.y) || .01, n = Math.hypot(ux, uy); landGo(W, P.x + ux / n * LT * 6, P.y + uy / n * LT * 6); }
+  else if (a === "fight") { const t = E && E.g ? E : tThreat(); if (t) landHunt(W, t); }
+  else if (a === "hunt" && E) landHunt(W, E);
+  else if (a === "visit" && j != null) { const F = W.fires[j + 1]; ENC = { T: F, met: false }; landGoTo(W, F); }
+  else if (a === "gfood" || a === "gwood") say(tribeGift(W, j, a === "gfood" ? "food" : "wood"));
+  else if (a === "trade") tradeDlg(j);
+  else if (a === "imp") { if (!canImpress(W, j)) toast(T.rv[j].mood < 0 ? "They're too cross to watch your show. Try gifts first." : T.t < (T.rv[j].cd.imp || 0) ? "Their chief needs a rest before another show." : "Walk right up to their fire first."); else { const u = nearestRivalUnit(j); if (u) startImpress(u, j); } }
+  else if (a === "duel") say(tribeDuel(W, j));
+  else if (a === "raid") say(tribeRaidStores(W, j));
+  else if (a === "take") { if (!canTake(W, j)) toast(T.rv[j].spirit > TAKE_AT ? `Their spirit is still too strong: get it down to ${TAKE_AT} or below.` : TWHY.guarded); else say(tribeTake(W, j)); }
+  else if (a === "burn" && E) say(tribeBurn(W, E));
+  else if (a === "jobs") return jobsDlg();
+  else if (a === "build") return buildDlg();
+  else if (a === "tools") return toolsDlg();
+  else if (a === "tribes") return tribesDlg();
+  renderLandUI(true);
+}
+/* ---- the panels ---- */
+function jobsDlg() {
+  paused = true; const T = S.tribe, tot = W.cr.filter(q => q.kind === "vill").length, other = JOBS.filter(x => x[0] !== "food").reduce((a, [k]) => a + (T.jobs[k] || 0), 0);
+  const rows = JOBS.map(([id, ic, n]) => id === "food" ? `<div class="jrow"><span>${ic} ${n}</span><i></i><b>${tot - other}</b><i></i></div>`
+    : `<div class="jrow"><span>${ic} ${n}</span><button class="btn small" data-a="m_${id}" aria-label="One fewer">−</button><b>${T.jobs[id] || 0}</b><button class="btn small" data-a="p_${id}" aria-label="One more">＋</button></div>`).join("");
+  const acts = { ok: closeTD }; for (const [id] of JOBS) { acts["m_" + id] = () => { setJob(W, id, (T.jobs[id] || 0) - 1); jobsDlg(); }; acts["p_" + id] = () => { setJob(W, id, (T.jobs[id] || 0) + 1); jobsDlg(); }; }
+  dialog(`<h2>Jobs</h2><p>${tot} villagers. Anyone without another job gathers food.</p><div class="jobs">${rows}</div><p>💡 ${esc(tribeAdvice())}</p><div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+}
+function buildDlg() {
+  paused = true; const T = S.tribe, sites = T.builds.filter(b => !b.done).length;
+  const opts = BUILDS.map(b => { const n = T.builds.filter(x => x.k === b.id).length; return `<button class="opt" data-a="b_${b.id}"><b>${b.ic} ${b.n} <small style="color:var(--muted)">${n} of ${b.max}</small></b><span>${costLine(b.c, T)}</span><span>${esc(b.d)}</span></button>`; }).join("");
+  const acts = { ok: closeTD };
+  for (const b of BUILDS) acts["b_" + b.id] = () => { const why = canBuild(W, b.id, -1e9, -1e9); if (why === "cost" || why === "max") { toast(PLACE_WHY[why]); return; } PLACE = { k: b.id }; ENC = null; closeTD(); };
+  dialog(`<h2>Build</h2><p>${sites ? `${sites} building site${sites > 1 ? "s" : ""} waiting · ${jobCount(W, "build")} builder${jobCount(W, "build") === 1 ? "" : "s"}.` : "Choose what to build, then tap where it goes."}</p><div class="pick">${opts}</div><div class="row"><button class="btn" data-a="ok">Close</button></div>`, acts, closeTD);
+}
+function toolsDlg() {
+  paused = true; const T = S.tribe;
+  const st = MATS.map(([m, ic, n]) => `<div>${ic} ${n}<b>${m === "food" || m === "wood" || m === "stone" || T.found[m] ? fl0(T.res[m] || 0) : "?"}</b></div>`).join("");
+  const rows = TOOLS.map(t => { const miss = Object.keys(t.c).filter(m => !T.found[m] && m !== "food" && m !== "wood" && m !== "stone");
+    return `<div class="opt"><b>${t.ic} ${t.n}${T.tools[t.id] ? " ✅" : ""}</b><span>${esc(t.d)}</span>${T.tools[t.id] ? "" : `<span>${costLine(t.c, T)}${miss.length ? ` · needs ${miss.map(m => MAT[m].n.toLowerCase()).join(" and ")}, which your tribe hasn't found yet` : ""}</span><div class="row"><button class="btn small${canMake(T, t.id) ? " primary" : ""}" data-a="t_${t.id}">Make</button></div>`}</div>`; }).join("");
+  const acts = { ok: closeTD }; for (const t of TOOLS) acts["t_" + t.id] = () => { if (tribeMake(W, t.id)) { snd("grow"); toolsDlg(); } else toast("Your stores haven't enough for that."); };
+  dialog(`<h2>Tools</h2><div class="stats tri">${st}</div><div class="pick">${rows}</div><p>Flint lies by rocky hills, clay and reeds by lakes, rivers and swamps. Hides come from hunting.</p><div class="row"><button class="btn primary" data-a="ok">Close</button></div>`, acts, closeTD);
+}
+function tribesDlg() {
+  paused = true; const T = S.tribe, acts = { ok: closeTD };
+  const html = T.rv.map((r, j) => { const L = W.lsp[r.i], hostile = r.kind === "hostile";
+    let s = `<div class="opt rv"><div class="rvh"><canvas data-cv="${j}" width="84" height="60"></canvas><div><b style="color:${rvCol(r)}">${esc(r.name)}</b><span>${esc(L.name)} · 👥 ${r.pop}</span><span>${r.state === "joined" ? "💚 They joined your tribe." : r.state === "broken" ? "🏳️ They gave in. Their camp is yours." : hostile ? "⚔️ Hostile: they won't trade or take gifts." + (r.grudge ? " They remember you hunting them." : "") : "🤝 Open to friendship."}</span></div></div>`;
+    if (!r.state) {
+      const v = hostile ? r.spirit : clamp(r.mood, 0, 100);
+      s += `<div class="lbl">${hostile ? "Spirit" : "Friendship"}: ${fl0(hostile ? r.spirit : r.mood)} / 100</div><div class="bar"><i style="width:${v}%;background:${hostile ? "linear-gradient(90deg,#FF5A6E,#FF9AA6)" : "linear-gradient(90deg,#FFC857,#FFE6A0)"}"></i></div>`;
+      if (hostile) { const hem = Math.round((W.hem[j] || 0) * 100), mine = popAll(T);
+        s += `<span>${hostile ? "Their spirit breaks when:" : ""}<br>🗿 Hemmed in: ${hem}% of their border touches your land${hem > 15 ? " (draining)" : " (needs over 15%)"}<br>👥 Outnumbered: ${mine} of you, ${r.pop} of them${mine >= r.pop * 1.5 ? " (draining)" : " (needs half as many again)"}<br>⚔️ Raids beaten: ${r.beat} · won: ${r.won}<br>🔥 Totems burnt: ${r.burnt} · 💰 stores raided: ${r.raided}<br>🏆 Champion beaten: ${r.duels[0]} · lost to: ${r.duels[1]}${r.spirit <= TAKE_AT ? `<br>🔥 Spirit at ${TAKE_AT} or below: walk to their fire and take it!` : ""}</span>`; }
+      else { const gc = giftCost(r), ready = T.t >= (r.cd.gift || 0);
+        s += `<span>Gifts, trades and impressing their chief at their fire all help. At 100 they join you.${r.stock && tradeOffers(r).length ? `<br>They have ${tradeOffers(r).map(m => MAT[m].ic + " " + MAT[m].n.toLowerCase()).join(", ")} to trade.` : ""}</span>
+          <div class="row"><button class="btn small" data-a="gf_${j}" ${ready && T.res.food >= gc ? "" : "disabled"}>🎁 ${gc} 🍖</button><button class="btn small" data-a="gw_${j}" ${ready && T.res.wood >= gc ? "" : "disabled"}>🎁 ${gc} 🪵</button><button class="btn small" data-a="tr_${j}">🔁 Trade</button></div>`;
+        acts["gf_" + j] = () => { const res = tribeGift(W, j, "food"); if (res !== "ok" && TWHY[res]) toast(TWHY[res]); handleEvents(); tribesDlg(); };
+        acts["gw_" + j] = () => { const res = tribeGift(W, j, "wood"); if (res !== "ok" && TWHY[res]) toast(TWHY[res]); handleEvents(); tribesDlg(); };
+        acts["tr_" + j] = () => tradeDlg(j); }
+      s += `<div class="row"><button class="btn small" data-a="go_${j}">🏕 Walk to their camp</button></div>`;
+      acts["go_" + j] = () => { const F = W.fires[j + 1]; ENC = { T: F, met: false }; landGoTo(W, F); cam.free = false; closeTD(); };
+    }
+    return s + "</div>"; }).join("");
+  dialog(`<h2>Tribes</h2><p>💡 ${esc(tribeAdvice())}</p><div class="pick">${html}</div><div class="row"><button class="btn primary" data-a="ok">Close</button></div>`, acts, closeTD);
+  $("dbox").querySelectorAll("[data-cv]").forEach(c => { const L = W.lsp[T.rv[+c.dataset.cv].i]; preview(c, L.d, 84, 60); });
+}
+function tradeDlg(j) {
+  paused = true; const T = S.tribe, r = T.rv[j], offers = tradeOffers(r), acts = { ok: closeTD, back: tribesDlg };
+  const wait = T.t < (r.cd.trade || 0);
+  for (const m of offers) acts["m_" + m] = () => { const res = tribeTrade(W, j, m); if (res !== "ok" && TWHY[res]) toast(TWHY[res]); handleEvents(); tradeDlg(j); };
+  dialog(`<h2>Trade with the ${esc(r.name)}</h2><p>They give 6 of something they gather for 12 of your food (or wood, if you're short of food).${wait ? " They need a little time before the next trade." : ""}</p>
+    <div class="pick">${offers.length ? offers.map(m => `<button class="opt" data-a="m_${m}" ${wait ? "disabled" : ""}><b>${MAT[m].ic} 6 ${MAT[m].n.toLowerCase()}</b><span>They have ${fl0(r.stock[m])}.${T.found[m] ? "" : " New to your tribe!"}</span></button>`).join("") : "<p>They've nothing to trade yet. Tribes gather materials from the land they claim.</p>"}</div>
+    <div class="row"><button class="btn" data-a="back">Tribes</button><button class="btn primary" data-a="ok">Close</button></div>`, acts, closeTD);
+}
+/* ---- taps ---- */
+function tribeTap(sx, sy, wx, wy, best, toS) {
+  const P = W.player, T = S.tribe;
+  if (PLACE) { const why = tribeBuild(W, PLACE.k, wx, wy); if (why) toast(PLACE_WHY[why] || "You can't build there."); else { snd("relic"); toast(`${BUILD[PLACE.k].n} planned.${jobCount(W, "build") ? " Your builders are on their way." : " Give someone the 🔨 Build job to put it up."}`); PLACE = null; } renderLandUI(true); return; }
+  if (best === P) return;
+  if (best && (best.kind === "rival" || best.kind === "vill")) { ENC = { T: best, met: true }; renderLandUI(true); return; }
+  if (best && best.kind === "npc") { ENC = { T: best, met: false }; landGoTo(W, best); cam.free = false; renderLandUI(true); return; }
+  let th = null, td = 42;
+  const cand = [...W.fires, ...T.builds, ...T.rv.flatMap(r => r.state ? [] : r.totems), ...W.deps.filter(D => T.deps[D.n])];
+  for (const o of cand) { if (!W.seen[tileI(o.x, o.y)]) continue; const [X, Y, ok] = toS(o.x, o.y); if (ok === false) continue; const d = Math.hypot(sx - X, sy - (Y - 14)); if (d < td) { td = d; th = o; } }
+  if (th) {
+    const own = (th.kind === "fire" && th.o === 1) || th.kind === "build" || th.kind === "dep"; ENC = { T: th, met: own };
+    if (th.kind === "fire" && th.main) landGoTo(W, W.home); else if (!own) landGoTo(W, th); cam.free = false; renderLandUI(true); return;
+  }
+  ENC = null; cam.free = false; if (!landGo(W, wx, wy)) toast("You can't get there."); renderLandUI(true);
+}
+function tribeCall() {
+  if (!jobCount(W, "guard")) { toast("Give some villagers the 🛡️ Guard job first: they're the ones who follow you."); return; }
+  W.rally = !W.rally; toast(W.rally ? "📣 Your guards follow you now, and fight what you fight." : "Your guards go back to their posts."); renderLandUI(true);
+}
+/* ---- news ---- */
+function tribeEvent(e) {
+  const T = S.tribe, r = e.j != null ? T.rv[e.j] : null, nm = r ? r.name : "";
+  switch (e.t) {
+    case "born": snd("mate"); if (T.births <= 3 || T.births % 5 === 0) toast(`A baby is born! 👥 ${popAll(T)} in your tribe.`); return true;
+    case "villDied": if (W.t - (W.vdT || -99) > 8) { W.vdT = W.t; toast(e.by === "rival" ? "One of your villagers was killed by raiders." : "One of your villagers was killed by an animal."); } return true;
+    case "built": snd("relic"); toast(`${BUILD[e.k].ic} ${BUILD[e.k].n} built!${e.k === "totem" ? " Your land grows." : e.k === "hut" ? " Room for three more." : ""}`); return true;
+    case "buildLost": snd("hurt"); toast(`Raiders knocked down your ${BUILD[e.k].n.toLowerCase()}!`); return true;
+    case "matFound": snd("grow"); { const can = TOOLS.filter(t => t.c[e.m]).map(t => t.n.toLowerCase()); toast(`${e.trade ? "Traded for" : "Your tribe brought home"} ${MAT[e.m].n.toLowerCase()} ${MAT[e.m].ic}! It's for ${can.join(" and ")}: tap 🪓 Tools.`); } return true;
+    case "depFound": snd("relic"); toast(`You found ${MAT[e.m].n.toLowerCase()} ${MAT[e.m].ic} here! ${e.mine ? "It's in your land: give someone the 🧺 Fetch job." : "Plant a 🗿 totem next to it to claim it."}`); return true;
+    case "toolMade": toast(`${TOOL[e.id].ic} ${TOOL[e.id].n} made! ${TOOL[e.id].d}`); return true;
+    case "raidWarn": snd("hurt"); cam.shake = Math.max(cam.shake, 6); toast(`⚔️ The ${nm} are gathering ${e.n} warriors on your border! Give villagers the 🛡️ Guard job.`); return true;
+    case "raidGo": snd("hurt"); toast(`⚔️ The ${nm} raid is coming for your camp!`); return true;
+    case "alarm": return true;
+    case "stolen": toast("Raiders are stealing from your stores!"); return true;
+    case "raidBeaten": snd("grow"); toast(`You beat off the ${nm} raid! Their spirit falls.`); return true;
+    case "raidWon": toast(`The ${nm} raiders got away${e.n ? ` with ${e.n} of your stores` : ""}. Their spirit rises.`); return true;
+    case "rivalTotem": return true;
+    case "rivalDied": return true;
+    case "totemBurnt": snd("grow"); toast(`Their totem burns! The ${nm} lose land, and spirit.`); return true;
+    case "burnStart": toast("Burning their totem: stay next to it."); return true;
+    case "burnStop": toast("You left the totem: it stopped burning."); return true;
+    case "duel": snd("hurt"); toast(`The ${nm}' champion steps up. Fight!`); return true;
+    case "duelWon": snd("grow"); toast(`You beat their champion! The ${nm}' spirit is shaken.`); return true;
+    case "duelLost": snd("hurt"); toast(e.why === "ran" ? "You walked away from the duel. Their spirit rises." : `Their champion beat you. The ${nm}' spirit rises.`); return true;
+    case "raidedThem": snd("eat"); toast(`You raided their stores: +${e.f} 🍖 +${e.w} 🪵. Their spirit falls.`); return true;
+    case "capStart": toast("Taking their fire: stay here, and keep their warriors away…"); return true;
+    case "capStop": toast("Their warriors came back: you couldn't take the fire."); return true;
+    case "gift": snd("relic"); toast(`The ${nm} love your gift! 💛`); return true;
+    case "traded": snd("relic"); toast(`Traded: +6 ${MAT[e.m].ic}`); return true;
+    case "deserter": toast(`The ${nm} are losing heart: some of them are slipping away.`); return true;
+    case "wanderer": toast("A lost wanderer finds your fire and joins the tribe."); return true;
+    case "tooSmall": toast(`The ${nm} are ready to join you, but your tribe must be at least as big as theirs (${r.pop}). Grow!`); return true;
+    case "refused": toast(`The ${nm} throw your gift back. They want nothing from you.`); return true;
+    case "hungry": snd("hurt"); toast("Your stores are empty! Villagers are hungry and work slowly. Let more of them gather food."); return true;
+    case "joined": snd("grow"); toast(`The ${nm} have joined your tribe! Their camp is your settlement now. 💚`); ENC = null; return true;
+    case "broken": snd("grow"); toast(`The ${nm} give in! Their camp is your settlement now.`); ENC = null; return true;
+    case "tribeDone": saveSlot(); tribeDone(); return true;
+    case "at": if (ENC && ENC.T === e.g) ENC.met = true; else ENC = { T: e.g, met: true }; renderLandUI(true); return true;
+    case "atHome": ENC = { T: W.fires[0], met: true }; renderLandUI(true); return true;
+  }
+  return false;
+}
+function tribeDone() {
+  paused = true; const T = S.tribe, N = TRIBE_NATURES[S.tribeNature] || TRIBE_NATURES.shrewd;
+  dialog(`<h2>A tribe of many camps!</h2><p>${esc(S.name)} have grown from one camp fire into a tribe of ${W.fires.filter(F => F.o === 1).length} settlements.</p>
+    <div class="stats"><div>Nature<b>${N[0]}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>People<b>${popAll(T)}</b></div><div>Tools<b>${Object.keys(T.tools).length} of ${TOOLS.length}</b></div></div>
+    <p>${N[1]}</p><p>The Civilisation stage is coming in a later update. Your tribe is saved and will carry on from here. Until then, you can keep playing.</p>
+    <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="go">Keep playing</button></div>`, { menu: quitToMenu, go: resume }, resume);
+}
+/* ---- the camp in 3D ---- */
+function terr3() {
+  const G = G3.ground, N = LN, Q = G.Q, M = G.M; if (!G.base0) G.base0 = G.base.slice();
+  const L = c => c.map(v => Math.pow(v / 255, 2.2)), C = [null, L([124, 242, 200]), ...S.tribe.rv.map(r => L(rvRGB(r)))], own = W.own;
+  const ow = (x, z) => x < 0 || z < 0 || x >= N || z >= N ? 0 : own[z * N + x], diff = (x, z, o) => x >= 0 && z >= 0 && x < N && z < N && own[z * N + x] !== o && TSPD[W.map[z * N + x]] > 0;
+  for (let v = 0; v < M * M; v++) {
+    const vx = v % M, vz = (v / M) | 0, tx = Math.min(N - 1, Math.floor((vx + .5) / Q)), tz = Math.min(N - 1, Math.floor((vz + .5) / Q)), o = ow(tx, tz);
+    for (let k = 0; k < 3; k++) G.base[v * 3 + k] = G.base0[v * 3 + k];
+    if (!o || !C[o]) continue;
+    const f = diff(tx + 1, tz, o) || diff(tx - 1, tz, o) || diff(tx, tz + 1, o) || diff(tx, tz - 1, o) ? .6 : .15;
+    for (let k = 0; k < 3; k++) G.base[v * 3 + k] += (C[o][k] - G.base[v * 3 + k]) * f;
+  }
+  fog3(0, M - 1, 0, M - 1); G.ownRev = W.ownRev; G3.ownMini = null;
+}
+function ownMini() {
+  if (G3.ownMini && G3.ownMini.rev === W.ownRev) return G3.ownMini.cv;
+  const N = LN, cvO = document.createElement("canvas"); cvO.width = cvO.height = N; const x = cvO.getContext("2d"), img = x.createImageData(N, N), C = [null, [124, 242, 200], ...S.tribe.rv.map(rvRGB)];
+  for (let i = 0; i < N * N; i++) { const o = W.own[i]; if (o && C[o]) img.data.set([...C[o], 150], i * 4); }
+  x.putImageData(img, 0, 0); G3.ownMini = { rev: W.ownRev, cv: cvO }; return cvO;
+}
+function buildTribe3() {
+  const T = T3, Tr = S.tribe;
+  if (G3.tb) { G3.scene.remove(G3.tb.g); G3.tb.g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
+  const root = new T.Group(), tb = G3.tb = { W, g: root, items: [], fl: [], sites: [] }; G3.tbRev = W.tbRev; G3.scene.add(root);
+  const mat = c => new T.MeshLambertMaterial({ color: c, flatShading: true }), M = (geo, m, x, y, z) => { const o = new T.Mesh(geo, m); o.position.set(x || 0, y || 0, z || 0); o.castShadow = true; o.receiveShadow = true; return o; };
+  const flame = (g, y, s) => { const f = new T.Mesh(new T.ConeGeometry(.22 * s, .7 * s, 6).translate(0, .35 * s, 0), new T.MeshBasicMaterial({ color: 0xff8a2a })); f.position.y = y; const f2 = new T.Mesh(new T.ConeGeometry(.12 * s, .45 * s, 6).translate(0, .22 * s, 0), new T.MeshBasicMaterial({ color: 0xffe066 })); f2.position.y = y; g.add(f, f2); f.userData.id = f2.userData.id = tb.fl.length; tb.fl.push(f, f2); };
+  const place = (g, x, y, extra) => { g.position.set(x / LT, h3(x, y), y / LT); root.add(g); tb.items.push(Object.assign({ g, x, y }, extra || {})); return g; };
+  const fire = (F, col) => { const g = new T.Group(), sm = mat(0x8c8680), lm = mat(0x6b4a2e);
+    for (let i = 0; i < 9; i++) { const a = i / 9 * TAU; g.add(M(new T.DodecahedronGeometry(.14, 0), sm, Math.cos(a) * .6, .08, Math.sin(a) * .6)); }
+    for (let i = 0; i < 3; i++) { const l = M(new T.CylinderGeometry(.06, .07, 1, 5), lm, 0, .1, 0); l.rotation.set(0, i * 1.05, Math.PI / 2); g.add(l); }
+    flame(g, .1, 1.3); g.add(M(new T.CylinderGeometry(.035, .04, 2.6, 5), lm, 1.1, 1.3, -.7));
+    const fg = new T.Mesh(new T.PlaneGeometry(.8, .48), new T.MeshLambertMaterial({ color: col, side: T.DoubleSide })); fg.position.set(1.5, 2.3, -.7); g.add(fg);
+    const ring = new T.Mesh(new T.RingGeometry(1.2, 1.35, 32), new T.MeshBasicMaterial({ color: col, transparent: true, opacity: .55 })); ring.rotation.x = -Math.PI / 2; ring.position.y = .06; g.add(ring);
+    return place(g, F.x, F.y); };
+  const hut = col => { const g = new T.Group(); g.add(M(new T.CylinderGeometry(.7, .78, .6, 10), mat(0x9a7448), 0, .3, 0), M(new T.ConeGeometry(1, 1, 10), mat(0xd2b06a), 0, 1.05, 0), M(new T.BoxGeometry(.3, .44, .08), mat(0x2a1c10), 0, .22, .76));
+    const band = M(new T.TorusGeometry(.9, .05, 4, 18), mat(col), 0, .64, 0); band.rotation.x = Math.PI / 2; g.add(band); g.scale.setScalar(1.15); return g; };
+  const totem = col => { const g = new T.Group(), wd = mat(0x7a5530), cm = mat(col), dk = mat(0x1a1210);
+    g.add(M(new T.CylinderGeometry(.24, .3, .6, 8), wd, 0, .3, 0), M(new T.BoxGeometry(.42, .55, .42), cm, 0, .87, 0), M(new T.CylinderGeometry(.22, .24, .5, 8), wd, 0, 1.39, 0));
+    g.add(M(new T.BoxGeometry(.1, .08, .04), dk, -.1, .95, .22), M(new T.BoxGeometry(.1, .08, .04), dk, .1, .95, .22), M(new T.BoxGeometry(.2, .05, .04), dk, 0, .76, .22), M(new T.BoxGeometry(1.1, .14, .2), cm, 0, 1.7, 0), M(new T.ConeGeometry(.2, .35, 6), cm, 0, 1.95, 0));
+    g.scale.setScalar(1.2); return g; };
+  const watch = () => { const g = new T.Group(), wd = mat(0x6b4a2e); for (let i = 0; i < 3; i++) { const a = i / 3 * TAU, l = M(new T.CylinderGeometry(.04, .05, 1.7, 5), wd, Math.cos(a) * .25, .8, Math.sin(a) * .25); l.rotation.set(Math.sin(a) * -.15, 0, Math.cos(a) * .15); g.add(l); }
+    g.add(M(new T.CylinderGeometry(.32, .2, .2, 8), mat(0x8c8680), 0, 1.65, 0)); flame(g, 1.72, 1); g.scale.setScalar(1.2); return g; };
+  const site = () => { const g = new T.Group(), wd = mat(0xa07a4a); for (let i = 0; i < 4; i++) { const b = M(new T.BoxGeometry(1.1, .1, .1), wd, 0, .05, 0); b.rotation.y = i * Math.PI / 2; b.position.set(Math.cos(i * Math.PI / 2) * .5, .05, Math.sin(i * Math.PI / 2) * .5); g.add(b); }
+    const posts = []; for (let i = 0; i < 4; i++) { const p = M(new T.CylinderGeometry(.04, .05, 1, 5).translate(0, .5, 0), wd, i % 2 ? .5 : -.5, 0, i < 2 ? .5 : -.5); g.add(p); posts.push(p); } return { g, posts }; };
+  W.fires.forEach((F, k) => fire(F, F.o === 1 ? 0x7cf2c8 : rvCol(Tr.rv[k - 1])));
+  for (const b of Tr.builds) {
+    if (!b.done) { const s = site(); place(s.g, b.x, b.y); tb.sites.push({ b, posts: s.posts }); continue; }
+    place(b.k === "hut" ? hut(0x7cf2c8) : b.k === "totem" ? totem(0x7cf2c8) : watch(), b.x, b.y);
+  }
+  Tr.rv.forEach(r => { for (const t of r.totems) place(totem(r.state ? 0x7cf2c8 : rvCol(r)), t.x, t.y); });
+  for (const D of W.deps) { const g = new T.Group();
+    if (D.m === "flint") { const fm = new T.MeshStandardMaterial({ color: 0x3e4a5e, roughness: .25, metalness: .35, flatShading: true }); for (let i = 0; i < 6; i++) { const a = i * 2.3, o = M(new T.OctahedronGeometry(.2 + (i % 3) * .06, 0), fm, Math.cos(a) * .4, .15, Math.sin(a) * .4); o.scale.y = 1.6; o.rotation.set(i * .4, i, i * .3); g.add(o); } }
+    else if (D.m === "clay") { const c = M(new T.CircleGeometry(.95, 14), mat(0xa55a36), 0, .04, 0); c.rotation.x = -Math.PI / 2; g.add(c); for (let i = 0; i < 4; i++) { const s = M(new T.SphereGeometry(.2, 7, 5), mat(0xb8683e), Math.cos(i * 1.7) * .45, .06, Math.sin(i * 1.7) * .45); s.scale.y = .5; g.add(s); } }
+    else { const st = mat(0x8aa04a), tp = mat(0x6a4024); for (let i = 0; i < 14; i++) { const a = i * 2.4, d = .15 + (i % 4) * .17, h = .7 + (i % 3) * .2; g.add(M(new T.CylinderGeometry(.02, .025, h, 4), st, Math.cos(a) * d, h / 2, Math.sin(a) * d), M(new T.CylinderGeometry(.045, .045, .18, 5), tp, Math.cos(a) * d, h - .05, Math.sin(a) * d)); } }
+    place(g, D.x, D.y, { dep: D }); }
+}
+function tribe3(t, dt) {
+  if (G3.ground.ownRev !== W.ownRev) terr3();
+  if (!G3.tb || G3.tb.W !== W || G3.tbRev !== W.tbRev) buildTribe3();
+  const Tr = S.tribe;
+  for (const o of G3.tb.items) o.g.visible = !!W.seen[tileI(o.x, o.y)] && (!o.dep || !!Tr.deps[o.dep.n]);
+  for (const f of G3.tb.fl) { const k = f.userData.id; f.scale.set(.9 + .1 * Math.sin(t * 7 + k), .8 + .3 * Math.sin(t * 9 + k * 1.3), .9 + .1 * Math.sin(t * 8 + k)); }
+  for (const s of G3.tb.sites) { const p = clamp(s.b.prog / BUILD[s.b.k].work, .05, 1); s.posts.forEach(o => { o.scale.y = p; }); }
+}
+function tribeVis(q) {
+  if (q.kind !== "vill" && q.kind !== "rival") return false; const i = tileI(q.x, q.y);
+  if (!W.seen[i] || Math.hypot(q.x - cam.x, q.y - cam.y) > LT * 28) return false;
+  return q.kind === "vill" || W.own[i] === 1 || S.tribe.builds.some(b => b.k === "watch" && b.done && Math.hypot(b.x - q.x, b.y - q.y) < LT * WATCH_R);
+}
+function tribeOverlay(t) {
+  const Tr = S.tribe, P = W.player, lbl = (x, y, up, txt, col, size) => { const [X, Y, ok] = P3(x, y, up); if (!ok || X < -60 || X > CW + 60 || Y < -30 || Y > CH + 30) return null; ctx.fillStyle = col || "#fff"; ctx.font = `800 ${size || 13}px Figtree, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic"; ctx.fillText(txt, X, Y); return [X, Y]; };
+  const barAt = (X, Y, w, f, col) => { ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(X - w / 2, Y, w, 5); ctx.fillStyle = col; ctx.fillRect(X - w / 2, Y, w * clamp(f, 0, 1), 5); };
+  ctx.shadowColor = "rgba(0,0,0,.8)"; ctx.shadowBlur = 4;
+  Tr.rv.forEach((r, j) => { const F = W.fires[j + 1]; if (!W.seen[tileI(F.x, F.y)] || Math.hypot(F.x - cam.x, F.y - cam.y) > LT * 30) return;
+    const p = lbl(F.x, F.y, 120, r.state ? `${r.name} (yours)` : r.name, r.state ? "#7CF2C8" : rvCol(r), 14);
+    if (p && !r.state) barAt(p[0], p[1] + 5, 70, r.kind === "hostile" ? r.spirit / 100 : r.mood / 100, rvCol(r)); });
+  for (const b of Tr.builds) if (!b.done && W.seen[tileI(b.x, b.y)] && Math.hypot(b.x - cam.x, b.y - cam.y) < LT * 25) lbl(b.x, b.y, 60, `🔨 ${fl0(b.prog / BUILD[b.k].work * 100)}%`, "#FFE08A", 12);
+  if (W.burn) { const p = lbl(W.burn.t.x, W.burn.t.y, 110, "🔥", "#FFB454", 16); if (p) barAt(p[0], p[1] + 5, 50, W.burn.t.hp / 80, "#FFB454"); }
+  if (W.cap) { const F = W.fires[W.cap.j + 1], p = lbl(F.x, F.y, 160, "Taking their fire…", "#7CF2C8", 13); if (p) barAt(p[0], p[1] + 5, 80, W.cap.t / 8, "#7CF2C8"); }
+  for (const [q, I] of G3.cr) {
+    if (!I.grp.visible || (q.kind !== "vill" && q.kind !== "rival")) continue;
+    const ic = q.champ ? "🏆" : q.raid ? "⚔️" : q.kind === "vill" && q.carry ? MAT[Object.keys(q.carry)[0]].ic : q.kind === "vill" && W.rally && q.job === "guard" ? "📣" : null; if (!ic) continue;
+    lbl(q.x, q.y, I.tp.top * q.k * 1.15 + 14, ic, "#fff", 13);
+  }
+  ctx.shadowBlur = 0;
+}
+function tribeMini(mx0, my0, mw, t) {
+  const mm = (x, y) => [mx0 + x / (LN * LT) * mw, my0 + y / (LN * LT) * mw];
+  W.fires.forEach((F, k) => { if (!W.seen[tileI(F.x, F.y)]) return; const [a, b] = mm(F.x, F.y); ctx.fillStyle = F.o === 1 ? "#7CF2C8" : rvCol(S.tribe.rv[k - 1]); ctx.beginPath(); ctx.arc(a, b, 3.2, 0, TAU); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.stroke(); });
+  for (const r of S.tribe.rv) if (r.raid) { const [a, b] = mm(r.raid.gx, r.raid.gy); ctx.fillStyle = `rgba(255,70,90,${.6 + .4 * Math.sin(t * 6)})`; ctx.font = "11px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⚔️", a, b); }
+}
 
 /* ---------- main loop ---------- */
 let last = 0;
@@ -3490,6 +4449,7 @@ function frame(ts) {
 window.SG_BACK = () => {
   if (!$("dlg").hidden) { if (dlgBack) dlgBack(); else closeDlg(); return true; }
   if (view === "play" && IMP) { cancelImpress(); return true; }
+  if (view === "play" && W && W.tribe && PLACE) { PLACE = null; renderLandUI(true); return true; }
   if (view === "play" && W && W.land && (ENC || CALL)) { ENC = null; CALL = false; landLeave(W); renderLandUI(true); return true; }
   if (view === "edit") { leaveEditor(); return true; }
   if (view === "play") { pause(); return true; }
