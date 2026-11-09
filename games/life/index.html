@@ -1514,7 +1514,7 @@ function allyLand(W, c, dt) {
 function landFight(W) {
   const P = W.player;
   for (const A of allC(W)) {
-    const T = A === P ? (P.mode === "hunt" ? P.tg : null) : A.ai.tg;
+    const T = A === P ? (P.mode === "hunt" ? P.tg : W.cr.find(q => q.kind === "npc" && !q.dead && ((q.ai.tg && q.ai.tg.team) || (W.foe === q && W.t - W.foeT < 4)) && !isFriend(W, q) && distBody(q, P.x, P.y) < P.g.R * P.k * .55 + 10)) : A.ai.tg; // you bite back at whatever is biting you
     if (!T || T.dead || A.stun > 0 || A.asleep || (A.atk || 0) > W.t) continue;
     if (A.kind === "npc" && isFriend(W, A) && T.team) continue;
     if (distBody(T, A.x, A.y) > A.g.R * A.k * .55 + 10) continue;
@@ -1540,8 +1540,12 @@ function quakeSites(W) {
 }
 /* After the eruption every species settles on new ground near the safe place, outside the burnt land. */
 function resettle(W) {
-  const Q = quakeSites(W), ok = (i, L) => { const [x, y] = tileXY(i); return W.reach[i] && TSPD[W.map[i]] > .5 && Math.hypot(x - Q.peak[0], y - Q.peak[1]) > Q.rmax + LT * 3 && Math.hypot(x - Q.safe[0], y - Q.safe[1]) < LT * (L && L.tier === 4 ? 70 : 38) && Math.hypot(x - Q.safe[0], y - Q.safe[1]) > LT * (L && L.tier === 4 ? 30 : L && L.temper === "aggro" ? 18 : 10) && (!L || !L.bio || L.bio.includes(W.map[i])); };
-  const spot = (R, L) => { for (let k = 0; k < 1500; k++) { const i = Math.floor(R() * LN * LN); if (ok(i, k < 900 ? L : null)) return tileXY(i); } return [Q.safe[0], Q.safe[1]]; };
+  const Q = quakeSites(W), ok = (i, L, B, f) => { const [x, y] = tileXY(i), ds = Math.hypot(x - Q.safe[0], y - Q.safe[1]), big = L.tier === 4;
+    return W.reach[i] && TSPD[W.map[i]] > .5 && Math.hypot(x - Q.peak[0], y - Q.peak[1]) > Q.rmax + LT * 3 && ds < LT * (big ? 70 : 38) / f && ds > LT * (big ? 30 : L.temper === "aggro" ? 18 : 10) * f && (!B || !L.bio || L.bio.includes(W.map[i])); };
+  const spot = (R, L) => { // near the new nest but not on it; the rules loosen step by step if the land there is too small
+    for (const [B, f] of [[1, 1], [0, 1], [0, .6], [0, .35]]) for (let k = 0; k < 1500; k++) { const i = Math.floor(R() * LN * LN); if (ok(i, L, B, f)) return tileXY(i); }
+    for (let k = 0; k < 6000; k++) { const i = Math.floor(R() * LN * LN), [x, y] = tileXY(i); if (W.reach[i] && TSPD[W.map[i]] > .5 && Math.hypot(x - Q.peak[0], y - Q.peak[1]) > Q.rmax + LT * 2 && Math.hypot(x - Q.safe[0], y - Q.safe[1]) > LT * 8) return [x, y]; }
+    return [Q.safe[0] + LT * 12, Q.safe[1]]; };
   for (const L of [...W.lsp, ...W.epics]) {
     const R = rng(hash(W.S.seed, 1310, L.key.length, L.i == null ? 50 + L.j : L.i)); [L.x, L.y] = spot(R, L);
     if (L.route) { L.route = [[L.x, L.y]]; for (let w = 0; w < 4; w++) L.route.push(spot(R, L)); }
@@ -1549,7 +1553,7 @@ function resettle(W) {
   }
   for (const q of W.cr) if (q.kind === "npc") { const L = q.lsp != null ? W.lsp[q.lsp] : W.epics[q.epic]; const h = L.homes ? L.homes[Math.floor(W.R() * L.homes.length)] : [L.x, L.y];
     q.ai.hx = h[0]; q.ai.hy = h[1]; q.ai.wx = null; q.ai.path = null; q.ai.wp = 0; q.ai.tg = null; q.ai.fear = null;
-    if (Math.hypot(q.x - Q.safe[0], q.y - Q.safe[1]) > LT * 34) { q.x = h[0] + (W.R() - .5) * LT * 2; q.y = h[1] + (W.R() - .5) * LT * 2; if (!passXY(W, q.x, q.y)) { q.x = h[0]; q.y = h[1]; } } }
+    { q.x = h[0] + (W.R() - .5) * LT * 2; q.y = h[1] + (W.R() - .5) * LT * 2; if (!passXY(W, q.x, q.y)) { q.x = h[0]; q.y = h[1]; } } } // everyone goes off to their new home
 }
 /* The burnt land: trees left as black trunks, bushes gone. */
 function scorch(W) {
@@ -4140,7 +4144,10 @@ function landUp(e) {
 function landTap(sx, sy) {
   const P = W.player, s = cam.s, on3 = g3on(), toS = on3 ? (x, y) => P3(x, y, 0) : (x, y) => [(x - cam.x) * s + CW / 2, (y - cam.y) * s * TILT + CH / 2], [wx, wy] = on3 ? ground3(sx, sy) : [(sx - CW / 2) / s + cam.x, (sy - CH / 2) / (s * TILT) + cam.y], sr = sightR(W);
   let best = null, bd = 1e9; // creatures are picked where they're drawn (standing up), not where their feet are
-  for (const q of [...W.cr, P]) { if (q.kind === "npc" && Math.hypot(q.x - P.x, q.y - P.y) > sr * 1.1) continue; if (on3 && q !== P && !G3.cr.get(q)) continue; const I3 = on3 && G3.cr.get(q), [X, Y] = I3 ? P3(q.x, q.y, I3.tp.bodyY * q.k) : toS(q.x, q.y), R = q.g.R * q.k * s, d = Math.hypot(sx - X, sy - (I3 ? Y : Y - R * .5)) - R; if (d < 28 && d < bd) { bd = d; best = q; } }
+  if (on3) for (const q of [...W.cr, P]) { const I3 = G3.cr.get(q); if (!I3 || !I3.grp.visible) continue; // the whole standing shape, from its feet to the top of its back
+    const [X0, Y0, ok0] = P3(q.x, q.y, 0), [, Y1] = P3(q.x, q.y, I3.tp.top * q.k), hw = Math.min(130, Math.max(26, I3.tp.R * q.k * s * .9) + 10); if (!ok0) continue;
+    if (Math.abs(sx - X0) < hw && sy > Y1 - 22 && sy < Y0 + 22) { const d = Math.hypot(sx - X0, sy - (Y0 + Y1) / 2) / hw + (q === P ? .6 : 0); if (d < bd) { bd = d; best = q; } } }
+  if (!on3) for (const q of [...W.cr, P]) { if (q.kind === "npc" && Math.hypot(q.x - P.x, q.y - P.y) > sr * 1.1) continue; const I3 = on3 && G3.cr.get(q), [X, Y] = I3 ? P3(q.x, q.y, I3.tp.bodyY * q.k) : toS(q.x, q.y), R = q.g.R * q.k * s, d = Math.hypot(sx - X, sy - (I3 ? Y : Y - R * .5)) - R; if (d < 28 && d < bd) { bd = d; best = q; } }
   if (W.tribe) return tribeTap(sx, sy, wx, wy, best, toS);
   if (CALL) { CALL = false; if (best && best.kind === "npc" && !isFriend(W, best)) { W.callTg = best; toast("Your pack goes after it!"); } else { W.callTg = null; W.cr.forEach(q => { if (q.kind === "ally") q.ai.tg = null; }); toast("Your pack comes back to you."); } renderLandUI(true); return; }
   if (best === P) return;
@@ -4176,7 +4183,8 @@ function renderLandUI(force) {
     } else if (fight) {
       card.hidden = true;
       const ids = Object.keys(LMOVES).filter(k => P.st.ab[k]).concat(Object.keys(AB).filter(k => P.st.ab[k] && !LMOVES[k]));
-      bar.innerHTML = ids.map(k => { const m = LMOVES[k] || AB[k]; return `<button class="lb mv" data-m="${k}">${m[0]}<small>${m[1]}</small></button>`; }).join("") + `<button class="lb" data-l="run">🏃<small>Run</small></button>`;
+      const hunting = P.mode === "hunt" && P.tg && !P.tg.dead;
+      bar.innerHTML = (hunting ? "" : `<button class="lb" data-l="fight">⚔️<small>Fight back</small></button>`) + ids.map(k => { const m = LMOVES[k] || AB[k]; return `<button class="lb mv" data-m="${k}">${m[0]}<small>${m[1]}</small></button>`; }).join("") + `<button class="lb" data-l="run">🏃<small>Run</small></button>`;
     } else { card.hidden = true; bar.innerHTML = ""; }
     bar.querySelectorAll("[data-l]").forEach(b => b.onclick = () => landAct(b.dataset.l));
     bar.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { if (!landMove(W, b.dataset.m)) toast("Nothing in reach for that."); });
@@ -4187,6 +4195,7 @@ function renderLandUI(force) {
 function landAct(a) {
   const T = ENC && ENC.T;
   if (a === "hunt" && T) { landHunt(W, T); }
+  else if (a === "fight") { const P = W.player, th = T && !T.dead && !isFriend(W, T) ? T : W.cr.filter(q => q.kind === "npc" && !q.asleep && q.ai.tg && q.ai.tg.team).sort((a2, b2) => d2(a2, P) - d2(b2, P))[0]; if (th) { landHunt(W, th); ENC = { T: th, met: true }; } }
   else if (a === "imp" && T) startImpress(T);
   else if (a === "leave" || a === "run") { landLeave(W); ENC = null; if (a === "run") { const P = W.player, th = threatened() || P, ux = (P.x - th.x) || .01, uy = (P.y - th.y) || .01, n = Math.hypot(ux, uy); landGo(W, P.x + ux / n * LT * 6, P.y + uy / n * LT * 6); } }
   renderLandUI(true);

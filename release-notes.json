@@ -515,6 +515,16 @@
       "details": [
         "On land, the game no longer crashes just as you beat an animal bigger than you, such as one from a big herd."
       ]
+    },
+    {
+      "id": 46,
+      "type": "fixes",
+      "headline": "Life: land fixes",
+      "details": [
+        "After the eruption, animals and giants no longer all crowd round your nest. Each kind goes off to its own new home, and the giants live well away. This also fixes games where it already happened.",
+        "Tapping an animal works much better: tap anywhere on its body, legs included, even on tall ones.",
+        "When something attacks you, you now bite back on your own, and there's a Fight back button to go after it properly (as well as Run and your moves)."
+      ]
     }
   ]
 }
