@@ -358,7 +358,7 @@ at least as big) and a hostile one (`spirit`, `rivalStep`: heals slowly, drains 
 waves, gather → march → loot → home; beaten raids, burnt totems, raided stores, kills and duels with its champion lower it; at 50
 or below the Chief can take its fire; at 0 it gives in). `tribeResolve` turns a settled rival's camp into your settlement; both
 settled ends the stage (`S.tribeNature`). `MATS`, `BUILDS`, `TOOLS`, `JOBS` are saved by id: append only. `tools/life-check.js`
-plays the tribe stage with a bot after the land (about 30-75 min; fails if not done in 120 or under 15); `--tribe` runs it alone.
+plays the tribe stage with a bot after the land (about 25-75 min; fails if not done in 120 or under 15); `--tribe` runs it alone.
 
 ### Adding a new game
 
