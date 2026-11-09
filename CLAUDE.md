@@ -352,13 +352,17 @@ at `S.tribe.camp` (`campSpot`). You play the Chief (tap to walk); villagers (kin
 (`S.tribe.jobs`, everyone else gathers food; `villThink`) and only gather inside your land. `W.own` (owner per tile: 1 you, 2 + j rival
 j; `landOwners`) comes from camp fires (`W.fires`, `CAMP_R`) and totems. `BUILDS` (hut, totem, watch fire) are planned by the Chief,
 paid for at once and put up by builders; `TOOLS` need materials (`MATS`), found in deposits (`W.deps`, `makeDeps`, from the seed)
-that the Chief discovers (`S.tribe.deps`) and a totem claims; hides come from hunting. Two rivals (`S.tribe.rv`, `makeRivals`: kind
-`rival`, team 2, `rivalThink`): an open one (`mood`; gifts, trade and impressing its chief, `befriend`; joins at 100 when your tribe is
-at least as big) and a hostile one (`spirit`, `rivalStep`: heals slowly, drains while hemmed in (`W.hem`) or outnumbered; raids in
+that the Chief discovers (`S.tribe.deps`) and a totem claims; hides come from hunting. Four rivals (`S.tribe.rv`, `makeRivals`: kind
+`rival`, team 2, `rivalThink`; one always open, one always hostile, two from the land stage: friends open, driven-out species hostile;
+colours `RVC` by kind and `ci`): open ones (`mood`; gifts, trade and impressing its chief, `befriend`; an ally at `ALLY_AT` (`isAlly`:
+its land counts in `W.hem`, its people in outnumbering, its guards fight raiders, `tribeAskHelp` lends warriors, `allyHelp`); joins at
+100 when your tribe is at least as big) and hostile ones (`spirit`, `rivalStep`: heals slowly, drains while hemmed in (`W.hem`) or outnumbered; raids in
 waves, gather → march → loot → home; beaten raids, burnt totems, raided stores, kills and duels with its champion lower it; at 30
 or below (`TAKE_AT`) the Chief can take its fire; at 0 it gives in). `tribeResolve` turns a settled rival's camp into your settlement; both
-settled ends the stage (`S.tribeNature`). `MATS`, `BUILDS`, `TOOLS`, `JOBS` are saved by id: append only. `tools/life-check.js`
-plays the tribe stage with a bot after the land (about 25-75 min; fails if not done in 120 or under 15); `--tribe` runs it alone.
+settled ends the stage (`S.tribeNature`). New camps (`BUILDS` "camp", `FOUND_D` tiles from your fires, on unclaimed land) are built by
+builders as a founding party and join `W.fires` after the rival camps. Upkeep every minute (`upkeep`: fires burn wood, totems and watch
+fires take stone; short stores damage buildings) and stores above `storeCap` waste away. `MATS`, `BUILDS`, `TOOLS`, `JOBS` are saved by id: append only. `tools/life-check.js`
+plays the tribe stage with a bot after the land (about 25 min; fails if not done in 120 or under 15); `--tribe` runs it alone.
 
 ### Adding a new game
 

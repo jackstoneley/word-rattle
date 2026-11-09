@@ -6,7 +6,7 @@ const fs = require("fs"), path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "..", "games", "life", "index.html"), "utf8");
 const core = html.match(/\/\*CORE-START\*\/([\s\S]*?)\/\*CORE-END\*\//);
 if (!core) { console.error("life: CORE not found"); process.exit(1); }
-const C = new Function(core[1] + ";return {newSave, newWorld, stepWorld, applyEvolve, respawn, viewR, designValue, partLimit, segLimit, stats, cloneD, PART, PARTS, TIERS, cur, goToSea, bandMid, bandAt, SEA, goToLand, testStart, landGo, landGoTo, landHunt, landLeave, landMove, lspStatus, impressPlan, socialQ, impressEnd, quakeSites, LT, goToTribe, setJob, assignJobs, popAll, room, canBuild, tribeBuild, tribeMake, TOOLS, BUILD, tribeGift, tribeTrade, tradeOffers, canImpress, tribeImpressEnd, tribeDuel, tribeRaidStores, canTake, tribeTake, tribeBurn, defenders, giftCost, tileI, CAMP_R, TOTEM_R, DEP_MATS, jobCount, landHunt};")();
+const C = new Function(core[1] + ";return {newSave, newWorld, stepWorld, applyEvolve, respawn, viewR, designValue, partLimit, segLimit, stats, cloneD, PART, PARTS, TIERS, cur, goToSea, bandMid, bandAt, SEA, goToLand, testStart, landGo, landGoTo, landHunt, landLeave, landMove, lspStatus, impressPlan, socialQ, impressEnd, quakeSites, LT, goToTribe, setJob, assignJobs, popAll, room, canBuild, tribeBuild, tribeMake, TOOLS, BUILD, tribeGift, tribeTrade, tradeOffers, canImpress, tribeImpressEnd, tribeDuel, tribeRaidStores, canTake, tribeTake, tribeBurn, defenders, giftCost, tileI, CAMP_R, TOTEM_R, DEP_MATS, jobCount, landHunt, upkeep, isAlly, tribeAskHelp};")();
 const verbose = process.argv.includes("-v");
 
 // What the bot buys when it evolves, in order (skips parts it hasn't found or can't afford).
@@ -125,42 +125,48 @@ function landMeet(W, diet, T) {
    impresses its chief; once it has guards with spears it leads them to burn the hostile tribe's totems, raids its stores,
    duels its champion and takes its fire. */
 function tribePlan(W, B) {
-  const T = W.S.tribe, LT = C.LT, F = W.fires[0], H = T.rv.find(r => r.kind === "hostile"), O = T.rv.find(r => r.kind === "open"), all = C.popAll(T);
-  const sites = T.builds.filter(b => !b.done).length, raid = T.rv.some(r => r.raid && r.raid.ph !== "gather" || (r.raid && r.raid.t > 15));
+  const T = W.S.tribe, LT = C.LT, F = W.fires[0], all = C.popAll(T), Hs = T.rv.filter(r => r.kind === "hostile" && !r.state), Os = T.rv.filter(r => r.kind === "open" && !r.state);
+  const sites = T.builds.filter(b => !b.done).length, raid = T.rv.some(r => r.raid && (r.raid.ph !== "gather" || r.raid.t > 15)), up = C.upkeep(W);
   const needMat = C.DEP_MATS.filter(m => T.res[m] < 14 && W.deps.some(D => D.m === m && T.deps[D.n] && W.own[D.t] === 1)).length;
-  const want = { build: sites ? Math.min(3, 1 + sites) : 0, wood: Math.max(1, Math.round(all * .2)), stone: Math.max(1, Math.round(all * .12)), fetch: needMat ? Math.min(3, needMat + 1) : 0,
-    hunt: T.res.hide < 12 ? 1 : 0, guard: Math.round(all * (H.state ? .1 : T.t > 600 ? .3 : .15)) + (raid ? 2 : 0) };
-  if (T.hungry || T.res.food < 15) { want.wood = 1; want.stone = Math.min(want.stone, 1); }
-  let free = all - Math.ceil(all * (T.hungry || T.res.food < 20 ? .55 : .35)); // keep enough gathering food
+  const want = { build: sites ? Math.min(4, 1 + sites) : 0, wood: Math.max(2, Math.round(all * .22) + (T.res.wood < up.wood * 3 ? 1 : 0)), stone: Math.max(1, Math.round(all * .14) + (T.res.stone < up.stone * 3 ? 1 : 0)), fetch: needMat ? Math.min(3, needMat + 1) : 0,
+    hunt: T.res.hide < 12 ? 1 : 0, guard: Math.round(all * (!Hs.length ? .05 : T.t > 600 ? .3 : .15)) + (raid ? 2 : 0) };
+  if (T.hungry || T.res.food < 15) { want.wood = Math.min(want.wood, 2); want.stone = Math.min(want.stone, 1); }
+  let free = all - Math.ceil(all * (T.hungry || T.res.food < 20 ? .55 : .3));
   for (const k of ["build", "wood", "guard", "stone", "fetch", "hunt"]) { const n = Math.max(0, Math.min(want[k], free)); T.jobs[k] = n; free -= n; } C.assignJobs(W);
   for (const t of C.TOOLS) C.tribeMake(W, t.id);
-  const spot = (k, tx, ty, R) => { let best = null, bd = 1e18; for (let n = 0; n < 400; n++) { const a = W.R() * Math.PI * 2, d = W.R() * LT * R, x = tx + Math.cos(a) * d, y = ty + Math.sin(a) * d; if (C.canBuild(W, k, x, y)) continue; const dd = Math.hypot(x - tx, y - ty); if (dd < bd) { bd = dd; best = [x, y]; } } return best; };
-  if (!sites && all >= C.room(T) - 1 && T.res.wood >= 20) { const p = spot("hut", F.x, F.y, 6); if (p) C.tribeBuild(W, "hut", p[0], p[1]); }
-  if (sites < 2 && T.res.wood >= 22 && T.res.stone >= 8) {
-    // a totem towards something worth having: a deposit it knows of, else the hostile camp
-    const goal = W.deps.filter(D => T.deps[D.n] && W.own[D.t] !== 1 && W.own[D.t] < 2).sort((a, b) => Math.hypot(a.x - F.x, a.y - F.y) - Math.hypot(b.x - F.x, b.y - F.y))[0] || (!H.state && T.t > 500 ? H : null);
-    if (goal) { let best = null, bd = 1e18; for (let n = 0; n < 500; n++) { const i = Math.floor(W.R() * 150 * 150), x = (i % 150 + .5) * LT, y = (((i / 150) | 0) + .5) * LT; if (Math.hypot(x - goal.x, y - goal.y) > Math.hypot(F.x - goal.x, F.y - goal.y) + LT) continue; if (C.canBuild(W, "totem", x, y)) continue; const d = Math.hypot(x - goal.x, y - goal.y); if (d < bd) { bd = d; best = [x, y]; } }
-      if (best && (goal !== H || bd > LT * (C.CAMP_R + 3))) C.tribeBuild(W, "totem", best[0], best[1]); }
+  const near = (k, tx, ty, R) => { let best = null, bd = 1e18; for (let n = 0; n < 400; n++) { const a = W.R() * Math.PI * 2, d = W.R() * LT * R, x = tx + Math.cos(a) * d, y = ty + Math.sin(a) * d; if (C.canBuild(W, k, x, y)) continue; const dd = Math.hypot(x - tx, y - ty); if (dd < bd) { bd = dd; best = [x, y]; } } return best; };
+  const spare = m => T.res[m] - up[m] * 3;
+  if (!sites && all >= C.room(T) - 1 && spare("wood") >= 30) { const p = near("hut", F.x, F.y, 6); if (p) C.tribeBuild(W, "hut", p[0], p[1]); }
+  // a new camp: when the old ones are full, towards the nearest hostile tribe (to hem it in) or the island's middle
+  if (sites < 2 && T.t > 420 && all >= C.room(T) - 2 && spare("wood") >= 40 && T.res.food >= 60 && T.res.stone >= 10 && T.builds.filter(b => b.k === "camp").length < 3) {
+    const goal = Hs.sort((a, b) => Math.hypot(a.x - F.x, a.y - F.y) - Math.hypot(b.x - F.x, b.y - F.y))[0] || { x: 75 * LT, y: 75 * LT };
+    let best = null, bd = 1e18; for (let n = 0; n < 900; n++) { const i = Math.floor(W.R() * 150 * 150), x = (i % 150 + .5) * LT, y = (((i / 150) | 0) + .5) * LT; if (C.canBuild(W, "camp", x, y)) continue; const d = Math.hypot(x - goal.x, y - goal.y) + Math.hypot(x - F.x, y - F.y) * .5; if (d < bd) { bd = d; best = [x, y]; } }
+    if (best) C.tribeBuild(W, "camp", best[0], best[1]);
   }
-  if (!O.state) { if (T.res.food > 40 + C.giftCost(O)) C.tribeGift(W, T.rv.indexOf(O), "food"); if (T.res.wood > 45 + C.giftCost(O)) C.tribeGift(W, T.rv.indexOf(O), "wood");
-    for (const m of C.tradeOffers(O)) if (T.res[m] < 10) { C.tribeTrade(W, T.rv.indexOf(O), m); break; } }
+  if (sites < 2 && spare("wood") >= 22 && spare("stone") >= 8) {
+    const goal = W.deps.filter(D => T.deps[D.n] && W.own[D.t] !== 1 && W.own[D.t] < 2).sort((a, b) => Math.hypot(a.x - F.x, a.y - F.y) - Math.hypot(b.x - F.x, b.y - F.y))[0] || (T.t > 500 ? Hs[0] : null);
+    if (goal) { let best = null, bd = 1e18; for (let n = 0; n < 500; n++) { const i = Math.floor(W.R() * 150 * 150), x = (i % 150 + .5) * LT, y = (((i / 150) | 0) + .5) * LT; if (C.canBuild(W, "totem", x, y)) continue; const d = Math.hypot(x - goal.x, y - goal.y); if (d < bd) { bd = d; best = [x, y]; } }
+      if (best && (!Hs.includes(goal) || bd > LT * (C.CAMP_R + 3))) C.tribeBuild(W, "totem", best[0], best[1]); }
+  }
+  for (const O of Os) { const j = T.rv.indexOf(O); if (T.res.food > 50 + C.giftCost(O)) C.tribeGift(W, j, "food"); if (spare("wood") > 50 + C.giftCost(O)) C.tribeGift(W, j, "wood");
+    for (const m of C.tradeOffers(O)) if (T.res[m] < 10) { C.tribeTrade(W, j, m); break; } }
 }
 function tribeChief(W, B) {
-  const T = W.S.tribe, P = W.player, LT = C.LT, H = T.rv.find(r => r.kind === "hostile"), O = T.rv.find(r => r.kind === "open"), hj = T.rv.indexOf(H), oj = T.rv.indexOf(O);
+  const T = W.S.tribe, P = W.player, LT = C.LT, Os = T.rv.filter(r => r.kind === "open" && !r.state);
   if (W.duel) return; if (P.mode === "hunt" && P.tg && !P.tg.dead) { if (P.hp < P.max * .3) { C.landLeave(W); C.landGoTo(W, W.home); } return; }
   const att = W.cr.find(q => (q.kind === "rival" && q.tg === P || q.kind === "npc" && q.ai.tg === P) && Math.hypot(q.x - P.x, q.y - P.y) < LT * 4);
   if (att && P.hp > P.max * .4) { C.landHunt(W, att); return; }
   if (P.hp < P.max * .45) { W.rally = false; if (!P.goal || P.goal.kind !== "home") C.landGoTo(W, W.home); return; }
   if (P.path || P.goal) return;
-  // explore for deposits early on
   const D = W.deps.filter(d => !T.deps[d.n] && (Math.hypot(d.x - W.home.x, d.y - W.home.y) < LT * 32 || !W.deps.some(e => e.m === d.m && T.deps[e.n]))).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0];
   if (D && (T.t < 900 || !T.found[D.m])) { C.landGo(W, D.x, D.y); return; }
-  if (!O.state && C.canImpress(W, oj)) { const q = C.socialQ(P.st, P.d), seqs = C.impressPlan(W, { lsp: O.i }); let sc = 0, n = 0; for (const s of seqs) for (const k of s) { sc += q[k]; n++; } W.S.time += n * 1.8; C.tribeImpressEnd(W, oj, sc / n); return; }
-  if (!O.state && O.mood >= 0 && T.t >= (O.cd.imp || 0) && Math.hypot(P.x - O.x, P.y - O.y) > LT * 3) { C.landGoTo(W, W.fires[oj + 1]); return; }
-  if (H.state) return;
-  const guards = C.jobCount(W, "guard");
+  for (const O of Os) { const oj = T.rv.indexOf(O); if (C.canImpress(W, oj)) { const q = C.socialQ(P.st, P.d), seqs = C.impressPlan(W, { lsp: O.i }); let sc = 0, n = 0; for (const s of seqs) for (const k of s) { sc += q[k]; n++; } W.S.time += n * 1.8; C.tribeImpressEnd(W, oj, sc / n); return; } }
+  const O = Os.filter(o => o.mood >= 0 && T.t >= (o.cd.imp || 0)).sort((a, b) => b.mood - a.mood)[0];
+  if (O && (T.t < 1500 || !T.rv.some(r => r.kind === "hostile" && !r.state))) { C.landGoTo(W, W.fires[T.rv.indexOf(O) + 1]); return; }
+  const H = T.rv.filter(r => r.kind === "hostile" && !r.state).sort((a, b) => a.spirit - b.spirit)[0]; if (!H) { if (O) C.landGoTo(W, W.fires[T.rv.indexOf(O) + 1]); return; }
+  const hj = T.rv.indexOf(H), guards = C.jobCount(W, "guard");
   if (guards < (T.tools.spear ? 4 : 7)) { if (Math.hypot(P.x - W.home.x, P.y - W.home.y) > LT * 4) C.landGoTo(W, W.home); return; }
-  W.rally = true;
+  W.rally = true; T.rv.forEach((r, j) => { if (C.isAlly(r)) C.tribeAskHelp(W, j); });
   if (C.canTake(W, hj)) { C.tribeTake(W, hj); return; }
   if (W.cap) return;
   const atH = Math.hypot(P.x - H.x, P.y - H.y) < LT * 3.5;
@@ -183,12 +189,12 @@ function runTribe(S, diet, seed) {
     C.stepWorld(TW, 1 / 20, {});
     for (const e of TW.ev) { tev[e.t] = (tev[e.t] || 0) + 1; if (e.t === "villDied") tev["vd_" + e.by] = (tev["vd_" + e.by] || 0) + 1; if (e.t === "die") { if (verbose && (tev.die || 0) < 6) { const P = TW.player; console.log("    chief died", Math.round(T.t), e.how, "near", TW.cr.filter(q => Math.hypot(q.x - P.x, q.y - P.y) < 250).map(q => q.kind + (q.champ ? "C" : "") + (q.raid ? "R" : "")).join(","), "duel", !!TW.duel, "hp", P.hp, P.max); } C.respawn(TW); } }
     TW.ev.length = 0;
-    if (verbose && S.time - t2 > tlog) { tlog += 300; console.log("  tribe", diet, seed, Math.round((S.time - t2) / 60), "min: pop", C.popAll(T), "/", C.room(T), "food", Math.round(T.res.food), "wood", Math.round(T.res.wood), "stone", Math.round(T.res.stone), "tools", Object.keys(T.tools).join(""), "builds", T.builds.map(b => b.k[0] + (b.done ? "" : "?")).join(""), "rivals", T.rv.map(r => r.kind[0] + r.pop + ":" + Math.round(r.kind === "open" ? r.mood : r.spirit) + (r.state ? r.state : "")).join(" "), "hem", (TW.hem || []).map(h => h.toFixed(2)).join(",")); }
+    if (verbose && S.time - t2 > tlog) { tlog += 300; console.log("  tribe", diet, seed, Math.round((S.time - t2) / 60), "min: pop", C.popAll(T), "/", C.room(T), "food", Math.round(T.res.food), "wood", Math.round(T.res.wood), "stone", Math.round(T.res.stone), "tools", Object.keys(T.tools).join(""), "builds", T.builds.map(b => b.k[0] + (b.done ? "" : "?")).join(""), "rivals", T.rv.map(r => r.kind[0] + r.pop + ":" + Math.round(r.kind === "open" ? r.mood : r.spirit) + (r.state ? r.state : "")).join(" "), "up", JSON.stringify(C.upkeep(TW)), "hem", (TW.hem || []).map(h => h.toFixed(2)).join(",")); }
   }
   const tmin = Math.round((S.time - t2) / 60);
   if (!T.done) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) didn't finish the tribe stage in 120 min (${T.rv.map(r => r.name + " " + (r.state || (r.kind === "open" ? "mood " + Math.round(r.mood) : "spirit " + Math.round(r.spirit)))).join(", ")})`); }
   else { if (tmin < 15) { bad++; console.error(`life: the ${diet} eater bot (seed ${seed}) finished the tribe stage in ${tmin} min: too quick`); }
-    tribeOut.push(`${diet} ${tmin} min (${C.popAll(T)} people, ${Object.keys(T.tools).length} tools, ${S.tribeNature}, raids beaten ${T.rv[1].beat}/${T.rv[1].beat + T.rv[1].won})`); }
+    tribeOut.push(`${diet} ${tmin} min (${C.popAll(T)} people, ${Object.keys(T.tools).length} tools, ${S.tribeNature}, raids beaten ${T.rv.reduce((a, r) => a + r.beat, 0)}/${T.rv.reduce((a, r) => a + r.beat + r.won, 0)}, ${T.builds.filter(b => b.k === "camp" && b.done).length} new camps)`); }
   if (verbose) console.log("tribe events", JSON.stringify(tev));
 }
 let bad = 0; const out = [], seaOut = [], landOut = [], tribeOut = [], grown = [];

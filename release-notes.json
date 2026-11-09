@@ -487,10 +487,13 @@
         "Finish the land stage and your species starts a tribe on the same island. Tap Start a tribe.",
         "You're the Chief: tap to walk as before. Your villagers work on their own. Tap Jobs to choose who chops wood, digs stone, fetches materials, hunts, builds or guards. Everyone else gathers food.",
         "Build huts so the tribe can grow, totems to claim more land, and watch fires to guard it. Villagers only gather inside your land.",
+        "Fires burn wood and buildings need mending every minute, and your stores only hold so much, so keep enough people chopping wood and digging stone.",
         "Explore to find flint, clay and reeds, claim them with a totem, and bring them home to make tools: axes, spears, baskets, pots, shields and slings.",
-        "Two neighbouring tribes share the island. Win over the friendly one with gifts, trade and a show for its chief, until it joins you.",
-        "The hostile one raids your camp. Break its spirit to make it give in: hem it in with totems, beat its raids, burn its totems, raid its stores or beat its champion in a duel.",
-        "Settle both neighbours to finish the stage. To try it straight away, start a new life and pick Tribe stage under Start at."
+        "Four neighbouring tribes share the island. Win over the friendly ones with gifts, trade and a show for their chief. At friendship 60 they become your allies and send warriors to help, and at 100 they join you.",
+        "Hostile tribes raid your camp. Break their spirit to make them give in: hem them in with your land and your allies' land, beat their raids, burn their totems, raid their stores or beat their champion in a duel.",
+        "Send a founding party to start a new camp far from your others, with land of its own.",
+        "Settle all four neighbours to finish the stage. To try it straight away, start a new life and pick Tribe stage under Start at.",
+        "Land stage: creatures are smaller and the camera is closer in, so the island feels bigger. When the volcano erupts, the camera pulls back so you can see where to run."
       ]
     }
   ]
