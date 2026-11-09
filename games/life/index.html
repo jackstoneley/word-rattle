@@ -749,7 +749,7 @@ function kill(W, B, src) {
       W.ev.push({ t: "bossDown", n: B.boss });
     }
   }
-  if (mine && B.k > P.k * 1.05) goal(W, "big");
+  if (mine && B.k > P.k * 1.05 && W.sea) goal(W, "big"); // a sea goal only: the land has its own list
   if (src === P && !W.tribe) {
     cur(W.S).kills++;
     // sometimes it leaves behind one of its own parts for you to pick up
@@ -764,7 +764,7 @@ function grow(W, v, ty) {
 function lockedParts(S) { return stageParts(S).filter(p => !cur(S).unlocked.includes(p.id)); }
 /* Sea goals: each pays 25 DNA and leaves a pod with a part you haven't got. */
 function goal(W, id) {
-  const c = cur(W.S); if ((!W.sea && !W.land) || W.tribe || !c.goals || c.goals[id]) return;
+  const c = cur(W.S); if ((!W.sea && !W.land) || W.tribe || !c.goals || c.goals[id] || !(W.land ? LAND_GOALS : SEA_GOALS).some(g => g.id === id)) return;
   c.goals[id] = 1; c.dna += 25; const P = W.player, pid = pickLocked(W.S, W.R);
   if (pid && W.land) { const x = P.x + Math.cos(P.a) * LT * 1.5, y = P.y + Math.sin(P.a) * LT * 1.5, ok = passXY(W, x, y); W.pods.push({ x: ok ? x : P.x, y: ok ? y : P.y + 30, r: 14, ph: 0, id: pid, life: 90 }); }
   else if (pid) W.pods.push({ x: clamp(P.x + Math.cos(P.a) * P.g.R * P.k * 4, -SEA.W, SEA.W), y: clamp(P.y + Math.sin(P.a) * P.g.R * P.k * 4, 10, SEA.D), r: 11 * P.k, ph: 0, id: pid, life: 60 });
@@ -2817,7 +2817,7 @@ function handleEvents() {
     else if (e.t === "kill") { snd("kill"); for (let i = 0; i < 14; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90 * e.k, vy: (Math.random() - .5) * 90 * e.k, life: .8, col: `hsl(${e.h} 70% 60%)`, r: 2.4 * e.k }); }
     else if (e.t === "bite") { for (let i = 0; i < 3; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 50 * P.k, vy: (Math.random() - .5) * 50 * P.k, life: .35, col: "#FF6B7E", r: 1.6 * P.k }); }
     else if (e.t === "ready") { snd("grow"); toast(W.sea ? (cur(S).tier < 4 ? "Fully grown! Swim back to your nest ⌂ to evolve and get bigger." : "As big as you'll get! Evolve at your nest ⌂ to get ready for land.") : "Fully grown! Find your mate ❤ to evolve and get bigger."); }
-    else if (e.t === "goal") { snd("relic"); toast(`Goal done: ${(W.land ? LAND_GOALS : SEA_GOALS).find(g => g.id === e.id).n}! +25 DNA and a pod ✦`); }
+    else if (e.t === "goal") { snd("relic"); { const g = (W.land ? LAND_GOALS : SEA_GOALS).find(x => x.id === e.id); if (g) toast(`Goal done: ${g.n}! +25 DNA and a pod ✦`); } }
     else if (e.t === "boss") { snd("hurt"); toast(`Something huge stirs in the Deep: ${e.n}.`); }
     else if (e.t === "bossDown") { snd("grow"); toast(`You beat ${e.n}! +60 DNA and two pods ✦`); }
     else if (e.t === "allyDie") { toast("One of your young was eaten."); }

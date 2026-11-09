@@ -507,6 +507,14 @@
         "Settle all four neighbours to finish the stage. To try it straight away, start a new life and pick Tribe stage under Start at.",
         "Land stage: creatures are smaller and the camera is closer in, so the island feels bigger. When the volcano erupts, the camera pulls back so you can see where to run."
       ]
+    },
+    {
+      "id": 45,
+      "type": "fixes",
+      "headline": "Life: no more crash when beating a big animal",
+      "details": [
+        "On land, the game no longer crashes just as you beat an animal bigger than you, such as one from a big herd."
+      ]
     }
   ]
 }
