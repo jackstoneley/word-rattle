@@ -525,6 +525,19 @@
         "Tapping an animal works much better: tap anywhere on its body, legs included, even on tall ones.",
         "When something attacks you, you now bite back on your own, and there's a Fight back button to go after it properly (as well as Run and your moves)."
       ]
+    },
+    {
+      "id": 47,
+      "type": "features",
+      "headline": "Hollowdeep: old places, surprises, rare creatures and better-looking rooms",
+      "details": [
+        "Rooms look like rooms now: floors run across the whole room (planks, big slabs, raked sand, carpets), the back wall has shelves, weapon racks, banners and torches, and there are many more bits of furniture, spread out thinly.",
+        "Old places are hidden in the rock, about halfway between you and your rivals. Beat a Sealed tomb's guardians to take its treasure. Hold a Mana spring, War idol, Mother lode or Healing well for a lasting boost. Rivals hunt for them too, and will try to take yours.",
+        "Surprises every few minutes: a tremor opens a new tunnel, a rockfall bares a gold seam, beasts burst into somebody's realm, or sell-swords camp in the rock for whoever reaches them first.",
+        "Five rare creatures that come only when something unusual is true of your realm: the Shade (a spy who slips into rival realms and steals their gold), Wyrm, Ghoul, Sporeling and Ember imp. Rivals can get them too: Watchtowers, alarm bells and guards spot Shades.",
+        "You now choose your army: tap the creature count at the top to see what each kind needs, and to turn kinds away from your Gates.",
+        "Games already in progress carry on as they were, and get the surprises. Old places appear in new games (from the second realm on)."
+      ]
     }
   ]
 }

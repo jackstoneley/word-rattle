@@ -275,6 +275,18 @@ growth, army size (`aiCap`, rising through the game) and boldness. They keep a w
 expand all game towards gold, Gates, lost creatures and the map centre (forgetting unreachable marks), and go to war on the weakest
 realm (`strength`): gather on their border (`phase` gather → march), retreat below 35% of the raid. A beaten realm's land and rooms
 pass to the winner (`destroyRealm`). Any keeper raises `alarmAt` when enemy fighters enter its land near the Heart; creatures rush there.
+**Old places** (`W.sites` `[{k, i, st, o, g, by}]`, `SITES` keyed by id: append only; old saves have none): made in `newWorld` from
+their own random stream (`RS`), so adding them left every seed's map as it was: keep any new map feature on a separate stream too.
+They sit about halfway between realms. A `tomb` has `wight` guardians (`g` counted in `siteCount`), can't be claimed while they stand,
+and pays out once in `siteTaken` (called from `claimTile`). The others (`spring`, `idol`, `lode`, `well`) help whoever owns the tile
+(`K.c.sites`, filled by `siteCount` in `recount`; effects in `keeperTick` and `hit`). Rivals dig to them in `aiExpand` and send their
+army at a guarded tomb (`K.siteT`). **Events** (`W.evn {next, n, last}`, `worldEvent`, `EVENTS`: tremor, gold, swarm, band) fire every
+few minutes except in the tips realm. **Rare creatures** (`rare`, `max` in `KINDS`; `"x:"` needs read `K.c.x` (`lava`, `dead`,
+`found`) or `K.gold`): sporeling, shade, imp, ghoul, wyrm. A Shade (`sneak`) runs errands in `spyTick` (`u.sp {ph, o}`, not saved): it is
+`hidden()` from targeting, Heart zaps, runes and spike pits until `spotted()` (a rival fighter within reach, a Watchtower, an alarm
+bell, or being hit), passes rival doors, steals from a treasury and carries it home. The player picks who may come: `K.ban {kind: 1}`
+(the Gates list in `openRealm`). Room art: `drawRoomTile` draws floors from world coordinates so patterns run across tiles, wall
+furniture on tiles with no room above, and a sparse prop from a long list per tile hash.
 
 ### Life (`games/life`)
 
