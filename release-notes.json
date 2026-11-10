@@ -538,6 +538,19 @@
         "You now choose your army: tap the creature count at the top to see what each kind needs, and to turn kinds away from your Gates.",
         "Games already in progress carry on as they were, and get the surprises. Old places appear in new games (from the second realm on)."
       ]
+    },
+    {
+      "id": 48,
+      "type": "features",
+      "headline": "Hollowdeep turns darker: torture, sacrifice, chosen research and sound",
+      "details": [
+        "A darker mood: places you can't see lie in shadow, the dark closes in round the screen, blood stays where things die, and a voice in the dark comments on how you're doing.",
+        "Sound for the first time: a low drone, your Heart beating (faster when it's hurt), digging, fighting, spells and screams. Turn it off from the ☰ menu.",
+        "Torture chamber: breaks prisoners much faster than persuasion, and a broken rival's creature gives away the map of its old realm. Some don't survive. Build squares for a Rack or a Wheel of pain. It brings a new creature, the Tormentor.",
+        "Three more rooms: the Fighting pit (free levelling, but it hurts), the Gambling den (cheers creatures up and earns you gold) and the Dark altar (sacrifice a creature for mana, research and a mended Heart).",
+        "You choose what your Library studies: tap Spells, then Study. Known spells can be mastered to cost less mana. Three new spells: Curse, Raise the dead and Hellfire.",
+        "Creatures grow bigger as they level up, and diggers now level up from working: faster digging and claiming, and bigger loads."
+      ]
     }
   ]
 }

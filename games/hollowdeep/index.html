@@ -24,6 +24,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.sm{padding:7px 12px;font-size:.9rem}
 .muted{color:var(--muted)}
+.toast.evil{font-style:italic;color:#E2C8FF;background:rgba(28,8,40,.92);border-left-color:#9B5CFF}
 #menu{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -152,6 +153,11 @@ h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
         <li><b>Old places:</b> from the second realm on, a few old places lie hidden in the rock, about halfway between you and your rivals. A <b>Sealed tomb</b> has guardians: beat them, let a digger claim it, and its treasure is yours. A <b>Mana spring</b>, <b>War idol</b>, <b>Mother lode</b> or <b>Healing well</b> helps whoever owns the floor under it, so rivals will try to take it.</li>
         <li><b>Surprises:</b> every few minutes something happens. A tremor opens a new tunnel, a rockfall bares a gold seam, beasts burst into somebody's realm, or sell-swords camp in the rock for whoever reaches them first.</li>
         <li><b>Who is welcome:</b> tap 👾 at the top to choose which kinds may come through your Gates. ★ Rare creatures come only when something unusual is true: a <b>Shade</b> (a spy who steals rival gold) wants a Watchtower and a rival's Heart found; a <b>Wyrm</b> wants a Vault and 4,000 gold; a <b>Ghoul</b> a Crypt and six of your own dead; a <b>Sporeling</b> a huge farm; an <b>Ember imp</b> floor beside lava.</li>
+        <li><b>Research:</b> you choose what your Library studies. Tap ✨ Spells, then 📚 Study. A spell you already know can be mastered so it costs less mana. New spells: Curse, Raise the dead and Hellfire.</li>
+        <li><b>Torture chamber:</b> diggers bring prisoners here once they have rested in the Jail. It breaks them much faster than persuasion, and a broken rival's creature gives away the map of its old realm, but some die. A 2×2 square makes a Rack, a 3×3 a Wheel of pain. It also brings Tormentors.</li>
+        <li><b>More rooms:</b> creatures brawl in a <b>Fighting pit</b> to level up for free (it hurts them); they cheer up in a <b>Gambling den</b> and you keep their stakes; and on a <b>Dark altar</b> you can sacrifice one of your own (drop it there with ✋ Hand) for mana, research and a mended Heart.</li>
+        <li><b>Levels:</b> creatures grow bigger as they level up. Diggers level up too, from working: they dig and claim faster and carry more.</li>
+        <li><b>Sound</b> can be turned off from the ☰ menu.</li>
         <li><b>Heroes</b> come down the stairs from the surface in waves, with a Dwarf digging the way. Doors, traps and a strong guard keep them out.</li>
         <li><b>🚩 Flag:</b> plant it, and your creatures march there and fight anything on the way. Plant it on a rival's Heart to attack it.</li>
         <li><b>✋ Hand:</b> pick up as many as 8 creatures, then tap your own floor to drop them there.</li>
@@ -200,8 +206,8 @@ h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
 /*CORE-START*/
 /* Rules, map maker, creatures and rival lords. No page dependencies, so a Node script can play whole games. */
 const T={ROCK:1,HARD:2,GOLD:3,GEM:4,FLOOR:5,HEART:6,GATE:7,LAVA:8,WATER:9,STAIR:10};
-const RM={LAIR:1,FARM:2,TREASURY:3,TRAINING:4,LIBRARY:5,WORKSHOP:6,SHRINE:7,GUARD:8,CRYPT:9,JAIL:10,PERSUADE:11};
-const RI={lair:1,farm:2,treasury:3,training:4,library:5,workshop:6,shrine:7,guard:8,crypt:9,jail:10,persuade:11};
+const RM={LAIR:1,FARM:2,TREASURY:3,TRAINING:4,LIBRARY:5,WORKSHOP:6,SHRINE:7,GUARD:8,CRYPT:9,JAIL:10,PERSUADE:11,TORTURE:12,PIT:13,DEN:14,ALTAR:15};
+const RI={lair:1,farm:2,treasury:3,training:4,library:5,workshop:6,shrine:7,guard:8,crypt:9,jail:10,persuade:11,torture:12,pit:13,den:14,altar:15};
 const ROOMS=[null,
   {id:"lair",name:"Lair",icon:"🛏",cost:80,desc:"Beds. Each tile is a bed for one creature. 4 tiles bring Beetles."},
   {id:"farm",name:"Mushroom farm",icon:"🍄",cost:100,desc:"Grows mushrooms. Hungry creatures eat here, or get grumpy."},
@@ -213,7 +219,11 @@ const ROOMS=[null,
   {id:"guard",name:"Guard room",icon:"🛡",cost:90,desc:"Idle creatures stand guard here, ready for trouble."},
   {id:"crypt",name:"Crypt",icon:"⚰",cost:160,desc:"A place for the dead. Its Sarcophagi raise Skeletons, who need no bed, food or pay."},
   {id:"jail",name:"Jail",icon:"⛓",cost:110,desc:"With a Jail, enemies your side beats are knocked out instead of killed, and your diggers lock them up. One prisoner per tile."},
-  {id:"persuade",name:"Persuasion room",icon:"🗣",cost:150,desc:"Diggers bring prisoners here to be talked round. Won-over prisoners join you: heroes and wild creatures too."}];
+  {id:"persuade",name:"Persuasion room",icon:"🗣",cost:150,desc:"Diggers bring prisoners here to be talked round. Won-over prisoners join you: heroes and wild creatures too."},
+  {id:"torture",name:"Torture chamber",icon:"🩸",cost:170,desc:"Diggers bring rested prisoners here to be broken. Far quicker than persuasion, but some don't survive it. A broken prisoner joins you, and one who served a rival gives away the map of their realm. 6 tiles bring Tormentors."},
+  {id:"pit",name:"Fighting pit",icon:"🥊",cost:110,desc:"Creatures fight each other here for the fun of it. They level up fast and it costs no gold, but they get hurt doing it."},
+  {id:"den",name:"Gambling den",icon:"🎲",cost:160,desc:"Bored and grumpy creatures gamble here and cheer up fast. The house keeps their stakes, so you earn gold, though now and then one of them wins big."},
+  {id:"altar",name:"Dark altar",icon:"🔪",cost:200,desc:"Drop one of your own creatures here with ✋ Hand to sacrifice it. The dark pays in mana, research and a mended Heart: more for a higher level."}];
 /* Special shapes inside rooms: [2x2 square, 3x3 square]. A room's tiles are matched greedily, 3x3 first. */
 const FEATS=[null,
   [{name:"Big nest",does:"creatures sleeping on it heal much faster and wake up happier."},null],
@@ -226,18 +236,31 @@ const FEATS=[null,
   [{name:"Watchtower",does:"you can see a long way around it."},null],
   [{name:"Sarcophagus",does:"it raises a Skeleton, and another whenever one falls."},null],
   [{name:"Iron cage",does:"knocked-out enemies stay down much longer, so your diggers have time to fetch them."},null],
-  [{name:"Fireside",does:"prisoners on it are won over twice as fast."},{name:"Great hall",does:"prisoners in it are won over three times as fast, and join a level higher."}]];
+  [{name:"Fireside",does:"prisoners on it are won over twice as fast."},{name:"Great hall",does:"prisoners in it are won over three times as fast, and join a level higher."}],
+  [{name:"Rack",does:"prisoners on it break half as fast again, and fewer die."},{name:"Wheel of pain",does:"prisoners on it break twice as fast, and while it turns the screams put fear into your realm: everyone trains and digs faster."}],
+  [null,{name:"Grand arena",does:"fighters in it level up nearly twice as fast."}],
+  [{name:"High table",does:"the house takes twice as much."},null],
+  [{name:"Blood stone",does:"sacrifices pay half as much again."},null]];
 /* Spells, cast with mana. A spell is known once research (from the Library) reaches its rp. Append only: saves hold nothing by index, but keep the order. */
 const SPELLS=[null,
-  {id:"lightning",name:"Lightning",icon:"⚡",cost:60,rp:0,desc:"Strikes a spot you can see, hurting every enemy there."},
-  {id:"possess",name:"Possess",icon:"👑",cost:25,rp:0,desc:"Take control of one of your creatures and fight with it yourself. Uses a little mana every second."},
-  {id:"heal",name:"Heal",icon:"💚",cost:70,rp:40,desc:"Heals your creatures in a small area by half."},
-  {id:"sight",name:"Sight",icon:"👁",cost:50,rp:80,desc:"Lets you see a wide area for 30 seconds, even through rock."},
-  {id:"haste",name:"Haste",icon:"💨",cost:60,rp:130,desc:"Your creatures in a small area move and strike much faster for 25 seconds."},
-  {id:"call",name:"Call to arms",icon:"📯",cost:100,rp:190,desc:"Every creature drops what it's doing and charges to the spot, hitting harder for 30 seconds."},
-  {id:"cavein",name:"Cave-in",icon:"🪨",cost:120,rp:260,desc:"Brings the roof down on a 3×3 patch of floor, crushing enemies and blocking the tunnel."}];
-const SP={LIGHT:1,POSS:2,HEAL:3,SIGHT:4,HASTE:5,CALL:6,CAVE:7};
-const spellKnown=(K,k)=>(K.rp||0)>=SPELLS[k].rp;
+  {id:"lightning",name:"Lightning",icon:"⚡",cost:60,rp:0,rc:50,desc:"Strikes a spot you can see, hurting every enemy there."},
+  {id:"possess",name:"Possess",icon:"👑",cost:25,rp:0,rc:50,desc:"Take control of one of your creatures and fight with it yourself. Uses a little mana every second."},
+  {id:"heal",name:"Heal",icon:"💚",cost:70,rp:40,rc:40,desc:"Heals your creatures in a small area by half."},
+  {id:"sight",name:"Sight",icon:"👁",cost:50,rp:80,rc:40,desc:"Lets you see a wide area for 30 seconds, even through rock."},
+  {id:"haste",name:"Haste",icon:"💨",cost:60,rp:130,rc:50,desc:"Your creatures in a small area move and strike much faster for 25 seconds."},
+  {id:"call",name:"Call to arms",icon:"📯",cost:100,rp:190,rc:60,desc:"Every creature drops what it's doing and charges to the spot, hitting harder for 30 seconds."},
+  {id:"cavein",name:"Cave-in",icon:"🪨",cost:120,rp:260,rc:70,desc:"Brings the roof down on a 3×3 patch of floor, crushing enemies and blocking the tunnel."},
+  {id:"curse",name:"Curse",icon:"☠",cost:80,rp:330,rc:60,desc:"Enemies in a small area sicken for 20 seconds: they wither, slow down and hit much more weakly."},
+  {id:"raise",name:"Raise the dead",icon:"💀",cost:110,rp:410,rc:80,desc:"Three Skeletons claw their way up where you point and fight for you for 75 seconds."},
+  {id:"hellfire",name:"Hellfire",icon:"🔥",cost:170,rp:520,rc:110,desc:"A pillar of fire that burns every enemy in a wide area, and scorches doors."}];
+const SP={LIGHT:1,POSS:2,HEAL:3,SIGHT:4,HASTE:5,CALL:6,CAVE:7,CURSE:8,RAISE:9,HELL:10};
+/* Research: the keeper chooses what the Library studies. K.known {spell id: 1 known, 2 mastered (30% less mana)}, K.res the spell being studied,
+   K.rpg the points put into it. K.rp is still the running total: saves from before this decide what is known from it (the old fixed order) */
+function resInit(K){if(K.known)return;K.known={};for(let k=1;k<SPELLS.length;k++)if((K.rp||0)>=SPELLS[k].rp)K.known[SPELLS[k].id]=1;K.rpg=K.rpg||0}
+const spellKnown=(K,k)=>{resInit(K);return !!K.known[SPELLS[k].id]};
+const spellCost=(K,k)=>Math.round(SPELLS[k].cost*(K.known&&K.known[SPELLS[k].id]>1?.7:1));
+const resCost=(K,k)=>{resInit(K);return K.known[SPELLS[k].id]?Math.round(SPELLS[k].rc*1.5):SPELLS[k].rc};
+const spellIx=id=>SPELLS.findIndex(S=>S&&S.id===id);
 const TRAPS=[null,
   {id:"spike",name:"Spike pit",icon:"⚙",gold:60,craft:20,need:0,desc:"Spikes jab every rival who steps on it."},
   {id:"boulder",name:"Boulder",icon:"🪨",gold:140,craft:40,need:2,desc:"Rolls a boulder back down the tunnel, flattening everyone in the way."},
@@ -267,6 +290,7 @@ const KINDS={
   cleric:{name:"Cleric",hp:130,spd:1.8,atk:8,cd:1.2,rng:3,wage:45,hero:1,heal:14,blurb:"A hero who heals the others."},
   dwarf:{name:"Dwarf",hp:180,spd:1.9,atk:12,cd:1,rng:1.2,wage:30,hero:1,digs:1,blurb:"A hero who digs tunnels for the others."},
   champion:{name:"Hero Champion",hp:1500,spd:1.6,atk:42,cd:1.4,rng:1.4,wage:150,hero:1,boss:1,blurb:"The surface's greatest hero."},
+  tormentor:{name:"Tormentor",hp:170,spd:2.5,atk:21,cd:.8,rng:1.9,wage:60,need:{lair:4,torture:6},blurb:"Comes for the screams. A fast, cruel fighter with a long whip, who unwinds in the Torture chamber."},
   wight:{name:"Tomb guardian",hp:260,spd:1.7,atk:22,cd:1.3,rng:1.3,wage:0,wild:1,undead:1,blurb:"Long dead, and still guarding its tomb."},
   /* rare creatures: they come only when something unusual is true of your realm ("x:" needs), and only a few of each (max) */
   sporeling:{name:"Sporeling",hp:150,spd:1.7,atk:10,cd:1.1,rng:1.2,wage:0,need:{lair:4,farm:12,"f:2":2},rare:1,max:4,nofood:1,regen:.02,blurb:"Grows out of a huge farm. Never hungry, never paid, and mends by itself."},
@@ -275,7 +299,7 @@ const KINDS={
   ghoul:{name:"Ghoul",hp:240,spd:2,atk:20,cd:1.1,rng:1.2,wage:30,need:{lair:4,crypt:4,"x:dead":6},rare:1,max:3,steal:.5,nofood:1,blurb:"Drawn by death. Heals itself with every bite, and never needs feeding."},
   wyrm:{name:"Wyrm",hp:700,spd:1.5,atk:44,cd:1.8,rng:3,wage:160,need:{lair:9,"f:3":1,"x:gold":4000},rare:1,max:1,fire:1,splash:1,greedy:1,blurb:"A young dragon, drawn to a great hoard. Burns whole groups, and sulks if the gold runs low."}
 };
-const FIGHTERS=["beetle","goblin","hexer","ogre","tinker","spirit","sporeling","shade","imp","ghoul","wyrm"];
+const FIGHTERS=["beetle","goblin","hexer","ogre","tinker","spirit","sporeling","shade","imp","ghoul","wyrm","tormentor"];
 /* a Shade on an errand that nobody has spotted: rivals, their Hearts and most traps don't notice it */
 const hidden=(W,u)=>!!u.sp&&!(u.spotT>W.t);
 const WILD=5,HERO=6,NEUTRAL=7;
@@ -300,17 +324,17 @@ const CAMPAIGN=[
     blurb:"Lost creatures wait in the dark for whoever reaches them first. Guard rooms keep watch."},
   {name:"Book Learning",size:52,rivals:1,diff:0,caves:5,seed:5050,par:28,s3:["heart",60],adds:{r:[5],k:["hexer"],s:[3,4]},
     blurb:"A Library brings Hexers and researches new spells: Heal and Sight."},
-  {name:"The Workshop",size:52,rivals:2,diff:0,caves:5,seed:606,par:30,s3:["lost",6],adds:{r:[6],k:["tinker"],i:["d1","t1","t5"]},
+  {name:"The Workshop",size:52,rivals:2,diff:0,caves:5,seed:606,par:30,s3:["lost",6],adds:{r:[6,13],k:["tinker"],i:["d1","t1","t5"]},
     blurb:"Two rivals. A Workshop makes doors, spike pits and alarm bells."},
-  {name:"Wild Deeps",size:56,rivals:1,diff:1,caves:8,seed:707,wild:2,par:30,s3:["capture",3],adds:{r:[10,11]},
+  {name:"Wild Deeps",size:56,rivals:1,diff:1,caves:8,seed:707,wild:2,par:30,s3:["capture",3],adds:{r:[10,11,12],k:["tormentor"]},
     blurb:"Caves full of wild beasts. Build a Jail to capture them, and a Persuasion room to win them over."},
-  {name:"The Crossing",size:56,rivals:2,diff:1,caves:6,seed:808,theme:"deep",par:32,s3:["lost",8],adds:{r:[7],k:["spirit"],s:[5],i:["d2","t2"]},
+  {name:"The Crossing",size:56,rivals:2,diff:1,caves:6,seed:808,theme:"deep",par:32,s3:["lost",8],adds:{r:[7,14],k:["spirit"],s:[5],i:["d2","t2"]},
     blurb:"Underground lakes. Shrines bring healing Spirits; iron doors and rolling boulders hold the tunnels."},
-  {name:"The Siege",size:60,rivals:1,diff:1,caves:6,seed:909,heroes:{first:360,every:240,waves:4},survive:1,par:34,s3:["heart",60],adds:{s:[6]},
+  {name:"The Siege",size:60,rivals:1,diff:1,caves:6,seed:909,heroes:{first:360,every:240,waves:4},survive:1,par:34,s3:["heart",60],adds:{s:[6,8],r:[15]},
     blurb:"Heroes come down from the surface in four waves. Call to arms rallies everyone at once."},
   {name:"Lava Halls",size:60,rivals:2,diff:1,caves:6,seed:1010,theme:"fire",par:36,s3:["kills",30],adds:{k:["ogre","imp"]},
     blurb:"Rivers of lava. A 3×3 Sparring ring brings mighty Ogres."},
-  {name:"Lost Souls",size:62,rivals:1,diff:0,caves:8,seed:1111,noGate:1,gates:2,lost:10,par:36,s3:["recruit",5],adds:{r:[9],k:["ghoul"]},
+  {name:"Lost Souls",size:62,rivals:1,diff:0,caves:8,seed:1111,noGate:1,gates:2,lost:10,par:36,s3:["recruit",5],adds:{r:[9],k:["ghoul"],s:[9]},
     blurb:"No Gate nearby: build your army from lost creatures, prisoners and the Crypt's Skeletons."},
   {name:"Three Crowns",size:64,rivals:3,diff:1,caves:7,seed:1212,par:42,s3:["heart",50],adds:{i:["t3","t4","d3"]},
     blurb:"Three rivals at once. A Great forge makes flame vents, lightning runes and warded doors."},
@@ -318,7 +342,7 @@ const CAMPAIGN=[
     blurb:"Flooded mines packed with treasure. Cave-in brings the roof down on your enemies."},
   {name:"Knights of the Surface",size:66,rivals:0,diff:1,caves:7,seed:1414,heroes:{first:360,every:220,waves:7,boss:1,size:1.2},survive:1,par:34,s3:["capture",4],adds:{},
     blurb:"No rivals: just seven waves of heroes and their Champion."},
-  {name:"Crystal Depths",size:68,rivals:3,diff:1,caves:9,seed:1515,theme:"crystal",par:50,s3:["treasure",4],adds:{},
+  {name:"Crystal Depths",size:68,rivals:3,diff:1,caves:9,seed:1515,theme:"crystal",par:50,s3:["treasure",4],adds:{s:[10]},
     blurb:"A huge glittering realm and three rivals. Everything is yours to use."},
   {name:"Prison Break",size:70,rivals:2,diff:1,caves:8,seed:1616,capture:6,par:45,s3:["recruit",3],adds:{},
     blurb:"Lock up six enemies, then beat both lords."},
@@ -424,7 +448,7 @@ function newWorld(spec){
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const i=I(cx+dx,cy+dy);W.tile[i]=T.HEART;W.own[i]=o}
     W.k[o]={o,name:ai?RIVALS[n-1]:"You",ai,gold:ai?1200+400*spec.diff:1200,cap:1500,hx:cx,hy:cy,hp:2000,maxhp:2000,alive:true,rally:-1,
       payT:PAYDAY,arriveT:ai?20:25,attackAt:ai?D.first:0,attacking:false,attackEnd:0,aiT:R()*2,hitT:-99,tunnelT:0,expT:0,goldT:0,zap:0,bp:[],bpN:0,cryptT:60,bellT:-99,bellAt:-1,anchor:{},
-      mana:200,manaMax:400,rp:0};
+      mana:200,manaMax:400,rp:0,known:{lightning:1,possess:1},rpg:0,res:null};
     if(ai){
       const P=(dx,dy)=>[cx+dx*sx,cy+dy*sy];
       gate(...P(3,3),o);
@@ -571,7 +595,7 @@ function moveAlong(W,u,dt){
   if(!u.path||u.pi>=u.path.length)return true;
   const c=u.path[u.pi];
   if(W.door[c]&&W.own[c]!==u.o&&!u.sp){u.blocked=c;return false}
-  const tx=c%W.w+.5+u.jx,ty=(c/W.w|0)+.5+u.jy,dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy),sp=KINDS[u.k].spd*dt*(u.haste>W.t?1.6:1)*(W.tile[tileOf(W,u)]===T.WATER?.5:1);
+  const tx=c%W.w+.5+u.jx,ty=(c/W.w|0)+.5+u.jy,dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy),sp=KINDS[u.k].spd*dt*(u.haste>W.t?1.6:1)*(u.curseT>W.t?.65:1)*(u.k==="digger"?1+.03*(u.lvl-1):1)*(W.tile[tileOf(W,u)]===T.WATER?.5:1);
   u.anim+=dt;if(Math.abs(dx)>.05)u.face=dx<0?-1:1;
   if(d<=sp){u.x=tx;u.y=ty;u.pi++;return u.pi>=u.path.length}
   u.x+=dx/d*sp;u.y+=dy/d*sp;return false;
@@ -592,7 +616,7 @@ function findFeats(W){
 const featAt=(W,i)=>W.featAt[i]>=0?W.feats[W.featAt[i]]:null;
 function recount(W){
   const N=W.w*W.h,RL=ROOMS.length;
-  for(let o=1;o<W.k.length;o++){const K=W.k[o];if(!K)continue;K.c={rooms:Array(RL).fill(0),tiles:ROOMS.map(()=>[]),feat:ROOMS.map(()=>[0,0,0,0]),floor:0,walk:[],gates:[],marks:0,fighters:0,diggers:0,undead:0,prisoners:0,lava:0,sites:{},x:{}}}
+  for(let o=1;o<W.k.length;o++){const K=W.k[o];if(!K)continue;K.c={rooms:Array(RL).fill(0),tiles:ROOMS.map(()=>[]),feat:ROOMS.map(()=>[0,0,0,0]),floor:0,walk:[],gates:[],marks:0,fighters:0,diggers:0,undead:0,prisoners:0,lava:0,sites:{},x:{},fear:0,summoned:0}}
   W.traps=[];
   if(W.hasLava==null)W.hasLava=W.tile.indexOf(T.LAVA)>=0;
   const tl=W.tile,ww=W.w,LV=T.LAVA;
@@ -604,10 +628,10 @@ function recount(W){
   for(const g of W.gates){const o=W.own[g];if(o&&W.k[o])W.k[o].c.gates.push(g)}
   W.digN.fill(0);
   for(const u of W.units){if(u.hp<=0)continue;
-    if(u.jail&&W.k[u.jail]&&W.k[u.jail].c)W.k[u.jail].c.prisoners++;
+    if(u.jail&&W.k[u.jail]&&W.k[u.jail].c){const jc=W.k[u.jail].c,ti=tileOf(W,u);jc.prisoners++;if(W.room[ti]===RM.TORTURE&&W.featAt[ti]>=0&&W.feats[W.featAt[ti]].n===3)jc.fear=1}
     if(u.task&&u.task.t==="dig"&&!u.held)W.digN[u.task.i*4+u.task.side]++;
     if(u.task&&u.task.t==="claim"&&!u.held)W.resC[u.task.i]=u.id;
-    if(!W.k[u.o]||u.o>=WILD||u.jail)continue;const c=W.k[u.o].c;if(u.k==="digger")c.diggers++;else{c.fighters++;if(KINDS[u.k].undead)c.undead++}}
+    if(!W.k[u.o]||u.o>=WILD||u.jail)continue;const c=W.k[u.o].c;if(u.k==="digger")c.diggers++;else{c.fighters++;if(KINDS[u.k].undead){c.undead++;if(u.ttl)c.summoned++}}}
   for(let o=1;o<W.k.length;o++){const K=W.k[o];if(!K)continue;K.cap=1500+500*K.c.rooms[RM.TREASURY]+1000*K.c.feat[RM.TREASURY][2];
     // the unusual things rare creatures look for
     K.c.x={lava:K.c.lava,dead:K.dead||0,found:(K.ai?W.t>300:W.k.some((R,q)=>R&&q>1&&W.known[R.hy*W.w+R.hx]))?1:0}}
@@ -657,7 +681,7 @@ function keeperTick(W,K,dt){
   if((K.arriveT-=dt)<=0)arrival(W,K,D);
   if(K.ai&&(K.aiT-=dt)<=0){K.aiT=2;aiThink(W,K,D)}
   // the Crypt raises a Skeleton for each Sarcophagus
-  if(c.feat[RM.CRYPT][2]>c.undead){if((K.cryptT-=dt)<=0){K.cryptT=90;const f=W.feats.find(f=>f.o===K.o&&f.r===RM.CRYPT);
+  if(c.feat[RM.CRYPT][2]>c.undead-c.summoned){if((K.cryptT-=dt)<=0){K.cryptT=90;const f=W.feats.find(f=>f.o===K.o&&f.r===RM.CRYPT);
     if(f){mkUnit(W,K.o,"skeleton",f.x+1,f.y+1);c.undead++;c.fighters++;fx(W,{k:"poof",x:f.x+1,y:f.y+1,c:"#9FE8A0"});if(!K.ai)ev(W,"A Skeleton rose from your Crypt.",f.y*W.w+f.x,"good")}}}
   else K.cryptT=Math.max(K.cryptT,30);
   // a Great altar slowly heals everyone
@@ -702,7 +726,7 @@ function arrival(W,K,D){
 
 function jailRoom(W,C){if(!C||!C.c||!C.c.rooms[RM.JAIL])return 0;let used=0;for(const v of W.units)if(v.hp>0&&(v.jail===C.o||v.ko&&v.koBy===C.o))used++;return C.c.rooms[RM.JAIL]-used}
 function hit(W,a,tg,amt,src){
-  if(a){if(a.buffT>W.t)amt*=1.3;if(W.poss&&W.poss.id===a.id)amt*=1.5;
+  if(a){if(a.buffT>W.t)amt*=1.3;if(a.curseT>W.t)amt*=.55;if(W.poss&&W.poss.id===a.id)amt*=1.5;
     const AK=a.o<WILD?W.k[a.o]:null;if(AK&&AK.c&&AK.c.sites.idol)amt*=1.15;
     if(KINDS[a.k].steal&&a.hp>0)a.hp=Math.min(maxHp(a),a.hp+amt*KINDS[a.k].steal)}
   tg.hp-=amt;if(tg.sp){tg.spotT=W.t+4;if(tg.sp.ph===0){tg.sp.ph=1;tg.path=null}}
@@ -720,7 +744,7 @@ function hit(W,a,tg,amt,src){
       if(by===1)evT(W,"ko",10,`You knocked out a ${KINDS[tg.k].name}. Your diggers will carry it to your Jail.`,tileOf(W,tg),"good");
       return;
     }
-    tg.hp=0;fx(W,{k:"poof",x:tg.x,y:tg.y,c:"#ddd"});
+    tg.hp=0;fx(W,{k:"poof",x:tg.x,y:tg.y,c:"#ddd"});if(!KINDS[tg.k].undead)fx(W,{k:"blood",x:tg.x,y:tg.y});
     if(tg.o<WILD&&tg.k!=="digger"&&W.k[tg.o])W.k[tg.o].dead=(W.k[tg.o].dead||0)+1;
     if(tg.o===1){W.stats.lost++;ev(W,`Your ${KINDS[tg.k].name} was killed.`,tileOf(W,tg),"bad")}else if(by===1)W.stats.kills++}
 }
@@ -729,6 +753,10 @@ function hitHeart(W,a,H,amt){
   if(H.o===1)evT(W,"heart",15,"Your Heart is under attack!",H.hy*W.w+H.hx,"bad");
   if(H.hp<=0)destroyRealm(W,H,a?a.o:0);
 }
+const digMult=(W,u)=>(1+.12*(u.lvl-1))*(W.k[u.o]&&W.k[u.o].c&&W.k[u.o].c.fear?1.15:1);
+const digLoad=u=>100+25*(u.lvl-1);
+function digXp(W,u,n){u.xp+=n;while(u.lvl<10&&u.xp>=25*u.lvl){const before=maxHp(u);u.xp-=25*u.lvl;u.lvl++;u.hp+=maxHp(u)-before;
+  if(u.o===1)evT(W,"dlvl",25,`One of your diggers reached level ${u.lvl}: it digs and claims faster, and carries more.`,tileOf(W,u),"good")}}
 function lvlCheck(W,u){if(u.k==="digger")return;while(u.lvl<10&&u.xp>=40*u.lvl){const before=maxHp(u);u.xp-=40*u.lvl;u.lvl++;u.hp+=maxHp(u)-before;
   if(u.o===1)evT(W,"lvl"+u.id,5,`Your ${KINDS[u.k].name} reached level ${u.lvl}.`,tileOf(W,u),"good")}}
 
@@ -844,6 +872,8 @@ function install(W,K,b){
 
 function unitTick(W,u,dt){
   u.cd-=dt;
+  if(u.ttl&&W.t>u.ttl){u.hp=0;fx(W,{k:"dust",x:u.x,y:u.y});return}
+  if(u.curseT>W.t&&(u.cuS=(u.cuS||0)-dt)<=0){u.cuS=1;hit(W,null,u,7,u.curseBy);if(u.hp<=0)return}
   if(u.carriedBy)return;
   if(u.ko){u.anim+=dt;if((u.koT-=dt)<=0){u.hp=0;fx(W,{k:"poof",x:u.x,y:u.y,c:"#ddd"});if(u.koBy===1)evT(W,"kodie",20,"A knocked-out enemy came round and fled before your diggers reached it.",tileOf(W,u),"")}return}
   if(u.jail){prisoner(W,u,dt);return}
@@ -858,16 +888,27 @@ function unitTick(W,u,dt){
 }
 /* prisoners sit in a Jail; in a Persuasion room they are slowly won over. Left outside a cell for long, they escape */
 function prisoner(W,u,dt){
-  const ti=tileOf(W,u),C=W.k[u.jail],r=W.room[ti],inCell=W.own[ti]===u.jail&&(r===RM.JAIL||r===RM.PERSUADE);
+  const ti=tileOf(W,u),C=W.k[u.jail],r=W.room[ti],inCell=W.own[ti]===u.jail&&(r===RM.JAIL||r===RM.PERSUADE||r===RM.TORTURE);
   u.anim+=dt*.4;
   if(!C||!C.alive){u.jail=0;fresh(u);return}
   if(!inCell){u.out=(u.out||0)+dt;if(u.out>15){u.jail=0;u.out=0;u.pers=0;fresh(u);if(C.o===1)ev(W,`A prisoner ${KINDS[u.k].name} escaped!`,ti,"bad")}return}
   u.out=0;
-  if(r===RM.PERSUADE){const f=featAt(W,ti),rate=!f?1:f.n===3?3:2;u.pers=(u.pers||0)+rate*dt;
-    if(u.pers>=50){const was=u.o,name=KINDS[u.k].name;u.o=u.jail;u.jail=0;u.pers=0;u.raid=false;u.home=-1;u.bed=-1;fresh(u);
-      u.mood=70;u.hunger=0;u.sleepy=0;if(f&&f.n===3)u.lvl=Math.min(10,u.lvl+1);u.hp=Math.round(maxHp(u)*.7);
-      fx(W,{k:"claim",x:u.x,y:u.y,c:OWN_COL[u.o]});
-      if(u.o===1)ev(W,`A ${name}${was===HERO?" hero":was===WILD?" from the wild":""} has been won over and joins you!`,ti,"good")}}
+  if(r===RM.JAIL){u.hp=Math.min(maxHp(u),u.hp+maxHp(u)*.015*dt);return}
+  const f=featAt(W,ti),tor=r===RM.TORTURE,name=KINDS[u.k].name;
+  if(tor){u.pers=(u.pers||0)+(!f?2.2:f.n===3?4:3.2)*dt;u.anim+=dt*2;
+    // it hurts, and now and then one dies of it
+    if((u.torS=(u.torS||0)-dt)<=0){u.torS=1;u.hp=Math.max(1,u.hp-maxHp(u)*.008);fx(W,{k:"scream",x:u.x,y:u.y});
+      if(Math.random()<(f?.006:.013)){u.hp=0;fx(W,{k:"poof",x:u.x,y:u.y,c:"#B03A2E"});fx(W,{k:"blood",x:u.x,y:u.y});
+        const cr=C.c.tiles[RM.CRYPT];let rose=false;if(cr.length&&!KINDS[u.k].undead){const c=cr[Math.floor(Math.random()*cr.length)];mkUnit(W,C.o,"skeleton",c%W.w,c/W.w|0);rose=true;W.rc=0}
+        if(C.o===1)ev(W,`A prisoner ${name} died in your Torture chamber.${rose?" Its bones got up in your Crypt and serve you.":""}`,ti,"");
+        return}}
+  }else u.pers=(u.pers||0)+(!f?1:f.n===3?3:2)*dt;
+  if(u.pers>=50){const was=u.o;u.o=u.jail;u.jail=0;u.pers=0;u.raid=false;u.home=-1;u.bed=-1;fresh(u);
+    u.mood=tor?50:70;u.hunger=0;u.sleepy=0;if(!tor&&f&&f.n===3)u.lvl=Math.min(10,u.lvl+1);u.hp=Math.max(u.hp,Math.round(maxHp(u)*(tor?.4:.7)));
+    fx(W,{k:"claim",x:u.x,y:u.y,c:OWN_COL[u.o]});
+    // a broken prisoner tells everything: the map of its old master's realm
+    let told="";if(tor&&was<WILD&&W.k[was]&&u.o===1){for(let j=0;j<W.own.length;j++)if(W.own[j]===was)W.known[j]=1;told=` It gave away the map of ${W.k[was].name}'s realm.`}
+    if(u.o===1)ev(W,`A ${name}${was===HERO?" hero":was===WILD?" from the wild":""} has been ${tor?"broken":"won over"} and joins you!${told}`,ti,"good")}
 }
 /* lost creatures wait, and join whoever reaches them first */
 function neutralTick(W,u,dt){
@@ -887,8 +928,8 @@ function possess(W,u){
   const K=W.k[u.o];
   if(!allowed(W,"s",SP.POSS))return "Possession isn't available in this realm yet.";
   if(!u||u.o!==1||u.k==="digger"||u.ko||u.jail||u.held)return "Only your own creatures can be possessed (not diggers).";
-  if(K.mana<SPELLS[SP.POSS].cost)return "Not enough mana.";
-  K.mana-=SPELLS[SP.POSS].cost;endTask(W,u);u.sp=null;u.st=null;u.path=null;u.tgt=0;W.poss={id:u.id,dx:0,dy:0,atk:false};return "";
+  if(K.mana<spellCost(K,SP.POSS))return "Not enough mana.";
+  K.mana-=spellCost(K,SP.POSS);endTask(W,u);u.sp=null;u.st=null;u.path=null;u.tgt=0;W.poss={id:u.id,dx:0,dy:0,atk:false};return "";
 }
 function unpossess(W){const u=W.poss&&W.byId.get(W.poss.id);W.poss=null;if(u&&u.hp>0){fresh(u)}}
 function possessTick(W,u,dt){
@@ -910,11 +951,24 @@ function possessTick(W,u,dt){
 }
 
 /* ---------- spells ---------- */
-function spellCheck(W,K,before){for(let k=1;k<SPELLS.length;k++){const S=SPELLS[k];if(S.rp>before&&S.rp<=K.rp&&K.o===1)ev(W,`Your Library discovered ${S.name}! Find it under ✨ Spells.`,-1,"good")}}
+/* every bit of research goes through here: the points since `before` go into the spell being studied; with nothing chosen, the next undiscovered spell is taken */
+function spellCheck(W,K,before){resInit(K);let d=K.rp-before;
+  for(let n=0;n<8&&d>0;n++){
+    let k=K.res?spellIx(K.res):-1;
+    if(k<1||!allowed(W,"s",k)||(K.known[K.res]||0)>=2){k=-1;
+      for(let q=1;q<SPELLS.length&&k<0;q++)if(allowed(W,"s",q)&&!K.known[SPELLS[q].id])k=q;
+      for(let q=1;q<SPELLS.length&&k<0;q++)if(allowed(W,"s",q)&&K.known[SPELLS[q].id]===1)k=q;
+      if(k<0){K.res=null;return}K.res=SPELLS[k].id}
+    const S=SPELLS[k],need=resCost(K,k)-(K.rpg||0);
+    if(d<need){K.rpg=(K.rpg||0)+d;return}
+    d-=need;K.rpg=0;K.res=null;const lv=K.known[S.id]=(K.known[S.id]||0)+1;
+    if(K.o===1)ev(W,lv===1?`Your Library has discovered ${S.name}! Find it under ✨ Spells, and choose what to study next.`:`Your Library has mastered ${S.name}: it costs less mana now.`,-1,"good")}}
+function setResearch(W,K,k){resInit(K);if(!allowed(W,"s",k)||(K.known[SPELLS[k].id]||0)>=2)return false;K.res=SPELLS[k].id;return true}
 function castSpell(W,K,k,i){
   const S=SPELLS[k];if(!S||!allowed(W,"s",k))return "That spell isn't available in this realm yet.";if(!spellKnown(K,k))return "You haven't discovered that spell yet.";
   if(k===SP.POSS)return "Tap one of your creatures to possess it.";
-  if(K.mana<S.cost)return "Not enough mana.";
+  const cost=spellCost(K,k);
+  if(K.mana<cost)return "Not enough mana.";
   const x=i%W.w+.5,y=(i/W.w|0)+.5,o=K.o;
   if(o===1&&k!==SP.SIGHT&&!W.vis[i])return "You can only cast that where you can see.";
   if(k===SP.LIGHT){for(const u of W.units)if(foe(u,o)&&Math.hypot(u.x-x,u.y-y)<1.3)hit(W,null,u,75,o);if(W.door[i]&&W.own[i]!==o)hitDoor(W,null,i,150);fx(W,{k:"strike",x,y})}
@@ -932,7 +986,14 @@ function castSpell(W,K,k,i){
       if(foe(u,o))hit(W,null,u,60,o);const b=bfs(W,t,c=>walkT(W.tile[c])&&!(W.door[c]&&W.own[c]!==u.o),400);
       if(b>=0){u.x=b%W.w+.5;u.y=(b/W.w|0)+.5}u.path=null;if(u.task&&u.k==="digger")endTask(W,u)}
     W.rc=0}
-  K.mana-=S.cost;return "";
+  else if(k===SP.CURSE){let n=0;for(const u of W.units)if(foe(u,o)&&!hidden(W,u)&&Math.hypot(u.x-x,u.y-y)<2.5){u.curseT=W.t+20;u.curseBy=o;n++}fx(W,{k:"curse",x,y})}
+  else if(k===SP.RAISE){if(!walkT(W.tile[i]))return "Cast it on open floor.";
+    for(let q=0;q<3;q++){const u=mkUnit(W,o,"skeleton",i%W.w,i/W.w|0);u.x+=(q-1)*.3;u.lvl=Math.min(8,2+Math.floor(W.t/480));u.hp=maxHp(u);u.ttl=W.t+75;u.buffT=0}
+    fx(W,{k:"curse",x,y});fx(W,{k:"dust",x,y});W.rc=0}
+  else if(k===SP.HELL){for(const u of W.units)if(foe(u,o)&&Math.hypot(u.x-x,u.y-y)<2.3)hit(W,null,u,140,o);
+    for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const j=i+dy*W.w+dx;if(j>=0&&j<W.tile.length&&W.door[j]&&W.own[j]!==o)hitDoor(W,null,j,300)}
+    fx(W,{k:"hell",x,y})}
+  K.mana-=cost;return "";
 }
 
 /* ---------- old places hidden in the rock: found by digging, won by claiming the tile they stand on ---------- */
@@ -1060,7 +1121,7 @@ function treasure(W,i,tr,o){
   if(!K||o>=WILD)return;
   if(tr===1){K.gold+=800;txt="a chest of 800 gold"}
   else if(tr===2){const ks=["goblin","hexer","ogre","beetle","spirit"].filter(k=>allowed(W,"k",k)),k=ks.length?ks[Math.floor(Math.random()*ks.length)]:"beetle",u=mkUnit(W,o,k,x,y);u.lvl=3;u.hp=maxHp(u);txt=`a trapped ${KINDS[k].name}, who joins you`}
-  else if(tr===3){const nx=SPELLS.find(S=>S&&S.rp>K.rp);if(nx){const b=K.rp;K.rp=nx.rp;spellCheck(W,K,b);txt=`an old spell book, and learnt ${nx.name}`}else{K.mana=K.manaMax;txt="an old spell book brimming with mana"}}
+  else if(tr===3){const b=K.rp;K.rp+=70;spellCheck(W,K,b);K.mana=Math.max(K.mana,K.manaMax);txt="an old spell book: a great leap in your research, and it brims with mana"}
   else if(tr===4){K.manaBonus=(K.manaBonus||0)+150;K.mana+=150;txt="a mana crystal: 150 more mana for good"}
   else if(tr===5){if(mine)for(let yy=y-12;yy<=y+12;yy++)for(let xx=x-12;xx<=x+12;xx++)if(xx>=0&&yy>=0&&xx<W.w&&yy<W.h&&(xx-x)**2+(yy-y)**2<=144)W.known[yy*W.w+xx]=1;txt="an old map of the caves around"}
   else{K.gold+=300;for(const j of nb4(W,i))if(W.tile[j]===T.ROCK){W.tile[j]=T.GEM;break}txt="300 gold and a gem seam"}
@@ -1151,13 +1212,15 @@ function dragBusy(W,v){for(const d of W.units)if(d.task&&d.task.t==="drag"&&d.ta
 function freeCell(W,K,r,v){for(const c of K.c.tiles[r]){let used=false;for(const x of W.units)if(x!==v&&x.hp>0&&((x.jail&&tileOf(W,x)===c)||(x.task&&x.task.t==="drag"&&x.task.to===c))){used=true;break}if(!used)return c}return -1}
 /* knocked-out enemies go to the Jail; prisoners move on to the Persuasion room when there's space */
 function dragJob(W,u){
-  const K=W.k[u.o];if(!K.c.rooms[RM.JAIL]&&!K.c.rooms[RM.PERSUADE])return null;
+  const K=W.k[u.o],R=K.c.rooms;if(!R[RM.JAIL]&&!R[RM.PERSUADE]&&!R[RM.TORTURE])return null;
   let best=null,bd=1e9;
   for(const v of W.units){if(v.hp<=0||v.carriedBy)continue;
     let to=-1;
     if(v.ko&&v.koBy===u.o)to=freeCell(W,K,RM.JAIL,v);
-    else if(v.jail===u.o){const t=tileOf(W,v),onP=W.room[t]===RM.PERSUADE&&W.own[t]===u.o,onJ=W.room[t]===RM.JAIL&&W.own[t]===u.o;
-      if(!onP&&K.c.rooms[RM.PERSUADE])to=freeCell(W,K,RM.PERSUADE,v);if(to<0&&!onP&&!onJ)to=freeCell(W,K,RM.JAIL,v)}
+    else if(v.jail===u.o){const t=tileOf(W,v),mine=W.own[t]===u.o,work=mine&&(W.room[t]===RM.PERSUADE||W.room[t]===RM.TORTURE),onJ=mine&&W.room[t]===RM.JAIL;
+      // the Torture chamber takes them first, once they have got their strength back in the Jail
+      if(!work&&R[RM.TORTURE]&&v.hp>=maxHp(v)*.45)to=freeCell(W,K,RM.TORTURE,v);
+      if(to<0&&!work&&R[RM.PERSUADE])to=freeCell(W,K,RM.PERSUADE,v);if(to<0&&!work&&!onJ)to=freeCell(W,K,RM.JAIL,v)}
     if(to<0||dragBusy(W,v))continue;
     const d=Math.hypot(v.x-u.x,v.y-u.y);if(d<bd){bd=d;best={v,to}}}
   return best;
@@ -1180,12 +1243,12 @@ function digger(W,u,dt){
       if(!dWalk(W,u,dt))return;
       const [sx,sy]=digSpot(W,i,tk.stand,tk.slot),ddx=sx-u.x,ddy=sy-u.y,dd=Math.hypot(ddx,ddy);
       if(dd>.04){const sp=Math.min(dd,KINDS.digger.spd*dt);u.x+=ddx/dd*sp;u.y+=ddy/dd*sp;u.anim+=dt;return}
-      u.anim+=dt;u.work+=dt;u.face=(i%W.w)+.5<u.x?-1:1;
-      if(u.work>=.5){u.work-=.5;const t=W.tile[i];
+      u.anim+=dt;u.work+=dt*digMult(W,u);u.face=(i%W.w)+.5<u.x?-1:1;
+      if(u.work>=.5){u.work-=.5;digXp(W,u,1);const t=W.tile[i];
         if(t===T.GOLD){const g=Math.min(20,W.gold[i]);W.gold[i]-=g;u.carry+=g;if(W.gold[i]<=0)collapse(W,i,u.o)}
         else if(t===T.GEM){u.carry+=10;W.digp[i]=(W.digp[i]+1)%4}
         else{W.digp[i]+=.5;if(W.digp[i]>=3)collapse(W,i,u.o)}
-        if(u.carry>=100){endTask(W,u);goDeposit(W,u)}else if(!isRock(W.tile[i]))endTask(W,u)}
+        if(u.carry>=digLoad(u)){endTask(W,u);goDeposit(W,u)}else if(!isRock(W.tile[i]))endTask(W,u)}
       return;
     }
     if(tk.t==="claim"){
@@ -1194,8 +1257,8 @@ function digger(W,u,dt){
       if(!dWalk(W,u,dt))return;
       const prev=W.own[i];
       if(prev&&W.k[prev]&&W.k[prev].alive&&hostileNear(W,u.o,i,2.5)){endTask(W,u);u.think=1.5;return}
-      u.anim+=dt;u.work+=dt;
-      if(u.work>=(prev&&W.k[prev]&&W.k[prev].alive?(W.room[i]?7:4.5):1.2)){claimTile(W,i,u.o);endTask(W,u);if(!u.carry||u.carry<60)chainClaim(W,u,i)}
+      u.anim+=dt;u.work+=dt*digMult(W,u);
+      if(u.work>=(prev&&W.k[prev]&&W.k[prev].alive?(W.room[i]?7:4.5):1.2)){claimTile(W,i,u.o);digXp(W,u,2);endTask(W,u);if(!u.carry||u.carry<60)chainClaim(W,u,i)}
       return;
     }
     if(tk.t==="drag"){
@@ -1211,7 +1274,7 @@ function digger(W,u,dt){
       v.x=u.x;v.y=u.y;
       if(!dWalk(W,u,dt))return;
       v.carriedBy=0;v.x=u.x;v.y=u.y;
-      if(v.ko){v.ko=0;v.koBy=0;v.jail=u.o;v.pers=0;v.out=0;fresh(v);if(u.o===1){W.stats.captured++;ev(W,`A ${KINDS[v.k].name} is locked in your Jail.${K.c.rooms[RM.PERSUADE]?"":" Build a Persuasion room to win prisoners over."}`,tk.to,"good")}}
+      if(v.ko){v.ko=0;v.koBy=0;v.jail=u.o;v.pers=0;v.out=0;fresh(v);if(u.o===1){W.stats.captured++;ev(W,`A ${KINDS[v.k].name} is locked in your Jail.${K.c.rooms[RM.PERSUADE]||K.c.rooms[RM.TORTURE]?"":" Build a Persuasion room or a Torture chamber to turn prisoners to your side."}`,tk.to,"good")}}
       endTask(W,u);return;
     }
     if(tk.t==="fetch"){
@@ -1228,7 +1291,7 @@ function digger(W,u,dt){
     if(tk.t==="craft"){
       if(!dWalk(W,u,dt))return;
       const ti=tileOf(W,u);u.anim+=dt;u.work+=dt;
-      if(W.room[ti]!==RM.WORKSHOP||W.own[ti]!==u.o||!craftAdd(W,K,.6*craftMult(K)*dt)||u.work>8)endTask(W,u);
+      if(W.room[ti]!==RM.WORKSHOP||W.own[ti]!==u.o||!craftAdd(W,K,.6*craftMult(K)*dt*digMult(W,u))||u.work>8)endTask(W,u);
       return;
     }
     if(tk.t==="dep"){if(dWalk(W,u,dt)){deposit(W,u);endTask(W,u)}return}
@@ -1361,14 +1424,20 @@ function fighter(W,u,dt){
     case "train":{const r=u.k==="hexer"?RM.LIBRARY:RM.TRAINING,ti=tileOf(W,u);
       if(K.gold<1||W.room[ti]!==r||W.own[ti]!==u.o){u.st=null;return}
       const f=featAt(W,ti),fm=!f?1:r===RM.LIBRARY?(f.n===3?2.5:1.6):(f.n===3?2.2:1.5);
-      K.gold-=dt;u.xp+=dt*1.2*fm;u.mood+=.12*dt;u.anim+=dt;lvlCheck(W,u);
+      K.gold-=dt;u.xp+=dt*1.2*fm*(K.c.fear?1.25:1);u.mood+=.12*dt;u.anim+=dt;lvlCheck(W,u);
       if(r===RM.LIBRARY){const b=K.rp;K.rp+=dt*.7*fm;spellCheck(W,K,b)}
       if((u.stT-=dt)<=0||u.hunger>110||u.sleepy>170)u.st=null;return}
     case "craft":{const ti=tileOf(W,u);
       if(W.room[ti]!==RM.WORKSHOP||W.own[ti]!==u.o||!craftAdd(W,K,1.3*craftMult(K)*dt)){u.st=null;return}
       u.anim+=dt;u.xp+=dt*.4;u.mood+=.1*dt;lvlCheck(W,u);
       if((u.stT-=dt)<=0||u.hunger>110||u.sleepy>170)u.st=null;return}
-    case "pray":{const ti=tileOf(W,u);if(W.room[ti]!==RM.SHRINE||W.own[ti]!==u.o){u.st=null;return}
+    case "spar":{const ti=tileOf(W,u);if(W.room[ti]!==RM.PIT||W.own[ti]!==u.o){u.st=null;return}
+      const f=featAt(W,ti);u.xp+=dt*(f?3:1.8)*(K.c.fear?1.25:1);u.hp-=mh*.012*dt;u.mood+=.3*dt;u.anim+=dt;lvlCheck(W,u);
+      if((u.spA=(u.spA||0)-dt)<=0){u.spA=.5+Math.random()*.5;u.atkT=W.t;u.face=-u.face;fx(W,{k:"hit",x:u.x+u.face*.3,y:u.y})}
+      if((u.stT-=dt)<=0||u.hp<mh*.55||u.hunger>110||u.sleepy>170)u.st=null;return}
+    case "gamble":{const ti=tileOf(W,u);if(W.room[ti]!==RM.DEN||W.own[ti]!==u.o){u.st=null;return}
+      u.mood+=4*dt;u.anim+=dt;if((u.stT-=dt)<=0)u.st=null;return}
+    case "pray":{const ti=tileOf(W,u);if(!(W.room[ti]===RM.SHRINE||u.k==="tormentor"&&W.room[ti]===RM.TORTURE)||W.own[ti]!==u.o){u.st=null;return}
       u.mood+=(featAt(W,ti)?3:1.5)*dt;u.anim+=dt;if((u.stT-=dt)<=0||u.mood>=96)u.st=null;return}
     case "guard":case "idle":{if((u.stT-=dt)<=0)u.st=null;return}
   }
@@ -1391,8 +1460,11 @@ function fighter(W,u,dt){
     if(go(W,u,c=>W.room[c]===RM.FARM&&W.own[c]===u.o&&W.food[c]>0,"eat",4000))return;
     if(u.o===1&&u.hunger>150)evT(W,"food",60,"Your creatures are hungry. Build a bigger Mushroom farm.",-1,"bad");
   }
+  if(u.k==="tormentor"&&u.mood<75&&T0[RM.TORTURE].length){const g=pickTile(W,T0[RM.TORTURE]);if(go(W,u,c=>c===g,"pray",4000))return}
+  if(u.mood<80&&T0[RM.DEN].length&&W.t>(u.gT||0)&&Math.random()<.6){const g=pickTile(W,T0[RM.DEN]);if(go(W,u,c=>c===g,"gamble",4000))return}
   if(u.mood<55&&T0[RM.SHRINE].length&&Math.random()<.8){const g=pickTile(W,T0[RM.SHRINE]);if(go(W,u,c=>c===g,"pray",4000))return}
   if(u.k==="tinker"&&T0[RM.WORKSHOP].length&&K.bp.some(b=>b.st===0)){const g=pickTile(W,T0[RM.WORKSHOP]);if(go(W,u,c=>c===g,"craft",4000))return}
+  if(T0[RM.PIT].length&&u.lvl<10&&u.k!=="hexer"&&u.k!=="spirit"&&u.hp>mh*.8&&Math.random()<.45){const g=pickTile(W,T0[RM.PIT]);if(go(W,u,c=>c===g,"spar",4000))return}
   const tr=u.k==="hexer"?RM.LIBRARY:RM.TRAINING,tl=T0[tr];
   if(tl.length&&K.gold>=(K.ai?(K.reserve||0)+150:20)&&u.lvl<10&&Math.random()<.65){const g=pickTile(W,tl);if(go(W,u,c=>c===g,"train",4000))return}
   if(T0[RM.GUARD].length&&Math.random()<.45){const g=pickTile(W,T0[RM.GUARD]);if(go(W,u,c=>c===g,"guard",4000))return}
@@ -1407,8 +1479,24 @@ function arrive(W,u){
   else if(t==="train"){u.st="train";u.stT=20+Math.random()*12}
   else if(t==="craft"){u.st="craft";u.stT=15+Math.random()*10}
   else if(t==="pray"){u.st="pray";u.stT=12}
+  else if(t==="spar"){if(W.room[ti]===RM.PIT){u.st="spar";u.stT=14+Math.random()*8}}
+  else if(t==="gamble"){if(W.room[ti]===RM.DEN){const K=W.k[u.o],f=featAt(W,ti);u.st="gamble";u.stT=9;u.gT=W.t+90;
+      // the house keeps the stake; once in a while a creature cleans it out
+      if(Math.random()<.04&&K.gold>=200){K.gold-=200;u.mood=100;fx(W,{k:"sparkle",x:u.x,y:u.y});if(u.o===1)ev(W,`Your ${KINDS[u.k].name} hit the jackpot in the Gambling den. That cost you 200 gold.`,ti,"")}
+      else{const g=f?18:9;K.gold=Math.min(Math.max(K.cap,K.gold),K.gold+g);fx(W,{k:"txt",x:u.x,y:u.y-.4,s:"+"+g,c:"#F2C94C"})}}}
   else if(t==="guard"){u.st="guard";u.stT=20+Math.random()*20}
   else if(t==="idle"){u.st="idle";u.stT=2+Math.random()*4}
+}
+
+/* the Dark altar: a creature for mana, research and a mended Heart. Returns what was gained, or null */
+function sacrifice(W,K,u,i){
+  if(!u||u.o!==K.o||u.k==="digger"||u.hp<=0||W.room[i]!==RM.ALTAR||W.own[i]!==K.o)return null;
+  const m=featAt(W,i)?1.5:1,mana=Math.round((80+40*u.lvl)*m),res=Math.round((8+6*u.lvl)*m),x=i%W.w+.5,y=(i/W.w|0)+.5;
+  K.mana=Math.min(K.manaMax*1.5,K.mana+mana);const b=K.rp;K.rp+=res;spellCheck(W,K,b);K.hp=Math.min(K.maxhp,K.hp+100*u.lvl);K.dead=(K.dead||0)+1;
+  u.held=false;u.hp=0;u.x=x;u.y=y;fx(W,{k:"boom",x,y,c:"#B03A2E"});fx(W,{k:"blood",x,y});fx(W,{k:"curse",x,y});
+  // the others don't like to watch
+  for(const v of W.units)if(v.o===K.o&&v.hp>0&&v.k!=="digger"&&!KINDS[v.k].undead&&v.k!=="ghoul"&&v.k!=="tormentor"&&Math.hypot(v.x-x,v.y-y)<7)v.mood-=6;
+  W.rc=0;return {mana,res};
 }
 
 /* ---------- player and rival actions ---------- */
@@ -1584,7 +1672,7 @@ function unb64(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.len
 function saveWorld(W){return {v:1,spec:W.spec,w:W.w,h:W.h,t:W.t,nid:W.nid,over:W.over,stats:W.stats,gates:W.gates,firstGate:W.firstGate,sites:W.sites,evn:W.evn,
   tile:b64(W.tile),own:b64(W.own),room:b64(W.room),mark:b64(W.mark),gold:b64(new Uint8Array(W.gold.buffer)),food:b64(W.food),known:b64(W.known),treas:b64(W.treas),hero:W.hero,stair:W.stair,trap:b64(W.trap),door:b64(W.door),dhp:b64(new Uint8Array(W.dhp.buffer)),
   k:W.k.map(K=>K&&Object.assign({},K,{c:undefined})),
-  units:W.units.filter(u=>u.hp>0).map(u=>({id:u.id,o:u.o,k:u.k,x:u.x,y:u.y,hp:u.hp,lvl:u.lvl,xp:u.xp,mood:u.mood,hunger:u.hunger,sleepy:u.sleepy,carry:u.carry,held:u.held,home:u.home,bed:u.bed,raid:!!u.raid,ko:u.ko||0,koT:u.koT||0,koBy:u.koBy||0,jail:u.jail||0,pers:u.pers||0}))}}
+  units:W.units.filter(u=>u.hp>0).map(u=>({id:u.id,o:u.o,k:u.k,x:u.x,y:u.y,hp:u.hp,lvl:u.lvl,xp:u.xp,mood:u.mood,hunger:u.hunger,sleepy:u.sleepy,carry:u.carry,held:u.held,home:u.home,bed:u.bed,raid:!!u.raid,ko:u.ko||0,koT:u.koT||0,koBy:u.koBy||0,jail:u.jail||0,pers:u.pers||0,ttl:u.ttl||0}))}}
 function loadWorld(d){
   const N=d.w*d.h;
   const W={v:1,spec:d.spec,w:d.w,h:d.h,t:d.t||0,nid:d.nid,over:d.over||0,stats:d.stats||{kills:0,lost:0},gates:d.gates||[],firstGate:d.firstGate,
@@ -1659,7 +1747,7 @@ function enterGame(){
   setPossUI(false);spellOpen=false;$("spellbar").hidden=true;
   held=W.units.filter(u=>u.held&&u.o===1);sel=null;tool="look";paused=false;speed=1;
   const P=W.k[1];cam.x=P.hx+.5;cam.y=P.hy+.5;cam.z=36;
-  $("ov").hidden=true;$("sheet").hidden=true;$("info").hidden=true;$("toasts").textContent="";
+  $("ov").hidden=true;$("sheet").hidden=true;$("info").hidden=true;$("toasts").textContent="";stains=[];whisperT=70;
   setTool("look");show("game");save();lastFrame=performance.now();
   if(W.spec.camp&&W.t<1)briefing();
 }
@@ -1723,11 +1811,23 @@ function renderSpellbar(){
   for(let k=1;k<SPELLS.length;k++){const S=SPELLS[k],b=document.createElement("button");
     if(!allowed(W,"s",k)){b.className="lock";b.innerHTML=`🔒<small>R${unlockRealm("s",k)}</small>`;b.onclick=()=>toast(`${S.icon} ${S.name} unlocks in realm ${unlockRealm("s",k)}.`);bar.append(b);continue}
     const known=spellKnown(K,k);
-    b.className=(k===spellSel&&known?"on ":"")+(known?"":"lock ")+(known&&K.mana<S.cost?"poor":"");
-    b.innerHTML=known?`${S.icon}<small>${S.cost}</small>`:`🔒<small>${Math.floor(Math.min(1,K.rp/S.rp)*100)}%</small>`;
-    b.onclick=()=>{if(!known){toast(`${S.icon} ${S.name}: ${S.desc} Your Library is researching it (${Math.floor(K.rp)} of ${S.rp}).`);return}
+    const cur=K.res===S.id;
+    b.className=(k===spellSel&&known?"on ":"")+(known?"":"lock ")+(known&&K.mana<spellCost(K,k)?"poor":"");
+    b.innerHTML=known?`${S.icon}<small>${spellCost(K,k)}</small>`:`${cur?"📖":"🔒"}<small>${cur?Math.floor((K.rpg||0)/S.rc*100)+"%":S.rc}</small>`;
+    b.onclick=()=>{if(!known){openResearch();return}
       spellSel=k;renderSpellbar();if(!seenSpell[k]){seenSpell[k]=1;toast(`${S.icon} ${S.name}: ${S.desc}`)}else toast(k===SP.POSS?"Tap one of your creatures to possess it.":`Tap where to cast ${S.name}.`)};
     bar.append(b)}
+  const rb=document.createElement("button");rb.innerHTML=`📚<small>Study</small>`;rb.onclick=openResearch;bar.append(rb);
+}
+/* the Library's reading list: the player picks what to study */
+function openResearch(){
+  const K=W.k[1],s=$("sheet");resInit(K);
+  let h=`<div class="row"><h2>📚 Research</h2><button class="btn sm" data-c>Close</button></div>
+  <small class="muted">${K.c.rooms[RM.LIBRARY]?"Your Library studies one thing at a time. More Library tiles and studying Hexers make it quicker.":"Build a Library and research begins. Hexers who study there speed it up."} Tap a spell to study it next. A spell you know can be mastered, to cost 30% less mana.</small>`;
+  for(let k=1;k<SPELLS.length;k++){const S=SPELLS[k],lv=K.known[S.id]||0,ok=allowed(W,"s",k),cur=K.res===S.id,cost=ok?resCost(K,k):0;
+    h+=`<button class="opt" data-res="${k}" ${!ok||lv>=2?"disabled":""} style="${cur?"border-color:var(--accent)":""}"><span class="ic">${ok?S.icon:"🔒"}</span><span class="t"><b>${S.name}${lv===1?" · known":lv>=2?" · mastered":""}</b><small>${ok?S.desc:`Unlocks in realm ${unlockRealm("s",k)}.`}</small></span><span class="c">${!ok?"":lv>=2?"✓":cur?`studying ${Math.floor((K.rpg||0)/cost*100)}%`:`${lv?"master":"learn"} · ${cost}`}</span></button>`}
+  s.innerHTML=h;s.hidden=false;s.querySelector("[data-c]").onclick=()=>{s.hidden=true};
+  s.querySelectorAll("[data-res]").forEach(b=>b.onclick=()=>{const k=+b.dataset.res;if(setResearch(W,K,k)){toast(`Your Library will study ${SPELLS[k].name} next.`,"good");const y=s.scrollTop;openResearch();s.scrollTop=y;renderSpellbar()}});
 }
 /* ---------- possession controls ---------- */
 function setPossUI(on){possUI=on;$("poss").hidden=!on;$("tools").hidden=on;$("game").classList.toggle("possessing",on);if(on){spellOpen=false;$("spellbar").hidden=true;$("info").hidden=true;$("sheet").hidden=true;$("float").hidden=true;sel=null}else{$("float").hidden=false;$("pknob").style.transform="";$("patk").classList.remove("on")}}
@@ -1781,6 +1881,11 @@ function tap(px,py){
     if(u&&held.length>=8){toast("Your hand is full (8). Drop them first.");return}
     if(!held.length){toast("Tap one of your creatures or diggers to pick it up.");return}
     if(!walkT(t)||W.own[i]!==1){toast("Drop creatures on your own floor.","bad");return}
+    if(W.room[i]===RM.ALTAR){const vs=held.filter(v=>v.k!=="digger");
+      if(!vs.length){toast("The altar wants a real creature, not a digger.","bad");return}
+      if(!confirm(`Sacrifice ${vs.length===1?"your "+KINDS[vs[0].k].name:vs.length+" creatures"} on the Dark altar? ${vs.length===1?"It":"They"} will be gone for good.`))return;
+      let mana=0,res=0;for(const v of vs){const g=sacrifice(W,W.k[1],v,i);if(g){mana+=g.mana;res+=g.res}}
+      held=held.filter(v=>v.k==="digger");renderFloat();snd("gong");toast(`The dark is pleased: ${mana} mana, ${res} research, and your Heart is mended.`,"evil");return}
     for(const v of held){v.held=false;fresh(v);v.x=i%W.w+.5+v.jx;v.y=(i/W.w|0)+.5+v.jy;fx(W,{k:"poof",x:v.x,y:v.y,c:OWN_COL[1]})}
     held=[];renderFloat();return;
   }
@@ -1816,6 +1921,9 @@ function doing(u){
     if(t.t==="fetch"){const b=W.k[u.o].bp.find(b=>b.id===t.b);return b?(t.ph?`Fitting a ${itemOf(b).name}`:`Fetching a ${itemOf(b).name}`):"Fitting"}
     return t.t==="dig"?(W.tile[t.i]===T.GOLD||W.tile[t.i]===T.GEM?"Mining gold":"Digging"):t.t==="claim"?"Claiming floor":t.t==="dep"?`Taking ${u.carry} gold home`:t.t==="craft"?"Helping in the Workshop":"Wandering"}
   if(u.sp)return u.sp.ph?(u.carry?`Bringing home ${u.carry} stolen gold`:"Slipping home"):`Sneaking into ${W.k[u.sp.o].name}'s realm`;
+  if(u.st==="spar")return "Brawling in the Fighting pit";if(u.st==="gamble")return "Gambling";
+  if(u.st==="pray"&&u.k==="tormentor")return "Enjoying the Torture chamber";
+  if(u.st==="go"&&(u.then==="spar"||u.then==="gamble"))return u.then==="spar"?"Off to the Fighting pit":"Off to gamble";
   if(u.tgt)return "Fighting";
   if(u.st==="rally"||u.st==="rallyStuck")return "Following the flag";
   if(u.st==="defend")return W.t-W.k[u.o].hitT<4?"Rushing to defend the Heart":W.t-(W.k[u.o].alarmT||-99)<3?"Turning out to fight intruders":"Answering the alarm bell";
@@ -1828,16 +1936,17 @@ function showInfo(){
   let h="";
   if(sel.u){const u=W.byId.get(sel.u);if(!u||u.hp<=0||u.held){box.hidden=true;sel=null;return}
     const k=KINDS[u.k],mine=u.o===1,K=W.k[u.o],mh=maxHp(u);
-    h=`<h2><span>${k.name}${u.k!=="digger"&&!k.wild?` · level ${u.lvl}`:""}</span><button class="x" data-x>✕</button></h2>`;
+    h=`<h2><span>${k.name}${!k.wild?` · level ${u.lvl}`:""}</span><button class="x" data-x>✕</button></h2>`;
     h+=`<div class="muted">${mine?"Yours":u.o===WILD?"Wild":u.o===HERO?"A hero from the surface":u.o===NEUTRAL?"Lost":K.name+"'s"}${k.blurb?" · "+k.blurb:""}</div>`;
     if(u.ko)h+=`<div>💫 Knocked out${u.koBy===1?": your diggers will carry it to your Jail":""}.</div>`;
-    else if(u.jail===1)h+=`<div>⛓ Your prisoner. ${W.room[tileOf(W,u)]===RM.PERSUADE?`Being won over: ${Math.floor((u.pers||0)/50*100)}%.`:W.k[1].c.rooms[RM.PERSUADE]?"Waiting for a free tile in your Persuasion room.":"Build a Persuasion room to win it over."}</div>`;
+    else if(u.jail===1)h+=`<div>⛓ Your prisoner. ${W.room[tileOf(W,u)]===RM.TORTURE?`Being broken: ${Math.floor((u.pers||0)/50*100)}%.`:W.room[tileOf(W,u)]===RM.PERSUADE?`Being won over: ${Math.floor((u.pers||0)/50*100)}%.`:W.k[1].c.rooms[RM.TORTURE]?(u.hp<maxHp(u)*.45?"Getting its strength back before the Torture chamber.":"Waiting for a free tile in your Torture chamber."):W.k[1].c.rooms[RM.PERSUADE]?"Waiting for a free tile in your Persuasion room.":"Build a Persuasion room or a Torture chamber to turn it."}</div>`;
     else if(u.o===NEUTRAL)h+=`<div>❓ Claim the floor next to it, or walk a creature up to it, and it joins you. Rivals can take it too.</div>`;
     h+=`<div>Health ${Math.ceil(u.hp)} / ${mh}</div><div class="bar"><i style="width:${Math.max(0,u.hp/mh*100)}%"></i></div>`;
     if(mine){h+=row("Doing",doing(u));
       if(u.k!=="digger"){h+=row("Mood",MOODS.find(m=>u.mood>m[0])[1]);h+=row("Wage",`${wage(u)} gold each payday`);
-        if(!k.undead)h+=row("Bed",u.bed>=0?"Has one":"None yet");if(u.lvl<10)h+=row("Next level",`${Math.round(u.xp/(40*u.lvl)*100)}%`)}
-      h+=`<div class="seg" style="margin-top:8px"><button class="btn sm" data-pick>✋ Pick up</button>${u.k!=="digger"&&allowed(W,"s",SP.POSS)?`<button class="btn sm" data-poss>👑 Possess (${SPELLS[SP.POSS].cost} mana)</button>`:""}</div>`}
+        if(!k.undead)h+=row("Bed",u.bed>=0?"Has one":"None yet");if(u.lvl<10)h+=row("Next level",`${Math.round(u.xp/(40*u.lvl)*100)}%`);if(u.ttl)h+=row("Crumbles in",mmss(u.ttl-W.t))}
+      else{h+=row("Works",`${Math.round(digMult(W,u)*100)}% speed · carries ${digLoad(u)}`);if(u.lvl<10)h+=row("Next level",`${Math.round(u.xp/(25*u.lvl)*100)}%`)}
+      h+=`<div class="seg" style="margin-top:8px"><button class="btn sm" data-pick>✋ Pick up</button>${u.k!=="digger"&&allowed(W,"s",SP.POSS)?`<button class="btn sm" data-poss>👑 Possess (${spellCost(W.k[1],SP.POSS)} mana)</button>`:""}</div>`}
   }else{
     const i=sel.i,t=W.tile[i],o=W.own[i],K=W.k[o];
     if(!W.known[i]){h=`<h2><span>Unexplored</span><button class="x" data-x>✕</button></h2><div class="muted">Dig closer to see what's here.</div>`}
@@ -1882,7 +1991,7 @@ function openRealm(){
   line("💰 Next payday",`${mmss(K.payT)} · ${fmt(wages)} gold`);
   line("❤ Heart",`${Math.ceil(K.hp)} / ${K.maxhp}`);
   line("🔮 Mana",`${Math.floor(K.mana)} of ${K.manaMax}`);
-  {const nx=SPELLS.find(S=>S&&S.rp>K.rp);line("📚 Research",nx?`${Math.floor(K.rp)} · ${nx.icon} ${nx.name} at ${nx.rp}${c.rooms[RM.LIBRARY]?"":" (build a Library)"}`:"every spell found")}
+  {resInit(K);const k=K.res?spellIx(K.res):-1;line("📚 Research",k>0?`${SPELLS[k].icon} ${SPELLS[k].name} · ${Math.floor((K.rpg||0)/resCost(K,k)*100)}%${c.rooms[RM.LIBRARY]?"":" (build a Library)"}`:"tap ✨ Spells, then 📚 Study")}
   if(c.rooms[RM.JAIL]||c.prisoners)line("⛓ Prisoners",`${c.prisoners} of ${c.rooms[RM.JAIL]} cells`);
   if(W.hero)line("⚔ Heroes",W.hero.wave<W.hero.waves?`wave ${W.hero.wave+1} of ${W.hero.waves} in ${mmss(W.hero.next-W.t)}`:"every wave has come");
   line("🚪 Gates",c.gates.length);
@@ -1934,8 +2043,62 @@ function renderGoal(){
   g.hidden=false;g.innerHTML=`<b>Goal ${n+1} of ${GS.length}:</b> `;g.append(typeof GS[n][1]==="function"?GS[n][1](W):GS[n][1]);
 }
 
+/* ---------- sound: a low drone, the Heart's beat, and small noises for what happens on screen. All made here, no files ---------- */
+const opts=Object.assign({sound:true},LS.get("hd.opts",{}));
+let AC=null,droneG=null,sndT={},beatT=0;
+function audio(){if(!opts.sound)return null;if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}
+    droneG=AC.createGain();droneG.gain.value=0;const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=220;lp.connect(droneG);droneG.connect(AC.destination);
+    for(const f of [49,49.6,73.4,98.3]){const o=AC.createOscillator();o.type="sawtooth";o.frequency.value=f;const g=AC.createGain();g.gain.value=f>90?.12:.3;o.connect(g);g.connect(lp);o.start()}
+    const lfo=AC.createOscillator(),lg=AC.createGain();lfo.frequency.value=.07;lg.gain.value=60;lfo.connect(lg);lg.connect(lp.frequency);lfo.start()}
+  if(AC.state==="suspended")AC.resume();return AC}
+function tone(f0,f1,dur,vol,type,delay){const a=AC,t=a.currentTime+(delay||0),o=a.createOscillator(),g=a.createGain();o.type=type||"sine";o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.0005,t+dur);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+dur+.05)}
+function noise(dur,vol,freq,delay){const a=AC,t=a.currentTime+(delay||0),n=Math.floor(a.sampleRate*dur),buf=a.createBuffer(1,n,a.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+  const src=a.createBufferSource(),g=a.createGain(),lp=a.createBiquadFilter();lp.type="lowpass";lp.frequency.value=freq;src.buffer=buf;g.gain.value=vol;src.connect(lp);lp.connect(g);g.connect(a.destination);src.start(t)}
+function snd(k){if(!opts.sound||!AC||AC.state!=="running"||paused&&k!=="gong")return;const now=performance.now();if(now-(sndT[k]||0)<(k==="hit"||k==="dust"?90:160))return;sndT[k]=now;
+  if(k==="hit")noise(.07,.1,900);
+  else if(k==="dust"){noise(.18,.12,500);tone(140,60,.12,.05,"triangle")}
+  else if(k==="bolt"||k==="strike"){noise(.25,.14,3000);tone(900,90,.25,.06,"sawtooth")}
+  else if(k==="boom"||k==="hell"){noise(.7,.3,260);tone(90,30,.8,.25)}
+  else if(k==="sparkle"){tone(660,660,.5,.05);tone(830,830,.5,.04,"sine",.08);tone(990,990,.7,.04,"sine",.16)}
+  else if(k==="scream"){tone(620+Math.random()*200,240,.4,.035,"sawtooth")}
+  else if(k==="blood")noise(.16,.1,350);
+  else if(k==="curse"){tone(180,70,1,.09,"sawtooth");tone(187,74,1,.07,"sawtooth")}
+  else if(k==="flame")noise(.4,.12,1200);
+  else if(k==="ring"){tone(1180,1160,.6,.05,"triangle");tone(1180,1160,.6,.05,"triangle",.25)}
+  else if(k==="gong"){tone(98,92,2.2,.16,"triangle");tone(147,140,1.8,.07);tone(55,50,2.4,.14)}
+  else if(k==="good"){tone(196,196,.7,.06,"triangle");tone(233,233,.9,.05,"triangle",.12)}
+  else if(k==="beat"){tone(62,38,.16,.22);tone(55,34,.2,.16,"sine",.17)}}
+function fxSound(k){if(k==="hit"||k==="dust"||k==="bolt"||k==="strike"||k==="boom"||k==="hell"||k==="sparkle"||k==="scream"||k==="blood"||k==="curse"||k==="flame"||k==="ring")snd(k)}
+/* called every frame: the drone swells in a game, and the Heart beats louder the nearer you look and faster when it is hurt */
+function soundTick(dt){if(!AC||!droneG)return;const on=opts.sound&&view==="game"&&W&&!paused&&!W.over;
+  droneG.gain.value+=((on?.05:0)-droneG.gain.value)*Math.min(1,dt*2);if(!on)return;
+  const P=W.k[1],d=Math.hypot(cam.x-P.hx-.5,cam.y-P.hy-.5),hurt=P.hp<P.maxhp*.5||W.t-P.hitT<4;
+  if((beatT-=dt)<=0&&d<14){beatT=hurt?.55:1.15;snd("beat")}}
+window.addEventListener("pointerdown",()=>{audio()},{passive:true});
+document.addEventListener("visibilitychange",()=>{if(AC){if(document.visibilityState==="hidden")AC.suspend();else if(opts.sound)AC.resume()}});
+
+/* ---------- the voice in the dark: now and then it says what it thinks of how things are going ---------- */
+let whisperT=70;
+function whisper(){
+  const K=W.k[1],c=K.c,L=[];
+  const mine=W.units.filter(u=>u.o===1&&u.hp>0&&u.k!=="digger");
+  if(K.hp<K.maxhp*.6)L.push("Your Heart bleeds, Keeper. I should hate to hear it stop.");
+  if(K.gold>K.cap*.9)L.push("Your vaults overflow. Gold unspent is power wasted.");
+  if(c.prisoners&&!c.rooms[RM.TORTURE]&&allowed(W,"r",RM.TORTURE))L.push("Your prisoners sit idle in their cells. A Torture chamber would loosen their tongues.");
+  if(mine.some(u=>u.mood<35))L.push("Your minions mutter. Feed them, pay them… or make an example of one.");
+  if(W.sites.some(q=>W.known[q.i]&&(q.k==="tomb"?!q.st:q.o!==1)))L.push("An old power lies unclaimed in the dark. Take it before the others do.");
+  if(c.rooms[RM.ALTAR]&&K.mana<80&&mine.length>4)L.push("The altar is cold and your mana is low. Surely you can spare one of them.");
+  if(c.rooms[RM.LIBRARY]&&!K.res&&SPELLS.some((S,k)=>S&&allowed(W,"s",k)&&!(K.known&&K.known[S.id])))L.push("Your scholars read at random. Choose what they study: ✨ Spells, then 📚.");
+  if(mine.length>=8&&K.rally<0&&W.k.some((R,o)=>R&&o>1&&R.alive&&W.known[R.hy*W.w+R.hx]))L.push("You know where your rival's Heart beats. What are you waiting for?");
+  if(W.t>240&&!W.k.some((R,o)=>R&&o>1&&W.known[R.hy*W.w+R.hx])&&W.k.length>2)L.push("Something else is digging down here. Find it before it finds you.");
+  L.push("The dark is patient. Your rivals are not.","Every creature has its price. Most are cheap.","Listen… the rock is full of things that want to be found.","Mercy is a surface habit. You are a long way down.");
+  toast("“"+L[Math.floor(Math.random()*Math.min(L.length,L.length>4?L.length-3:L.length))]+"”","evil");
+}
+
 /* ---------- toasts ---------- */
 function toast(txt,cls,at){
+  if(cls==="bad")snd("gong");else if(cls==="good")snd("good");
   const box=$("toasts"),d=document.createElement("div");d.className="toast "+(cls||"");d.textContent=txt;
   if(at!=null&&at>=0){d.onclick=()=>{cam.x=at%W.w+.5;cam.y=(at/W.w|0)+.5};d.textContent+=" ›"}
   box.prepend(d);while(box.children.length>2)box.lastChild.remove();
@@ -1958,7 +2121,9 @@ function pauseMenu(){
   paused=true;renderHud();
   const c=$("ovCard");c.innerHTML=`<h2>Paused</h2><span class="muted">${W.spec.camp?CAMPAIGN[W.spec.camp-1].name:"Quick game"} · ${mmss(W.t)}</span>
   <div class="row"><button class="btn pri" data-r>Carry on</button><button class="btn" data-h>How to play</button></div>
-  <div class="row"><button class="btn" data-q>Save and leave</button><button class="btn" data-s>Start again</button></div>`;
+  <div class="row"><button class="btn" data-q>Save and leave</button><button class="btn" data-s>Start again</button></div>
+  <div class="row"><button class="btn" data-snd>${opts.sound?"🔊 Sound is on":"🔇 Sound is off"}</button></div>`;
+  c.querySelector("[data-snd]").onclick=e=>{opts.sound=!opts.sound;LS.set("hd.opts",opts);if(opts.sound)audio();else if(AC)AC.suspend();e.target.textContent=opts.sound?"🔊 Sound is on":"🔇 Sound is off"};
   c.querySelector("[data-r]").onclick=()=>{paused=false;$("ov").hidden=true;renderHud()};
   c.querySelector("[data-q]").onclick=()=>{$("ov").hidden=true;quitToMenu()};
   c.querySelector("[data-h]").onclick=()=>{$("ov").hidden=true;quitToMenu();$("howto").open=true;$("howto").scrollIntoView()};
@@ -2110,7 +2275,7 @@ function drawTile(i,sx,sy,s){
   if(i>=w&&(isRock(W.tile[i-w])||W.tile[i-w]===T.HARD)){c.fillStyle="rgba(0,0,0,.28)";c.fillRect(0,0,1.02,.16)}
   c.restore();
 }
-const ROOM_BASE=[null,"#5E4330","#3B2C1D","#4A4234","#A08660","#5A3E26","#674829","#8A8494","#55595C","#2E2B33","#3B3A40","#6A4A36"];
+const ROOM_BASE=[null,"#5E4330","#3B2C1D","#4A4234","#A08660","#5A3E26","#674829","#8A8494","#55595C","#2E2B33","#3B3A40","#6A4A36","#33262A","#8C7350","#4A3626","#26202C"];
 const same=(i,j,r,o)=>W.room[j]===r&&W.own[j]===o;
 /* Rooms are drawn as one space, not as stamped tiles: the floor runs on across tiles (planks, big slabs, raked sand, a carpet),
    the back wall carries shelves, racks, banners and torches, and loose props are scattered thinly from a long list */
@@ -2241,6 +2406,38 @@ function drawRoomTile(i,r,o,h,deco){
         else if(v<8){R(.46,.4,.08,.25,"#EFE6D6");flame(.5,.4,.1)}
         else if(v<10){E(.35,.6,.13,.09,"#C0504D");E(.62,.62,.13,.09,"#4F81BD")}
         else{RR(.3,.34,.4,.36,.05,"#5A3A20");C(.42,.5,.06,"#B8C0C8");C(.58,.5,.05,"#E2B33C");E(.5,.4,.06,.03,"#EFE6D6")}}}
+    else if(r===RM.TORTURE){slabs(2,"rgba(0,0,0,.45)");
+      for(let k=0;k<2;k++)if((h>>k)&1)E(.2+hr(h,7,k)*.6,.25+hr(h,6,k+3)*.55,.1+hr(h,4,k)*.08,.05+hr(h,5,k)*.04,"rgba(120,20,20,.45)",hr(h,6,k)*3);
+      if(wallT){if(x%2===0){for(const px of [.3,.7]){ctx.strokeStyle="#8A8F96";ctx.lineWidth=.03;for(let k=0;k<4;k++){ctx.beginPath();ctx.ellipse(px,.08+k*.08,.03,.045,0,0,7);ctx.stroke()}ctx.beginPath();ctx.arc(px,.44,.06,0,7);ctx.stroke()}}else if(x%4===1)torch()}
+      else if(prop){if(v<3){C(.5,.62,.17,"#2E2A2A");R(.44,.6,.12,.2,"#2E2A2A");flame(.5,.56,.14);L([.38,.5,.2,.3],"#9AA0A8",.03);L([.6,.5,.8,.34],"#9AA0A8",.03)}
+        else if(v<5){PG([.34,.14,.66,.14,.72,.5,.64,.88,.36,.88,.28,.5],"#4A4E55");PG([.4,.2,.6,.2,.65,.5,.58,.82,.42,.82,.35,.5],"#5E636A");L([.5,.2,.5,.82],"#2E3136",.03);for(let k=0;k<4;k++)C(.43+((k&1)*.14),.3+k*.13,.02,"#C8CED6");C(.5,.14,.07,"#5E636A")}
+        else if(v<7){R(.16,.4,.68,.2,"#5A3D22");for(const px of [.3,.5,.7])C(px,.5,px===.5?.07:.045,"#1E1612");R(.2,.6,.07,.2,"#3A2614");R(.73,.6,.07,.2,"#3A2614")}
+        else if(v===7){PG([.34,.4,.66,.4,.62,.76,.38,.76],"#6B4A2A");E(.5,.4,.16,.05,"#5A1414");L([.34,.42,.3,.3,.7,.3,.66,.42],"#8A8F96",.025)}
+        else if(v===8){R(.2,.2,.6,.06,"#3A2614");for(let k=0;k<4;k++){const px=.28+k*.15;L([px,.26,px,.5+((h>>k)&1)*.14],k&1?"#9AA0A8":"#6B4A2A",.03);if(k&1)PG([px-.04,.5,px+.04,.5,px,.62],"#C8CED6")}}
+        else if(v===9){ctx.strokeStyle="#8A8F96";ctx.lineWidth=.035;ctx.strokeRect(.26,.24,.48,.54);for(let k=1;k<4;k++)L([.26+k*.12,.24,.26+k*.12,.78],"#8A8F96",.03);C(.5,.6,.07,"#D8D4C4")}
+        else{C(.4,.5,.06,"#E6E0D2");L([.5,.56,.66,.62],"#E6E0D2",.04);L([.3,.66,.42,.72],"#E6E0D2",.035)}}}
+    else if(r===RM.PIT){for(let k=0;k<5;k++)R(hr(h,9,k)*.9,hr(h,8,k+2)*.9,.04,.03,k===0?"rgba(120,20,20,.5)":"rgba(70,50,25,.3)");
+      if(h%6===0)E(.3+hr(h,5,1)*.4,.3+hr(h,5,2)*.4,.14,.07,"rgba(120,20,20,.35)",hr(h,7,3)*3);
+      // a rope round the whole pit, with a post at every corner
+      const rope=(a,b,c2,d2)=>{L([a,b,c2,d2],"#B03A2E",.045);L([a+(b===d2?0:.05)*(a<.5?1:-1),b+(a===c2?0:.05)*(b<.5?1:-1),c2+(b===d2?0:.05)*(a<.5?1:-1),d2+(a===c2?0:.05)*(b<.5?1:-1)],"#E8E0D0",.025)};
+      if(!nN)rope(0,.12,1.02,.12);if(!nS)rope(0,.9,1.02,.9);if(!nW)rope(.12,0,.12,1.02);if(!nE)rope(.9,0,.9,1.02);
+      for(const [a,b,px,py] of [[nN,nW,.12,.12],[nN,nE,.9,.12],[nS,nW,.12,.9],[nS,nE,.9,.9]])if(!a&&!b){C(px,py+.03,.09,"#4A3420");C(px,py,.075,"#7A5A36")}
+      if(prop&&nN&&nS&&nW&&nE){if(v<4){C(.4,.5,.03,"#EDE8D8");C(.48,.55,.025,"#EDE8D8")}else if(v<7){L([.3,.65,.7,.4],"#C8CED6",.04);L([.36,.56,.44,.66],"#6B4A2A",.05)}else if(v<9){C(.5,.5,.16,"#8A3A2E");C(.5,.5,.1,"#B8C0C8")}}}
+    else if(r===RM.DEN){planks("#4E3A28","#463322","rgba(0,0,0,.3)");rug("#1F5A40","#16422E","#C8A050");
+      if(wallT){if(x%3===0)torch();else if(x%3===1){barrel();R(.36,.2,.28,.06,"#3A2614")}}
+      else if(prop){if(v<4){C(.5,.52,.3,"#3A2614");C(.5,.5,.27,"#6B4422");C(.5,.5,.22,"#2A6B4A");RR(.36,.4,.1,.14,.02,"#F5ECD6");RR(.5,.46,.1,.14,.02,"#F5ECD6");C(.41,.47,.02,"#C0392B");C(.62,.62,.035,"#F2C94C")}
+        else if(v<6){RR(.3,.38,.16,.16,.03,"#F5ECD6");C(.38,.46,.02,"#1a1210");RR(.52,.5,.16,.16,.03,"#F5ECD6");C(.56,.54,.018,"#1a1210");C(.64,.62,.018,"#1a1210")}
+        else if(v<8){for(let k=0;k<3;k++){E(.4,.66-k*.07,.11,.045,"#C9A23A");E(.4,.64-k*.07,.11,.045,"#F2C94C")}E(.66,.62,.1,.04,"#F2C94C")}
+        else if(v===8){RR(.3,.34,.4,.4,.2,"#6B4422");E(.5,.34,.2,.07,"#8A5A30");C(.5,.56,.05,"#3A2614");R(.68,.42,.1,.14,"#D8C9A0")}
+        else if(v===9){C(.5,.5,.24,"#3A2614");for(let k=0;k<8;k++){ctx.beginPath();ctx.moveTo(.5,.5);ctx.arc(.5,.5,.21,k*.785+t*.4,k*.785+.785+t*.4);ctx.fillStyle=k&1?"#B03A2E":"#1E1A1A";ctx.fill()}C(.5,.5,.04,"#F2C94C")}
+        else{RR(.36,.36,.11,.3,.03,"#3F6E3A");RR(.52,.4,.11,.26,.03,"#7A4A2A");E(.3,.7,.08,.03,"rgba(230,220,180,.5)")}}}
+    else if(r===RM.ALTAR){slabs(2,"rgba(0,0,0,.5)");const g=.45+.3*Math.sin(t*1.7+x+y*2);
+      ctx.strokeStyle=`rgba(190,30,40,${g})`;ctx.lineWidth=.03;ctx.beginPath();if((x+y)&1){ctx.moveTo(0,.5);ctx.lineTo(.5,0);ctx.moveTo(.5,1.02);ctx.lineTo(1.02,.5)}else{ctx.moveTo(0,.5);ctx.lineTo(.5,1.02);ctx.moveTo(.5,0);ctx.lineTo(1.02,.5)}ctx.stroke();
+      if(wallT&&x%2===0){for(const px of [.34,.5,.66]){const hh=.14+(px===.5?.08:0);R(px-.03,.34-hh,.06,hh,"#2A2226");flame(px,.34-hh,.07)}const gg=ctx.createRadialGradient(.5,.2,.02,.5,.2,.8);gg.addColorStop(0,"rgba(220,40,40,.2)");gg.addColorStop(1,"rgba(220,40,40,0)");ctx.fillStyle=gg;ctx.fillRect(0,0,1.02,1.02)}
+      else if(prop){if(v<4){for(const [px,py] of [[.38,.6],[.62,.6],[.5,.44]]){C(px,py,.1,"#D8D4C4");C(px-.035,py-.01,.025,"#2A2630");C(px+.035,py-.01,.025,"#2A2630")}}
+        else if(v<7){ctx.strokeStyle=`rgba(220,50,60,${g+.2})`;ctx.lineWidth=.03;ctx.beginPath();ctx.arc(.5,.5,.28,0,7);ctx.stroke();ctx.beginPath();for(let k=0;k<5;k++){const a=-1.57+k*2.513;ctx[k?"lineTo":"moveTo"](.5+Math.cos(a)*.27,.5+Math.sin(a)*.27)}ctx.closePath();ctx.stroke()}
+        else if(v<9){E(.5,.6,.2,.08,"#1E1A1E");C(.5,.52,.16,"#2E2830");E(.5,.5,.12,.05,"#8A1420")}
+        else{L([.3,.7,.62,.38],"#C8CED6",.045);L([.56,.34,.68,.46],"#3A2A1A",.05);E(.34,.74,.1,.04,"rgba(140,20,25,.6)")}}}
     // soft shadow just inside the room's edges, so it reads as one sunken space
     if(!nN)R(0,0,1.02,.1,"rgba(0,0,0,.2)");if(!nW)R(0,0,.07,1.02,"rgba(0,0,0,.14)");if(!nE)R(.95,0,.07,1.02,"rgba(0,0,0,.1)");if(!nS)R(0,.95,1.02,.07,"rgba(0,0,0,.1)");
   }
@@ -2317,6 +2514,29 @@ function drawFeat(f){
     for(let k=0;k<4;k++){R(m-.75+k*.42,m-.85,.24,.18,"#7E8286");R(m-.75+k*.42,m+.67,.24,.18,"#7E8286")}
     const a=t*.8;ctx.globalAlpha=.25;ctx.beginPath();ctx.moveTo(m,m);ctx.arc(m,m,1.6,a,a+.6);ctx.closePath();ctx.fillStyle="#FFE9A8";ctx.fill();ctx.globalAlpha=1;
     ctx.shadowColor="#FFD27A";ctx.shadowBlur=14;C(m,m,.17,"#FFE9A8");ctx.shadowBlur=0;R(m-.03,m-.25,.06,.1,"#3A3A3A")}
+  else if(r===RM.TORTURE&&n===2){RR(m-.45,m-.9,.9,1.8,.06,"#3A2614");RR(m-.38,m-.82,.76,1.64,.05,"#6B4A2A");for(let k=0;k<5;k++)L([m-.38,m-.6+k*.3,m+.38,m-.6+k*.3],"#4A3420",.03);
+    for(const y1 of [m-.92,m+.82]){RR(m-.55,y1,1.1,.14,.07,"#8A6238");C(m-.6,y1+.07,.11,"#4A3420");C(m+.6,y1+.07,.11,"#4A3420");L([m-.6,y1+.07,m-.6+Math.cos(t*2)*.1,y1+.07+Math.sin(t*2)*.1],"#C8A070",.03)}
+    L([m-.2,m-.78,m-.2,m-.45],"#C8B48A",.035);L([m+.2,m-.78,m+.2,m-.45],"#C8B48A",.035);L([m-.2,m+.78,m-.2,m+.5],"#C8B48A",.035);L([m+.2,m+.78,m+.2,m+.5],"#C8B48A",.035);E(m+.1,m+.1,.2,.1,"rgba(120,20,20,.5)")}
+  else if(r===RM.TORTURE){E(m,m+.2,1.25,.5,"rgba(0,0,0,.35)");R(m-1.2,m+.9,2.4,.16,"#3A2614");L([m-1,m+.95,m,m],"#4A3420",.12);L([m+1,m+.95,m,m],"#4A3420",.12);
+    ctx.save();ctx.translate(m,m);ctx.rotate(t*.5);ctx.strokeStyle="#6B4A2A";ctx.lineWidth=.16;ctx.beginPath();ctx.arc(0,0,1.02,0,7);ctx.stroke();ctx.strokeStyle="#8A6238";ctx.lineWidth=.05;ctx.beginPath();ctx.arc(0,0,1.02,0,7);ctx.stroke();
+      for(let k=0;k<8;k++){ctx.rotate(.785);L([0,0,0,-1],"#5A3D22",.09);PG([-.05,-1.1,.05,-1.1,0,-1.28],"#C8CED6")}C(0,0,.2,"#3A2614");C(0,0,.1,"#8A8F96");
+      for(const a of [0,2.1,4.2]){ctx.save();ctx.rotate(a);R(-.07,-.86,.14,.08,"#2E3136");R(-.07,-.5,.14,.08,"#2E3136");ctx.restore()}ctx.restore();
+    for(const [px,py] of [[.3,.35],[2.7,.35]]){C(px,py+.2,.14,"#2E2A2A");flame(px,py+.12,.14)}E(m-.5,m+1.15,.3,.1,"rgba(120,20,20,.5)")}
+  else if(r===RM.PIT){ctx.globalAlpha=.5;C(m,m,1.15,"#7A6040");ctx.globalAlpha=1;ctx.strokeStyle="rgba(120,20,20,.55)";ctx.lineWidth=.06;ctx.beginPath();ctx.arc(m,m,1.1,0,7);ctx.stroke();
+    E(m-.3,m+.2,.3,.14,"rgba(120,20,20,.4)",.4);E(m+.4,m-.3,.2,.1,"rgba(120,20,20,.35)",2);
+    L([m-.25,m-.25,m+.25,m+.25],"#C8CED6",.07);L([m+.25,m-.25,m-.25,m+.25],"#C8CED6",.07);C(m,m,.1,"#8A3A2E");
+    for(let k=0;k<4;k++){const a=k*1.571+.785,px=m+Math.cos(a)*1.25,py=m+Math.sin(a)*1.25;R(px-.04,py-.3,.08,.34,"#3A2A1A");flame(px,py-.3,.13)}}
+  else if(r===RM.DEN){E(m,m+.12,.95,.75,"rgba(0,0,0,.35)");E(m,m,.92,.72,"#3A2614");E(m,m,.84,.64,"#6B4422");E(m,m,.74,.55,"#23694A");
+    for(let k=0;k<5;k++){const a=-2.2+k*.3;ctx.save();ctx.translate(m-.25,m+.1);ctx.rotate(a+1.57);RR(-.06,-.34,.13,.2,.02,k&1?"#F5ECD6":"#EFE3C4");C(0,-.24,.022,k&1?"#C0392B":"#1a1210");ctx.restore()}
+    for(let k=0;k<4;k++){E(m+.38,m+.18-k*.06,.12,.05,"#C9A23A");E(m+.38,m+.16-k*.06,.12,.05,"#F2C94C")}E(m+.12,m+.28,.1,.04,"#F2C94C");
+    RR(m+.02,m-.38,.16,.16,.03,"#F5ECD6");C(m+.1,m-.3,.02,"#1a1210");RR(m+.24,m-.3,.16,.16,.03,"#F5ECD6");C(m+.29,m-.25,.018,"#1a1210");C(m+.35,m-.19,.018,"#1a1210");
+    const g=.5+.5*Math.sin(t*3);C(m+.42,m-.02,.03+.02*g,`rgba(255,255,255,${g})`)}
+  else if(r===RM.ALTAR){const g=.5+.5*Math.sin(t*2);E(m,m+.3,.95,.3,"rgba(0,0,0,.4)");
+    ctx.strokeStyle=`rgba(220,40,50,${.4+.5*g})`;ctx.lineWidth=.05;ctx.shadowColor="#FF2A3A";ctx.shadowBlur=18*g;ctx.beginPath();ctx.arc(m,m,.92,0,7);ctx.stroke();ctx.shadowBlur=0;
+    PG([m-.7,m+.3,m+.7,m+.3,m+.55,m-.25,m-.55,m-.25],"#2A2428");PG([m-.55,m-.25,m+.55,m-.25,m+.62,m-.45,m-.62,m-.45],"#3E363C");R(m-.62,m-.5,1.24,.08,"#4E454C");
+    ctx.shadowColor="#FF2A3A";ctx.shadowBlur=10*g;L([m-.4,m-.4,m-.2,m-.1,m-.3,m+.2],`rgba(220,40,50,${.6+.4*g})`,.04);L([m+.3,m-.4,m+.15,m,m+.35,m+.25],`rgba(220,40,50,${.6+.4*g})`,.04);ctx.shadowBlur=0;
+    E(m,m-.46,.3,.07,"#7A0F18");L([m-.05,m-.75,m+.18,m-.5],"#C8CED6",.05);L([m-.12,m-.7,m+.02,m-.82],"#3A2A1A",.06);
+    for(const px of [m-.8,m+.8]){R(px-.04,m-.3,.08,.3,"#2A2226");flame(px,m-.3,.11)}}
   else if(r===RM.CRYPT){PG([m-.35,m-.85,m+.35,m-.85,m+.5,m-.45,m+.35,m+.85,m-.35,m+.85,m-.5,m-.45],"#77727E");PG([m-.28,m-.75,m+.28,m-.75,m+.4,m-.42,m+.28,m+.75,m-.28,m+.75,m-.4,m-.42],"#8E8898");
     L([m,m-.55,m,m+.4],"#5E5966",.08);L([m-.22,m-.25,m+.22,m-.25],"#5E5966",.08);
     for(let k=0;k<4;k++){const ph=(t*.35+k*.25)%1;ctx.globalAlpha=.35*(1-ph);C(m+Math.sin(k*2+t)*.4,m+.6-ph*1.3,.16+ph*.2,"#8CF0A0")}ctx.globalAlpha=1}
@@ -2397,6 +2617,8 @@ function drawUnit(u){
   c.fillStyle="rgba(0,0,0,.35)";c.beginPath();c.ellipse(x,y0+s*.16,s*.24,s*.09,0,0,7);c.fill();
   c.strokeStyle=col;c.lineWidth=Math.max(1.5,s*.055);c.beginPath();c.ellipse(x,y0+s*.16,s*.25,s*.1,0,0,7);c.stroke();
   const atk=W.t-u.atkT<.2;
+  // they grow as they level up
+  const zz=1+.045*((u.lvl||1)-1);c.save();c.translate(x,y0+s*.16);c.scale(zz,zz);c.translate(-x,-(y0+s*.16));
   if(k==="digger"){
     const working=u.task&&(u.task.t==="dig"||u.task.t==="claim")&&(!u.path||u.pi>=u.path.length);
     if(u.carry>0)circle(x-f*s*.16,y-s*.02,s*.11,"#E2B33C");
@@ -2485,6 +2707,14 @@ function drawUnit(u){
   }else if(k==="troll"){
     circle(x,y,s*.31,"#7D8088");circle(x-s*.1,y-s*.1,s*.12,"#8D9098");c.fillStyle="#5E8A4A";c.fillRect(x-s*.2,y-s*.3,s*.2,s*.06);
     circle(x+f*s*.12,y-s*.06,s*.035,"#FFB347");circle(x+f*s*.02,y-s*.06,s*.035,"#FFB347");
+  }else if(k==="tormentor"){
+    c.fillStyle="#3A0F1C";c.beginPath();c.moveTo(x,y-s*.26);c.lineTo(x+s*.19,y+s*.18);c.lineTo(x-s*.19,y+s*.18);c.fill();
+    c.fillStyle="#7A1428";c.beginPath();c.moveTo(x,y-s*.2);c.lineTo(x+s*.08,y+s*.18);c.lineTo(x-s*.08,y+s*.18);c.fill();
+    circle(x+f*s*.01,y-s*.2,s*.105,"#D9C6CF");c.fillStyle="#1A1014";c.beginPath();c.arc(x+f*s*.01,y-s*.22,s*.115,Math.PI*.95,Math.PI*2.05);c.fill();
+    c.fillRect(x-f*s*.13,y-s*.24,s*.06,s*.24);
+    circle(x+f*s*.055,y-s*.2,s*.022,"#FF3B4E");circle(x-f*s*.005,y-s*.2,s*.022,"#FF3B4E");
+    c.strokeStyle="#B03A2E";c.lineWidth=Math.max(1,s*.03);c.beginPath();c.moveTo(x+f*s*.15,y-s*.02);
+    if(atk)c.quadraticCurveTo(x+f*s*.45,y-s*.4,x+f*s*.72,y-s*.05);else c.bezierCurveTo(x+f*s*.36,y-s*.3,x+f*s*.42,y+s*.12,x+f*s*.3,y+s*.16+Math.sin(W.t*4+u.id)*s*.02);c.stroke();
   }else if(k==="wight"){
     c.fillStyle="#3B3F4C";c.beginPath();c.moveTo(x,y-s*.3);c.lineTo(x+s*.22,y+s*.18);c.lineTo(x-s*.22,y+s*.18);c.fill();
     c.fillStyle="#2A2D38";c.beginPath();c.arc(x,y-s*.2,s*.15,Math.PI,0);c.fill();
@@ -2528,10 +2758,12 @@ function drawUnit(u){
     circle(x+f*s*.36,y-s*.19,s*.04,"#FFD23A");circle(x+f*s*.37,y-s*.19,s*.016,"#1a1210");
     if(atk){c.globalAlpha=.85;for(let q=0;q<3;q++)circle(x+f*s*(.55+q*.16),y-s*.14,s*(.09+q*.03),q%2?"#FFD050":"#FF8A20");c.globalAlpha=1}
   }
+  c.restore();
   const mh=maxHp(u);
   if(u.hp<mh){c.fillStyle="rgba(0,0,0,.6)";c.fillRect(x-s*.25,y0-s*.56,s*.5,s*.07);c.fillStyle=u.hp/mh>.4?"#7CD67C":"#E0503C";c.fillRect(x-s*.25,y0-s*.56,s*.5*Math.max(0,u.hp/mh),s*.07)}
   if(u.lvl>1&&s>22){c.fillStyle=col;c.font=`700 ${Math.round(s*.24)}px system-ui`;c.textAlign="center";c.fillText(u.lvl,x+s*.26,y0-s*.26)}
   if(u.st==="sleep"&&s>20){c.fillStyle="#cfe";c.font=`700 ${Math.round(s*.26)}px system-ui`;c.textAlign="center";c.fillText("z",x+s*.2+Math.sin(W.t*2)*s*.05,y0-s*.4-((W.t*20)%10)/10*s*.15)}
+  if(u.curseT>W.t&&s>16){c.font=`${Math.round(s*.26)}px system-ui`;c.textAlign="center";c.fillText("☠",x+s*.24,y0-s*.4)}
   if(u.o===1&&u.k!=="digger"&&u.mood<30&&s>20){c.font=`${Math.round(s*.26)}px system-ui`;c.textAlign="center";c.fillText("💢",x-s*.24,y0-s*.36)}
   if(sel&&sel.u===u.id){c.strokeStyle="#fff";c.lineWidth=2;c.beginPath();c.ellipse(x,y0+s*.16,s*.34,s*.15,0,0,7);c.stroke()}
 }
@@ -2567,6 +2799,11 @@ function draw(){
   const P=W.k[1];
   if(P.rally>=0){const [fx2,fy2]=w2s(P.rally%w+.5,(P.rally/w|0)+.5);c.strokeStyle="#ddd";c.lineWidth=Math.max(1.5,s*.05);c.beginPath();c.moveTo(fx2,fy2+s*.3);c.lineTo(fx2,fy2-s*.6);c.stroke();
     c.fillStyle=OWN_COL[1];c.beginPath();c.moveTo(fx2,fy2-s*.6);c.lineTo(fx2+s*.45,fy2-s*.45+Math.sin(W.t*5)*s*.04);c.lineTo(fx2,fy2-s*.3);c.fill()}
+  // what you can't see right now lies in shadow
+  c.fillStyle="rgba(6,2,10,.46)";for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*w+x;if(W.known[i]&&!W.vis[i]){const [sx,sy]=w2s(x,y);c.fillRect(Math.floor(sx),Math.floor(sy),s+.6,s+.6)}}
+  // blood on the floor where things died
+  for(const b of stains){if(!W.known[(b.y|0)*w+(b.x|0)])continue;const [bx,by]=w2s(b.x,b.y);if(bx<-s||by<-s||bx>VW+s||by>VH+s)continue;c.globalAlpha=.55;
+    for(let k=0;k<4;k++){c.fillStyle="#6E0F16";c.beginPath();c.ellipse(bx+Math.cos(b.a+k*1.9)*s*.16*(k?1:0),by+s*.12+Math.sin(b.a+k*1.9)*s*.09*(k?1:0),s*(k?.07:.17),s*(k?.04:.09),b.a,0,7);c.fill()}c.globalAlpha=1}
   // creatures, back to front
   const vis=W.units.filter(u=>!u.held&&u.hp>0&&(u.o===1||u.jail===1||W.vis[tileOf(W,u)]&&!hidden(W,u))&&u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2).sort((a,b)=>a.y-b.y);
   for(const u of vis){
@@ -2589,6 +2826,14 @@ function draw(){
   // effects
   W.fx=W.fx.filter(e=>W.t-e.t0<1.3);
   for(const e of W.fx){const a=W.t-e.t0;
+    if(!e.seen){e.seen=1;if(e.k==="blood"){stains.push({x:e.x,y:e.y,a:Math.random()*6});if(stains.length>70)stains.shift()}
+      const [qx,qy]=w2s(e.x!=null?e.x:e.x2,e.y!=null?e.y:e.y2);if(qx>-s&&qy>-s&&qx<VW+s&&qy<VH+s)fxSound(e.k)}
+    if(e.k==="curse"&&a<1.2){const [px,py]=w2s(e.x,e.y);ctx.globalAlpha=Math.max(0,1-a/1.2);ctx.strokeStyle="#9B5CFF";ctx.lineWidth=Math.max(2,s*.08);ctx.beginPath();ctx.arc(px,py,s*(2.4-a*.6),0,7);ctx.stroke();
+      ctx.font=`${Math.round(s*.5)}px system-ui`;ctx.textAlign="center";for(let k=0;k<5;k++){const ang=k*1.26+a;ctx.fillText("☠",px+Math.cos(ang)*s*1.3,py+Math.sin(ang)*s*1.3-a*s*.5)}ctx.globalAlpha=1}
+    else if(e.k==="hell"&&a<1.2){const [px,py]=w2s(e.x,e.y);ctx.globalAlpha=Math.max(0,1-a/1.2);ctx.shadowColor="#FF5A10";ctx.shadowBlur=30;
+      const gr=ctx.createLinearGradient(px,py-VH,px,py);gr.addColorStop(0,"rgba(255,120,20,0)");gr.addColorStop(1,"rgba(255,170,50,.9)");ctx.fillStyle=gr;ctx.fillRect(px-s*(1.1-a*.5),py-VH,s*(2.2-a),VH);ctx.shadowBlur=0;
+      for(let k=0;k<16;k++){const ang=k*.3927,d=s*(.4+a*2);circle(px+Math.cos(ang)*d,py+Math.sin(ang)*d*.8-a*s*.5,s*(.3-a*.2),k%2?"#FF8A20":"#FFD050")}ctx.globalAlpha=1}
+    else if(e.k==="scream"&&a<.9){const [px,py]=w2s(e.x,e.y);ctx.globalAlpha=1-a/.9;ctx.fillStyle="#FF6A6A";ctx.font=`800 ${Math.round(s*.34)}px system-ui`;ctx.textAlign="center";ctx.fillText("!",px+Math.sin(e.t0*7)*s*.25,py-s*(.6+a*.6));ctx.globalAlpha=1}
     if(e.k==="bolt"&&a<.25){const [ax,ay]=w2s(e.x1,e.y1),[bx,by]=w2s(e.x2,e.y2);c.strokeStyle=e.c;c.globalAlpha=1-a*4;c.lineWidth=Math.max(2,s*.08);c.beginPath();c.moveTo(ax,ay);c.lineTo((ax+bx)/2+(Math.random()-.5)*s*.3,(ay+by)/2+(Math.random()-.5)*s*.3);c.lineTo(bx,by);c.stroke();c.globalAlpha=1}
     else if(e.k==="hit"&&a<.2){const [hx,hy]=w2s(e.x,e.y);circle(hx,hy-s*.1,s*.14*(1-a*4),"#fff")}
     else if((e.k==="poof"||e.k==="claim")&&a<.6){const [px,py]=w2s(e.x,e.y);c.strokeStyle=e.c;c.globalAlpha=1-a/.6;c.lineWidth=2;c.beginPath();c.arc(px,py,s*(.2+a*1.1),0,7);c.stroke();c.globalAlpha=1}
@@ -2609,7 +2854,11 @@ function draw(){
   if(rect){const a=rect.a,b=rect.b,[ax,ay]=w2s(Math.min(a%w,b%w),Math.min(a/w|0,b/w|0)),[bx,by]=w2s(Math.max(a%w,b%w)+1,Math.max(a/w|0,b/w|0)+1);
     c.fillStyle="rgba(255,214,90,.15)";c.fillRect(ax,ay,bx-ax,by-ay);c.strokeStyle="#FFD65A";c.lineWidth=2;c.strokeRect(ax,ay,bx-ax,by-ay)}
   if(sel&&sel.i!=null){const [sx,sy]=w2s(sel.i%w,sel.i/w|0);c.strokeStyle="#fff";c.lineWidth=2;c.strokeRect(sx+1,sy+1,s-2,s-2)}
+  // the dark closes in round the edges; it flushes red while your Heart is being hit
+  {const hurt=W.t-P.hitT<2.5,vg=c.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.32,VW/2,VH/2,Math.max(VW,VH)*.72);vg.addColorStop(0,"rgba(0,0,0,0)");
+    vg.addColorStop(1,hurt?`rgba(120,0,10,${.5+.2*Math.sin(W.t*9)})`:"rgba(8,0,12,.62)");c.fillStyle=vg;c.fillRect(0,0,VW,VH)}
 }
+let stains=[];
 let miniT=0;
 const miniImg=document.createElement("canvas");
 function drawMini(){
@@ -2640,9 +2889,11 @@ let lastFrame=performance.now(),hudT=0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min(.1,(now-lastFrame)/1000);lastFrame=now;
+  soundTick(dt);
   if(view!=="game"||!W)return;
   if(!paused&&!W.over){let sim=dt*speed;while(sim>1e-6){const d=Math.min(.05,sim);step(W,d);sim-=d}}
   if(W.events.length){for(const e of W.events)toast(e.txt,e.cls,e.i);W.events.length=0}
+  if(!paused&&!W.over&&!W.spec.tips&&(whisperT-=dt*speed)<=0){whisperT=95+Math.random()*50;whisper()}
   if(possUI&&!W.poss)stopPossess();
   if(W.poss){const pu=W.byId.get(W.poss.id);if(pu){const f=Math.min(1,dt*8);cam.x+=(pu.x-cam.x)*f;cam.y+=(pu.y-cam.y)*f}}
   held=held.filter(u=>W.byId.has(u.id)&&u.hp>0);
@@ -2667,7 +2918,7 @@ window.SG_BACK=()=>{
   if(tool!=="look"){setTool("look");return true}
   pauseMenu();return true;
 };
-window.HD={get W(){return W},event:k=>worldEvent(W,k),openRealm:()=>openRealm(),startPossess:u=>startPossess(u),cast:(k,i)=>castSpell(W,W.k[1],k,i),mk:(o,k,x,y)=>mkUnit(W,o,k,x,y),cam:(x,y,z)=>{cam.x=x;cam.y=y;if(z)cam.z=z},step:(dt)=>step(W,dt),newWorld,saveWorld,loadWorld,tap,setTool,setBuild:r=>{buildSel=r}};
+window.HD={get W(){return W},openResearch:()=>openResearch(),whisper:()=>whisper(),event:k=>worldEvent(W,k),openRealm:()=>openRealm(),startPossess:u=>startPossess(u),cast:(k,i)=>castSpell(W,W.k[1],k,i),mk:(o,k,x,y)=>mkUnit(W,o,k,x,y),cam:(x,y,z)=>{cam.x=x;cam.y=y;if(z)cam.z=z},step:(dt)=>step(W,dt),newWorld,saveWorld,loadWorld,tap,setTool,setBuild:r=>{buildSel=r}};
 renderMenu();
 </script>
 <script src="../../shell.js"></script>

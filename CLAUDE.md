@@ -287,6 +287,16 @@ few minutes except in the tips realm. **Rare creatures** (`rare`, `max` in `KIND
 bell, or being hit), passes rival doors, steals from a treasury and carries it home. The player picks who may come: `K.ban {kind: 1}`
 (the Gates list in `openRealm`). Room art: `drawRoomTile` draws floors from world coordinates so patterns run across tiles, wall
 furniture on tiles with no room above, and a sparse prop from a long list per tile hash.
+**Research**: the player picks what the Library studies (`openResearch`, `setResearch`). `K.known {spell id: 1 known, 2 mastered}`,
+`K.res` the spell being studied, `K.rpg` points in it; every gain goes through `spellCheck(W,K,before)`. `K.rp` stays the running
+total, and a save without `known` gets it from `rp` and each spell's old threshold (`resInit`), so keep the `rp` fields. `spellCost`
+gives the mana price (mastered: 30% off). Spells 8-10 are Curse (`u.curseT`), Raise the dead (skeletons with `u.ttl`, counted in
+`c.summoned`) and Hellfire. **Rooms 12-15**: Torture chamber (`prisoner`: faster than persuasion, a small chance of death each second,
+the Jail heals prisoners first; a broken rival creature reveals its old realm; a Wheel of pain sets `c.fear`: faster training and
+digging), Fighting pit (`spar`), Gambling den (`gamble`, `u.gT`) and Dark altar (`sacrifice`, from the page's Hand drop). Rivals don't
+build these. **Levels**: diggers earn xp from work (`digXp`, `digMult`, `digLoad`); `drawUnit` scales every unit by level.
+**Mood** (page only): `stains` (blood, from `blood` effects), the shadow over known-but-unseen tiles and the vignette in `draw`,
+WebAudio sound made in code (`audio`, `snd`, `fxSound`, `soundTick`; `hd.opts.sound`), and `whisper()` (the advisor's lines).
 
 ### Life (`games/life`)
 
