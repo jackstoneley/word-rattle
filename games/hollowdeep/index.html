@@ -24,6 +24,15 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.sm{padding:7px 12px;font-size:.9rem}
 .muted{color:var(--muted)}
+#dark{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:radial-gradient(ellipse at 50% 0,#2A1B2E 0,#0E0A12 60%);
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+#dmap{width:100%;display:block;touch-action:manipulation}
+#dmap text{font-family:inherit;font-weight:700;fill:#E8DFF0;pointer-events:none}
+#dmap .nd{cursor:pointer}
+.dread{letter-spacing:1px;color:#C24A5A}
+.pk{display:flex;flex-wrap:wrap;gap:6px}
+.pk button{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:6px 9px;font-weight:700;font-size:.85rem;color:inherit}
+.pk button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .toast.evil{font-style:italic;color:#E2C8FF;background:rgba(28,8,40,.92);border-left-color:#9B5CFF}
 #menu{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -125,6 +134,11 @@ h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
       <span class="muted" id="contTxt"></span>
       <div class="seg"><button class="btn pri" id="contBtn">Carry on</button></div>
     </div>
+    <div class="card" id="darkCard" style="border-color:#6B3A7A;background:linear-gradient(160deg,#241628,#16101A)">
+      <h2>The Long Dark</h2>
+      <span class="muted" id="darkTxt">A second campaign. One keep that lasts the whole war, a map of realms to choose from, three lords who take them too, and the surface above to raid.</span>
+      <div class="seg"><button class="btn pri" id="darkBtn">Begin</button><button class="btn" id="darkReset" hidden>Start over</button></div>
+    </div>
     <div class="card"><h2>Realms <span id="starTot" style="color:var(--gold);font-size:.95rem"></span></h2><span class="muted">Win one to open the next. Each has three stars to earn.</span><div id="realms" style="display:flex;flex-direction:column;gap:8px"></div></div>
     <div class="card">
       <h2>Quick game</h2>
@@ -158,6 +172,10 @@ h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
         <li><b>More rooms:</b> creatures brawl in a <b>Fighting pit</b> to level up for free (it hurts them); they cheer up in a <b>Gambling den</b> and you keep their stakes; and on a <b>Dark altar</b> you can sacrifice one of your own (drop it there with ✋ Hand) for mana, research and a mended Heart.</li>
         <li><b>Levels:</b> creatures grow bigger as they level up. Diggers level up too, from working: they dig and claim faster and carry more.</li>
         <li><b>Sound</b> can be turned off from the ☰ menu.</li>
+        <li><b>The Long Dark</b> is a second campaign. You have one <b>keep</b> that lasts the whole war. From it, open the 🗺 War map, pick a realm next to one you hold, and choose which creatures march. Survivors come home as named veterans, with gold. Each realm you take teaches its rooms, creatures and spells; the best are furthest away.</li>
+        <li><b>Ending a realm</b> in the Long Dark: destroy the Heart (loot, but dread +2), starve the lord by holding every Gate for 2½ minutes (all their gold, no dread), or spare them when they beg (a vassal who pays every turn, and dread falls).</li>
+        <li><b>Dread and the surface:</b> conquest, torture, sacrifice and raids on the surface raise your dread. Heroes attack your keep after every expedition, harder the more you are dreaded, and at dread 4 they follow you into realms. Some creatures only come to the dreaded. Raiding the Abbey stops Clerics; sacking the Castle thins the heroes.</li>
+        <li><b>Rockfalls</b> (the Long Dark): the bigger you dig, the more often open, empty floor far from your Heart fills in again. You get a few seconds' warning. Rooms hold the roof up.</li>
         <li><b>Heroes</b> come down the stairs from the surface in waves, with a Dwarf digging the way. Doors, traps and a strong guard keep them out.</li>
         <li><b>🚩 Flag:</b> plant it, and your creatures march there and fight anything on the way. Plant it on a rival's Heart to attack it.</li>
         <li><b>✋ Hand:</b> pick up as many as 8 creatures, then tap your own floor to drop them there.</li>
@@ -165,6 +183,15 @@ h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
         <li>Drag to look around, and pinch to zoom. Tap the little map to jump. The game saves itself.</li>
       </ul>
     </details>
+  </div>
+</section>
+
+<section id="dark" hidden>
+  <div class="wrap">
+    <div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h1 style="font-size:1.4rem;margin:0">The Long Dark</h1><button class="btn sm" id="dkBack">⬅ Your keep</button></div>
+    <div class="card" id="dkHead"></div>
+    <svg id="dmap" viewBox="-8 0 116 168"></svg>
+    <div class="card" id="dkNode"></div>
   </div>
 </section>
 
@@ -290,14 +317,14 @@ const KINDS={
   cleric:{name:"Cleric",hp:130,spd:1.8,atk:8,cd:1.2,rng:3,wage:45,hero:1,heal:14,blurb:"A hero who heals the others."},
   dwarf:{name:"Dwarf",hp:180,spd:1.9,atk:12,cd:1,rng:1.2,wage:30,hero:1,digs:1,blurb:"A hero who digs tunnels for the others."},
   champion:{name:"Hero Champion",hp:1500,spd:1.6,atk:42,cd:1.4,rng:1.4,wage:150,hero:1,boss:1,blurb:"The surface's greatest hero."},
-  tormentor:{name:"Tormentor",hp:170,spd:2.5,atk:21,cd:.8,rng:1.9,wage:60,need:{lair:4,torture:6},blurb:"Comes for the screams. A fast, cruel fighter with a long whip, who unwinds in the Torture chamber."},
+  tormentor:{name:"Tormentor",hp:170,spd:2.5,atk:21,cd:.8,rng:1.9,wage:60,need:{lair:4,torture:6,"x:dread":2},blurb:"Comes for the screams. A fast, cruel fighter with a long whip, who unwinds in the Torture chamber."},
   wight:{name:"Tomb guardian",hp:260,spd:1.7,atk:22,cd:1.3,rng:1.3,wage:0,wild:1,undead:1,blurb:"Long dead, and still guarding its tomb."},
   /* rare creatures: they come only when something unusual is true of your realm ("x:" needs), and only a few of each (max) */
   sporeling:{name:"Sporeling",hp:150,spd:1.7,atk:10,cd:1.1,rng:1.2,wage:0,need:{lair:4,farm:12,"f:2":2},rare:1,max:4,nofood:1,regen:.02,blurb:"Grows out of a huge farm. Never hungry, never paid, and mends by itself."},
   shade:{name:"Shade",hp:100,spd:2.9,atk:8,cd:1,rng:1.2,wage:45,need:{lair:4,"f:8":1,"x:found":1},rare:1,max:2,sneak:1,blurb:"A spy. Slips unseen into rival realms, shows you what's there and steals their gold."},
   imp:{name:"Ember imp",hp:75,spd:2.6,atk:17,cd:1.3,rng:3.5,wage:30,need:{lair:4,"x:lava":3},rare:1,max:4,fire:1,blurb:"Born of lava. Quick, and spits fire from a distance."},
-  ghoul:{name:"Ghoul",hp:240,spd:2,atk:20,cd:1.1,rng:1.2,wage:30,need:{lair:4,crypt:4,"x:dead":6},rare:1,max:3,steal:.5,nofood:1,blurb:"Drawn by death. Heals itself with every bite, and never needs feeding."},
-  wyrm:{name:"Wyrm",hp:700,spd:1.5,atk:44,cd:1.8,rng:3,wage:160,need:{lair:9,"f:3":1,"x:gold":4000},rare:1,max:1,fire:1,splash:1,greedy:1,blurb:"A young dragon, drawn to a great hoard. Burns whole groups, and sulks if the gold runs low."}
+  ghoul:{name:"Ghoul",hp:240,spd:2,atk:20,cd:1.1,rng:1.2,wage:30,need:{lair:4,crypt:4,"x:dead":6,"x:dread":3},rare:1,max:3,steal:.5,nofood:1,blurb:"Drawn by death. Heals itself with every bite, and never needs feeding."},
+  wyrm:{name:"Wyrm",hp:700,spd:1.5,atk:44,cd:1.8,rng:3,wage:160,need:{lair:9,"f:3":1,"x:gold":4000,"x:dread":5},rare:1,max:1,fire:1,splash:1,greedy:1,blurb:"A young dragon, drawn to a great hoard. Burns whole groups, and sulks if the gold runs low."}
 };
 const FIGHTERS=["beetle","goblin","hexer","ogre","tinker","spirit","sporeling","shade","imp","ghoul","wyrm","tormentor"];
 /* a Shade on an errand that nobody has spotted: rivals, their Hearts and most traps don't notice it */
@@ -390,7 +417,7 @@ function newWorld(spec){
   const S=spec.size,w=S,h=S,N=w*h,R=rngOf(spec.seed);
   const W={v:1,spec,w,h,t:0,nid:1,tile:new Uint8Array(N).fill(T.ROCK),own:new Uint8Array(N),room:new Uint8Array(N),mark:new Uint8Array(N),
     gold:new Uint16Array(N),food:new Uint8Array(N),known:new Uint8Array(N),trap:new Uint8Array(N),door:new Uint8Array(N),dhp:new Uint16Array(N),treas:new Uint8Array(N),
-    gates:[],sites:[],evn:null,units:[],k:[null],over:0,stats:{kills:0,lost:0,captured:0,treasure:0,recruited:0,minHeart:1},hero:null,stair:-1};
+    gates:[],sites:[],evn:null,units:[],k:[null],over:0,stats:{kills:0,lost:0,captured:0,treasure:0,recruited:0,minHeart:1,broken:0,sacr:0},hero:null,stair:-1,fall:null,ends:null};
   initRuntime(W);
   const I=(x,y)=>y*w+x, inner=(x,y)=>x>0&&y>0&&x<w-1&&y<h-1, cl=v=>Math.max(1,Math.min(w-2,v));
   const noise=sc=>{const gw=Math.ceil(w/sc)+2,g=[];for(let k=0;k<gw*gw;k++)g.push(R());const out=new Float32Array(N);
@@ -446,7 +473,7 @@ function newWorld(spec){
         else if(k===4)blob(fx,fy,4+Math.floor(R()*4),T.HARD)}
     }
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const i=I(cx+dx,cy+dy);W.tile[i]=T.HEART;W.own[i]=o}
-    W.k[o]={o,name:ai?RIVALS[n-1]:"You",ai,gold:ai?1200+400*spec.diff:1200,cap:1500,hx:cx,hy:cy,hp:2000,maxhp:2000,alive:true,rally:-1,
+    W.k[o]={o,name:ai?(spec.names&&spec.names[n-1])||RIVALS[n-1]:"You",ai,pseed:o===2?spec.pseed||0:0,gold:ai?1200+400*spec.diff+(o===2?300*(spec.power||0):0):1200,cap:1500,hx:cx,hy:cy,hp:2000,maxhp:2000,alive:true,rally:-1,
       payT:PAYDAY,arriveT:ai?20:25,attackAt:ai?D.first:0,attacking:false,attackEnd:0,aiT:R()*2,hitT:-99,tunnelT:0,expT:0,goldT:0,zap:0,bp:[],bpN:0,cryptT:60,bellT:-99,bellAt:-1,anchor:{},
       mana:200,manaMax:400,rp:0,known:{lightning:1,possess:1},rpg:0,res:null};
     if(ai){
@@ -552,6 +579,19 @@ function newWorld(spec){
       if(k==="tomb"){const ng=3+(spec.diff>1?1:0)+(S>=64?1:0);
         for(let g=0;g<ng;g++){const u=mkUnit(W,WILD,"wight",x+[-1,1,0,0][g%4],y+[0,0,-1,1][g%4]);u.lvl=1+spec.diff+(S>=56?1:0);u.hp=maxHp(u);u.home=I(x,y)}}}
     if(!spec.tips&&!spec.noEvents)W.evn={next:200+RS()*100,n:0,last:""}}
+  // the Long Dark: the further from home, the better what lies in the rock. Seams run deeper, gems and the best treasure are far out,
+  // lost creatures and guardians are stronger, and a far tomb holds more
+  if(spec.deep){const RD=rngOf((spec.seed^0xD33F)+31),[px,py]=starts[0],dmax=Math.hypot(w,h)*.7,dn=i=>Math.min(1,Math.hypot(i%w-px,(i/w|0)-py)/dmax);
+    const pick=a=>a[Math.floor(RD()*a.length)];
+    for(let i=0;i<N;i++){const t=W.tile[i],d=dn(i);
+      if(t===T.GOLD)W.gold[i]=Math.round(220+1100*d*d);
+      else if(t===T.ROCK&&d>.6&&inner(i%w,i/w|0)&&RD()<.02*(d-.5)&&far(i%w,i/w|0,7))W.tile[i]=T.GEM;
+      if(W.treas[i])W.treas[i]=d<.35?1:d<.6?pick([1,1,2,5,6]):pick([2,3,4,4,6])}
+    for(let tries=0,made=0;made<Math.round(N/450)&&tries<600;tries++){const x=3+Math.floor(RD()*(w-6)),y=3+Math.floor(RD()*(h-6)),i=I(x,y);
+      if(W.tile[i]!==T.ROCK||dn(i)<.6||W.treas[i]||!far(x,y,7)||nb4(W,i).some(j=>walkT(W.tile[j])))continue;W.treas[i]=pick([2,3,4,4,6]);made++}
+    for(const u of W.units)if(u.o===NEUTRAL||u.o===WILD){u.lvl=Math.min(10,u.lvl+Math.round(dn(tileOf(W,u))*3));u.hp=maxHp(u)}
+    for(const q of W.sites)q.rich=1+Math.round(dn(q.i)*2)}
+  if(spec.falls)W.fall={next:260,warn:[]};
   // every rival, cave and stair must be diggable-to from the player's Heart (lava and hard rock get a crust of plain rock)
   const [px,py]=starts[0];
   for(let pass=0;pass<10;pass++){
@@ -565,7 +605,9 @@ function newWorld(spec){
   }
   for(let o=1;o<W.k.length;o++){const K=W.k[o];
     for(let k=0;k<4;k++){const [dx,dy]=[[-2,0],[2,0],[0,-2],[0,2]][k];mkUnit(W,o,"digger",K.hx+dx,K.hy+dy)}
-    if(K.ai)for(let k=0;k<DIFF[spec.diff].start;k++)mkUnit(W,o,k%2&&(!spec.allow||spec.allow.k.includes("goblin"))?"goblin":"beetle",K.hx+(k%3)-1,K.hy+(k%2?2:-2))}
+    if(K.ai)for(let k=0;k<DIFF[spec.diff].start+(o===2?spec.power||0:0)+(spec.surface?2:0);k++)mkUnit(W,o,spec.surface?["knight","wizard","knight","cleric"][k%4]:k%2&&(!spec.allow||spec.allow.k.includes("goblin"))?"goblin":"beetle",K.hx+(k%3)-1,K.hy+(k%2?2:-2));
+    // the Long Dark: veterans brought from the keep stand round the Heart
+    if(o===1&&spec.party)spec.party.forEach((q,n)=>{const u=mkUnit(W,1,q.k,K.hx+[-2,2,-2,2,0,0,-1,1][n%8],K.hy+[-2,-2,2,2,-2,2,2,-2][n%8]);u.lvl=q.lvl;u.xp=q.xp||0;u.nm=q.nm;u.vet=q.vet||0;u.hp=maxHp(u);u.mood=90;u.hunger=0;u.sleepy=0})}
   recount(W);
   return W;
 }
@@ -634,7 +676,7 @@ function recount(W){
     if(!W.k[u.o]||u.o>=WILD||u.jail)continue;const c=W.k[u.o].c;if(u.k==="digger")c.diggers++;else{c.fighters++;if(KINDS[u.k].undead){c.undead++;if(u.ttl)c.summoned++}}}
   for(let o=1;o<W.k.length;o++){const K=W.k[o];if(!K)continue;K.cap=1500+500*K.c.rooms[RM.TREASURY]+1000*K.c.feat[RM.TREASURY][2];
     // the unusual things rare creatures look for
-    K.c.x={lava:K.c.lava,dead:K.dead||0,found:(K.ai?W.t>300:W.k.some((R,q)=>R&&q>1&&W.known[R.hy*W.w+R.hx]))?1:0}}
+    K.c.x={lava:K.c.lava,dead:K.dead||0,found:(K.ai?W.t>300:W.k.some((R,q)=>R&&q>1&&W.known[R.hy*W.w+R.hx]))?1:0,dread:W.spec.dark&&!K.ai?W.spec.dread||0:99}}
   siteCount(W);
 }
 function updVis(W){
@@ -652,6 +694,7 @@ function step(W,dt){
   if((W.rc-=dt)<=0){W.rc=1;recount(W);checkWin(W);const P=W.k[1];if(P&&P.alive)W.stats.minHeart=Math.min(W.stats.minHeart,P.hp/P.maxhp)}
   if(W.hero&&W.hero.wave<W.hero.waves&&W.t>=W.hero.next)spawnWave(W);
   if(W.evn&&W.t>=W.evn.next)worldEvent(W);
+  if(W.fall)fallTick(W);
   if((W.vt-=dt)<=0){W.vt=.5;updVis(W)}
   if((W.ft-=dt)<=0){W.ft=40;for(let i=0;i<W.room.length;i++)if(W.room[i]===RM.FARM){const f=featAt(W,i);W.food[i]=Math.min(f?3:2,W.food[i]+(f?2:1))}}
   for(let o=1;o<W.k.length;o++){const K=W.k[o];if(K&&K.alive)keeperTick(W,K,dt)}
@@ -678,6 +721,13 @@ function keeperTick(W,K,dt){
   // enemy fighters inside our land near the Heart: raise the alarm so everyone turns out together
   if((K.alT=(K.alT||0)-dt)<=0){K.alT=1;const t=W.units.find(u=>foe(u,K.o)&&!hidden(W,u)&&u.k!=="digger"&&u.o!==WILD&&W.own[tileOf(W,u)]===K.o&&cheb(W,tileOf(W,u),K.hx,K.hy)<=14);
     if(t){K.alarmT=W.t;K.alarmAt=tileOf(W,t);if(K.o===1)evT(W,"inv",30,"Enemies are inside your realm! Your creatures are turning out to fight.",K.alarmAt,"bad")}}
+  if(K.ai&&W.spec.dark&&!W.spec.keep&&W.t>150){
+    if(!c.gates.length){K.noGate=(K.noGate||0)+dt;
+      if(K.noGate>20&&W.known[K.hy*W.w+K.hx])evT(W,"starve"+K.o,45,`${K.name} holds no Gate. Keep them off every Gate for ${Math.max(10,Math.ceil((150-K.noGate)/10)*10)} more seconds and they must give in.`,K.hy*W.w+K.hx,"good");
+      if(K.noGate>=150){endLord(W,K,"starve");return}}
+    else K.noGate=0;
+    // nearly beaten by you: they beg (the page asks the player)
+    if(!K.begged&&!W.offer&&K.hp<K.maxhp*.25&&W.t-K.hitT<3&&K.hitBy===1)W.offer={o:K.o}}
   if((K.arriveT-=dt)<=0)arrival(W,K,D);
   if(K.ai&&(K.aiT-=dt)<=0){K.aiT=2;aiThink(W,K,D)}
   // the Crypt raises a Skeleton for each Sarcophagus
@@ -703,13 +753,14 @@ function payday(W,K){let total=0,unpaid=0;
 function needOk(K,key,n){if(key.startsWith("x:")){const x=key.slice(2);return (x==="gold"?K.gold:(K.c.x&&K.c.x[x])||0)>=n}
   if(key.startsWith("f:")){const [,r,s]=key.split(":"),F=K.c.feat[+r];return (s?F[+s]:F[2]+F[3])>=n}return K.c.rooms[RI[key]]>=n}
 function canCome(K,k){const n=KINDS[k].need;return Object.keys(n).every(r=>needOk(K,r,n[r]))}
-function needText(key,n){if(key.startsWith("x:")){const x=key.slice(2);return x==="gold"?`${n.toLocaleString("en-GB")} gold in your treasury`:x==="lava"?`${n} tiles of your floor touching lava`:x==="dead"?`${n} of your own creatures to have died`:"a rival's Heart found"}
+function needText(key,n){if(key.startsWith("x:")){const x=key.slice(2);return x==="gold"?`${n.toLocaleString("en-GB")} gold in your treasury`:x==="lava"?`${n} tiles of your floor touching lava`:x==="dead"?`${n} of your own creatures to have died`:x==="dread"?`dread ${n} or more`:"a rival's Heart found"}
   if(key.startsWith("f:")){const [,r,s]=key.split(":"),z=s?+s:2,f=FEATS[+r][z-2];return `${/^[AEIOU]/.test(f.name)?"an":"a"} ${f.name} (a ${z}×${z} square of ${ROOMS[+r].name})`}return `${n} ${ROOMS[RI[key]].name}`}
 function arrival(W,K,D){
   const c=K.c,g=c.gates;
   K.arriveT=(K.ai?D.arrive:34)/Math.pow(Math.max(1,g.length),.6);
   if(!g.length){if(!K.ai&&W.t>120)evT(W,"gate",150,"No creatures can come until you own a Gate. Dig to one and your diggers will claim it.",W.firstGate);return}
   if(c.fighters>=(K.ai?aiCap(W,K):PAY_CAP))return;
+  if(W.spec.surface&&K.ai){const gi=g[Math.floor(Math.random()*g.length)];mkUnit(W,K.o,["knight","knight","wizard","cleric","dwarf"][Math.floor(Math.random()*5)],gi%W.w,gi/W.w|0);c.fighters++;return}
   const cnt={};for(const u of W.units)if(u.o===K.o&&u.hp>0)cnt[u.k]=(cnt[u.k]||0)+1;
   const tinkers=cnt.tinker||0;
   const could=FIGHTERS.filter(k=>allowed(W,"k",k)&&canCome(K,k)&&(k!=="tinker"||tinkers<1+Math.floor(c.rooms[RM.WORKSHOP]/4))&&(!KINDS[k].max||(cnt[k]||0)<KINDS[k].max));
@@ -748,8 +799,20 @@ function hit(W,a,tg,amt,src){
     if(tg.o<WILD&&tg.k!=="digger"&&W.k[tg.o])W.k[tg.o].dead=(W.k[tg.o].dead||0)+1;
     if(tg.o===1){W.stats.lost++;ev(W,`Your ${KINDS[tg.k].name} was killed.`,tileOf(W,tg),"bad")}else if(by===1)W.stats.kills++}
 }
+/* the Long Dark: a lord can also be starved of Gates, or spared to pay tribute */
+function endLord(W,K,how){
+  W.ends=W.ends||{};W.ends[K.o]=how;W.offer=null;
+  if(how==="vassal"){K.alive=false;K.vassal=1;K.rally=-1;K.attacking=false;K.bp=[];const bit=1<<K.o;
+    for(const u of W.units){if(u.o===K.o&&u.hp>0&&!u.ko&&!u.jail){u.hp=0;fx(W,{k:"poof",x:u.x,y:u.y,c:OWN_COL[K.o]})}
+      if(u.jail===K.o||u.ko&&u.koBy===K.o){u.jail=0;u.ko=0;u.carriedBy=0;fresh(u)}}
+    for(let i=0;i<W.mark.length;i++)W.mark[i]&=~bit;
+    for(const Q of W.k)if(Q&&Q.rally>=0&&cheb(W,Q.rally,K.hx,K.hy)<=1)Q.rally=-1;
+    ev(W,`${K.name} kneels. Their realm is yours to tax, and their creatures have gone home.`,K.hy*W.w+K.hx,"good");recount(W);checkWin(W);return}
+  const g=K.gold;destroyRealm(W,K,1);W.ends[K.o]=how;
+  if(how==="starve"){W.k[1].gold+=Math.round(g*.5);ev(W,`With no Gate left, ${K.name} gave in without a fight. You took every coin they had.`,K.hy*W.w+K.hx,"good")}
+}
 function hitHeart(W,a,H,amt){
-  H.hp-=amt;H.hitT=W.t;fx(W,{k:"hit",x:H.hx+.5+(Math.random()-.5),y:H.hy+.5+(Math.random()-.5)});
+  H.hp-=amt;H.hitT=W.t;H.hitBy=a?a.o:0;fx(W,{k:"hit",x:H.hx+.5+(Math.random()-.5),y:H.hy+.5+(Math.random()-.5)});
   if(H.o===1)evT(W,"heart",15,"Your Heart is under attack!",H.hy*W.w+H.hx,"bad");
   if(H.hp<=0)destroyRealm(W,H,a?a.o:0);
 }
@@ -761,6 +824,13 @@ function lvlCheck(W,u){if(u.k==="digger")return;while(u.lvl<10&&u.xp>=40*u.lvl){
   if(u.o===1)evT(W,"lvl"+u.id,5,`Your ${KINDS[u.k].name} reached level ${u.lvl}.`,tileOf(W,u),"good")}}
 
 function destroyRealm(W,H,by){
+  if(H.o===1&&W.spec.keep){
+    // the keep is never lost for good: the heroes sack it and go home
+    const took=Math.round(H.gold*.5);H.gold-=took;H.hp=Math.round(H.maxhp*.5);H.hitT=W.t;W.sacked=(W.sacked||0)+1;if(W.hero)W.hero.waves=W.hero.wave;
+    for(const u of W.units){if(u.o===HERO&&u.hp>0){u.hp=0;fx(W,{k:"poof",x:u.x,y:u.y,c:OWN_COL[HERO]})}if(u.jail===1){u.hp=0;fx(W,{k:"poof",x:u.x,y:u.y,c:"#ddd"})}}
+    fx(W,{k:"boom",x:H.hx+.5,y:H.hy+.5,c:OWN_COL[HERO]});
+    ev(W,`Your keep has been sacked! The heroes carried off ${took} gold, freed your prisoners and went home. Your Heart barely beats.`,H.hy*W.w+H.hx,"bad");return}
+  if(H.o!==1){W.ends=W.ends||{};if(!W.ends[H.o])W.ends[H.o]=by===1?"conquer":"other"}
   H.alive=false;H.hp=0;H.rally=-1;H.attacking=false;
   for(const u of W.units){if(u.o===H.o&&u.hp>0&&!u.ko&&!u.jail){u.hp=0;fx(W,{k:"poof",x:u.x,y:u.y,c:OWN_COL[H.o]})}
     if(u.jail===H.o||u.ko&&u.koBy===H.o){u.jail=0;u.ko=0;u.carriedBy=0;if(u.o<WILD&&!(W.k[u.o]&&W.k[u.o].alive))u.hp=0;else{fresh(u)}}}
@@ -908,6 +978,7 @@ function prisoner(W,u,dt){
     fx(W,{k:"claim",x:u.x,y:u.y,c:OWN_COL[u.o]});
     // a broken prisoner tells everything: the map of its old master's realm
     let told="";if(tor&&was<WILD&&W.k[was]&&u.o===1){for(let j=0;j<W.own.length;j++)if(W.own[j]===was)W.known[j]=1;told=` It gave away the map of ${W.k[was].name}'s realm.`}
+    if(u.o===1&&tor)W.stats.broken=(W.stats.broken||0)+1;
     if(u.o===1)ev(W,`A ${name}${was===HERO?" hero":was===WILD?" from the wild":""} has been ${tor?"broken":"won over"} and joins you!${told}`,ti,"good")}
 }
 /* lost creatures wait, and join whoever reaches them first */
@@ -1017,12 +1088,12 @@ function siteCount(W){
 }
 function siteTaken(W,s,o){
   const K=W.k[o];if(!K||o>=WILD||s.k!=="tomb"||s.st)return;
-  s.st=1;s.by=o;K.gold+=1000;let txt;const r=(s.i*7+W.spec.seed)%3;
+  const prize=1000*(s.rich||1);s.st=1;s.by=o;K.gold+=prize;let txt;const r=(s.i*7+W.spec.seed)%3;
   if(r===0){K.maxhp+=600;K.hp+=600;txt="the Stone Crown, which makes your Heart 600 stronger for good"}
   else if(r===1){for(const u of W.units)if(u.o===o&&u.k!=="digger"&&u.hp>0&&u.lvl<10){u.lvl++;u.hp=maxHp(u)}txt="the Old King's Banner, which lifts every creature you have by a level"}
   else{K.manaBonus=(K.manaBonus||0)+200;K.mana+=200;const b=K.rp;K.rp+=60;spellCheck(W,K,b);txt="the Lich's Book: 200 more mana for good, and a leap in your research"}
   fx(W,{k:"sparkle",x:s.i%W.w+.5,y:(s.i/W.w|0)+.5});
-  if(o===1){W.stats.treasure++;ev(W,`You opened the tomb! Inside: 1,000 gold and ${txt}.`,s.i,"good")}
+  if(o===1){W.stats.treasure++;ev(W,`You opened the tomb! Inside: ${prize.toLocaleString("en-GB")} gold and ${txt}.`,s.i,"good")}
   else ev(W,`${K.name} has opened a sealed tomb and carried off its treasure.`,W.known[s.i]?s.i:-1,"bad");
 }
 
@@ -1078,6 +1149,127 @@ function worldEvent(W,force){
   }
 }
 
+/* ---------- rockfalls: the bigger a dungeon grows, the more often part of what was dug fills in again ---------- */
+/* Rooms hold the roof up, and so does anything near a Heart. Open, empty floor far from home is what comes down. A warning comes first (W.fall.warn),
+   so there is time to build a room on the spot */
+function fallOk(W,j){return W.tile[j]===T.FLOOR&&!W.room[j]&&!W.trap[j]&&!W.door[j]&&!siteAt(W,j)&&!W.k.some(K=>K&&K.alive&&cheb(W,j,K.hx,K.hy)<6)}
+function fallTick(W){
+  const F=W.fall,w=W.w;
+  if(F.warn.length){for(const q of F.warn)if(W.t>=q.at){q.done=1;let n=0;
+      for(const j of q.tiles)if(fallOk(W,j)){W.tile[j]=T.ROCK;W.own[j]=0;W.food[j]=0;W.mark[j]=0;W.digp[j]=1.5;n++;fx(W,{k:"dust",x:j%w+.5,y:(j/w|0)+.5})}
+      if(n){for(const K of W.k)if(K&&K.bp)K.bp=K.bp.filter(b=>walkT(W.tile[b.i]));
+        for(const u of W.units){if(u.held||u.hp<=0||u.carriedBy)continue;const t=tileOf(W,u);if(walkT(W.tile[t]))continue;
+          hit(W,null,u,30,0);const b=bfs(W,t,c=>walkT(W.tile[c]),600);if(b>=0){u.x=b%w+.5;u.y=(b/w|0)+.5}u.path=null;if(u.task&&u.k==="digger")endTask(W,u)}
+        fx(W,{k:"boom",x:q.i%w+.5,y:(q.i/w|0)+.5,c:"#9C8466"});W.rc=0;
+        if(q.o===1)ev(W,`Rock has fallen and filled in ${n} tile${n>1?"s":""} of your dungeon. Mark it with ⛏ Dig to clear it.`,q.i,"bad")}
+      else if(q.o===1)ev(W,"The roof held: your room is holding it up.",q.i,"good")}
+    F.warn=F.warn.filter(q=>!q.done)}
+  if(W.t<F.next)return;
+  const ks=W.k.filter(K=>K&&K.alive&&K.c&&K.c.floor>70);if(!ks.length){F.next=W.t+30;return}
+  let tot=0;for(const K of ks)tot+=K.c.floor;let r=Math.random()*tot,K=ks[0];for(const Q of ks){if((r-=Q.c.floor)<=0){K=Q;break}}
+  F.next=W.t+Math.max(45,170-K.c.floor*.3)*(.7+Math.random()*.6);
+  // the most open, empty floor, the further from the Heart the likelier
+  let best=-1,bs=-1;for(let q=0;q<50;q++){const i=K.c.walk[Math.floor(Math.random()*K.c.walk.length)];if(!fallOk(W,i))continue;
+    let open=0;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const j=i+dy*w+dx;if(j>=0&&j<W.tile.length&&W.tile[j]===T.FLOOR&&!W.room[j])open++}
+    const sc=open+Math.min(20,cheb(W,i,K.hx,K.hy))*.5+Math.random()*5;if(sc>bs){bs=sc;best=i}}
+  if(best<0)return;
+  const tiles=[best],want=3+Math.floor(Math.random()*5);
+  for(let q=0;q<30&&tiles.length<want;q++){const a=tiles[Math.floor(Math.random()*tiles.length)],j=nb4(W,a)[Math.floor(Math.random()*4)];if(j!=null&&!tiles.includes(j)&&fallOk(W,j))tiles.push(j)}
+  F.warn.push({i:best,tiles,at:W.t+9,o:K.o});
+  if(K.o===1)ev(W,"The roof is groaning! Rock is about to fall here. A room built on the spot would hold it up.",best,"bad");
+}
+
+/* ---------- The Long Dark: a second campaign. One keep that lasts, a map of realms to take, three lords who take them too, and the surface above ---------- */
+/* State D (saved whole as hd.dark): seed, turn, dread 0-10, own {node: "me" | "vas" (your vassal) | "L0".."L2"}, lords [{alive, vassal}], flags, tries {node: n},
+   nm (names handed out), keep (the keep's saved world), exp (an expedition in progress), won. Nodes and lords are keyed by index: append only */
+const DARK_BASE={r:[1,2,3,4],k:["beetle","goblin"],i:[],s:[1,2]};
+const DARK_LORDS=[{name:"Lord Grimble",seat:6,ps:1},{name:"Lady Murk",seat:9,ps:0},{name:"Old Snagtooth",seat:11,ps:2}];
+const DARK_NODES=[
+  {id:0,name:"Your keep",t:0,x:50,y:36,l:[1,2]},
+  {id:1,name:"The Shallows",t:1,x:26,y:58,l:[0,3,4,13],lord:"Old Hobb",gives:{r:[5],k:["hexer"],s:[3]},blurb:"Soft earth and a lord of small ambitions. His books would start your Library."},
+  {id:2,name:"Mossgate",t:1,x:74,y:58,l:[0,4,5],lord:"Skarn the Fitter",gives:{r:[6],k:["tinker"],i:["d1","t1","t5"]},blurb:"A tinkerer's realm of doors and spikes. Take it for his Workshop."},
+  {id:3,name:"Fungal Deep",t:2,x:12,y:84,l:[1,6,7],lord:"Mother Rot",gives:{r:[8,13],k:["sporeling"]},blurb:"Damp halls thick with mushrooms. Guard rooms and a Fighting pit are the prize."},
+  {id:4,name:"The Crossing",t:2,x:50,y:84,theme:"deep",l:[1,2,7,8,14],lord:"The Ferryman",gives:{r:[7],k:["spirit"],s:[4,5]},blurb:"Black lakes where every road meets. Shrines, Spirits and two spells. Stairs lead up to an abbey."},
+  {id:5,name:"Ironvein",t:2,x:88,y:84,l:[2,8,9,15],lord:"Baron Clink",income:200,gives:{r:[10,11],i:["d2","t2"]},blurb:"A rich mine that pays you every turn once it is yours, with a Jail to fill. Stairs lead up to a castle."},
+  {id:6,name:"Grimble's Hold",t:3,x:10,y:110,l:[3,10],seat:0,gives:{r:[12],k:["tormentor","shade"]},blurb:"Lord Grimble's own seat. His Torture chamber, his Tormentors and his spies."},
+  {id:7,name:"Bonepits",t:3,x:36,y:110,l:[3,4,10,11],lord:"The Pale Widow",gives:{r:[9],k:["ghoul"],s:[8,9]},blurb:"An old burial ground. Crypts, Ghouls, and the spells that curse the living and raise the dead."},
+  {id:8,name:"Emberreach",t:3,x:64,y:110,theme:"fire",l:[4,5,11],lord:"Cinder",gives:{k:["ogre","imp"],i:["t3","t4","d3"]},blurb:"Rivers of lava. Ogres and Ember imps come from here, and the best traps and doors."},
+  {id:9,name:"Murk's Hollow",t:3,x:90,y:110,theme:"deep",l:[5,11],seat:1,gives:{r:[14,15],s:[6]},blurb:"Lady Murk's own seat: a drowned hall with a Gambling den and a Dark altar."},
+  {id:10,name:"Crystal Vault",t:4,x:24,y:134,theme:"crystal",l:[6,7,12],lord:"The Glass Queen",income:350,gives:{k:["wyrm"],s:[7]},blurb:"A glittering treasure house far from home. It pays richly every turn, and a Wyrm sleeps on it."},
+  {id:11,name:"Snagtooth's Maw",t:4,x:72,y:134,theme:"fire",l:[7,8,9,12],seat:2,gives:{s:[10]},blurb:"Old Snagtooth's own seat, deep in the fire. He guards the secret of Hellfire."},
+  {id:12,name:"The Throne Below",t:5,x:50,y:156,theme:"crystal",l:[10,11],need:"lords",lord:"The Hollow King",blurb:"The bottom of everything. It opens only when all three lords are dead or kneeling."},
+  {id:13,name:"Ashby",t:1,x:16,y:12,l:[1],surf:1,diff:0,size:40,loot:2000,dread:2,lord:"The village of Ashby",blurb:"A farming village over the Shallows. Break into its cellars and sack it for gold. The surface will remember."},
+  {id:14,name:"Saint Orla's Abbey",t:2,x:50,y:12,l:[4],surf:1,diff:1,size:44,loot:1500,dread:2,flag:"abbey",lord:"The Abbess of Saint Orla",blurb:"The abbey trains every Cleric sent against you. Burn it and no hero party will bring one again."},
+  {id:15,name:"Castle Wend",t:3,x:86,y:12,l:[5],surf:1,diff:2,size:52,loot:4000,dread:3,flag:"castle",lord:"The Castellan of Wend",blurb:"The heroes' stronghold. Sack it and far fewer of them will come for your keep."}];
+const VNAMES=["Snagrit","Mould","Old Yellow","Grubb","Vex","Thrakk","Nib","Skitter","Gorlo","Ash","Dregg","Marrow","Pike","Sootle","Wretch","Hask","Bile","Krool","Mirk","Tallow","Fenn","Ogmar","Rusk","Spindle","Gnash","Lurk","Bracken","Soot","Cinderfoot","Quill"];
+function darkNew(seed){const D={v:1,seed:seed>>>0,turn:0,dread:0,own:{0:"me"},lords:DARK_LORDS.map(()=>({alive:1,vassal:0})),flags:{},tries:{},nm:Math.floor(Math.random()*VNAMES.length),keep:null,exp:null,won:0};
+  DARK_LORDS.forEach((L,n)=>{D.own[L.seat]="L"+n});return D}
+const darkMine=(D,id)=>D.own[id]==="me"||D.own[id]==="vas";
+function darkAllow(D){const a={r:DARK_BASE.r.slice(),k:DARK_BASE.k.slice(),i:[],s:DARK_BASE.s.slice()};
+  for(const N of DARK_NODES)if(N.gives&&darkMine(D,N.id))for(const c of ["r","k","i","s"])for(const x of N.gives[c]||[])if(!a[c].includes(x))a[c].push(x);return a}
+function darkCan(D,id){const N=DARK_NODES[id];if(!id||darkMine(D,id))return false;if(N.need==="lords"&&D.lords.some(L=>L.alive&&!L.vassal))return false;return N.l.some(j=>darkMine(D,j))}
+const darkHeld=D=>DARK_NODES.filter(N=>!N.surf&&darkMine(D,N.id)).length;
+const darkPartyCap=D=>Math.min(8,3+Math.ceil(darkHeld(D)/2));
+const darkPower=(D,n)=>DARK_NODES.filter(N=>D.own[N.id]==="L"+n).length;
+function darkIncome(D){let g=0;for(const N of DARK_NODES){const o=D.own[N.id];if(o==="vas")g+=N.seat!=null?400:200;else if(o==="me"&&N.income)g+=N.income}return g}
+function keepSpec(D){return {name:"Your keep",dark:1,keep:1,deep:1,falls:1,size:46,rivals:0,diff:1,caves:4,seed:D.seed,theme:"earth",lost:2,heroes:{first:1e9,every:1e9,waves:0},allow:darkAllow(D),dread:D.dread}}
+function darkSpec(D,id,party){
+  const N=DARK_NODES[id],o=D.own[id],ln=o&&o[0]==="L"?+o[1]:-1,L=ln>=0?DARK_LORDS[ln]:null,t=N.t,tries=D.tries[id]||0;
+  const sp={name:N.name,dark:1,node:id,deep:1,falls:1,size:N.size||[40,40,48,56,64,74][t],rivals:N.surf?1:id===12?3:t>=3?2:1,diff:N.surf?N.diff:[0,0,1,1,2,2][t],caves:3+t*2,
+    seed:(D.seed*31+id*977+tries*13)>>>0,theme:N.theme||"earth",names:id===12?["The Hollow King","His Left Hand","His Right Hand"]:[L?L.name:N.lord,"A nameless lord"],
+    power:L?Math.max(0,darkPower(D,ln)-1)+(N.seat!=null?1:0):0,pseed:L?L.ps:id,allow:darkAllow(D),party:party||[],dread:D.dread,lost:2+t,wild:t>=3?2:1,blurb:N.blurb};
+  if(N.surf){sp.surface=1;sp.sites=0;sp.theme="earth"}
+  else if(D.dread>=4||id===12)sp.heroes={first:420,every:300,waves:Math.min(5,Math.max(2,D.dread-2)),boss:D.dread>=9||id===12?1:0,size:D.flags.castle?.6:1};
+  if(D.flags.abbey)sp.noCleric=1;
+  return sp}
+/* leave the keep: the chosen creatures go, the keep is put away as it stands, and the expedition's world is made */
+function darkLaunch(D,KW,id,ids){
+  const party=[];
+  for(const uid of ids){const u=KW.byId.get(uid);if(!u||u.o!==1||u.k==="digger"||u.hp<=0||u.ttl||u.jail||u.ko)continue;
+    if(!u.nm)u.nm=VNAMES[D.nm++%VNAMES.length];party.push({k:u.k,lvl:u.lvl,xp:u.xp,nm:u.nm,vet:u.vet||0});u.hp=0;KW.byId.delete(u.id)}
+  KW.units=KW.units.filter(u=>u.hp>0);recount(KW);D.keep=saveWorld(KW);D.exp=null;
+  return newWorld(darkSpec(D,id,party))}
+/* each living lord who is nobody's vassal may take a free realm next to his own */
+function darkLordsMove(D){const out=[];
+  D.lords.forEach((L,n)=>{if(!L.alive||L.vassal||Math.random()>.55)return;
+    const mine=DARK_NODES.filter(N=>D.own[N.id]==="L"+n),cand=[];
+    for(const N of mine)for(const j of N.l){const M=DARK_NODES[j];if(!D.own[j]&&j&&!M.surf&&j!==12&&!cand.includes(j))cand.push(j)}
+    if(!cand.length)return;const j=cand[Math.floor(Math.random()*cand.length)];D.own[j]="L"+n;out.push(`${DARK_LORDS[n].name} has taken ${DARK_NODES[j].name}.`)});
+  return out}
+/* the expedition is over: what it did to the map and to dread, who comes home with what, and the turn that passes */
+function darkResult(D,W,won){
+  const sp=W.spec,id=sp.node,N=DARK_NODES[id],how=won?(W.ends&&W.ends[2])||"conquer":"lost",P=W.k[1],out={won,how,id,lines:[],vets:[],gold:0,moves:[],income:0,dd:0};
+  D.tries[id]=(D.tries[id]||0)+1;D.exp=null;let dd=0;
+  if(won){
+    out.vets=W.units.filter(u=>u.o===1&&u.k!=="digger"&&u.hp>0&&!u.ttl&&!u.jail&&!u.ko).sort((a,b)=>b.lvl-a.lvl||(b.vet||0)-(a.vet||0)).slice(0,darkPartyCap(D))
+      .map(u=>({k:u.k,lvl:u.lvl,xp:u.xp,nm:u.nm||VNAMES[D.nm++%VNAMES.length],vet:(u.vet||0)+1}));
+    out.gold=Math.round(Math.min(P.gold,3000)*.8)+(N.surf?N.loot:0);
+    if(N.surf){D.own[id]="me";dd+=N.dread;if(N.flag)D.flags[N.flag]=1;
+      out.lines.push(N.flag==="abbey"?"The abbey burns. No hero party will bring a Cleric again.":N.flag==="castle"?"Castle Wend is a ruin. Far fewer heroes will come for your keep.":"Ashby is sacked. Its gold is yours.")}
+    else if(how==="vassal"){D.own[id]="vas";dd-=1;
+      if(N.seat!=null){D.lords[N.seat].vassal=1;out.lines.push(`${DARK_LORDS[N.seat].name} is your vassal now: 400 gold every turn, and no more conquests of their own.`)}
+      else out.lines.push(`${sp.names[0]} pays you 200 gold every turn.`)}
+    else{D.own[id]="me";if(how==="conquer")dd+=2;
+      if(N.seat!=null){D.lords[N.seat].alive=0;if(how==="conquer")dd+=1;let freed=0;for(const M of DARK_NODES)if(D.own[M.id]==="L"+N.seat){delete D.own[M.id];freed++}
+        out.lines.push(`${DARK_LORDS[N.seat].name} is no more.${freed?` The ${freed} realm${freed>1?"s":""} they held ${freed>1?"are":"is"} lordless again.`:""}`)}
+      if(N.income)out.lines.push(`${N.name} pays you ${N.income} gold every turn.`)}
+    if(id===12){D.won=1;out.lines.push("The Throne Below is yours. There is nothing deeper, and nobody left to stop you.")}
+  }else out.lines.push("The expedition is lost. Nobody you sent came home.");
+  if((W.stats.broken||0)>=2){dd++;out.lines.push("Word of your Torture chamber has reached the surface.")}
+  if((W.stats.sacr||0)>=1){dd++;out.lines.push("Word of your sacrifices has reached the surface.")}
+  D.turn++;if(D.turn%3===0&&dd<=0)dd--;
+  const was=D.dread;D.dread=Math.max(0,Math.min(10,D.dread+dd));out.dd=D.dread-was;
+  out.income=darkIncome(D);out.moves=darkLordsMove(D);return out}
+/* back to the keep: veterans and gold arrive, what is allowed is brought up to date, and the surface sends its answer */
+function darkHome(D,out){
+  const KW=loadWorld(D.keep),K=KW.k[1],ring=K.c.walk.filter(c=>cheb(KW,c,K.hx,K.hy)===2);
+  KW.spec.allow=darkAllow(D);KW.spec.dread=D.dread;if(D.flags.abbey)KW.spec.noCleric=1;
+  out.vets.forEach((q,n)=>{const c=ring.length?ring[n%ring.length]:(K.hy+2)*KW.w+K.hx,u=mkUnit(KW,1,q.k,c%KW.w,c/KW.w|0);u.lvl=q.lvl;u.xp=q.xp||0;u.nm=q.nm;u.vet=q.vet;u.hp=maxHp(u);u.mood=95;u.hunger=0;u.sleepy=0});
+  out.kept=Math.round(out.gold+out.income);K.gold=Math.round(K.gold)+out.kept;
+  if(KW.hero&&(D.dread>=1||D.turn>=2)){const H=KW.hero;H.pow=Math.max(2,Math.min(12,Math.round((1+D.dread*.9+D.turn/3)*(D.flags.castle?.55:1))));
+    H.lv=Math.min(8,1+Math.floor((D.dread+D.turn/2)/3));H.boss=D.dread>=8;H.waves=H.wave+1;H.next=KW.t+100;out.raid=H.pow}
+  recount(KW);updVis(KW);D.keep=saveWorld(KW);return KW}
+
 /* ---------- Shades: spies ---------- */
 /* seen by any rival fighter that comes close, by a rival's Watchtower, and by alarm bells (trapTick) */
 function spotted(W,u){
@@ -1131,11 +1323,12 @@ function treasure(W,i,tr,o){
 /* ---------- heroes from the surface ---------- */
 function spawnWave(W){
   const H=W.hero;H.wave++;H.next=W.t+H.every;
-  const s=W.stair,x=s%W.w,y=s/W.w|0,size=Math.min(12,Math.round((1.5+H.wave*1.1)*(H.size||1)));
-  const kinds=["dwarf"];for(let k=1;k<size;k++)kinds.push(k%4===3?"cleric":k%3===2?"wizard":"knight");
+  const s=W.stair,x=s%W.w,y=s/W.w|0,size=H.pow||Math.min(12,Math.round((1.5+H.wave*1.1)*(H.size||1)));
+  const kinds=["dwarf"];for(let k=1;k<size;k++)kinds.push(k%4===3&&!W.spec.noCleric?"cleric":k%3===2?"wizard":"knight");
   const boss=H.boss&&H.wave===H.waves;if(boss)kinds.push("champion");
-  kinds.forEach((k,n)=>{const u=mkUnit(W,HERO,k,x+(n%3)-1,y+((n/3|0)%3)-1);u.lvl=Math.min(10,1+Math.floor((H.wave-1)/2)+(W.spec.diff>1?1:0));u.hp=maxHp(u)});
+  kinds.forEach((k,n)=>{const u=mkUnit(W,HERO,k,x+(n%3)-1,y+((n/3|0)%3)-1);u.lvl=H.lv||Math.min(10,1+Math.floor((H.wave-1)/2)+(W.spec.diff>1?1:0));u.hp=maxHp(u)});
   fx(W,{k:"boom",x:x+.5,y:y+.5,c:OWN_COL[HERO]});
+  if(W.spec.keep){ev(W,boss?`The surface has had enough of you: the Hero Champion and ${size} heroes are in your keep!`:`Heroes have found your keep! ${kinds.length} of them are coming down the stairs.`,s,"bad");return}
   ev(W,boss?"The Hero Champion leads the last wave down from the surface!":`Heroes are coming down from the surface! Wave ${H.wave} of ${H.waves}.`,s,"bad");
 }
 function heroTarget(W){const P=W.k[1];if(P&&P.alive)return P;return W.k.find((K,o)=>K&&o>0&&K.alive)}
@@ -1163,6 +1356,7 @@ function heroThink(W,u,dt){
 /* ---------- winning ---------- */
 function checkWin(W){
   if(W.over)return;const sp=W.spec;
+  if(sp.keep)return;
   const rivals=W.k.every((K,o)=>!K||o===1||!K.alive);
   const heroes=!W.hero||!sp.survive||W.hero.wave>=W.hero.waves&&!W.units.some(u=>u.o===HERO&&u.hp>0&&!u.ko&&!u.jail);
   const caught=!sp.capture||W.stats.captured>=sp.capture;
@@ -1493,6 +1687,7 @@ function sacrifice(W,K,u,i){
   if(!u||u.o!==K.o||u.k==="digger"||u.hp<=0||W.room[i]!==RM.ALTAR||W.own[i]!==K.o)return null;
   const m=featAt(W,i)?1.5:1,mana=Math.round((80+40*u.lvl)*m),res=Math.round((8+6*u.lvl)*m),x=i%W.w+.5,y=(i/W.w|0)+.5;
   K.mana=Math.min(K.manaMax*1.5,K.mana+mana);const b=K.rp;K.rp+=res;spellCheck(W,K,b);K.hp=Math.min(K.maxhp,K.hp+100*u.lvl);K.dead=(K.dead||0)+1;
+  if(K.o===1)W.stats.sacr=(W.stats.sacr||0)+1;
   u.held=false;u.hp=0;u.x=x;u.y=y;fx(W,{k:"boom",x,y,c:"#B03A2E"});fx(W,{k:"blood",x,y});fx(W,{k:"curse",x,y});
   // the others don't like to watch
   for(const v of W.units)if(v.o===K.o&&v.hp>0&&v.k!=="digger"&&!KINDS[v.k].undead&&v.k!=="ghoul"&&v.k!=="tormentor"&&Math.hypot(v.x-x,v.y-y)<7)v.mood-=6;
@@ -1524,7 +1719,7 @@ function markRoute(W,K,route){if(!route)return 0;let n=0;const bit=1<<K.o;for(co
 /* ---------- rival lords: a personality, a growing realm, a budget, and campaigns against the weakest neighbour ---------- */
 const PERSONAS=[{id:"builder",grow:1.35,army:.9,bold:.8},{id:"raider",grow:1,army:1.25,bold:1.3},{id:"schemer",grow:1.15,army:1.05,bold:1}];
 const persona=K=>PERSONAS[(K.o+(K.pseed||0))%3];
-function aiCap(W,K){const D=DIFF[W.spec.diff];return Math.min(32,Math.round((D.cap+Math.floor(W.t/180)*2)*persona(K).army))}
+function aiCap(W,K){const D=DIFF[W.spec.diff];return Math.min(34,Math.round((D.cap+Math.floor(W.t/180)*2)*persona(K).army)+(K.o===2?2*(W.spec.power||0):0))}
 function strength(W,K){let s=0;for(const u of W.units)if(u.o===K.o&&u.k!=="digger"&&u.hp>0&&!u.jail&&!u.ko)s+=lvlMult(u)*KINDS[u.k].hp/100;return s+K.hp/600}
 function aiThink(W,K,D){
   const c=K.c,pe=persona(K),w=W.w;
@@ -1669,13 +1864,14 @@ function aiTraps(W,K){
 /* ---------- saving ---------- */
 function b64(u8){let s="";for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(s)}
 function unb64(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
-function saveWorld(W){return {v:1,spec:W.spec,w:W.w,h:W.h,t:W.t,nid:W.nid,over:W.over,stats:W.stats,gates:W.gates,firstGate:W.firstGate,sites:W.sites,evn:W.evn,
+function saveWorld(W){return {v:1,spec:W.spec,w:W.w,h:W.h,t:W.t,nid:W.nid,over:W.over,stats:W.stats,gates:W.gates,firstGate:W.firstGate,sites:W.sites,evn:W.evn,fall:W.fall,ends:W.ends,sacked:W.sacked||0,
   tile:b64(W.tile),own:b64(W.own),room:b64(W.room),mark:b64(W.mark),gold:b64(new Uint8Array(W.gold.buffer)),food:b64(W.food),known:b64(W.known),treas:b64(W.treas),hero:W.hero,stair:W.stair,trap:b64(W.trap),door:b64(W.door),dhp:b64(new Uint8Array(W.dhp.buffer)),
   k:W.k.map(K=>K&&Object.assign({},K,{c:undefined})),
-  units:W.units.filter(u=>u.hp>0).map(u=>({id:u.id,o:u.o,k:u.k,x:u.x,y:u.y,hp:u.hp,lvl:u.lvl,xp:u.xp,mood:u.mood,hunger:u.hunger,sleepy:u.sleepy,carry:u.carry,held:u.held,home:u.home,bed:u.bed,raid:!!u.raid,ko:u.ko||0,koT:u.koT||0,koBy:u.koBy||0,jail:u.jail||0,pers:u.pers||0,ttl:u.ttl||0}))}}
+  units:W.units.filter(u=>u.hp>0).map(u=>({id:u.id,o:u.o,k:u.k,x:u.x,y:u.y,hp:u.hp,lvl:u.lvl,xp:u.xp,mood:u.mood,hunger:u.hunger,sleepy:u.sleepy,carry:u.carry,held:u.held,home:u.home,bed:u.bed,raid:!!u.raid,ko:u.ko||0,koT:u.koT||0,koBy:u.koBy||0,jail:u.jail||0,pers:u.pers||0,ttl:u.ttl||0,nm:u.nm,vet:u.vet||0}))}}
 function loadWorld(d){
   const N=d.w*d.h;
   const W={v:1,spec:d.spec,w:d.w,h:d.h,t:d.t||0,nid:d.nid,over:d.over||0,stats:d.stats||{kills:0,lost:0},gates:d.gates||[],firstGate:d.firstGate,
+    fall:d.fall||null,ends:d.ends||null,sacked:d.sacked||0,
     sites:d.sites||[],evn:d.evn!==undefined?d.evn:d.spec.tips?null:{next:(d.t||0)+150,n:0,last:""},
     tile:unb64(d.tile),own:unb64(d.own),room:unb64(d.room),mark:unb64(d.mark),gold:new Uint16Array(unb64(d.gold).buffer),food:unb64(d.food),known:unb64(d.known),
     treas:d.treas?unb64(d.treas):new Uint8Array(N),hero:d.hero||null,stair:d.stair!=null?d.stair:-1,
@@ -1698,7 +1894,7 @@ const cv=$("cv"),ctx=cv.getContext("2d"),mini=$("mini"),mctx=mini.getContext("2d
 let VW=0,VH=0,DPR=1;
 const cam={x:0,y:0,z:36};
 
-function show(v){view=v;$("menu").hidden=v!=="menu";$("game").hidden=v!=="game";if(v==="game")resize()}
+function show(v){view=v;$("menu").hidden=v!=="menu";$("game").hidden=v!=="game";$("dark").hidden=v!=="dark";if(v==="game")resize()}
 
 /* ---------- menu ---------- */
 function progress(){return LS.get("hd.progress",{won:{}})}
@@ -1709,7 +1905,8 @@ function starGoals(sp){return sp.par?["Win the realm",`Win inside ${sp.par} minu
 function s3Met(W,[k,n]){const s=W.stats;return k==="lost"?s.lost<=n:k==="capture"?s.captured>=n:k==="heart"?s.minHeart*100>=n:k==="treasure"?s.treasure>=n:k==="kills"?s.kills>=n:s.recruited>=n}
 const starsOf=r=>r?(r.stars||[1,0,0]):[0,0,0];
 const starStr=a=>a.map(x=>x?"★":"☆").join("");
-function realmGoal(sp){const names=RIVALS.slice(0,sp.rivals||0),p=[];
+function realmGoal(sp){if(sp.keep)return "This is your keep. Build it up, then open the 🗺 War map to march on a realm.";
+  const names=(sp.names||RIVALS).slice(0,sp.rivals||0),p=[];
   if(sp.survive&&sp.heroes)p.push(`survive ${sp.heroes.waves} waves of heroes${sp.heroes.boss?" and their Champion":""}`);
   if(sp.capture)p.push(`lock up ${sp.capture} enemies`);
   if(names.length)p.push(`beat ${names.length>1?names.slice(0,-1).join(", ")+" and "+names[names.length-1]:names[0]}`);
@@ -1729,6 +1926,9 @@ function renderMenu(){
   });
   $("starTot").textContent=`★ ${tot} of ${CAMPAIGN.length*3}`;
   const g=LS.get("hd.game",null);
+  {const d=LS.get("hd.dark",null);$("darkBtn").textContent=d?"Carry on":"Begin";$("darkReset").hidden=!d;
+    if(d)$("darkTxt").textContent=d.won?`You hold the Throne Below. Turn ${d.turn} · dread ${d.dread}. Your keep is still yours to play.`:`Turn ${d.turn} · ${darkHeld(d)-1} realm${darkHeld(d)===2?"":"s"} held · dread ${d.dread} of 10${d.exp?" · an expedition is under way":""}`;
+    else $("darkTxt").textContent="A second campaign. One keep that lasts the whole war, a map of realms to choose from, three lords who take them too, and the surface above to raid."}
   $("contCard").hidden=!g;
   if(g)$("contTxt").textContent=`${g.spec.camp?CAMPAIGN[g.spec.camp-1].name:"Quick game"} · ${mmss(g.t)} played`;
 }
@@ -1750,9 +1950,110 @@ function enterGame(){
   $("ov").hidden=true;$("sheet").hidden=true;$("info").hidden=true;$("toasts").textContent="";stains=[];whisperT=70;
   setTool("look");show("game");save();lastFrame=performance.now();
   if(W.spec.camp&&W.t<1)briefing();
+  else if(W.spec.dark&&!W.spec.keep&&W.t<1)darkBriefing();
 }
-function save(){if(!W)return;if(W.poss&&!W.over){/* possession is not saved */}if(W.over){LS.del("hd.game");return}LS.set("hd.game",saveWorld(W));lastSave=W.t}
+function save(){if(!W)return;
+  if(W.spec.dark){if(!D)return;if(W.spec.keep)D.keep=saveWorld(W);else if(!W.over)D.exp=saveWorld(W);LS.set("hd.dark",D);lastSave=W.t;return}if(W.poss&&!W.over){/* possession is not saved */}if(W.over){LS.del("hd.game");return}LS.set("hd.game",saveWorld(W));lastSave=W.t}
 function quitToMenu(){save();W=null;renderMenu();show("menu")}
+
+/* ---------- The Long Dark: keep, war map, expeditions ---------- */
+let D=null,dkSel=-1,dkPick=null;
+$("darkBtn").onclick=()=>{
+  D=LS.get("hd.dark",null);
+  if(!D){D=darkNew(Math.floor(Math.random()*1e9));W=newWorld(keepSpec(D));updVis(W);enterGame();keepIntro();return}
+  try{W=loadWorld(D.exp||D.keep)}catch(e){toast("That save could not be read.","bad");return}
+  enterGame()};
+$("darkReset").onclick=()=>{if(!confirm("Start the Long Dark again from the beginning? Your keep and everything you have taken will be lost."))return;LS.del("hd.dark");D=null;renderMenu()};
+$("dkBack").onclick=()=>{show("game");paused=false;lastFrame=performance.now();renderHud();renderFloat()};
+function keepIntro(){
+  paused=true;const c=$("ovCard");c.innerHTML=`<span class="muted">The Long Dark</span><h2>Your keep</h2>
+  <div class="list"><div><span>🏰 This dungeon is yours for the whole war. Nothing you build here is ever thrown away.</span></div>
+  <div><span>🗺 When you have some creatures, tap <b>War map</b> and choose a realm to march on. Your best creatures go with you, and the survivors come home as veterans with what you took.</span></div>
+  <div><span>🔓 You start with little. Each realm you take teaches you its rooms, creatures and spells. The best lie furthest away.</span></div>
+  <div><span>☠ Dark deeds raise your <b>dread</b>. The surface answers by sending heroes down your stairs after every expedition.</span></div>
+  <div><span>🪨 The bigger you dig, the more often the roof comes down on open, empty floor. Rooms hold it up.</span></div></div>
+  <div class="row"><button class="btn pri" data-go>Begin</button></div>`;
+  c.querySelector("[data-go]").onclick=()=>{paused=false;$("ov").hidden=true;renderHud()};$("ov").hidden=false}
+function openDark(){if(!W||!W.spec.keep)return;save();dkSel=-1;dkPick=null;show("dark");renderDark();$("dark").scrollTop=0}
+const dkCol=o=>o==="me"?"#3FC1B0":o==="vas"?"#E2B33C":o&&o[0]==="L"?OWN_COL[2+ +o[1]]:"#6E6478";
+function darkGives(N){const out=[],g=N.gives||{};
+  for(const r of g.r||[])out.push(`${ROOMS[r].icon} ${ROOMS[r].name}`);for(const k of g.k||[])out.push(`👾 ${KINDS[k].name}s`);
+  for(const x of g.i||[]){const it=itemOf({t:x[0],k:+x.slice(1)});out.push(`${it.icon} ${it.name}`)}for(const k of g.s||[])out.push(`${SPELLS[k].icon} ${SPELLS[k].name}`);
+  if(N.income)out.push(`🪙 ${N.income} gold every turn`);if(N.loot)out.push(`🪙 ${N.loot.toLocaleString("en-GB")} gold in loot`);
+  if(N.flag==="abbey")out.push("⛪ No more Clerics among the heroes");if(N.flag==="castle")out.push("🏰 Far fewer heroes attack your keep");
+  if(N.id===12)out.push("👑 The end of the war");return out}
+function renderDark(){
+  const K=W.k[1],nHeld=darkHeld(D)-1,inc=darkIncome(D);
+  $("dkHead").innerHTML=`<div class="list"><div><span>Turn ${D.turn+1}</span><b>${nHeld} realm${nHeld===1?"":"s"} held</b></div>
+    <div><span>☠ Dread</span><b class="dread">${"☠".repeat(D.dread)}<span style="opacity:.25">${"☠".repeat(10-D.dread)}</span></b></div>
+    <div><span>🪙 Gold at home</span><b>${fmt(K.gold)}${inc?` · +${inc} a turn`:""}</b></div>
+    <div><span>⚔ You can take</span><b>${darkPartyCap(D)} creatures on an expedition</b></div></div>
+    <small class="muted">${D.won?"The Throne Below is yours. The war is won, but the map is still open.":D.dread>=7?"The surface is terrified of you, and sends everything it has.":D.dread>=4?"The surface fears you. Hero parties now follow you into every realm.":D.dread>=1?"The surface has heard of you. Heroes come for your keep after each expedition.":"The surface hardly knows you are down here."} Tormentors need dread 2, Ghouls 3, a Wyrm 5.</small>`;
+  let h=`<rect x="-8" y="0" width="116" height="24" fill="#3C5A3A" opacity=".5"/><rect x="-8" y="23" width="116" height="2.2" fill="#5A4632"/><text x="-5" y="5" font-size="3" opacity=".8">THE SURFACE</text><text x="-5" y="30" font-size="3" opacity=".5">THE DARK</text>`;
+  for(const N of DARK_NODES)for(const j of N.l)if(j>N.id){const M=DARK_NODES[j],on=darkMine(D,N.id)||darkMine(D,j);h+=`<line x1="${N.x}" y1="${N.y}" x2="${M.x}" y2="${M.y}" stroke="${on?"#B8A8C8":"#4A4054"}" stroke-width="${on?1:.6}" ${N.surf||M.surf?'stroke-dasharray="1.6 1.4"':""}/>`}
+  for(const N of DARK_NODES){const o=D.own[N.id],can=darkCan(D,N.id),r=N.id===0?6.5:N.seat!=null||N.id===12?5.6:4.6,sel=dkSel===N.id;
+    h+=`<g class="nd" data-n="${N.id}">${can?`<circle cx="${N.x}" cy="${N.y}" r="${r+2}" fill="none" stroke="#fff" stroke-width=".7" stroke-dasharray="1.5 1.5"><animate attributeName="r" values="${r+1.4};${r+2.8};${r+1.4}" dur="1.8s" repeatCount="indefinite"/></circle>`:""}
+      <circle cx="${N.x}" cy="${N.y}" r="${r}" fill="${dkCol(o)}" stroke="${sel?"#fff":"#16101A"}" stroke-width="${sel?1.2:.8}"/>
+      <text x="${N.x}" y="${N.y+r*.36}" font-size="${r*.95}" text-anchor="middle">${N.id===0?"🏰":N.surf?(N.flag==="abbey"?"⛪":N.flag==="castle"?"🛡":"🏘"):N.id===12?"👑":N.seat!=null?(D.lords[N.seat].alive?"💀":"✖"):o==="me"?"✓":o==="vas"?"🪙":""}</text>
+      <text x="${N.x}" y="${N.y+r+4}" font-size="3" text-anchor="middle">${N.name}</text></g>`}
+  $("dmap").innerHTML=h;
+  $("dmap").querySelectorAll(".nd").forEach(g=>g.onclick=()=>{dkSel=+g.dataset.n;dkPick=null;renderDark();$("dkNode").scrollIntoView({behavior:"smooth",block:"nearest"})});
+  const box=$("dkNode");
+  if(dkSel<0){box.innerHTML=`<span class="muted">Tap a realm to see who holds it and what it would give you. The ones with a white ring are within reach. ${DARK_LORDS.map((L,n)=>`<b style="color:${OWN_COL[2+n]}">${L.name}</b> ${!D.lords[n].alive?"is dead":D.lords[n].vassal?"kneels to you":`holds ${darkPower(D,n)}`}`).join(" · ")}.</span>`;return}
+  const N=DARK_NODES[dkSel],o=D.own[N.id],ln=o&&o[0]==="L"?+o[1]:-1,can=darkCan(D,N.id),gv=darkGives(N);
+  let t=`<h2>${N.name}</h2>`;
+  if(N.id===0)t+=`<span class="muted">Your keep. Everything starts and ends here.</span>`;
+  else{
+    t+=`<span class="muted">${N.blurb}</span><div class="list"><div><span>Held by</span><b style="color:${dkCol(o)}">${o==="me"?(N.surf?"nobody now: you sacked it":"you"):o==="vas"?"your vassal":ln>=0?`${DARK_LORDS[ln].name}${N.seat===ln?" (their seat)":""}`:N.lord}</b></div>
+      ${ln>=0?`<div><span>Their strength</span><b>${darkPower(D,ln)} realm${darkPower(D,ln)>1?"s":""}: a bigger army for each</b></div>`:""}
+      ${gv.map(x=>`<div><span>${darkMine(D,N.id)?"✓":"🎁"} ${x}</span></div>`).join("")}</div>`;
+    if(dkPick){const cap=darkPartyCap(D),us=W.units.filter(u=>u.o===1&&u.k!=="digger"&&u.hp>0&&!u.ttl&&!u.jail&&!u.ko&&!u.held).sort((a,b)=>b.lvl-a.lvl);
+      t+=`<b>Who marches? ${dkPick.length} of ${cap}</b><small class="muted">The rest stay and guard the keep. Whoever lives comes home a veteran; if the expedition is lost, so are they.</small><div class="pk">${us.map(u=>`<button data-u="${u.id}" class="${dkPick.includes(u.id)?"on":""}">${u.nm?u.nm+" · ":""}${KINDS[u.k].name} ${u.lvl}${u.vet?" ★":""}</button>`).join("")||`<span class="muted">You have no creatures yet. Go back, claim a Gate and build a Lair.</span>`}</div>
+        <div class="seg"><button class="btn pri" data-march ${dkPick.length?"":"disabled"}>March on ${N.name}</button><button class="btn" data-no>Not yet</button></div>`}
+    else if(can)t+=`<div class="seg"><button class="btn pri" data-inv>${N.surf?"Raid":"Invade"}</button></div>`;
+    else if(!darkMine(D,N.id))t+=`<small class="muted">${N.need==="lords"&&D.lords.some(L=>L.alive&&!L.vassal)?"It opens only when all three lords are dead or kneeling.":"Out of reach: take a realm next to it first."}</small>`}
+  box.innerHTML=t;
+  const iv=box.querySelector("[data-inv]");if(iv)iv.onclick=()=>{const cap=darkPartyCap(D);dkPick=W.units.filter(u=>u.o===1&&u.k!=="digger"&&u.hp>0&&!u.ttl&&!u.jail&&!u.ko&&!u.held).sort((a,b)=>b.lvl-a.lvl).slice(0,cap).map(u=>u.id);renderDark()};
+  box.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const id=+b.dataset.u,k=dkPick.indexOf(id);if(k>=0)dkPick.splice(k,1);else if(dkPick.length<darkPartyCap(D))dkPick.push(id);else toast("That's as many as you can take.");renderDark()});
+  const no=box.querySelector("[data-no]");if(no)no.onclick=()=>{dkPick=null;renderDark()};
+  const go=box.querySelector("[data-march]");if(go)go.onclick=()=>{held=[];W=darkLaunch(D,W,N.id,dkPick);dkPick=null;updVis(W);enterGame()};
+}
+function darkBriefing(){
+  paused=true;const sp=W.spec,N=DARK_NODES[sp.node],gv=darkGives(N),c=$("ovCard");
+  c.innerHTML=`<span class="muted">${N.surf?"A raid on the surface":"An expedition"} · turn ${D.turn+1}</span><h2></h2><span class="muted" data-b></span>
+  <div class="list"><div><span>⚔ Against <b>${sp.names[0]}</b>${sp.rivals>1?` and ${sp.rivals-1} more`:""}${sp.power?`, grown strong on ${sp.power+1} realms`:""}${sp.heroes?". Heroes are hunting you here too":""}</span></div>
+    <div><span>🧳 With you: ${sp.party.length?sp.party.map(q=>`${q.nm} the ${KINDS[q.k].name}`).join(", "):"nobody. You start from nothing"}</span></div>
+    ${gv.map(x=>`<div><span>🎁 ${x}</span></div>`).join("")}</div>
+  ${N.surf?"":`<div class="list"><div><b>Three ways to end it</b></div><div><span>💥 <b>Destroy the Heart.</b> Loot and the realm, but the surface hears: dread +2.</span></div>
+    <div><span>🚪 <b>Starve them.</b> Hold every Gate they have for 2½ minutes. All their gold, and no dread.</span></div>
+    <div><span>🙇 <b>Spare them.</b> When their Heart is nearly gone they will beg. A vassal pays tribute every turn, and dread falls.</span></div></div>`}
+  <small class="muted">The best seams, treasure and tombs lie furthest from your Heart. Watch the roof over open floor.</small>
+  <div class="row"><button class="btn pri" data-go>March</button></div>`;
+  c.querySelector("h2").textContent=sp.name;c.querySelector("[data-b]").textContent=sp.blurb;
+  c.querySelector("[data-go]").onclick=()=>{paused=false;$("ov").hidden=true;renderHud()};$("ov").hidden=false}
+function offerCard(){
+  const K=W.k[W.offer.o];W.offer=null;if(!K||!K.alive)return;K.begged=1;paused=true;snd("gong");
+  const c=$("ovCard");c.innerHTML=`<h2>${K.name} begs for mercy</h2><span class="muted">“Spare my Heart, Keeper, and all I have is yours to tax.”</span>
+  <div class="list"><div><span>🙇 <b>Spare them:</b> the fight ends now. They become your vassal and pay tribute every turn, and your dread falls by 1.</span></div>
+  <div><span>💥 <b>No mercy:</b> finish the Heart for their gold. The surface will hear of it: dread +2${DARK_NODES[W.spec.node].seat!=null&&W.offer===null&&K.o===2?", and this lord is gone for good":""}.</span></div></div>
+  <div class="row"><button class="btn pri" data-y>Spare them</button><button class="btn" data-n>No mercy</button></div>`;
+  c.querySelector("[data-y]").onclick=()=>{$("ov").hidden=true;paused=false;endLord(W,K,"vassal");renderHud()};
+  c.querySelector("[data-n]").onclick=()=>{$("ov").hidden=true;paused=false;renderHud();toast("“Then finish it.”","evil")};$("ov").hidden=false}
+function darkOver(){
+  paused=true;setPossUI(false);const won=W.over===1,sp=W.spec,N=DARK_NODES[sp.node],stats=W.stats;
+  const out=darkResult(D,W,won),KW=darkHome(D,out);LS.set("hd.dark",D);
+  const c=$("ovCard"),HOW={conquer:"Conquered",starve:"Starved into giving in",vassal:"Spared: now your vassal",other:"Fallen",lost:"Lost"};
+  c.innerHTML=`<span class="muted">${sp.name} · turn ${D.turn}</span><h2>${won?(N.surf?"Sacked!":HOW[out.how]):"The expedition is lost"}</h2>
+  <div class="list">${out.lines.map(x=>`<div><span>${x}</span></div>`).join("")}
+    ${won&&N.gives?`<div><span>🔓 Learnt: ${darkGives(N).filter(x=>!/gold/.test(x)).join(", ")}</span></div>`:""}
+    ${out.vets.length?`<div><span>🧳 Home again: ${out.vets.map(q=>`${q.nm} the ${KINDS[q.k].name} (${q.lvl})`).join(", ")}</span></div>`:""}
+    <div><span>🪙 Gold brought home${out.income?` (with ${out.income} in tribute and income)`:""}</span><b>${fmt(out.kept)}</b></div>
+    <div><span>☠ Dread</span><b class="dread">${out.dd>0?"+"+out.dd:out.dd} → ${D.dread} of 10</b></div>
+    ${out.moves.map(x=>`<div><span>⚑ ${x}</span></div>`).join("")}
+    ${out.raid?`<div><span>⚔ The surface answers: about ${out.raid} heroes are on their way to your keep. Be ready.</span></div>`:""}</div>
+  <div class="row"><button class="btn pri" data-home>Back to the keep</button></div>`;
+  c.querySelector("[data-home]").onclick=()=>{W=KW;enterGame();toast(D.won&&N.id===12?"“So. It is all yours. I always knew.”":won?"“Home. They will come for this, you know.”":"“A pity. They were almost useful.”","evil")};
+  $("ov").hidden=false}
 
 /* ---------- tools ---------- */
 function selInfo(){if(buildSel==="sell")return ["💰","Sell"];if(typeof buildSel==="number")return [ROOMS[buildSel].icon,"Build"];const it=itemOf({t:buildSel[0],k:+buildSel.slice(1)});return [it.icon,"Place"]}
@@ -1851,6 +2152,7 @@ function renderFloat(){
   const K=W.k[1];
   if(held.length){const b=document.createElement("button");b.className="chip";b.textContent=`✋ Holding ${held.length} · tap your floor to drop`;b.onclick=()=>setTool("hand");f.append(b)}
   if(K.rally>=0){const b=document.createElement("button");b.className="chip";b.textContent="🚩 Call off the flag";b.onclick=()=>{K.rally=-1;renderFloat();toast("Your creatures are back to their own business.")};f.append(b)}
+  if(W.spec.keep){const b=document.createElement("button");b.className="chip";b.style.borderLeft="3px solid #9B5CFF";b.textContent="🗺 War map";b.onclick=openDark;f.append(b)}
   $("handTool").innerHTML=held.length?`✋<small>Hand ${held.length}</small>`:"✋<small>Hand</small>";
 }
 
@@ -1936,8 +2238,9 @@ function showInfo(){
   let h="";
   if(sel.u){const u=W.byId.get(sel.u);if(!u||u.hp<=0||u.held){box.hidden=true;sel=null;return}
     const k=KINDS[u.k],mine=u.o===1,K=W.k[u.o],mh=maxHp(u);
-    h=`<h2><span>${k.name}${!k.wild?` · level ${u.lvl}`:""}</span><button class="x" data-x>✕</button></h2>`;
+    h=`<h2><span>${u.nm?u.nm+" the ":""}${k.name}${!k.wild?` · level ${u.lvl}`:""}</span><button class="x" data-x>✕</button></h2>`;
     h+=`<div class="muted">${mine?"Yours":u.o===WILD?"Wild":u.o===HERO?"A hero from the surface":u.o===NEUTRAL?"Lost":K.name+"'s"}${k.blurb?" · "+k.blurb:""}</div>`;
+    if(u.vet)h+=`<div style="color:var(--gold)">★ Veteran of ${u.vet} expedition${u.vet>1?"s":""}</div>`;
     if(u.ko)h+=`<div>💫 Knocked out${u.koBy===1?": your diggers will carry it to your Jail":""}.</div>`;
     else if(u.jail===1)h+=`<div>⛓ Your prisoner. ${W.room[tileOf(W,u)]===RM.TORTURE?`Being broken: ${Math.floor((u.pers||0)/50*100)}%.`:W.room[tileOf(W,u)]===RM.PERSUADE?`Being won over: ${Math.floor((u.pers||0)/50*100)}%.`:W.k[1].c.rooms[RM.TORTURE]?(u.hp<maxHp(u)*.45?"Getting its strength back before the Torture chamber.":"Waiting for a free tile in your Torture chamber."):W.k[1].c.rooms[RM.PERSUADE]?"Waiting for a free tile in your Persuasion room.":"Build a Persuasion room or a Torture chamber to turn it."}</div>`;
     else if(u.o===NEUTRAL)h+=`<div>❓ Claim the floor next to it, or walk a creature up to it, and it joins you. Rivals can take it too.</div>`;
@@ -2068,6 +2371,7 @@ function snd(k){if(!opts.sound||!AC||AC.state!=="running"||paused&&k!=="gong")re
   else if(k==="ring"){tone(1180,1160,.6,.05,"triangle");tone(1180,1160,.6,.05,"triangle",.25)}
   else if(k==="gong"){tone(98,92,2.2,.16,"triangle");tone(147,140,1.8,.07);tone(55,50,2.4,.14)}
   else if(k==="good"){tone(196,196,.7,.06,"triangle");tone(233,233,.9,.05,"triangle",.12)}
+  else if(k==="rumble"){noise(1.6,.22,180);tone(48,34,1.6,.2,"triangle")}
   else if(k==="beat"){tone(62,38,.16,.22);tone(55,34,.2,.16,"sine",.17)}}
 function fxSound(k){if(k==="hit"||k==="dust"||k==="bolt"||k==="strike"||k==="boom"||k==="hell"||k==="sparkle"||k==="scream"||k==="blood"||k==="curse"||k==="flame"||k==="ring")snd(k)}
 /* called every frame: the drone swells in a game, and the Heart beats louder the nearer you look and faster when it is hurt */
@@ -2119,7 +2423,7 @@ $("speedBtn").onclick=()=>{if(paused){paused=false}else speed=speed===1?2:speed=
 $("menuBtn").onclick=()=>pauseMenu();
 function pauseMenu(){
   paused=true;renderHud();
-  const c=$("ovCard");c.innerHTML=`<h2>Paused</h2><span class="muted">${W.spec.camp?CAMPAIGN[W.spec.camp-1].name:"Quick game"} · ${mmss(W.t)}</span>
+  const c=$("ovCard");c.innerHTML=`<h2>Paused</h2><span class="muted">${W.spec.camp?CAMPAIGN[W.spec.camp-1].name:W.spec.dark?W.spec.name:"Quick game"} · ${mmss(W.t)}</span>
   <div class="row"><button class="btn pri" data-r>Carry on</button><button class="btn" data-h>How to play</button></div>
   <div class="row"><button class="btn" data-q>Save and leave</button><button class="btn" data-s>Start again</button></div>
   <div class="row"><button class="btn" data-snd>${opts.sound?"🔊 Sound is on":"🔇 Sound is off"}</button></div>`;
@@ -2127,7 +2431,10 @@ function pauseMenu(){
   c.querySelector("[data-r]").onclick=()=>{paused=false;$("ov").hidden=true;renderHud()};
   c.querySelector("[data-q]").onclick=()=>{$("ov").hidden=true;quitToMenu()};
   c.querySelector("[data-h]").onclick=()=>{$("ov").hidden=true;quitToMenu();$("howto").open=true;$("howto").scrollIntoView()};
-  c.querySelector("[data-s]").onclick=()=>{if(!confirm("Start this map again from the beginning?"))return;const sp=W.spec;LS.del("hd.game");W=newWorld(sp);updVis(W);enterGame()};
+  if(W.spec.dark){const b=c.querySelector("[data-s]");
+    if(W.spec.keep){b.textContent="🗺 War map";b.onclick=()=>{paused=false;$("ov").hidden=true;openDark()}}
+    else{b.textContent="Give up and go home";b.onclick=()=>{if(!confirm("Give up this expedition? Nobody you brought will come home."))return;$("ov").hidden=true;W.over=2}}}
+  else c.querySelector("[data-s]").onclick=()=>{if(!confirm("Start this map again from the beginning?"))return;const sp=W.spec;LS.del("hd.game");W=newWorld(sp);updVis(W);enterGame()};
   $("ov").hidden=false;
 }
 function newThings(sp){const d=CAMPAIGN[sp.camp-1].adds||{},out=[];
@@ -2147,6 +2454,7 @@ function briefing(){
   $("ov").hidden=false;
 }
 function gameOver(){
+  if(W.spec.dark){darkOver();return}
   paused=true;setPossUI(false);const won=W.over===1,sp=W.spec,sg=starGoals(sp);
   let st=[0,0,0];
   if(won&&sp.camp){st=[1,W.t<=sp.par*60?1:0,s3Met(W,sp.s3)?1:0];const pr=progress(),old=pr.won[sp.camp],os=starsOf(old);
@@ -2763,6 +3071,7 @@ function drawUnit(u){
   if(u.hp<mh){c.fillStyle="rgba(0,0,0,.6)";c.fillRect(x-s*.25,y0-s*.56,s*.5,s*.07);c.fillStyle=u.hp/mh>.4?"#7CD67C":"#E0503C";c.fillRect(x-s*.25,y0-s*.56,s*.5*Math.max(0,u.hp/mh),s*.07)}
   if(u.lvl>1&&s>22){c.fillStyle=col;c.font=`700 ${Math.round(s*.24)}px system-ui`;c.textAlign="center";c.fillText(u.lvl,x+s*.26,y0-s*.26)}
   if(u.st==="sleep"&&s>20){c.fillStyle="#cfe";c.font=`700 ${Math.round(s*.26)}px system-ui`;c.textAlign="center";c.fillText("z",x+s*.2+Math.sin(W.t*2)*s*.05,y0-s*.4-((W.t*20)%10)/10*s*.15)}
+  if(u.vet&&u.o===1&&s>18){c.fillStyle="#FFD65A";c.font=`${Math.round(s*.22)}px system-ui`;c.textAlign="center";c.fillText("★",x-s*.26,y0-s*.26)}
   if(u.curseT>W.t&&s>16){c.font=`${Math.round(s*.26)}px system-ui`;c.textAlign="center";c.fillText("☠",x+s*.24,y0-s*.4)}
   if(u.o===1&&u.k!=="digger"&&u.mood<30&&s>20){c.font=`${Math.round(s*.26)}px system-ui`;c.textAlign="center";c.fillText("💢",x-s*.24,y0-s*.36)}
   if(sel&&sel.u===u.id){c.strokeStyle="#fff";c.lineWidth=2;c.beginPath();c.ellipse(x,y0+s*.16,s*.34,s*.15,0,0,7);c.stroke()}
@@ -2799,6 +3108,11 @@ function draw(){
   const P=W.k[1];
   if(P.rally>=0){const [fx2,fy2]=w2s(P.rally%w+.5,(P.rally/w|0)+.5);c.strokeStyle="#ddd";c.lineWidth=Math.max(1.5,s*.05);c.beginPath();c.moveTo(fx2,fy2+s*.3);c.lineTo(fx2,fy2-s*.6);c.stroke();
     c.fillStyle=OWN_COL[1];c.beginPath();c.moveTo(fx2,fy2-s*.6);c.lineTo(fx2+s*.45,fy2-s*.45+Math.sin(W.t*5)*s*.04);c.lineTo(fx2,fy2-s*.3);c.fill()}
+  // the roof is about to come down here
+  if(W.fall)for(const q of W.fall.warn){if(!q.snd){q.snd=1;if(W.known[q.i])snd("rumble")}
+    for(const j of q.tiles){if(!W.known[j])continue;const [sx,sy]=w2s(j%w,j/w|0);if(sx>VW||sy>VH||sx<-s||sy<-s)continue;const left=Math.max(0,q.at-W.t),a=.25+.25*Math.sin(W.t*(14-left));
+      c.fillStyle=`rgba(190,60,30,${a})`;c.fillRect(sx,sy,s,s);c.strokeStyle="rgba(40,20,10,.8)";c.lineWidth=Math.max(1,s*.04);c.beginPath();c.moveTo(sx+s*.15,sy+s*.2);c.lineTo(sx+s*.45,sy+s*.45);c.lineTo(sx+s*.35,sy+s*.7);c.moveTo(sx+s*.45,sy+s*.45);c.lineTo(sx+s*.8,sy+s*.35);c.stroke();
+      for(let k=0;k<3;k++){const ph=(W.t*1.6+k*.37+(j%7)*.13)%1;circle(sx+s*(.2+k*.3),sy+s*ph,s*.045,"#9C8466")}}}
   // what you can't see right now lies in shadow
   c.fillStyle="rgba(6,2,10,.46)";for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*w+x;if(W.known[i]&&!W.vis[i]){const [sx,sy]=w2s(x,y);c.fillRect(Math.floor(sx),Math.floor(sy),s+.6,s+.6)}}
   // blood on the floor where things died
@@ -2895,6 +3209,7 @@ function frame(now){
   if(W.events.length){for(const e of W.events)toast(e.txt,e.cls,e.i);W.events.length=0}
   if(!paused&&!W.over&&!W.spec.tips&&(whisperT-=dt*speed)<=0){whisperT=95+Math.random()*50;whisper()}
   if(possUI&&!W.poss)stopPossess();
+  if(W.offer&&!paused&&$("ov").hidden)offerCard();
   if(W.poss){const pu=W.byId.get(W.poss.id);if(pu){const f=Math.min(1,dt*8);cam.x+=(pu.x-cam.x)*f;cam.y+=(pu.y-cam.y)*f}}
   held=held.filter(u=>W.byId.has(u.id)&&u.hp>0);
   draw();
@@ -2910,15 +3225,17 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 window.addEventListener("pagehide",()=>{if(W&&view==="game")save()});
 
 window.SG_BACK=()=>{
+  if(view==="dark"){if(dkPick){dkPick=null;renderDark()}else $("dkBack").onclick();return true}
   if(view!=="game")return false;
   if(possUI){stopPossess();return true}
   if(!$("sheet").hidden){$("sheet").hidden=true;return true}
   if(!$("info").hidden){$("info").hidden=true;sel=null;return true}
-  if(!$("ov").hidden){if(W&&!W.over){paused=false;$("ov").hidden=true;renderHud()}else{W=null;renderMenu();show("menu")}return true}
+  if(!$("ov").hidden){if(W&&W.spec.dark&&W.over){const b=$("ovCard").querySelector("[data-home]");if(b)b.onclick();return true}
+    if(W&&!W.over){paused=false;$("ov").hidden=true;renderHud()}else{W=null;renderMenu();show("menu")}return true}
   if(tool!=="look"){setTool("look");return true}
   pauseMenu();return true;
 };
-window.HD={get W(){return W},openResearch:()=>openResearch(),whisper:()=>whisper(),event:k=>worldEvent(W,k),openRealm:()=>openRealm(),startPossess:u=>startPossess(u),cast:(k,i)=>castSpell(W,W.k[1],k,i),mk:(o,k,x,y)=>mkUnit(W,o,k,x,y),cam:(x,y,z)=>{cam.x=x;cam.y=y;if(z)cam.z=z},step:(dt)=>step(W,dt),newWorld,saveWorld,loadWorld,tap,setTool,setBuild:r=>{buildSel=r}};
+window.HD={get W(){return W},get D(){return D},openDark:()=>openDark(),openResearch:()=>openResearch(),whisper:()=>whisper(),event:k=>worldEvent(W,k),openRealm:()=>openRealm(),startPossess:u=>startPossess(u),cast:(k,i)=>castSpell(W,W.k[1],k,i),mk:(o,k,x,y)=>mkUnit(W,o,k,x,y),cam:(x,y,z)=>{cam.x=x;cam.y=y;if(z)cam.z=z},step:(dt)=>step(W,dt),newWorld,saveWorld,loadWorld,tap,setTool,setBuild:r=>{buildSel=r}};
 renderMenu();
 </script>
 <script src="../../shell.js"></script>

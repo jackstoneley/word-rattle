@@ -297,6 +297,20 @@ digging), Fighting pit (`spar`), Gambling den (`gamble`, `u.gT`) and Dark altar 
 build these. **Levels**: diggers earn xp from work (`digXp`, `digMult`, `digLoad`); `drawUnit` scales every unit by level.
 **Mood** (page only): `stains` (blood, from `blood` effects), the shadow over known-but-unseen tiles and the vignette in `draw`,
 WebAudio sound made in code (`audio`, `snd`, `fxSound`, `soundTick`; `hd.opts.sound`), and `whisper()` (the advisor's lines).
+**The Long Dark** (a second campaign; state `D`, saved whole as `hd.dark`: `seed`, `turn`, `dread` 0-10, `own {node: "me" | "vas" | "L0".."L2"}`,
+`lords [{alive, vassal}]`, `flags` (abbey, castle), `tries`, `nm`, `keep` (the keep's saved world), `exp` (an expedition in progress), `won`).
+It never touches `hd.game`: `save()` routes by `W.spec.dark`. `DARK_NODES` (16, with `l` links, `gives`, `income`, `seat`, `surf`) and
+`DARK_LORDS` are keyed by index: append only. The keep is a world with `spec.keep` (no rivals, never won or lost: `destroyRealm` sacks it
+instead; hero reprisals are set on `W.hero` by `darkHome`). `darkLaunch` takes chosen creatures out of the keep into `spec.party`,
+`darkSpec` builds the realm (lord name and `power` from the map, heroes from dread 4), `darkResult` applies the ending (`W.ends[2]`:
+conquer, starve, vassal; `endLord`), dread, tribute and `darkLordsMove`, and `darkHome` puts veterans (`u.nm`, `u.vet`) and gold back.
+What is allowed is `darkAllow(D)` (`DARK_BASE` plus every held node's `gives`). Starving: an AI lord with no Gate for 150 s gives in
+(`K.noGate`); begging: `W.offer` at 25% Heart, answered by the page's `offerCard`. Surface raids are realms with `spec.surface`
+(the lord fields hero kinds). `"x:dread"` needs gate Tormentors, Ghouls and the Wyrm in the Long Dark only (99 elsewhere).
+`spec.deep` (Long Dark only) makes far-off gold, gems, treasure, lost creatures and tombs better, from its own random stream.
+**Rockfalls** (`spec.falls`, Long Dark only; `W.fall {next, warn}`, `fallTick`, `fallOk`): open, roomless floor 6+ tiles from any Heart
+fills in after a 9 s warning, more often the more floor a keeper has. Page: `openDark`, `renderDark` (the SVG map), `darkBriefing`,
+`darkOver`, `keepIntro`. `tools`-style check: play the whole campaign in Node with the functions above (launch, end the lord, result, home).
 
 ### Life (`games/life`)
 

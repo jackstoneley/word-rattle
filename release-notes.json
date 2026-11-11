@@ -551,6 +551,20 @@
         "You choose what your Library studies: tap Spells, then Study. Known spells can be mastered to cost less mana. Three new spells: Curse, Raise the dead and Hellfire.",
         "Creatures grow bigger as they level up, and diggers now level up from working: faster digging and claiming, and bigger loads."
       ]
+    },
+    {
+      "id": 49,
+      "type": "features",
+      "headline": "Hollowdeep: The Long Dark, a whole new campaign",
+      "details": [
+        "A second campaign, on Hollowdeep's front page. You have one keep that lasts the whole war: nothing you build there is thrown away.",
+        "A war map of sixteen realms. Choose where to march, pick which creatures go, and bring the survivors home as named veterans with the gold. Each realm teaches you its rooms, creatures and spells, and the best are furthest away.",
+        "Three rival lords take realms on the map as you do. The more a lord holds, the bigger the army you meet. Take a lord's own seat to finish them.",
+        "Three ways to end a realm: destroy the Heart, starve the lord by holding every Gate, or spare them when they beg and take tribute every turn.",
+        "Dread: conquest, torture, sacrifice and raids make the surface fear you. Heroes come for your keep after every expedition. Raid the surface yourself: sack a village, burn the abbey that trains Clerics, or break the heroes' castle.",
+        "Rockfalls: the bigger you dig, the more often open, empty floor fills in again. You get a warning, and rooms hold the roof up.",
+        "In the Long Dark, the richest gold, gems, treasure and tombs lie furthest from your Heart."
+      ]
     }
   ]
 }
