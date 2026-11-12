@@ -457,7 +457,14 @@ ruin, orb, ph, sp, r, sd}`; six empires `G.emp` with traits `EMP_TRAITS`, homes 
 `spGoPlanet`, `spAct` (scan, dig, beam, shape, seed, colony, up, tur, sell, atk), `spDiplo` (gift up to 25, relic, ally at 60, war, peace,
 hand), missions (`spMisText`, `spMisDone`; they expire), `systemStep` (auto-firing lasers, enemy ships, planet guns, the Warden and its drones,
 ally escorts at the Core), `spTick` (income, raids and fleets wearing down colonies while you're away, empire growth, war and peace, missions),
-`spGoals` (`SPACE_GOALS`, append only; each unlocks a part). Page: `drawSpace` (galaxy and system views on the shared renderer, `SP3`; flat
+`spGoals` (`SPACE_GOALS`, append only; each unlocks a part). **Fly-over** (`W.fly {k, t, u}`, not saved; `spFlyover`, `spLeaveFly`): a low pass
+over a planet; `spSpecies(p, life)` (animals from the planet's seed, `landDesign` + `shapeUp`), beamed one kind at a time (`W.beamI`, zoo keys
+"star:planet#i"); `spDeps(p)` hidden riches, found by `spSweep` near the longitude being passed and taken by `spHarvest` (grow back after
+`DEP_BACK`; state in `X.dep[key] {f, h}`). Page: `drawFly`, `flyTap`, `creatureMesh` (a still 3D animal from `makeTpl`). **Wars are not flown**:
+`spWarTick` sets each war's `front` (a world, or the one picked with spAct "atk") and siege `sg` from fleet strength: yours `X.wf` warships ×
+`spPow(your ship)` (`spBuildWarship`, `warshipCost`), theirs `E.fl` × `empPow`; your fleet also meets their fleets at your worlds. Only pirates,
+drones and the Warden are fought directly. **Ship looks**: `foeDesign` gives each empire three starship designs (`G.emp[k].ships`, hull colour
+`hull`) and pirates three (`G.pir`), from their own streams; the nations in Civilisation travel in `natDesign` vehicles. Page: `drawSpace` (galaxy and system views on the shared renderer, `SP3`; flat
 `drawSpace2D` without WebGL), `spaceTap`, `renderSpaceUI`, the panels (`spEmpDlg`, `spWorldsDlg`, `spZooDlg`, `spGoalsDlg`), `spaceEvent`,
 `spaceWonDlg` (the life story). Test starts `civend` and `space0`. `tools/life-check.js` plays space with `spaceBot` after the civ launch: it must
 reach the Core within four hours and not under 20 minutes (about 40-130 minutes for the bot); `--civ` runs only the civ and space stages.

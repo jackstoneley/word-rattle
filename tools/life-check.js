@@ -262,7 +262,7 @@ for (const [diet, seed, S] of grown) {
 // and wins towns by war, faith and the arts; it must unite the islands in under two hours (and not in under 15 minutes)
 const civOut = [];
 const spaceOut = [];
-const SPL = new Function(core[1] + ";return {newSave, newWorld, stepWorld, testStart, spFly, spRoute, spAct, spGo, spNear, spDiplo, spSaveShip, spCost, spAbil, spRespawn, spStar, spColCost, plXY, pKey, spOwner, spTA, spFit, spLife, hostile, vStats, vUnlocked, VPD, SPACE_GOALS};")();
+const SPL = new Function(core[1] + ";return {newSave, newWorld, stepWorld, testStart, spFly, spRoute, spAct, spGo, spNear, spDiplo, spSaveShip, spCost, spAbil, spRespawn, spStar, spColCost, plXY, pKey, spOwner, spTA, spFit, spLife, hostile, vStats, vUnlocked, VPD, SPACE_GOALS, spSpecies, spDeps, spFlyover, spSweep, spHarvest, spLeaveFly, spBuildWarship, warshipCost};")();
 // the space stage: a player who explores, scans, collects creatures, settles and shapes worlds, sells goods,
 // does missions, makes friends of most empires, fights the ones that won't be friends, then flies to the Core
 function spBestShip(W) {
@@ -283,6 +283,8 @@ function spaceBot(W, B) {
       let t = null, bd = 1e9; for (const e of foes) { const d = Math.hypot(e.x - W.ship.x, e.y - W.ship.y); if (d < bd) { bd = d; t = e; } } W.ship.tg = t.id; return; } }
   // a better ship, at one of your worlds
   if (sy && sy.n >= 0 && myStars.includes(sy.n) && W.t - (B.shipT || -999) > 120) { B.shipT = W.t; const d = spBestShip(W), c = Math.max(0, L.spCost(d) - L.spCost(X.d)); if (c > 0 && X.cr > c + 120) { const e = L.spSaveShip(W, d); if (!e) B.ships = (B.ships || 0) + 1; } }
+  // a war fleet when at war (or about to be)
+  if (X.emp.some(E => E && E.war && !E.gone) && X.wf < 14 && X.cr > L.warshipCost(X.d) + 150) L.spBuildWarship(W);
   // the empires
   for (let k = 1; k <= 6; k++) { const E = X.emp[k], tr = G.emp[k].trait; if (!E.met || E.gone) continue;
     if (E.mis && (E.mis.ty === "goods" || E.mis.ty === "zoo")) L.spDiplo(W, k, "hand");
@@ -290,7 +292,8 @@ function spaceBot(W, B) {
     if (!E.war && E.rel >= 60 && !E.ally) L.spDiplo(W, k, "ally");
     if (!E.war && !E.ally && X.relic && tr === "faith") L.spDiplo(W, k, "relic");
     if (!E.war && !E.ally && E.rel >= 0 && E.rel < 25 && X.cr > 500) L.spDiplo(W, k, "gift");
-    if (!E.war && !E.ally && tr === "war" && E.rel < -20 && X.t > 1800 && vs.dmg >= 30) L.spDiplo(W, k, "war"); }
+    if (!E.war && !E.ally && tr === "war" && E.rel < -20 && X.t > 1800 && X.wf >= 6) L.spDiplo(W, k, "war");
+    if (!E.war && tr === "war" && E.rel < -20 && X.t > 1500 && X.wf < 8 && X.cr > L.warshipCost(X.d) + 200) L.spBuildWarship(W); }
   // jobs at this star's planets
   const keepG = X.emp.reduce((a, E) => a + (E && E.mis && E.mis.ty === "goods" ? E.mis.n : 0), 0);
   if (sy && sy.n >= 0) {
@@ -299,15 +302,16 @@ function spaceBot(W, B) {
       const jobs = [];
       if (vs.scan && !X.scan[key]) jobs.push("scan");
       if (X.scan[key] && p.ruin && !X.dug[key] && own <= 0) jobs.push("dig");
-      if (vs.beam && life >= 2 && !X.zoo.some(z => z.k === key) && X.en >= 25 && own <= 0) jobs.push("beam");
+      const sp = L.spSpecies(p, life), want = sp.find(q => !X.zoo.some(z => z.k === key + "#" + q.i || (q.i === 0 && z.k === key)));
+      if (vs.beam && want && X.en >= 25 && own <= 0 && X.zoo.length < 14) { W.beamI = want.i; jobs.push("beam"); }
       if (vs.shape && own <= 0 && p.ty !== "gas" && (T !== 2 || A !== 2) && L.spFit(p, [T, A]) <= 4 && X.cr > 80 && X.en >= 40 && (own === 0 || myStars.length < 9)) jobs.push("shape");
-      if (own < 0 && p.ty !== "gas" && Math.abs(T - 2) <= 1 && Math.abs(A - 2) <= 1 && X.cr >= L.spColCost(X) + keepCr && myStars.length < 10 && !s.pl.some(q => L.spOwner(X, L.pKey(s.n, q.k)) > 0)) jobs.push("colony");
+      if (own < 0 && p.ty !== "gas" && Math.abs(T - 2) <= 1 && Math.abs(A - 2) <= 1 && X.cr >= L.spColCost(X) + keepCr && myStars.length < 8 && Object.values(X.pown).filter(o => o === 0).length < 12 && !s.pl.some(q => L.spOwner(X, L.pKey(s.n, q.k)) > 0)) jobs.push("colony");
       if (vs.seed && own === 0 && T === 2 && A === 2 && life < 3 && X.zoo.length >= (life + 1) * 2) jobs.push("seed");
       if (own === 0 && c.lvl < 3 && X.cr > 150 * c.lvl + keepCr && (c.lvl < 2 || (T === 2 && A === 2))) jobs.push("up");
       if (own === 0 && (c.tur || 0) < (X.t > 1500 ? 2 : 1) && X.cr > 250) jobs.push("tur");
       if (E && !E.war && !E.gone && gl - keepG >= 10) jobs.push("sell");
-      if (E && E.war) jobs.push("atk");
-      for (const j of jobs) { if (j === "atk") { L.spAct(W, p.k, "atk"); return; } if (L.spNear(W, p.k)) { const e = L.spAct(W, p.k, j); if (!e) return; } else { const [x, y] = L.plXY(X, p); L.spGo(W, x, y); return; } }
+      if (own === 0 && vs.scan && X.en > 40 && W.t - (B.flyT || -999) > 240 && !jobs.length) { if (L.spNear(W, p.k)) { B.flyT = W.t; L.spFlyover(W, p.k); for (let n = 0; n < 6; n++) { L.spSweep(W); W.fly.u += 1; } L.spDeps(p).forEach(d => L.spHarvest(W, d.i)); L.spLeaveFly(W); return; } }
+      for (const j of jobs) { if (L.spNear(W, p.k)) { const e = L.spAct(W, p.k, j); if (!e) return; } else { const [x, y] = L.plXY(X, p); L.spGo(W, x, y); return; } }
     }
   }
   // where next
@@ -318,8 +322,7 @@ function spaceBot(W, B) {
   for (const f of X.fleets) if (f.t >= f.dur && go(f.to)) return;
   const gl = Object.values(X.goods).reduce((a, b) => a + b, 0);
   if (gl >= 30) { const tgt = G.st.filter(s => s.pl.some(p => { const o = L.spOwner(X, L.pKey(s.n, p.k)); return o > 0 && X.emp[o].met && !X.emp[o].war; })).sort((a, b) => dist(a.n) - dist(b.n))[0]; if (tgt && go(tgt.n)) return; }
-  const war = G.st.filter(s => s.pl.some(p => { const o = L.spOwner(X, L.pKey(s.n, p.k)); return o > 0 && X.emp[o].war; })).sort((a, b) => dist(a.n) - dist(b.n))[0]; if (war && vs.dmg >= 30 && go(war.n)) return;
-  const jobsAt = s => s.pl.some(p => { const key = L.pKey(s.n, p.k), own = L.spOwner(X, key), [T, A] = L.spTA(X, s, p); return (vs.scan && !X.scan[key]) || (vs.beam && L.spLife(X, s, p) >= 2 && own <= 0 && !X.zoo.some(z => z.k === key)) || (own < 0 && p.ty !== "gas" && Math.abs(T - 2) <= 1 && Math.abs(A - 2) <= 1 && X.cr > L.spColCost(X) + 60 && myStars.length < 10); });
+  const jobsAt = s => s.pl.some(p => { const key = L.pKey(s.n, p.k), own = L.spOwner(X, key), [T, A] = L.spTA(X, s, p); return (vs.scan && !X.scan[key]) || (vs.beam && X.zoo.length < 14 && L.spLife(X, s, p) >= 2 && own <= 0 && !X.zoo.some(z => z.k.startsWith(key))) || (own < 0 && p.ty !== "gas" && Math.abs(T - 2) <= 1 && Math.abs(A - 2) <= 1 && X.cr > L.spColCost(X) + 60 && myStars.length < 8 && Object.values(X.pown).filter(o => o === 0).length < 12); });
   const nx = G.st.filter(s => s.n !== X.at && (!X.vis[s.n] || jobsAt(s))).sort((a, b) => dist(a.n) - dist(b.n));
   for (const s of nx.slice(0, 4)) if (go(s.n)) return;
   // nothing to do: meet everyone (fly to the nearest empire not met yet)
