@@ -258,24 +258,43 @@ for (const [diet, seed, S] of grown) {
   if (verbose) console.log("land", diet, seed, "done", lmin, "min; friends", fr, "hunted", gone, "epics", JSON.stringify(L.epics), "deaths", dead, "evolves", L.evolves, "dna", Math.round(L.dna), "lean", L.lean.toFixed(2), "nature", S.landNature);
   if (verbose) console.log("sea", diet, seed, "sizes at", sizeAt.join(", "), "min; done", min, "min; deaths", c.deaths, "kills", c.kills, "goals", Object.keys(c.goals).join(" "), "lean", c.lean.toFixed(2), "young", c.young, "dna left", Math.round(c.dna));
 }
-// the civilisation stage (first part: towns and the economy): a simple player keeps food up, grows towns and fills the island
+// the civilisation stage: a player who grows towns, claims places, makes friends of the gentle nations, fights the warlike one
+// and wins towns by war, faith and the arts; it must unite the islands in under two hours (and not in under 15 minutes)
 const civOut = [];
-{ const V2 = new Function(core[1] + ";return {newSave, newWorld, stepWorld, testStart, civBuild, civCan, civSettle, civFree, civHas, civCap, CIV_GOALS};")();
-  for (const seed of [3, 42]) {
-    let S = V2.newSave({ name: "Bot", diet: "plant", seed }); S = V2.testStart(S, "civ0"); const W = V2.newWorld(S, seed), V = S.civ, mine = () => V.towns.filter(t => t.own === 0);
-    const want = tw => { if (V.res.food < 60 || V2.civHas(tw, "farm") < Math.ceil(tw.pop / 7)) return "farm"; if (tw.pop >= V2.civCap(tw) - 1) return "house";
-      for (const k of ["mill", "quarry", "mine", "market", "glow", "temple", "barracks", "wall", "dock"]) if (!V2.civHas(tw, k) && !V2.civCan(V, tw, k) && !tw.b.some(b => b.k === k)) return k; };
-    let pop10 = 0;
-    for (let s = 0; s < 30 * 60; s++) {
-      V2.stepWorld(W, .5, {}); V2.stepWorld(W, .5, {}); W.ev.length = 0;
-      if (s === 600) pop10 = mine().reduce((a, t) => a + t.pop, 0);
-      if (s % 5) continue;
-      for (const tw of mine()) { if (tw.b.some(b => !b.done)) continue; const k = want(tw); if (k && !V2.civCan(V, tw, k)) V2.civBuild(W, tw, k); else for (const k2 of ["farm", "house", "mill", "quarry"]) if (!V2.civCan(V, tw, k2)) { V2.civBuild(W, tw, k2); break; }
-        const free = V2.civFree(W, 0); if (free.length && tw.pop >= 10 && V.res.food > 50) V2.civSettle(W, tw, free[0].n); }
-    }
-    const pop = mine().reduce((a, t) => a + t.pop, 0), goals = Object.keys(V.goals).length;
-    if (pop < 60 || goals < 6) { bad++; console.error(`life: the civilisation bot (seed ${seed}) only reached ${pop} people and ${goals} goals in 30 min`); }
-    civOut.push(`${pop} people in ${mine().length} towns after 30 min (${pop10} at 10), ${goals} of ${V2.CIV_GOALS.length} goals`);
+{ const C = new Function(core[1] + ";return {newSave, newWorld, stepWorld, testStart, civBuild, civCan, civSettle, civFree, civHas, civCap, civSend, civClaim, civDiplo, civTrade, civOffer, civSetPol, ownTowns, CIV_GOALS};")();
+function civBot(W, V, s) {
+  const mine = C.ownTowns(V, 0), R = V.res;
+  if (V.offer) C.civOffer(W, true);
+  for (const tw of mine) { if (tw.b.some(b => !b.done)) continue;
+    let k = null; if (tw.near.coast && !C.civHas(tw, "dock") && !C.civCan(V, tw, "dock") && !mine.some(t => C.civHas(t, "dock"))) k = "dock"; else if (R.food < 60 || (C.civHas(tw, "farm") < Math.ceil(tw.pop / 9) && R.food < 300)) k = "farm"; else if (tw.pop >= C.civCap(tw) - 1) k = "house";
+    else for (const k2 of ["mill", "quarry", "temple", "dock", "theatre", "barracks", "market", "mine", "glow", "wall"]) if (!C.civHas(tw, k2) && !C.civCan(V, tw, k2) && !tw.b.some(b => b.k === k2)) { k = k2; break; }
+    if (k && !C.civCan(V, tw, k)) C.civBuild(W, tw, k); else for (const k2 of ["farm", "house", "mill", "quarry"]) if (!C.civCan(V, tw, k2)) { C.civBuild(W, tw, k2); break; }
+    const free = C.civFree(W, -1); if (free.length && tw.pop >= 12 && R.food > 60) { for (const f of free) if (!C.civSettle(W, tw, f.n)) break; } }
+  // claim what's free and reachable
+  for (const sp of W.spots) if (!V.claims[sp.n] && R.wood > 80) C.civClaim(W, 0, sp.n);
+  // be friends with the gentle nations, at war with the warlike one once strong
+  for (let k = 1; k <= 3; k++) { const N = V.nat[k]; if (N.gone) continue;
+    if (N.trait !== "war" && !N.war && N.rel < 60 && R.gold > 150) C.civDiplo(W, k, "gift");
+    if (N.trait !== "war" && N.rel >= 60 && !N.ally) C.civDiplo(W, k, "ally");
+    if (N.war && N.trait !== "war") C.civDiplo(W, k, "peace");
+    if (N.trait === "war" && !N.war && s > 900 && C.ownTowns(V, 0).some(t => C.civHas(t, "barracks") && C.civHas(t, "dock"))) C.civDiplo(W, k, "war");
+  }
+  // win towns: armies at war targets, faith and festivals at the rest
+  const tg = V.towns.filter(t => t.own > 0);
+  for (const t of tg) { const N = V.nat[t.own];
+    if (N.war && R.gold > 60 && R.ore > 20 && V.units.filter(u => u.own === 0 && u.k === "army").length < 5) C.civSend(W, 0, "army", { t: "town", id: t.id });
+    else if (!N.ally && R.incense >= 12 && R.gold > 40) C.civSend(W, 0, "miss", { t: "town", id: t.id });
+    else if (!N.ally && R.dye >= 12 && R.gold > 40) C.civSend(W, 0, "fest", { t: "town", id: t.id }); }
+  // allies too: once they're the last ones left, win them over with faith and the arts
+  if (V.nat.slice(1).filter(n => !n.gone).every(n => n.ally)) for (const t of tg) { if (R.incense >= 12 && R.gold > 40) C.civSend(W, 0, "miss", { t: "town", id: t.id }); if (R.dye >= 12 && R.gold > 40) C.civSend(W, 0, "fest", { t: "town", id: t.id }); }
+}
+  for (const seed of [3, 7]) {
+    let S = C.newSave({ name: "Bot", diet: "plant", seed }); S = C.testStart(S, "civ0"); const W = C.newWorld(S, seed), V = S.civ; let s = 0;
+    for (; s < 120 * 60 && !V.won; s++) { C.stepWorld(W, .5, {}); C.stepWorld(W, .5, {}); W.ev.length = 0; if (s % 5 === 0) civBot(W, V, s); }
+    const min = Math.round(s / 60);
+    if (!V.won) { bad++; console.error(`life: the civilisation bot (seed ${seed}) didn't unite the islands in 2 hours (${C.ownTowns(V, 0).length} of ${V.towns.length} towns)`); }
+    else if (min < 15) { bad++; console.error(`life: the civilisation bot (seed ${seed}) united the islands in ${min} min: too quick`); }
+    civOut.push(`united in ${min} min (by war ${V.how.war}, faith ${V.how.faith}, arts ${V.how.arts}; ${Object.keys(V.goals).length} of ${C.CIV_GOALS.length} goals)`);
   } }
 if (bad) process.exit(1);
 console.log("life: cell stage finished by bots: " + out.join(", ") + "; sea stage: " + seaOut.join(", ") + "; land stage: " + landOut.join(", ") + "; tribe stage: " + tribeOut.join(", ") + "; civilisation: " + civOut.join(", "));

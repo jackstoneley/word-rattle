@@ -171,6 +171,9 @@ h1 span{color:var(--accent)}
 .bodyp label{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:800;color:var(--muted)}
 .bodyp label input{flex:1}
 .jobs{display:flex;flex-direction:column;gap:6px}
+.ncard{border:2px solid;border-radius:14px;padding:8px 10px;margin:6px 0;display:flex;flex-direction:column;gap:4px}.ncard span{font-size:.8rem;color:var(--muted)}
+.nrel{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}.nrel i{display:block;height:100%}.nbtns{display:flex;flex-wrap:wrap;gap:4px}
+.cbtn.on{outline:2px solid #7CF2C8}
 .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:46vh;overflow:auto;margin:6px 0}
 .cbtn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:7px 9px!important;white-space:normal;height:auto}
 .cbtn span{font-size:.75rem;opacity:.9}.cbtn em{font-size:.68rem;font-style:normal;color:var(--muted);line-height:1.2}.cbtn.off{opacity:.55}
@@ -2329,16 +2332,19 @@ const CB = [
   { id: "mine", ic: "⚒️", n: "Mine", c: { wood: 25, stone: 15 }, work: 28, make: { ore: .22 }, need: "ore", d: "Digs ore. Only next to ore (the rusty rocks)." },
   { id: "glow", ic: "💎", n: "Glowstone works", c: { wood: 30, stone: 30, ore: 10 }, work: 36, make: { glow: .1 }, need: "glow", d: "Only next to glowstone (the purple crystals). It sells for lots of gold, and will power the best machines." },
   { id: "market", ic: "🏪", n: "Market", c: { wood: 30, stone: 10 }, work: 28, make: { gold: .3 }, d: "Earns gold, and sells spare glowstone for much more." },
-  { id: "temple", ic: "🛕", n: "Temple", c: { wood: 20, stone: 30 }, work: 34, max: 1, d: "Keeps the town happy, so it works harder. Later it sends out festival wagons." },
-  { id: "barracks", ic: "🛡️", n: "Barracks", c: { wood: 30, stone: 20, ore: 5 }, work: 34, max: 1, d: "Trains the town's guards. Later it builds war machines." },
-  { id: "wall", ic: "🧱", n: "Walls", c: { stone: 40 }, work: 38, max: 1, d: "Makes the town much harder to take once rival nations arrive." },
-  { id: "dock", ic: "⚓", n: "Dock", c: { wood: 40, stone: 10 }, work: 32, max: 1, need: "coast", d: "Only by the sea. Boats come in a later update." }];
+  { id: "temple", ic: "🛕", n: "Temple", c: { wood: 20, stone: 30 }, work: 34, max: 1, make: { incense: .05 }, d: "Keeps the town happy and its faith strong. Makes a little incense, and sends missionaries to win other towns over." },
+  { id: "barracks", ic: "🛡️", n: "Barracks", c: { wood: 30, stone: 20, ore: 5 }, work: 34, max: 1, d: "Guards the town, and raises armies to take other towns or outposts." },
+  { id: "wall", ic: "🧱", n: "Walls", c: { stone: 40 }, work: 38, max: 1, d: "Makes the town much harder to take by force." },
+  { id: "dock", ic: "⚓", n: "Dock", c: { wood: 40, stone: 10 }, work: 32, max: 1, need: "coast", d: "Only by the sea. Ships carry settlers, armies, missionaries and troupes to other islands, and your sailors chart the islands." },
+  { id: "theatre", ic: "🎭", n: "Theatre", c: { wood: 30, stone: 20, gold: 20 }, work: 32, max: 1, make: { dye: .05 }, d: "Plays keep the town's own culture strong. Makes a little dye, and sends festival troupes to win other towns over." }];
 const CBD = {}; CB.forEach(b => { CBD[b.id] = b; });
 const CIV_GOALS = [{ id: "towns3", n: "Have three towns", g: 40 }, { id: "pop60", n: "Grow to 60 people", g: 60 }, { id: "ore", n: "Dig your first ore", g: 30 },
   { id: "glow", n: "Dig glowstone", g: 60 }, { id: "market", n: "Open a market", g: 30 }, { id: "temple", n: "Build a temple", g: 30 }, { id: "barracks", n: "Build barracks", g: 30 },
-  { id: "gold", n: "Save up 300 gold", g: 50 }, { id: "wall", n: "Wall a town", g: 40 }, { id: "fill", n: "Settle every town site on your island", g: 80 }];
+  { id: "gold", n: "Save up 300 gold", g: 50 }, { id: "wall", n: "Wall a town", g: 40 }, { id: "fill", n: "Settle every town site on your island", g: 80 },
+  { id: "claim", n: "Claim a meadow, spring or glowstone", g: 40 }, { id: "ally", n: "Make an ally", g: 60 }, { id: "faith", n: "Win a town by faith", g: 60 }, { id: "arts", n: "Win a town with the arts", g: 60 },
+  { id: "conquer", n: "Take a town by force", g: 60 }, { id: "unite", n: "Unite all five islands", g: 200 }];
 const SETTLE = { pop: 3, food: 30, wood: 30, min: 9 };
-function civStart(S) { return { v: CIV_V, t: 0, res: { food: 80, wood: 70, stone: 30, ore: 0, glow: 0, gold: 20 }, towns: null, goals: {}, wagons: [], seen: "", done: false }; }
+function civStart(S) { return { v: CIV_V, t: 0, res: { food: 80, wood: 70, stone: 30, ore: 0, glow: 0, gold: 20, dye: 0, incense: 0 }, towns: null, goals: {}, wagons: [], seen: "", done: false }; }
 function goToCiv(S) { if (S.tribe) S.tribe.done = true; S.civ = S.civ || civStart(S); S.stage = "civ"; return S; }
 function makeArchipelago(R) {
   const N = LN, m = new Uint8Array(N * N), hg = new Float32Array(N * N), isle = new Int8Array(N * N).fill(-1), n1 = mkNoise(R, 7), n2 = mkNoise(R, 17), n3 = mkNoise(R, 9), n4 = mkNoise(R, 5), n5 = mkNoise(R, 29), n6 = mkNoise(R, 12);
@@ -2402,29 +2408,31 @@ function newCiv(S, rs) {
     for (let k = 1; k <= Math.min(2, settled); k++) civTown(C, isl(0)[k], 0, 6, ["house", "farm"]);
     for (let k = 1; k <= 3; k++) isl(k).forEach((s, n) => civTown(C, s, k, n ? 7 : 12, n ? ["house", "farm"] : ["house", "house", "farm", "farm", "mill", "market"]));
   }
+  W.harbour = {}; ISLES.forEach((_, k) => { const ss = W.sites.filter(s => s.isle === k); if (ss.some(s => civNear(W, s).coast)) return; let b = null, bd = 1e9; for (const s of ss) { const tx = Math.floor(s.x / LT), ty = Math.floor(s.y / LT); for (let r = 1; r < 20 && r < bd; r++) { let hit = false; for (let a = 0; a < 24 && !hit; a++) { const x = tx + Math.round(Math.cos(a / 24 * TAU) * r), y = ty + Math.round(Math.sin(a / 24 * TAU) * r); if (x >= 0 && y >= 0 && x < LN && y < LN && W.map[y * LN + x] === T_SEA) hit = true; } if (hit) { if (r < bd) { bd = r; b = s; } break; } } } if (b) W.harbour[b.n] = 1; }); // every island gets a town that can have a dock
   for (const tw of C.towns) { tw.near = civNear(W, W.sites[tw.site]); tw.rev = 1; }
   const cap = C.towns.find(tw => tw.cap && tw.own === 0) || C.towns.find(tw => tw.own === 0) || C.towns[0], cs = W.sites[cap.site];
   W.home = { kind: "home", x: cs.x, y: cs.y };
   placePlayer(W, cs.x, cs.y + LT * 2, -Math.PI / 2);
   W.seen = unpackBits(C.seen, LN * LN);
   if (!C.seen) for (let i = 0; i < LN * LN; i++) { const x = i % LN, y = (i / LN) | 0; if (A.isle[i] === 0 || nearIsle(A, x, y, 0, 3)) W.seen[i] = 1; } // you know your own island and its shores
+  civInit2(W);
   return W;
 }
 function nearIsle(A, x, y, k, r) { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < LN && ny < LN && A.isle[ny * LN + nx] === k) return true; } return false; }
-function civTown(C, site, own, pop, builds) { const tw = { id: C.towns.length, site: site.n, own, name: site.name, pop, b: builds.map(k => ({ k, done: true, prog: 0 })), gT: 0 }; C.towns.push(tw); return tw; }
+function civTown(C, site, own, pop, builds) { const tw = { id: C.towns.length, site: site.n, own, name: site.name, pop, b: builds.map(k => ({ k, done: true, prog: 0 })), gT: 0, inf: { f: [0, 0, 0, 0], c: [0, 0, 0, 0] } }; tw.def = civDefMax(tw); C.towns.push(tw); return tw; }
 /* What's round a town: open grass, forest, rocks and hills, sea, ore, glowstone. */
 function civNear(W, s) {
   const n = { grass: 0, forest: 0, rock: 0, coast: 0, ore: 0, glow: 0 }, tx = Math.floor(s.x / LT), ty = Math.floor(s.y / LT);
   for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) { const x = tx + dx, y = ty + dy; if (x < 0 || y < 0 || x >= LN || y >= LN || dx * dx + dy * dy > 25) continue; const t = W.map[y * LN + x];
     if (t === T_GRASS || t === T_SCRUB) n.grass++; else if (t === T_FOREST || t === T_JUNGLE) n.forest++; else if (t === T_HILL || t === T_ROCK) n.rock++; else if (t === T_SEA && dx * dx + dy * dy <= 16) n.coast++; }
-  n.ore = W.ores.some(o => Math.hypot(o.x - s.x, o.y - s.y) < LT * 6.5) ? 1 : 0; n.glow = W.glows.some(o => Math.hypot(o.x - s.x, o.y - s.y) < LT * 6.5) ? 1 : 0; n.coast = n.coast ? 1 : 0;
+  n.ore = W.ores.some(o => Math.hypot(o.x - s.x, o.y - s.y) < LT * 6.5) ? 1 : 0; n.glow = W.glows.some(o => Math.hypot(o.x - s.x, o.y - s.y) < LT * 6.5) ? 1 : 0; n.coast = n.coast || (W.harbour && W.harbour[s.n]) ? 1 : 0;
   return n;
 }
 const civHas = (tw, k) => tw.b.filter(b => b.k === k && b.done).length;
 function civCap(tw) { return 4 + civHas(tw, "house") * 5 + (tw.cap ? 6 : 0); }
 function civSlots(tw) { return Math.min(10, 3 + Math.floor(tw.pop / 6)); } // room for workplaces (houses and walls don't count)
 const civUsed = tw => tw.b.filter(b => b.k !== "house" && b.k !== "wall").length;
-function civMood(C, tw) { return clamp(55 + civHas(tw, "temple") * 25 - Math.max(0, tw.pop - civCap(tw)) * 5 - (C.res.food <= 0 ? 30 : 0) - Math.max(0, civUsed(tw) - 6) * 2, 0, 100); }
+function civMood(C, tw) { return clamp(55 + (C.gov ? TAX[C.gov.tax].mood + (hasPol(C, "draft") ? -10 : 0) + (hasPol(C, "ration") ? -10 : 0) + (hasPol(C, "arts") ? 10 : 0) : 0) + (tw.unrest > 0 ? -30 : 0) + civHas(tw, "theatre") * 10 + civHas(tw, "temple") * 25 - Math.max(0, tw.pop - civCap(tw)) * 5 - (C.res.food <= 0 ? 30 : 0) - Math.max(0, civUsed(tw) - 6) * 2, 0, 100); }
 /* How well a building does here: farms want grass, mills forest, quarries rock. */
 function civFit(tw, k) { const n = tw.near; return k === "farm" ? clamp(.35 + n.grass / 40, .35, 1.2) : k === "mill" ? clamp(.3 + n.forest / 30, .3, 1.2) : k === "quarry" ? clamp(.4 + n.rock / 20, .4, 1.2) : k === "mine" ? n.ore : k === "glow" ? n.glow : 1; }
 /* Why a town can't build something, or "" if it can. */
@@ -2437,14 +2445,15 @@ function civCan(C, tw, k) {
   return "";
 }
 function civBuild(W, tw, k) { const C = W.S.civ, why = civCan(C, tw, k); if (why) return why; for (const r in CBD[k].c) C.res[r] -= CBD[k].c[r]; tw.b.push({ k, done: false, prog: 0 }); tw.rev++; return ""; }
-function civFree(W, isle) { const C = W.S.civ; return W.sites.filter(s => (isle == null || s.isle === isle) && !C.towns.some(tw => tw.site === s.n) && !C.wagons.some(g => g.to === s.n)); }
+function civFree(W, isle) { // free sites (isle -1: anywhere your ships can reach)
+  if (isle === -1) return W.sites.filter(s => !W.S.civ.towns.some(tw => tw.site === s.n) && !W.S.civ.wagons.some(g => g.to === s.n)); const C = W.S.civ; return W.sites.filter(s => (isle == null || s.isle === isle) && !C.towns.some(tw => tw.site === s.n) && !C.wagons.some(g => g.to === s.n)); }
 /* Settlers: a wagon of people and supplies sets off to found a town on a free site on the same island. */
 function civSettle(W, tw, n) {
   const C = W.S.civ, s = W.sites[n], from = W.sites[tw.site];
-  if (tw.own !== 0) return "Not yours"; if (s.isle !== from.isle) return "Too far: that needs boats (coming in a later update)";
+  if (tw.own !== 0) return "Not yours"; if (s.isle !== from.isle && !civHas(tw, "dock")) return "That's across the sea: send settlers from a town with a dock";
   if (!civFree(W, s.isle).includes(s)) return "Taken"; if (tw.pop < SETTLE.min) return `The town needs ${SETTLE.min} people first`;
   if (C.res.food < SETTLE.food || C.res.wood < SETTLE.wood) return `Settlers need ${SETTLE.food} food and ${SETTLE.wood} wood`;
-  const path = findPath(W, from.x, from.y + LT, s.x, s.y + LT); if (!path) return "No way there over land";
+  const path = s.isle === from.isle ? findPath(W, from.x, from.y + LT, s.x, s.y + LT) : [[s.x, s.y + LT]]; if (!path) return "No way there over land";
   const pts = [[from.x, from.y + LT], ...path]; let len = 0; for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
   C.res.food -= SETTLE.food; C.res.wood -= SETTLE.wood; tw.pop -= SETTLE.pop; tw.rev++;
   C.wagons.push({ from: tw.site, to: n, t: 0, dur: Math.max(8, len / 45), pts: pts.map(p => p.map(Math.round)) }); return "";
@@ -2453,19 +2462,24 @@ function civStep(W, dt) {
   const C = W.S.civ; C.t += dt; W.civT += dt; if (W.civT < .5) return; const st = W.civT; W.civT = 0;
   let eat = 0;
   for (const tw of C.towns) {
-    if (tw.own !== 0) continue; // the nations come to life in a later update
+    if (tw.own !== 0) continue; // the nations' towns are run by civAI
     const site = tw.b.find(b => !b.done); // builders put up one thing at a time
     if (site) { site.prog += st * (1 + tw.pop / 25); if (site.prog >= CBD[site.k].work) { site.done = true; tw.rev++; W.ev.push({ t: "cbuilt", k: site.k, n: tw.name }); } }
     const prod = tw.b.filter(b => b.done && CBD[b.k].make), eff = prod.length ? Math.min(1, tw.pop / (prod.length * 3)) : 1, mood = civMood(C, tw), mm = mood < 30 ? .5 : mood > 70 ? 1.15 : 1;
     for (const b of prod) { const f = civFit(tw, b.k); for (const r in CBD[b.k].make) C.res[r] = (C.res[r] || 0) + CBD[b.k].make[r] * eff * mm * f * st; }
-    for (let k = civHas(tw, "market"); k > 0; k--) if (C.res.glow >= .05 * st) { C.res.glow -= .05 * st; C.res.gold += .3 * st; } // the market sells spare glowstone
-    eat += tw.pop * .022 * st;
+    for (let k = civHas(tw, "market"); k > 0; k--) if (C.res.glow >= .05 * st) { C.res.glow -= .05 * st; C.res.gold += .3 * st * (hasPol(C, "trade") ? 1.5 : 1); } // the market sells spare glowstone
+    if (hasPol(C, "trade")) C.res.gold += civHas(tw, "market") * .15 * st;
+    C.res.gold += tw.pop * TAX[C.gov.tax].g * mm * st; // taxes
+    eat += tw.pop * .022 * (hasPol(C, "ration") ? .75 : 1) * st;
     tw.gT += st; const cap = civCap(tw);
     if (C.res.food > 8 && tw.pop < cap && tw.gT > Math.max(5, 13 - tw.pop * .1)) { tw.pop++; tw.gT = 0; tw.rev++; }
     else if (C.res.food <= 0 && tw.gT > 10 && tw.pop > 2) { tw.pop--; tw.gT = 0; tw.rev++; W.ev.push({ t: "starve", n: tw.name }); }
   }
   C.res.food = Math.max(0, C.res.food - eat);
-  const capR = 150 + C.towns.filter(tw => tw.own === 0).length * 60; for (const r of ["food", "wood", "stone", "ore"]) if (C.res[r] > capR) C.res[r] = capR; // stores only hold so much
+  C.gov.polT = Math.max(0, C.gov.polT - st); if (hasPol(C, "arts")) C.res.gold = Math.max(0, C.res.gold - .25 * st);
+  if (!C.charted && hasDock(C, 0)) { C.charted = 1; for (let i = 0; i < LN * LN; i++) if (!W.seen[i]) { W.seen[i] = 1; W.seenNew.push(i); } W.ev.push({ t: "ccharted" }); }
+  civUnits(W, st); civAI(W, st);
+  const capR = 150 + C.towns.filter(tw => tw.own === 0).length * 60; for (const r of ["food", "wood", "stone", "ore", "dye", "incense"]) if (C.res[r] > capR) C.res[r] = capR; // stores only hold so much
   for (let k = C.wagons.length - 1; k >= 0; k--) { const g = C.wagons[k]; g.t += st; if (g.t >= g.dur) { C.wagons.splice(k, 1); const s = W.sites[g.to]; const tw = civTown(C, s, 0, SETTLE.pop, []); tw.near = civNear(W, s); tw.rev = 1; W.ev.push({ t: "cfound", n: s.name }); } }
   civGoals(W);
 }
@@ -2474,8 +2488,210 @@ function civGoals(W) {
   if (mine.length >= 3) done("towns3"); if (mine.reduce((a, tw) => a + tw.pop, 0) >= 60) done("pop60"); if (any("mine") && C.res.ore >= 1) done("ore");
   if (any("glow")) done("glow"); if (any("market")) done("market"); if (any("temple")) done("temple"); if (any("barracks")) done("barracks");
   if (C.res.gold >= 300) done("gold"); if (any("wall")) done("wall"); if (!civFree(W, 0).length && !C.wagons.length) done("fill");
+  if (C.claims && Object.values(C.claims).some(c => c.own === 0)) done("claim"); if (C.nat && C.nat.some(n => n && n.ally)) done("ally");
+  if (C.how) { if (C.how.faith) done("faith"); if (C.how.arts) done("arts"); if (C.how.war) done("conquer"); } if (C.won) done("unite");
 }
 const civPop = C => C.towns.filter(tw => tw.own === 0).reduce((a, tw) => a + tw.pop, 0);
+/* ---- part 2: nations, the three ways to win, contested resources, diplomacy, taxes and policies ----
+   Every town (yours or a nation's) has a defence (tw.def, worn down by armies), and two influence bars per owner:
+   faith (tw.inf.f, raised by missionaries) and culture (tw.inf.c, raised by festival troupes). A town changes hands
+   when its defence breaks under a siege, or when another owner's faith or culture reaches 100. Units (S.civ.units)
+   travel in straight lines, by boat across the sea (the owner needs a dock to cross). Resource spots (W.spots: glowstone,
+   flower meadows for dye, holy springs for incense) are claimed with an outpost (S.civ.claims) and fought over.
+   Nations (S.civ.nat[1..3], NAT_TRAITS) run their own towns abstractly and act by their trait in civAI. */
+const NAT_TRAITS = [{ id: "war", n: "warlike", ic: "⚔️" }, { id: "faith", n: "devout", ic: "🙏" }, { id: "arts", n: "artistic", ic: "🎭" }];
+const POLICIES = [
+  { id: "draft", ic: "⚔️", n: "Conscription", d: "Armies are a third stronger and cheaper. People are less happy." },
+  { id: "faith", ic: "🙏", n: "State faith", d: "Missionaries are much stronger and your towns resist other faiths. Fewer plays at the theatre." },
+  { id: "arts", ic: "🎭", n: "Patrons of the arts", d: "Festival troupes are much stronger and towns are happier. Costs a little gold all the time." },
+  { id: "trade", ic: "🪙", n: "Open markets", d: "Half as much again from markets and trade. Other nations' culture spreads into your towns more easily." },
+  { id: "ration", ic: "🍞", n: "Rationing", d: "People eat a quarter less. They're less happy." },
+  { id: "closed", ic: "🚧", n: "Closed borders", d: "Foreign missionaries and troupes do half as much. No trading with other nations." }];
+const TAX = [{ n: "Low", g: .002, mood: 10 }, { n: "Normal", g: .004, mood: 0 }, { n: "High", g: .008, mood: -15 }];
+const UNIT = { army: { ic: "⚔️", n: "Army", need: "barracks", c: { gold: 40, ore: 10, food: 25 }, sp: 62 }, miss: { ic: "🙏", n: "Missionaries", need: "temple", c: { gold: 40, incense: 20, food: 15 }, sp: 70 },
+  fest: { ic: "🎭", n: "Festival troupe", need: "theatre", c: { gold: 40, dye: 20, food: 15 }, sp: 70 } };
+const SPOT_K = { glow: { ic: "💎", n: "Glowstone", r: "glow", rate: .14 }, dye: { ic: "🌸", n: "Flower meadow", r: "dye", rate: .2 }, incense: { ic: "🕯️", n: "Holy spring", r: "incense", rate: .2 }, ore: { ic: "🔩", n: "Ore rocks", r: "ore", rate: .15 } };
+const OUTPOST = { wood: 40, stone: 20 };
+const hasPol = (C, id) => C.gov && C.gov.pol.includes(id);
+function civNatName(R) { const p = a => a[Math.floor(R() * a.length)], n = p(LSYL) + p(LSYL); return p(["The ", ""]) + n[0].toUpperCase() + n.slice(1) + p(["ians", "ari", "ese", "ites", "ans"]); }
+/* Fill in what part 2 needs on any civilisation save (new or from part 1): nations, influence, defences, the government. */
+function civInit2(W) {
+  const C = W.S.civ, R = rng(hash(W.S.seed, 2004, CIV_V));
+  if (!C.nat) { const order = [0, 1, 2].sort(() => R() - .5); C.nat = [null]; for (let k = 1; k <= 3; k++) C.nat.push({ name: civNatName(R), trait: NAT_TRAITS[order[k - 1]].id, rel: order[k - 1] === 0 ? -15 : 5, war: false, ally: false, deal: false, gold: 80, gone: false, warT: 0, cd: { army: 120 + R() * 60, miss: 60 + R() * 60, fest: 60 + R() * 60, claim: 30 + R() * 30, offer: 120 + R() * 60, grow: 0 } }); }
+  C.gov = C.gov || { tax: 1, pol: [], polT: 0 }; C.units = C.units || []; C.claims = C.claims || {}; C.how = C.how || { war: 0, faith: 0, arts: 0 }; C.res.dye = C.res.dye || 0; C.res.incense = C.res.incense || 0; C.nid = C.nid || 1;
+  for (const tw of C.towns) {
+    if (!tw.inf) tw.inf = { f: [0, 0, 0, 0], c: [0, 0, 0, 0] }; if (tw.def == null) tw.def = civDefMax(tw);
+    if (tw.own > 0 && !tw.b.some(b => b.k === "dock") && tw.b.length > 3) { // a nation's capital has a dock and its trait's building
+      const t = C.nat[tw.own].trait; tw.b.push({ k: "dock", done: true, prog: 0 }, { k: t === "war" ? "barracks" : t === "faith" ? "temple" : "theatre", done: true, prog: 0 }); if (t === "war") tw.b.push({ k: "wall", done: true, prog: 0 }); tw.rev = (tw.rev || 0) + 1; }
+  }
+  // the contested places: every glowstone, plus flower meadows and holy springs on each island (their own random stream)
+  if (!W.spots) {
+    const RS = rng(hash(W.S.seed, 2003, CIV_V)); W.spots = W.glows.map(o => ({ k: "glow", x: o.x, y: o.y, isle: o.isle }));
+    ISLES.forEach((_, k) => { for (const [kind, n] of [["dye", k === 4 ? 2 : 1], ["incense", k === 4 ? 2 : 1]]) { let got = 0;
+      for (let tries = 0; tries < 6000 && got < n; tries++) { const i = Math.floor(RS() * LN * LN); if (W.isle[i] !== k || !(TSPD[W.map[i]] > 0) || ![T_GRASS, T_FOREST, T_SCRUB, T_HILL].includes(W.map[i])) continue; const [x, y] = tileXY(i);
+        if (W.sites.some(s => Math.hypot(s.x - x, s.y - y) < LT * 3) || W.spots.some(o => Math.hypot(o.x - x, o.y - y) < LT * 5) || W.ores.some(o => Math.hypot(o.x - x, o.y - y) < LT * 3)) continue;
+        W.spots.push({ k: kind, x, y, isle: k }); got++; } } });
+    for (const o of W.ores) W.spots.push({ k: "ore", x: o.x, y: o.y, isle: o.isle }); // (appended: claims are kept by number)
+    W.spots.forEach((o, n) => { o.n = n; });
+    if (!C.claimInit) { C.claimInit = 1; for (const o of W.spots) if (o.isle >= 1 && o.isle <= 3 && o.k !== "glow") C.claims[o.n] = { own: o.isle, hp: 60 }; } // each nation starts holding its own island's meadow and spring
+  }
+}
+function civDefMax(tw) { return 60 + civHas(tw, "wall") * 120 + civHas(tw, "barracks") * 40 + tw.pop * 2; }
+function civGarrison(tw) { return 6 + civHas(tw, "barracks") * 12 + civHas(tw, "wall") * 10 + tw.pop * .15; }
+const ownTowns = (C, o) => C.towns.filter(tw => tw.own === o);
+const hasDock = (C, o) => C.towns.some(tw => tw.own === o && civHas(tw, "dock"));
+function civArmyStr(C, o) { const b = ownTowns(C, o).reduce((a, tw) => a + civHas(tw, "barracks"), 0); return (40 + Math.min(6, b) * 12) * (o === 0 && hasPol(C, "draft") ? 1.33 : 1) * (o > 0 && C.nat[o].trait === "war" ? 1.2 : 1); }
+/* Which of an owner's towns can send this kind of unit to (x, y): it needs the right building, and a dock to cross the sea. */
+function civSource(W, o, kind, x, y, isle) {
+  const C = W.S.civ, need = UNIT[kind].need; let best = null, bd = 1e18;
+  for (const tw of ownTowns(C, o)) { if (!civHas(tw, need)) continue; const s = W.sites[tw.site]; if (s.isle !== isle && !civHas(tw, "dock")) continue; const d = Math.hypot(s.x - x, s.y - y); if (d < bd) { bd = d; best = tw; } }
+  return best;
+}
+/* Send a unit at a town (to = {t: "town", id}) or a resource spot (to = {t: "spot", n}). Returns "" or why not. */
+function civSend(W, o, kind, to) {
+  const C = W.S.civ, U = UNIT[kind], tg = to.t === "town" ? C.towns[to.id] : W.spots[to.n], tx = to.t === "town" ? W.sites[tg.site].x : tg.x, ty = to.t === "town" ? W.sites[tg.site].y : tg.y, isle = to.t === "town" ? W.sites[tg.site].isle : tg.isle;
+  if (to.t === "town" && tg.own === o) return "That's yours already";
+  if (kind === "army" && to.t === "town" && tg.own > 0 && o === 0 && !C.nat[tg.own].war) return "You're not at war with them";
+  if (kind === "army" && o === 0 && to.t === "town" && tg.own > 0 && C.nat[tg.own].ally) return "They're your allies";
+  const src = civSource(W, o, kind, tx, ty, isle); if (!src) return `You need a town with ${CBD[U.need].ic} ${CBD[U.need].n.toLowerCase()}${hasDock(C, o) ? "" : " (and a dock to cross the sea)"}`;
+  if (o === 0) { for (const r in U.c) { const c = r === "gold" && kind === "army" && hasPol(C, "draft") ? U.c[r] * .7 : U.c[r]; if ((C.res[r] || 0) < c) return `Not enough ${r}`; } for (const r in U.c) C.res[r] -= r === "gold" && kind === "army" && hasPol(C, "draft") ? U.c[r] * .7 : U.c[r]; }
+  else { const n = C.nat[o], cost = kind === "army" ? 70 : 35; if (n.gold < cost) return "No gold"; n.gold -= cost; }
+  const s = W.sites[src.site], d = Math.hypot(tx - s.x, ty - s.y);
+  C.units.push({ id: C.nid++, own: o, k: kind, from: src.id, to, x0: s.x, y0: s.y, x1: tx, y1: ty, t: 0, dur: Math.max(6, d / U.sp), str: kind === "army" ? civArmyStr(C, o) : 0, st: "go", sie: 0 }); return "";
+}
+function unitXY(u) { const f = clamp(u.t / u.dur, 0, 1); return [u.x0 + (u.x1 - u.x0) * f, u.y0 + (u.y1 - u.y0) * f]; }
+/* Influence: faith from missionaries, culture from troupes; the town's own temples and theatres push back. */
+function civInfluence(W, o, tw, kind) {
+  const C = W.S.civ, f = kind === "miss" ? "f" : "c", home = tw.own, B = kind === "miss" ? civHas(tw, "temple") : civHas(tw, "theatre");
+  let p = 24 * (o === 0 && hasPol(C, kind === "miss" ? "faith" : "arts") ? 1.5 : 1) * (o > 0 && C.nat[o].trait === (kind === "miss" ? "faith" : "arts") ? 1.25 : 1) / (1 + B * .7);
+  if (home === 0 && hasPol(C, "closed")) p *= .5; if (home === 0 && kind === "fest" && hasPol(C, "trade")) p *= 1.3; if (home === 0 && kind === "miss" && hasPol(C, "faith")) p *= .6;
+  tw.inf[f][o] = Math.min(100, tw.inf[f][o] + p); for (let k = 0; k < 4; k++) if (k !== o) tw.inf[f][k] = Math.max(0, tw.inf[f][k] - p * .35);
+  W.ev.push({ t: "cinf", o, k: kind, n: tw.name, v: Math.round(tw.inf[f][o]), mine: home === 0 });
+  if (tw.inf[f][o] >= 100) civTake(W, tw, o, kind === "miss" ? "faith" : "arts");
+}
+/* A town changes hands. */
+function civTake(W, tw, o, how) {
+  const C = W.S.civ, was = tw.own; tw.own = o; tw.inf = { f: [0, 0, 0, 0], c: [0, 0, 0, 0] }; tw.rev++; tw.cap = 0; tw.b = tw.b.filter(b => b.done);
+  if (how === "war") { tw.pop = Math.max(3, Math.floor(tw.pop * .7)); tw.unrest = 150; tw.b = tw.b.filter(b => b.k !== "wall"); } tw.def = civDefMax(tw) * .4;
+  if (o === 0) C.how[how]++;
+  for (const u of C.units) if (u.to.t === "town" && u.to.id === tw.id && u.own === o) u.st = "done";
+  W.ev.push({ t: "ctake", n: tw.name, o, was, how });
+  if (was > 0 && !ownTowns(C, was).length) { const N = C.nat[was]; N.gone = true; N.war = false; N.ally = false; N.deal = false; for (const k in C.claims) if (C.claims[k].own === was) delete C.claims[k]; W.ev.push({ t: "cgone", n: N.name }); }
+  if (was > 0 && !ownTowns(C, was).some(t => t.cap)) { const nt = ownTowns(C, was).sort((a, b) => b.pop - a.pop)[0]; if (nt) nt.cap = 1; }
+  if (was === 0 && !ownTowns(C, 0).length) W.ev.push({ t: "cfallen" });
+  if (C.nat.slice(1).every(n => n.gone) && !C.won) { C.won = true; W.ev.push({ t: "cwon" }); }
+}
+/* Claim a resource spot with an outpost. */
+function civClaim(W, o, n) {
+  const C = W.S.civ, sp = W.spots[n]; if (C.claims[n]) return C.claims[n].own === o ? "Already yours" : "Someone else holds it: take it with an army";
+  if (!ownTowns(C, o).some(tw => W.sites[tw.site].isle === sp.isle) && !hasDock(C, o)) return "You need a town on that island, or a dock";
+  if (o === 0) { if (C.res.wood < OUTPOST.wood || C.res.stone < OUTPOST.stone) return `An outpost needs ${OUTPOST.wood} wood and ${OUTPOST.stone} stone`; C.res.wood -= OUTPOST.wood; C.res.stone -= OUTPOST.stone; }
+  else { if (C.nat[o].gold < 40) return "No gold"; C.nat[o].gold -= 40; }
+  C.claims[n] = { own: o, hp: 60 };
+  // nations mind you taking their island's riches, and everyone wanted the empty island's
+  if (o === 0) for (let k = 1; k <= 3; k++) { const N = C.nat[k]; if (N.gone) continue; if (sp.isle === k) civRel(W, k, -25); else if (sp.isle === 4) civRel(W, k, -6); }
+  W.ev.push({ t: "cclaim", o, k: sp.k }); return "";
+}
+function civRel(W, k, d) { const N = W.S.civ.nat[k]; N.rel = clamp(N.rel + d, -100, 100); if (N.ally && N.rel < 30) { N.ally = false; W.ev.push({ t: "callyEnd", n: N.name }); } }
+/* Diplomacy, from the Nations panel. */
+function civDiplo(W, k, act) {
+  const C = W.S.civ, N = C.nat[k]; if (N.gone) return "They're gone";
+  if (act === "gift") { if (C.res.gold < 50) return "A gift needs 50 gold"; C.res.gold -= 50; N.gold += 50; civRel(W, k, 14); return ""; }
+  if (act === "war") { N.war = true; N.ally = false; N.deal = false; N.warT = 0; civRel(W, k, -40); for (let j = 1; j <= 3; j++) if (j !== k && C.nat[j].ally && !C.nat[j].gone) { /* allies stand with you */ } W.ev.push({ t: "cwar", n: N.name, by: 0 }); return ""; }
+  if (act === "peace") { if (!N.war) return "You're not at war"; if (N.rel < -70 && N.warT < 240) return "They won't talk yet: they're too angry. Win some battles, or wait."; N.war = false; N.rel = Math.max(N.rel, -20); W.ev.push({ t: "cpeace", n: N.name }); return ""; }
+  if (act === "ally") { if (N.war) return "Make peace first"; if (N.rel < 60) return "They need to like you more (60)"; N.ally = true; W.ev.push({ t: "cally", n: N.name }); return ""; }
+  if (act === "deal") { if (N.war) return "Not while at war"; if (hasPol(C, "closed")) return "Your borders are closed"; if (N.rel < 20) return "They need to like you more (20)"; N.deal = !N.deal; return ""; }
+  return "";
+}
+/* What a nation will trade: it buys what you have most of and sells what you're short of. */
+function civTradeOffers(W, k) {
+  const C = W.S.civ, N = C.nat[k], R = C.res, m = hasPol(C, "trade") ? 1.5 : 1, p = 1 + clamp(N.rel, -50, 100) / 200;
+  const sell = ["glow", "dye", "incense", "ore", "stone"].filter(r => R[r] >= 20).sort((a, b) => R[b] - R[a])[0], buy = ["ore", "dye", "incense", "stone", "wood"].sort((a, b) => R[a] - R[b])[0];
+  const price = { glow: 5, dye: 2.5, incense: 2.5, ore: 2, stone: 1, wood: .8 };
+  return { sell: sell ? { r: sell, n: 20, gold: Math.round(20 * price[sell] * p * m) } : null, buy: { r: buy, n: 20, gold: Math.round(20 * price[buy] * 1.3 / p) } };
+}
+function civTrade(W, k, side) {
+  const C = W.S.civ, N = C.nat[k], o = civTradeOffers(W, k); if (N.war || N.gone) return "Not now"; if (hasPol(C, "closed")) return "Your borders are closed";
+  if (side === "sell") { if (!o.sell) return "Nothing to sell"; C.res[o.sell.r] -= o.sell.n; C.res.gold += o.sell.gold; }
+  else { if (C.res.gold < o.buy.gold) return "Not enough gold"; C.res.gold -= o.buy.gold; C.res[o.buy.r] = (C.res[o.buy.r] || 0) + o.buy.n; }
+  civRel(W, k, 3); return "";
+}
+function civSetPol(W, id) {
+  const C = W.S.civ, g = C.gov; if (g.polT > 0) return `You can change policies again in ${Math.ceil(g.polT)} s`;
+  if (g.pol.includes(id)) g.pol = g.pol.filter(x => x !== id); else { if (g.pol.length >= 2) return "Two policies at a time: drop one first"; g.pol.push(id); }
+  g.polT = 45; if (id === "closed") for (let k = 1; k <= 3; k++) C.nat[k].deal = false; return "";
+}
+/* Units on the move, sieges, outposts, influence wearing off, defences mending. */
+function civUnits(W, st) {
+  const C = W.S.civ;
+  for (const u of C.units) {
+    if (u.st === "done") continue;
+    if (u.st === "go") { u.t += st; if (u.t < u.dur) continue; u.st = "there"; }
+    if (u.to.t === "spot") { // armies break outposts
+      const cl = C.claims[u.to.n]; if (!cl || cl.own === u.own) { u.st = "done"; continue; }
+      cl.hp -= u.str * .15 * st; u.str -= 2 * st; if (cl.hp <= 0) { delete C.claims[u.to.n]; W.ev.push({ t: "cpost", o: u.own, k: W.spots[u.to.n].k }); u.st = "done"; if (u.own === 0 || cl.own === 0) civRel(W, u.own || cl.own, -10); } if (u.str <= 0) u.st = "done"; continue;
+    }
+    const tw = C.towns[u.to.id]; if (!tw || tw.own === u.own) { u.st = "done"; continue; }
+    if (u.k === "miss" || u.k === "fest") { civInfluence(W, u.own, tw, u.k); u.st = "done"; if (tw.own > 0 && u.own === 0 && C.nat[tw.own].trait !== "arts") civRel(W, tw.own, u.k === "miss" ? -4 : -2); continue; }
+    // a siege: the army wears the walls down while the garrison wears the army down
+    const ally = u.own === 0 ? C.nat.slice(1).filter(n => n && n.ally && !n.gone).length * .25 : 0;
+    const foes = C.units.filter(v => v.st === "there" && v.k === "army" && v.to.t === "town" && v.to.id === tw.id).length || 1;
+    tw.def -= u.str * .06 * (1 + ally) * st; u.str -= civGarrison(tw) * .25 / foes * st; tw.siege = W.t; u.sie += st;
+    if (tw.def <= 0) { civTake(W, tw, u.own, "war"); u.st = "done"; }
+    else if (u.str <= 0) { u.st = "done"; W.ev.push({ t: "cbeaten", o: u.own, n: tw.name }); if (u.own > 0) for (const t2 of ownTowns(C, 0)) t2.def = Math.min(civDefMax(t2), t2.def + 10); }
+  }
+  C.units = C.units.filter(u => u.st !== "done");
+  for (const tw of C.towns) {
+    if (!tw.inf) continue; for (const f of ["f", "c"]) for (let k = 0; k < 4; k++) if (tw.inf[f][k] > 0) tw.inf[f][k] = Math.max(0, tw.inf[f][k] - .2 * st); // influence fades unless kept up
+    if (!(W.t - (tw.siege || -99) < 3)) tw.def = Math.min(civDefMax(tw), tw.def + 1.5 * st); if (tw.unrest > 0) tw.unrest -= st;
+  }
+  for (const n in C.claims) { const cl = C.claims[n], sp = W.spots[n], r = SPOT_K[sp.k]; if (cl.own === 0) C.res[r.r] = (C.res[r.r] || 0) + r.rate * st; else if (C.nat[cl.own]) C.nat[cl.own].gold += r.rate * 3 * st; }
+}
+/* The nations: grow their towns, claim places, trade, and send armies, missionaries and troupes by their nature. */
+function civAI(W, st) {
+  const C = W.S.civ, mine = ownTowns(C, 0), myPop = civPop(C), all = C.towns.reduce((a, t) => a + t.pop, 0);
+  for (let k = 1; k <= 3; k++) {
+    const N = C.nat[k]; if (N.gone) continue; const T = ownTowns(C, k), pop = T.reduce((a, t) => a + t.pop, 0); N.gold += pop * .02 * st + (N.deal ? .3 * st : 0); if (N.war) N.warT += st;
+    for (const tw of T) { tw.gT = (tw.gT || 0) + st; if (tw.gT > 15 && tw.pop < civCap(tw)) { tw.pop++; tw.gT = 0; tw.rev++; } }
+    for (const c in N.cd) N.cd[c] -= st;
+    if (N.cd.grow <= 0) { N.cd.grow = 70; const tw = T[Math.floor(W.R() * T.length)]; if (tw) { const want = civHas(tw, "house") < 6 ? "house" : N.trait === "war" ? (civHas(tw, "barracks") ? "wall" : "barracks") : N.trait === "faith" ? "temple" : "theatre", B = CBD[want]; if (!(B.max && civHas(tw, want) >= B.max) && N.gold > 40) { N.gold -= 40; tw.b.push({ k: want, done: true, prog: 0 }); tw.rev++; tw.def = Math.min(civDefMax(tw), tw.def + 20); } } }
+    // feelings drift: the strong are feared, rivals for the empty island resented, trade partners liked
+    const mineE = Object.values(C.claims).filter((c, i) => c.own === 0).length;
+    N.rel = clamp(N.rel + ((N.deal ? .6 : 0) + (myPop > all * .45 ? -.5 : 0) + (N.trait === "war" && mineE > 2 ? -.6 : 0) + (N.war ? .25 : 0) + (N.rel < 0 && !N.war ? .15 : 0)) * st / 60, -100, 100);
+    if (!N.war && !N.ally && (N.rel < (N.trait === "war" ? -30 : -55)) && C.t > 600) { N.war = true; N.warT = 0; N.deal = false; W.ev.push({ t: "cwar", n: N.name, by: k }); }
+    if (N.war && N.warT > 200 && (N.rel > -40 || T.length <= 1) && W.R() < st / 60) { N.war = false; N.rel = Math.max(N.rel, -15); W.ev.push({ t: "cpeace", n: N.name, by: k }); }
+    // claim free places it can reach
+    if (N.cd.claim <= 0) { N.cd.claim = 90 + W.R() * 60; const free = W.spots.filter(sp => !C.claims[sp.n] && (sp.isle === k || sp.isle === 4)); if (free.length) civClaim(W, k, free[Math.floor(W.R() * free.length)].n); }
+    // trade offers to you
+    if (N.cd.offer <= 0 && !N.war && !C.offer && N.rel > -30 && !hasPol(C, "closed") && C.t > 120) { N.cd.offer = 160 + W.R() * 120; const r = ["glow", "dye", "incense", "ore"].filter(x => C.res[x] >= 25).sort((a, b) => C.res[b] - C.res[a])[0]; if (r) C.offer = { k, r, n: 20, gold: Math.round(20 * { glow: 6, dye: 3, incense: 3, ore: 2.4 }[r] * (hasPol(C, "trade") ? 1.5 : 1)), t: 40 }; }
+    // armies at enemies' towns and outposts
+    if (N.cd.army <= 0) { N.cd.army = (N.trait === "war" ? 100 : 170) + W.R() * 60; if (N.war && mine.length && N.gold >= 70 && C.t > 480) {
+      const tgs = mine.map(tw => ({ to: { t: "town", id: tw.id }, d: Math.hypot(W.sites[tw.site].x - W.sites[T[0].site].x, W.sites[tw.site].y - W.sites[T[0].site].y) - (tw.def < civDefMax(tw) * .5 ? 2000 : 0) }))
+        .concat(Object.keys(C.claims).filter(n => C.claims[n].own === 0).map(n => ({ to: { t: "spot", n: +n }, d: 1500 })));
+      tgs.sort((a, b) => a.d - b.d); if (tgs.length) civSend(W, k, "army", tgs[0].to); } }
+    // missionaries and troupes at the nearest town that isn't theirs (and not their allies')
+    for (const kind of ["miss", "fest"]) {
+      if (N.cd[kind] > 0) continue; const keen = (kind === "miss" && N.trait === "faith") || (kind === "fest" && N.trait === "arts"); N.cd[kind] = (keen ? 55 : 150) + W.R() * 50;
+      if (!keen && W.R() < .5) continue; if (N.gold < 35) continue;
+      const tg = C.towns.filter(tw => tw.own !== k && !(tw.own === 0 && (N.ally || C.t < 480))).sort((a, b) => Math.hypot(W.sites[a.site].x - W.sites[T[0].site].x, W.sites[a.site].y - W.sites[T[0].site].y) - Math.hypot(W.sites[b.site].x - W.sites[T[0].site].x, W.sites[b.site].y - W.sites[T[0].site].y))[0];
+      if (tg && T[0]) civSend(W, k, kind, { t: "town", id: tg.id });
+    }
+  }
+  // if you grow too strong, the others close ranks
+  if (!C.pact && myPop > all * .55 && C.t > 600) { C.pact = true; for (let k = 1; k <= 3; k++) if (!C.nat[k].gone && !C.nat[k].ally) civRel(W, k, -20); W.ev.push({ t: "cpact" }); }
+  if (C.offer) { C.offer.t -= st; if (C.offer.t <= 0) C.offer = null; }
+}
+/* Every town lost: in normal mode the capital rises again, with peace all round. */
+function civRestore(W) {
+  const C = W.S.civ, tw = C.towns.find(t => t.cap === 1 && t.site === W.sites.filter(s => s.isle === 0)[0].n) || C.towns[0], was = tw.own;
+  tw.own = 0; tw.pop = 8; tw.cap = 1; tw.inf = { f: [0, 0, 0, 0], c: [0, 0, 0, 0] }; tw.def = civDefMax(tw); tw.rev++; tw.unrest = 0;
+  for (let k = 1; k <= 3; k++) { const N = C.nat[k]; N.war = false; N.rel = Math.max(N.rel, 0); }
+  if (was > 0 && !ownTowns(C, was).length) C.nat[was].gone = true; C.units = []; C.res.food = Math.max(C.res.food, 60); C.res.wood = Math.max(C.res.wood, 60);
+}
+function civOffer(W, yes) {
+  const C = W.S.civ, o = C.offer; if (!o) return; C.offer = null;
+  if (yes) { if ((C.res[o.r] || 0) < o.n) return; C.res[o.r] -= o.n; C.res.gold += o.gold; civRel(W, o.k, 8); } else civRel(W, o.k, -3);
+}
 /*CORE-END*/
 
 /* ================================ page ================================ */
@@ -2882,7 +3098,7 @@ function startSlot(i) { PLACE = null;
 function quitToMenu() { saveSlot(); W = null; S = null; slot = -1; closeDlg(); show("menu"); renderMenu(); }
 function pause() {
   if (!W || W.over) return; paused = true; saveSlot();
-  const c = cur(S), Tt = S.tribe, Cv = S.civ, gl = W.civ ? `<div class="lbl">Your nation</div><p>👥 ${civPop(Cv)} people in ${Cv.towns.filter(tw => tw.own === 0).length} towns<br>${civLabel().split(" · ").slice(1).join(" · ")}</p><div class="lbl">Goals</div><p>${CIV_GOALS.map(g => (Cv.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><p style="font-size:.85rem;color:var(--muted)">This is the first part of the Civilisation stage. Rival nations, the sea, your own vehicles and the Sky Ship arrive in the next updates.</p>`
+  const c = cur(S), Tt = S.tribe, Cv = S.civ, gl = W.civ ? `<div class="lbl">Your nation</div><p>👥 ${civPop(Cv)} people in ${Cv.towns.filter(tw => tw.own === 0).length} towns<br>${civLabel().split(" · ").slice(1).join(" · ")}</p><div class="lbl">Goals</div><p>${CIV_GOALS.map(g => (Cv.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><p style="font-size:.85rem;color:var(--muted)">Unite all five islands by force, faith or the arts. Your own vehicle designs and the Sky Ship arrive in the next updates.</p>`
     : W.tribe ? `<div class="lbl">Your tribe</div><p>👥 ${popAll(Tt)} of ${room(Tt)} · 🍖 ${fl0(Tt.res.food)} · 🪵 ${fl0(Tt.res.wood)} · 🪨 ${fl0(Tt.res.stone)}<br>Upkeep a minute: 🪵 ${upkeep(W).wood} 🪨 ${upkeep(W).stone} · stores hold ${storeCap(Tt)} of each<br>Tools: ${TOOLS.filter(t => Tt.tools[t.id]).map(t => t.ic + " " + t.n).join(", ") || "none yet"}</p>
       <div class="lbl">Neighbours</div><p>${Tt.rv.map(r => `<span style="color:${rvCol(r)}">●</span> ${esc(r.name)}: ${r.state === "joined" ? "joined you 💚" : r.state === "broken" ? "gave in to you" : r.kind === "open" ? `friendship ${fl0(r.mood)}/100${isAlly(r) ? " 🤝 ally" : ""}` : `spirit ${fl0(r.spirit)}/100`}`).join("<br>")}</p><p>💡 ${esc(tribeAdvice())}</p>` : W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>`
     : W.land ? `<div class="lbl">Goals</div><p>${LAND_GOALS.map(g => (c.goals && c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><div class="lbl">Species on the island</div><p>${W.lsp.filter(L => (c.met || {})[L.i] || lspStatus(c, L.i)).map(L => { const st = lspStatus(c, L.i); return (st === "friend" ? "💚 " : st === "gone" ? "✖ " : "○ ") + esc(L.name) + ` (${LIFE[L.life]})` + (st ? "" : ` · won over ${c.friends[L.i] || 0}/${FRIEND_NEED}, hunted ${c.hunted[L.i] || 0}/${HUNT_NEED}`); }).join("<br>")}${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length ? `<br>? ${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length} species not met yet` : ""}<br>${W.epics.map(E => (c.epics[E.j] === "friend" ? "💚 " : c.epics[E.j] === "gone" ? "✖ " : "○ ") + esc(E.name) + " (giant)").join("<br>")}</p>
@@ -2968,6 +3184,8 @@ function hints() {
     if (W.t > 1) hint(23, "Your tribe is a nation now! Tap a town to choose what it builds. Drag to look around, pinch (or ＋ －) to zoom.", 10);
     if (W.t > 40) hint(24, "Every town eats from one store, so keep building farms. Houses let towns grow; bigger towns have room for more buildings.", 10);
     if (W.t > 90) hint(25, "Tap the 'Free land' posts to send settlers and found more towns.", 9);
+    if (W.t > 200) hint(26, "Build a ⚓ dock to chart the other islands. Then tap 🌍 Nations to trade, make allies or go to war, and 📯 Send out from a town to win other towns by force, faith or the arts.", 11);
+    if (W.t > 320) hint(27, "Tap a 🌸 meadow, 🕯️ spring, 💎 glowstone or 🔩 ore rocks to claim it with an outpost. Other nations want them too.", 10);
     return;
   }
   if (W.tribe) {
@@ -4323,16 +4541,150 @@ function drawLoading3() { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle 
    civ3 draws the towns (one merged model each, rebuilt when the town changes), settlers' wagons, glowstone and ore;
    civOverlay puts names and building progress on top; civTap opens a town's panel. The camera roams freely. */
 const CIV_COL = [0x7cf2c8, 0xff6b6b, 0xffc04a, 0xb48cff]; // you, then the three nations
-const RES_IC = { food: "🍖", wood: "🪵", stone: "🪨", ore: "🔩", glow: "💎", gold: "🪙" };
+const RES_IC = { food: "🍖", wood: "🪵", stone: "🪨", ore: "🔩", glow: "💎", gold: "🪙", dye: "🌸", incense: "🕯️" };
 const costTxt = c => Object.keys(c).map(r => RES_IC[r] + c[r]).join(" ");
+/* ---- part 2 on screen: nations, government, sending units, claiming places ---- */
+const natCol = o => "#" + (CIV_COL[o] || 0xffffff).toString(16).padStart(6, "0");
+const TRAIT = id => NAT_TRAITS.find(t => t.id === id) || NAT_TRAITS[0];
+function civStatus(N) { return N.gone ? "gone" : N.war ? "⚔️ at war" : N.ally ? "🤝 allies" : N.rel >= 30 ? "friendly" : N.rel <= -30 ? "hostile" : "wary"; }
+function civNationsDlg() {
+  paused = true; const C = S.civ, acts = { ok: closeTD }; let h = "";
+  for (let k = 1; k <= 3; k++) {
+    const N = C.nat[k], T = TRAIT(N.trait), tw = ownTowns(C, k), o = civTradeOffers(W, k), d = (a, f) => { acts[a + k] = () => { const e = f(); if (e) toast(e); else snd("eat"); civNationsDlg(); }; };
+    h += `<div class="ncard" style="border-color:${natCol(k)}"><b style="color:${natCol(k)}">${esc(N.name)}</b> <span>${T.ic} ${T.n} · ${tw.length} town${tw.length === 1 ? "" : "s"} · ${civStatus(N)}${N.deal ? " · 🪙 trading" : ""}</span>`;
+    if (!N.gone) {
+      h += `<div class="nrel"><i style="width:${(N.rel + 100) / 2}%;background:${N.rel >= 0 ? "#7CF2C8" : "#FF6B6B"}"></i></div><div class="nbtns">`;
+      d("g", () => civDiplo(W, k, "gift")); h += `<button class="btn small" data-a="g${k}">🎁 Gift ${RES_IC.gold}50</button>`;
+      if (!N.war) { if (o.sell) { d("s", () => civTrade(W, k, "sell")); h += `<button class="btn small" data-a="s${k}">Sell ${RES_IC[o.sell.r]}${o.sell.n} for ${RES_IC.gold}${o.sell.gold}</button>`; }
+        d("b", () => civTrade(W, k, "buy")); h += `<button class="btn small" data-a="b${k}">Buy ${RES_IC[o.buy.r]}${o.buy.n} for ${RES_IC.gold}${o.buy.gold}</button>`;
+        d("d", () => civDiplo(W, k, "deal")); h += `<button class="btn small" data-a="d${k}">${N.deal ? "End trade deal" : "🪙 Trade deal"}</button>`;
+        if (!N.ally) { d("a", () => civDiplo(W, k, "ally")); h += `<button class="btn small" data-a="a${k}">🤝 Alliance</button>`; }
+        d("w", () => civDiplo(W, k, "war")); h += `<button class="btn small bad" data-a="w${k}">⚔️ Declare war</button>`; }
+      else { d("p", () => civDiplo(W, k, "peace")); h += `<button class="btn small" data-a="p${k}">🕊️ Make peace</button>`; }
+      h += `</div>`;
+    }
+    h += `</div>`;
+  }
+  dialog(`<h2>Nations</h2><p style="font-size:.85rem">The bar shows how they feel about you. Gifts, trade and trade deals make friends; at 60 they'll be allies, who help in sieges and won't turn on you. Taking places they wanted, or sending missionaries into their towns, makes enemies.</p>${h}
+    <div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+}
+function civGovDlg() {
+  paused = true; const C = S.civ, g = C.gov, acts = { ok: closeTD };
+  TAX.forEach((t, i) => { acts["t" + i] = () => { g.tax = i; civGovDlg(); }; });
+  POLICIES.forEach(P => { acts["p_" + P.id] = () => { const e = civSetPol(W, P.id); if (e) toast(e); civGovDlg(); }; });
+  dialog(`<h2>Government</h2><div class="lbl">Taxes</div><div class="row">${TAX.map((t, i) => `<button class="btn small${g.tax === i ? " primary" : ""}" data-a="t${i}">${t.n}</button>`).join("")}</div>
+    <p style="font-size:.85rem">${g.tax === 0 ? "Low taxes: less gold, happier people." : g.tax === 2 ? "High taxes: more gold, unhappy people (unhappy towns work at half speed)." : "Normal taxes."} About ${RES_IC.gold} ${(civPop(C) * TAX[g.tax].g * 60).toFixed(0)} a minute from ${civPop(C)} people.</p>
+    <div class="lbl">Policies (two at a time${g.polT > 0 ? `, change again in ${Math.ceil(g.polT)} s` : ""})</div>
+    <div class="cgrid">${POLICIES.map(P => `<button class="btn small cbtn${g.pol.includes(P.id) ? " on" : ""}" data-a="p_${P.id}"><b>${g.pol.includes(P.id) ? "✅ " : ""}${P.ic} ${P.n}</b><em>${esc(P.d)}</em></button>`).join("")}</div>
+    <div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+}
+/* Send units at a town or a place: from the town panel (pick a target) or from tapping the target. */
+function civSendDlg(to, back) {
+  paused = true; const C = S.civ, acts = { ok: back || closeTD }, tg = to.t === "town" ? C.towns[to.id] : W.spots[to.n], name = to.t === "town" ? tg.name : SPOT_K[tg.k].n;
+  const kinds = to.t === "spot" ? ["army"] : ["army", "miss", "fest"];
+  const rows = kinds.map(k => { const U = UNIT[k], c = k === "army" && hasPol(C, "draft") ? Object.fromEntries(Object.entries(U.c).map(([r, v]) => [r, r === "gold" ? Math.round(v * .7) : v])) : U.c;
+    acts["u_" + k] = () => { const e = civSend(W, 0, k, to); if (e) { toast(e); return; } toast(`${U.ic} ${U.n} set off for ${name}.`); snd("eat"); (back || closeTD)(); };
+    const what = k === "army" ? (to.t === "spot" ? "Break their outpost so you can claim it." : `Lay siege: break the walls (defence ${fl0(tg.def)}) and the town is yours. Several armies at once work best.`) : k === "miss" ? `Spread your faith (yours there now: ${fl0(tg.inf.f[0])}%). At 100% the town joins you.` : `Win hearts with a festival (yours there now: ${fl0(tg.inf.c[0])}%). At 100% the town joins you.`;
+    return `<button class="btn small cbtn" data-a="u_${k}"><b>${U.ic} ${U.n}</b><span>${costTxt(c)}</span><em>${what}</em></button>`; }).join("");
+  dialog(`<h2>${esc(name)}</h2><p style="font-size:.85rem">${to.t === "town" && tg.own > 0 ? `A town of ${esc(C.nat[tg.own].name)} (${civStatus(C.nat[tg.own])}). 👥 ${tg.pop}.` : to.t === "spot" ? `Held by ${esc(C.nat[C.claims[to.n].own].name)}.` : ""} Units go from your nearest town with the right building (and a dock if it's across the sea).</p>
+    <div class="cgrid">${rows}</div><div class="row"><button class="btn primary" data-a="ok">Back</button></div>`, acts, back || closeTD);
+}
+function civSpotDlg(sp) {
+  paused = true; const C = S.civ, cl = C.claims[sp.n], K = SPOT_K[sp.k], acts = { ok: closeTD };
+  if (!cl) acts.claim = () => { const e = civClaim(W, 0, sp.n); if (e) toast(e); else { toast(`Outpost built: ${K.ic} ${K.n} is yours.`); snd("grow"); } closeTD(); };
+  if (cl && cl.own > 0) acts.atk = () => civSendDlg({ t: "spot", n: sp.n });
+  dialog(`<h2>${K.ic} ${K.n}</h2><p>${cl ? (cl.own === 0 ? `Your outpost: it gathers ${K.ic} ${K.r} for your stores.` : `Held by ${esc(C.nat[cl.own].name)}. You can only take it from them by force.`) : `Free for the taking. An outpost (🪵 ${OUTPOST.wood} 🪨 ${OUTPOST.stone}) gathers ${K.ic} ${K.r} for you. Other nations may not like it.`}</p>
+    <p style="font-size:.85rem;color:var(--muted)">${sp.k === "glow" ? "Glowstone sells for lots of gold." : sp.k === "dye" ? "Dye pays for festival troupes." : sp.k === "incense" ? "Incense pays for missionaries." : "Ore pays for armies."}</p>
+    <div class="row">${!cl ? `<button class="btn" data-a="claim">🚩 Build an outpost</button>` : cl.own > 0 ? `<button class="btn bad" data-a="atk">⚔️ Send an army</button>` : ""}<button class="btn primary" data-a="ok">OK</button></div>`, acts, closeTD);
+}
+function civTargetsDlg(tw) { // from your own town: pick another town or place to act on
+  const C = S.civ, acts = { back: () => civTownDlg(tw) }, list = C.towns.filter(t => t.own !== 0 && W.seen[tileI(W.sites[t.site].x, W.sites[t.site].y)]);
+  list.forEach(t => { acts["t_" + t.id] = () => civSendDlg({ t: "town", id: t.id }, () => civTargetsDlg(tw)); });
+  const posts = Object.keys(C.claims).filter(n => C.claims[n].own > 0).map(Number); posts.forEach(n => { acts["p_" + n] = () => civSendDlg({ t: "spot", n }, () => civTargetsDlg(tw)); });
+  dialog(`<h2>Send out</h2><p style="font-size:.85rem">Pick a town to win over, or an outpost to break.</p><div class="cgrid">${list.map(t => `<button class="btn small cbtn" data-a="t_${t.id}"><b style="color:${natCol(t.own)}">${esc(t.name)}</b><span>👥 ${t.pop} · 🙏 ${fl0(t.inf.f[0])}% · 🎭 ${fl0(t.inf.c[0])}%</span></button>`).join("")}
+    ${posts.map(n => `<button class="btn small cbtn" data-a="p_${n}"><b style="color:${natCol(C.claims[n].own)}">${SPOT_K[W.spots[n].k].ic} outpost</b><span>${esc(C.nat[C.claims[n].own].name)}</span></button>`).join("")}</div>
+    ${list.length ? "" : "<p>No other towns in sight yet. Build a dock: your sailors chart the islands.</p>"}<div class="row"><button class="btn primary" data-a="back">Back</button></div>`, acts, () => civTownDlg(tw));
+}
+/* Units, outposts and the places worth claiming, in 3D. */
+function civUnits3(t) {
+  const T = T3, C = S.civ, V = G3.cv;
+  if (!V.u) {
+    V.u = new Map(); V.cl = new Map(); V.um = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    const meadow = new T.MeshLambertMaterial({ color: 0xff8fc0 }), pool = new T.MeshPhongMaterial({ color: 0x8fe0ff, emissive: 0x204a60, shininess: 80 });
+    for (const sp of W.spots) { if (sp.k === "glow" || sp.k === "ore") continue; const g = new T.Group(); if (sp.k === "dye") for (let k = 0; k < 14; k++) { const f = new T.Mesh(new T.IcosahedronGeometry(.12, 0), meadow); f.position.set(Math.cos(k * 2.4) * (k % 4) * .3, .15, Math.sin(k * 2.4) * (k % 4) * .3); g.add(f); }
+      else { const p = new T.Mesh(new T.CylinderGeometry(.7, .7, .06, 16), pool); p.position.y = .05; g.add(p); }
+      g.position.set(sp.x / LT, h3(sp.x, sp.y), sp.y / LT); g.userData.o = sp; V.g.add(g); V.spots.push(g); }
+  }
+  // outposts in their owner's colours
+  for (const sp of W.spots) { const cl = C.claims[sp.n], key = cl ? cl.own : -1; let e = V.cl.get(sp.n);
+    if (e && e.own !== key) { V.g.remove(e.g); e.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); e = null; V.cl.delete(sp.n); }
+    if (!e && cl) { const L = [[new T.CylinderGeometry(.16, .22, .9, 6), new T.Matrix4().makeTranslation(.8, .45, .8), new T.Color(0x9a8a74)], [new T.ConeGeometry(.26, .3, 6), new T.Matrix4().makeTranslation(.8, 1.05, .8), new T.Color(0x6b4a2e)],
+        [new T.CylinderGeometry(.02, .02, .7, 4), new T.Matrix4().makeTranslation(.8, 1.4, .8), new T.Color(0x3a2a1a)], [new T.BoxGeometry(.32, .18, .02), new T.Matrix4().makeTranslation(.97, 1.65, .8), new T.Color(CIV_COL[cl.own])]];
+      const g = new T.Mesh(merge3(L), V.um); g.position.set(sp.x / LT, h3(sp.x, sp.y), sp.y / LT); g.castShadow = true; V.g.add(g); e = { g, own: key }; V.cl.set(sp.n, e); }
+    if (e) e.g.visible = !!W.seen[tileI(sp.x, sp.y)]; }
+  // units: carts on land, ships at sea
+  const live = new Set();
+  for (const u of C.units) {
+    let m = V.u.get(u.id); if (!m) { const col = new T.Color(CIV_COL[u.own]), L = [];
+      if (u.k === "army") for (let k = 0; k < 6; k++) { const x = (k % 3 - 1) * .22, z = (Math.floor(k / 3) - .5) * .25; L.push([new T.BoxGeometry(.1, .22, .1), new T.Matrix4().makeTranslation(x, .2, z), col], [new T.SphereGeometry(.06, 6, 5), new T.Matrix4().makeTranslation(x, .36, z), new T.Color(0xf0d8b0)], [new T.CylinderGeometry(.012, .012, .5, 3), new T.Matrix4().makeTranslation(x + .06, .35, z), new T.Color(0xd0d0d0)]); }
+      else { L.push([new T.BoxGeometry(.45, .2, .28), new T.Matrix4().makeTranslation(0, .25, 0), new T.Color(u.k === "miss" ? 0xf2ead8 : 0xe85dbd)], [new T.ConeGeometry(.22, .3, 4), new T.Matrix4().makeTranslation(0, .5, 0), u.k === "miss" ? new T.Color(0xffd23d) : new T.Color(0x5db0e8)]);
+        for (const [dx, dz] of [[-.15, .16], [.15, .16], [-.15, -.16], [.15, -.16]]) L.push([new T.CylinderGeometry(.08, .08, .04, 8), new T.Matrix4().compose(new T.Vector3(dx, .08, dz), new T.Quaternion().setFromEuler(new T.Euler(Math.PI / 2, 0, 0)), new T.Vector3(1, 1, 1)), new T.Color(0x5a3a1e)]); }
+      L.push([new T.CylinderGeometry(.015, .015, .8, 3), new T.Matrix4().makeTranslation(-.2, .5, 0), new T.Color(0x3a2a1a)], [new T.BoxGeometry(.28, .16, .02), new T.Matrix4().makeTranslation(-.06, .8, 0), col]);
+      const g = new T.Group(), land = new T.Mesh(merge3(L), V.um), boat = new T.Mesh(merge3([[new T.BoxGeometry(1.1, .22, .45), new T.Matrix4().makeTranslation(0, .05, 0), new T.Color(0x7a5530)], [new T.CylinderGeometry(.03, .03, 1.1, 4), new T.Matrix4().makeTranslation(.1, .65, 0), new T.Color(0x3a2a1a)], [new T.BoxGeometry(.04, .6, .55), new T.Matrix4().makeTranslation(.12, .75, 0), col]]), V.um);
+      land.castShadow = boat.castShadow = true; g.add(land, boat); g.userData = { land, boat }; V.g.add(g); m = g; V.u.set(u.id, m); }
+    live.add(u.id); const [x, y] = unitXY(u), sea = tileAt(W, x, y) === T_SEA; m.userData.land.visible = !sea; m.userData.boat.visible = sea;
+    m.position.set(x / LT, sea ? -.05 + Math.sin(t * 2 + u.id) * .04 : h3(x, y), y / LT); m.rotation.y = -Math.atan2(u.y1 - u.y0, u.x1 - u.x0); m.scale.setScalar(1.7);
+    m.visible = !!W.seen[tileI(x, y)];
+    if (u.st === "there" && u.k === "army") m.position.y += Math.abs(Math.sin(t * 9 + u.id)) * .1;
+  }
+  for (const [id, m] of V.u) if (!live.has(id)) { V.g.remove(m); m.children.forEach(o => o.geometry.dispose()); V.u.delete(id); }
+}
+function civOverlay2(t) {
+  const C = S.civ, bar = (X, Y, w, f, col) => { ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(X - w / 2, Y, w, 4); ctx.fillStyle = col; ctx.fillRect(X - w / 2, Y, w * clamp(f, 0, 1), 4); };
+  for (const tw of C.towns) {
+    const s = W.sites[tw.site]; if (!W.seen[tileI(s.x, s.y)]) continue; const [X, Y, ok] = P3(s.x, s.y, 95); if (!ok || X < -60 || X > CW + 60 || Y < -20 || Y > CH) continue;
+    let y = Y + 12; const dm = civDefMax(tw);
+    if (tw.def < dm - 1) { bar(X, y, 60, tw.def / dm, "#FFB454"); y += 6; }
+    if (tw.own !== 0) { if (tw.inf.f[0] > 0) { bar(X, y, 60, tw.inf.f[0] / 100, "#FFE08A"); y += 6; } if (tw.inf.c[0] > 0) { bar(X, y, 60, tw.inf.c[0] / 100, "#E85DBD"); y += 6; } }
+    else { const fo = Math.max(...tw.inf.f.slice(1)), co = Math.max(...tw.inf.c.slice(1)); if (fo > 10 || co > 10) { ctx.font = "12px sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = "#FF8A8A"; ctx.fillText(`⚠️ ${fo >= co ? "🙏 " + fl0(fo) : "🎭 " + fl0(co)}%`, X, y + 10); } }
+    if (W.t - (tw.siege || -99) < 2) { ctx.font = "16px sans-serif"; ctx.textAlign = "center"; ctx.fillText("⚔️", X + 46, Y - 2); }
+  }
+  for (const u of C.units) { const [x, y] = unitXY(u); if (!W.seen[tileI(x, y)]) continue; const [X, Y, ok] = P3(x, y, 60); if (!ok) continue; ctx.font = "13px sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = natCol(u.own); ctx.fillText(UNIT[u.k].ic, X, Y); if (u.k === "army") bar(X, Y + 4, 30, u.str / 120, natCol(u.own)); }
+  for (const sp of W.spots) { if (!W.seen[tileI(sp.x, sp.y)]) continue; const cl = C.claims[sp.n], [X, Y, ok] = P3(sp.x, sp.y, 45); if (!ok || X < 0 || X > CW || Y < 0 || Y > CH) continue; ctx.font = "12px sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = cl ? natCol(cl.own) : "rgba(255,245,220,.9)"; ctx.fillText(SPOT_K[sp.k].ic + (cl ? "" : " free"), X, Y); }
+}
 function civEvent(e) {
   if (e.t === "cbuilt") { snd("grow"); toast(`${e.n}: ${CBD[e.k].ic} ${CBD[e.k].n} built.`); }
   else if (e.t === "cfound") { snd("grow"); toast(`🎉 A new town: ${e.n}!`); }
   else if (e.t === "starve") toast(`${e.n} is starving! Build more farms.`);
   else if (e.t === "cgoal") { snd("relic"); toast(`Goal done: ${e.n}! +${e.g} ${RES_IC.gold}`); LUI_KEY = ""; }
+  else if (e.t === "ctake") { const C = S.civ, who = e.o === 0 ? "You" : C.nat[e.o].name, how = e.how === "war" ? "by force" : e.how === "faith" ? "through faith" : "with the arts";
+    if (e.o === 0) { snd("grow"); toast(`🎉 ${e.n} is yours, won ${how}!`); } else if (e.was === 0) { snd("hurt"); toast(`😢 You lost ${e.n}: ${who} won it ${how}.`); } else toast(`${who} won ${e.n} ${how}.`); LUI_KEY = ""; }
+  else if (e.t === "cinf") { if (e.mine && e.v >= 50 && e.o > 0) toast(`⚠️ ${S.civ.nat[e.o].name}' ${e.k === "miss" ? "missionaries are" : "festivals are"} winning over ${e.n} (${e.v}%). A ${e.k === "miss" ? "🛕 temple" : "🎭 theatre"} there, or your own, pushes back.`); else if (e.o === 0) toast(`${e.k === "miss" ? "🙏" : "🎭"} ${e.n}: ${e.v}% won over.`); }
+  else if (e.t === "cwar") { snd("hurt"); toast(e.by ? `⚔️ ${e.n} have declared war on you!` : `⚔️ You are at war with ${e.n}.`); LUI_KEY = ""; }
+  else if (e.t === "cpeace") { toast(`🕊️ Peace with ${e.n}.`); LUI_KEY = ""; }
+  else if (e.t === "cally") { snd("grow"); toast(`🤝 ${e.n} are your allies now.`); }
+  else if (e.t === "callyEnd") toast(`💔 ${e.n} have broken off your alliance.`);
+  else if (e.t === "cgone") { snd("grow"); toast(`${e.n} are no more: all their towns are gone.`); }
+  else if (e.t === "cpact") toast("📜 The other nations fear how strong you've grown. They're all less friendly now.");
+  else if (e.t === "cclaim") { if (e.o > 0) toast(`${S.civ.nat[e.o].name} claimed ${SPOT_K[e.k].ic} ${SPOT_K[e.k].n.toLowerCase()}.`); }
+  else if (e.t === "cpost") toast(e.o === 0 ? `You broke an outpost: the ${SPOT_K[e.k].n.toLowerCase()} is free to claim.` : `${S.civ.nat[e.o].name} broke an outpost at a ${SPOT_K[e.k].n.toLowerCase()}.`);
+  else if (e.t === "cbeaten") toast(e.o === 0 ? `Your army was beaten at ${e.n}.` : `${e.n} held off ${S.civ.nat[e.o].name}' army!`);
+  else if (e.t === "ccharted") { snd("relic"); toast("⚓ Your sailors have charted the islands. Ships can now carry settlers, armies, missionaries and troupes across the sea."); }
+  else if (e.t === "cwon") setTimeout(civWonDlg, 800);
+  else if (e.t === "cfallen") setTimeout(civFallenDlg, 800);
   else return false; return true;
 }
-function civLabel() { const C = S.civ, R = C.res; return `${S.name} · ${RES_IC.food} ${fl0(R.food)} ${RES_IC.wood} ${fl0(R.wood)} ${RES_IC.stone} ${fl0(R.stone)} ${RES_IC.ore} ${fl0(R.ore)} ${RES_IC.glow} ${fl0(R.glow)} ${RES_IC.gold} ${fl0(R.gold)}`; }
+function civWonDlg() {
+  paused = true; const h = S.civ.how, top = h.war >= h.faith && h.war >= h.arts ? "conquerors" : h.faith >= h.arts ? "a people of faith" : "a people of the arts";
+  dialog(`<h2>The islands are united!</h2><p>${esc(S.name)} rule all five islands: ${top}.</p><div class="stats"><div>By force<b>${h.war}</b></div><div>By faith<b>${h.faith}</b></div><div>By the arts<b>${h.arts}</b></div><div>Time<b>${fmtTime(S.time)}</b></div></div>
+    <p>Next comes the Sky Ship, and space. It arrives in a later update; your nation is saved and carries on until then.</p><div class="row"><button class="btn primary" data-a="go">Keep playing</button></div>`, { go: closeTD }, closeTD);
+}
+function civFallenDlg() {
+  paused = true; saveSlot();
+  if (S.mode === "hard") { S.dead = { at: Date.now(), tier: 0 }; saveSlot(); dialog(`<h2>Your nation has fallen</h2><p>Every one of your towns was taken. In hardcore there's only one life.</p><div class="row"><button class="btn primary" data-a="ok">Back to the menu</button></div>`, { ok: quitToMenu }, quitToMenu); return; }
+  dialog(`<h2>Your nation has fallen!</h2><p>Every town was taken, but your people rise again in your old capital, and the nations agree to a peace.</p><div class="row"><button class="btn primary" data-a="ok">Begin again</button></div>`, { ok: () => { civRestore(W); saveSlot(); closeTD(); } }, () => { civRestore(W); closeTD(); });
+}
+function civLabel() { const C = S.civ, R = C.res; return `${RES_IC.food}${fl0(R.food)} ${RES_IC.wood}${fl0(R.wood)} ${RES_IC.stone}${fl0(R.stone)} ${RES_IC.ore}${fl0(R.ore)} ${RES_IC.glow}${fl0(R.glow)} ${RES_IC.dye}${fl0(R.dye || 0)} ${RES_IC.incense}${fl0(R.incense || 0)} ${RES_IC.gold}${fl0(R.gold)}`; }
 function civTownModel(tw) {
   const T = T3, s = W.sites[tw.site], L = [], V = (x, y, z) => new T.Vector3(x, y, z), cx = s.x / LT, cz = s.y / LT, h0 = hAt3(cx, cz);
   const at = (dx, dz, dy) => V(dx, hAt3(cx + dx, cz + dz) - h0 + (dy || 0), dz), C = (c) => new T.Color(c);
@@ -4361,7 +4713,7 @@ function civTownModel(tw) {
       case "temple": box(p, .8, .14, .8, 0xd8cfb8); box(p.clone().add(V(0, .14, 0)), .6, .14, .6, 0xe2d8c2); box(p.clone().add(V(0, .28, 0)), .4, .2, .4, 0xece4d0); roof(p.clone().add(V(0, .48, 0)), .22, .2, 0xffd23d); break;
       case "barracks": box(p, .9, .28, .4, 0x8a7a64, ry); roof(p.clone().add(V(0, .28, 0)), .55, .2, 0x5a4a3a, ry); cyl(p.clone().add(V(.5, 0, .3)), .02, .02, .7, 0x3a2a1a, 4); box(p.clone().add(V(.6, .55, .3)), .2, .12, .02, 0xd84a4a); break;
       case "wall": for (let n = 0; n < 20; n++) { const w = n / 20 * TAU; L.push([new T.BoxGeometry(.95, .3, .14), new T.Matrix4().compose(at(Math.cos(w) * 3.7, Math.sin(w) * 3.7, .12), new T.Quaternion().setFromEuler(new T.Euler(0, -w + Math.PI / 2, 0)), V(1, 1, 1)), C(0xa8a094)]); } break;
-      case "dock": { let bx = 0, bz = 0, bd = 1e9; for (let w = 0; w < 16; w++) { const ang = w / 16 * TAU; for (let rr = 2; rr < 6; rr += .5) if (tileAt(W, (cx + Math.cos(ang) * rr) * LT, (cz + Math.sin(ang) * rr) * LT) === T_SEA) { if (rr < bd) { bd = rr; bx = Math.cos(ang); bz = Math.sin(ang); } break; } }
+      case "dock": { let bx = 0, bz = 0, bd = 1e9; for (let w = 0; w < 16; w++) { const ang = w / 16 * TAU; for (let rr = 2; rr < 20; rr += .5) if (tileAt(W, (cx + Math.cos(ang) * rr) * LT, (cz + Math.sin(ang) * rr) * LT) === T_SEA) { if (rr < bd) { bd = rr; bx = Math.cos(ang); bz = Math.sin(ang); } break; } }
         for (let n = 0; n < 5; n++) L.push([new T.BoxGeometry(.3, .05, .5), new T.Matrix4().makeTranslation(bx * (bd - .6 + n * .45), Math.max(-.1, at(bx * (bd - .6 + n * .45), bz * (bd - .6 + n * .45)).y) + .12, bz * (bd - .6 + n * .45)), C(0x8a6a3e)]); break; }
     }
   });
@@ -4398,6 +4750,7 @@ function civ3(t, dt) {
     live.add(wg); const [x, y, a] = civAlong(wg); m.position.set(x / LT, h3(x, y), y / LT); m.scale.setScalar(1.8); m.rotation.y = -a + Math.sin(t * 8) * .03;
   }
   for (const [wg, m] of V.wag) if (!live.has(wg)) { V.g.remove(m); m.geometry.dispose(); m.material.dispose(); V.wag.delete(wg); }
+  civUnits3(t);
 }
 /* Where a wagon is along its road, and which way it faces. */
 function civAlong(wg) {
@@ -4414,21 +4767,25 @@ function civOverlay(t) {
     const b = tw.b.find(x => !x.done); if (p && b) { lbl(s.x, s.y, 95, "", col, 1); ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(p[0] - 32, p[1] + 5, 64, 5); ctx.fillStyle = "#FFE08A"; ctx.fillRect(p[0] - 32, p[1] + 5, 64 * clamp(b.prog / CBD[b.k].work, 0, 1), 5); lbl(s.x, s.y, 95, "", col, 1); ctx.font = "12px sans-serif"; ctx.fillText(CBD[b.k].ic, p[0] - 42, p[1] + 11); }
   }
   for (const s of W.sites) if (W.seen[tileI(s.x, s.y)] && !C.towns.some(tw => tw.site === s.n)) lbl(s.x, s.y, 50, C.wagons.some(g => g.to === s.n) ? "Settlers on the way…" : "Free land", "rgba(255,245,220,.9)", 12);
+  civOverlay2(t);
   ctx.shadowBlur = 0;
 }
 function civMini(mx0, my0, mw) {
   const C = S.civ, mm = (x, y) => [mx0 + x / (LN * LT) * mw, my0 + y / (LN * LT) * mw];
   for (const tw of C.towns) { const s = W.sites[tw.site]; if (!W.seen[tileI(s.x, s.y)]) continue; const [a, b] = mm(s.x, s.y); ctx.fillStyle = "#" + (CIV_COL[tw.own] || 0xffffff).toString(16).padStart(6, "0"); ctx.beginPath(); ctx.arc(a, b, tw.cap ? 3.5 : 2.6, 0, TAU); ctx.fill(); }
   for (const o of W.glows) if (W.seen[tileI(o.x, o.y)]) { const [a, b] = mm(o.x, o.y); ctx.fillStyle = "#D9A8FF"; ctx.fillRect(a - 1.5, b - 1.5, 3, 3); }
+  for (const u of C.units || []) { const [x, y] = unitXY(u); if (!W.seen[tileI(x, y)]) continue; const [a, b] = mm(x, y); ctx.fillStyle = natCol(u.own); ctx.fillRect(a - 1, b - 1, 2, 2); }
   if (cam.free) { const [a, b] = mm(cam.x, cam.y); ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.strokeRect(a - 8, b - 10, 16, 20); }
 }
 function renderCivUI(force) {
-  const C = S.civ, key = [C.towns.filter(tw => tw.own === 0).length, Object.keys(C.goals).length].join("|");
+  const C = S.civ, key = [C.towns.filter(tw => tw.own === 0).length, Object.keys(C.goals).length, C.offer ? C.offer.k + C.offer.r : ""].join("|");
   $("lCall").style.display = "none";
   if (key === LUI_KEY && !force) return; LUI_KEY = key;
-  $("lCard").hidden = true;
-  $("lBar").innerHTML = `<button class="lb" data-c="towns">🏛️<small>Towns</small></button><button class="lb" data-c="goals">🎯<small>Goals ${Object.keys(C.goals).length}/${CIV_GOALS.length}</small></button>`;
-  $("lBar").querySelectorAll("[data-c]").forEach(b => b.onclick = () => b.dataset.c === "towns" ? civTownsDlg() : civGoalsDlg());
+  const card = $("lCard"), o = C.offer; card.hidden = !o;
+  if (o) { card.innerHTML = `<b style="color:${natCol(o.k)}">${esc(C.nat[o.k].name)}</b><span>offer ${RES_IC.gold} ${o.gold} for ${RES_IC[o.r]} ${o.n}</span><div class="row"><button class="btn small primary" id="ofY">Deal</button><button class="btn small" id="ofN">No thanks</button></div>`;
+    $("ofY").onclick = () => { civOffer(W, true); LUI_KEY = ""; renderCivUI(true); }; $("ofN").onclick = () => { civOffer(W, false); LUI_KEY = ""; renderCivUI(true); }; }
+  $("lBar").innerHTML = `<button class="lb" data-c="towns">🏛️<small>Towns</small></button><button class="lb" data-c="nat">🌍<small>Nations</small></button><button class="lb" data-c="gov">📜<small>Govern</small></button><button class="lb" data-c="goals">🎯<small>${Object.keys(C.goals).length}/${CIV_GOALS.length}</small></button>`;
+  $("lBar").querySelectorAll("[data-c]").forEach(b => b.onclick = () => ({ towns: civTownsDlg, nat: civNationsDlg, gov: civGovDlg, goals: civGoalsDlg })[b.dataset.c]());
 }
 function civTap(sx, sy, wx, wy) {
   const C = S.civ; let best = null, bd = LT * 3.2;
@@ -4436,27 +4793,28 @@ function civTap(sx, sy, wx, wy) {
   if (!best) for (const tw of C.towns) { const s = W.sites[tw.site]; if (!W.seen[tileI(s.x, s.y)]) continue; const [X, Y] = P3(s.x, s.y, 40), d = Math.hypot(X - sx, Y - sy); if (d < 60 && d < bd) { bd = d; best = tw; } }
   if (best) return civTownDlg(best);
   for (const s of W.sites) if (W.seen[tileI(s.x, s.y)] && !C.towns.some(tw => tw.site === s.n) && Math.hypot(s.x - wx, s.y - wy) < LT * 2.5) return civSiteDlg(s);
-  for (const o of W.glows) if (W.seen[tileI(o.x, o.y)] && Math.hypot(o.x - wx, o.y - wy) < LT * 1.5) return toast("💎 Glowstone! A town close by can build a Glowstone works here.");
-  for (const o of W.ores) if (W.seen[tileI(o.x, o.y)] && Math.hypot(o.x - wx, o.y - wy) < LT * 1.5) return toast("🔩 Ore in the rocks. A town close by can build a Mine here.");
+  for (const sp of W.spots) if (W.seen[tileI(sp.x, sp.y)] && Math.hypot(sp.x - wx, sp.y - wy) < LT * 1.8) return civSpotDlg(sp);
 }
 function civTownDlg(tw) {
   paused = true; const C = S.civ;
-  if (tw.own !== 0) { dialog(`<h2>${esc(tw.name)}</h2><p>A town of another nation. 👥 ${tw.pop}. Rival nations come to life in a later update.</p><div class="row"><button class="btn primary" data-a="ok">OK</button></div>`, { ok: closeTD }, closeTD); return; }
+  if (tw.own !== 0) return civSendDlg({ t: "town", id: tw.id });
   const cnt = {}; for (const b of tw.b) if (b.done) cnt[b.k] = (cnt[b.k] || 0) + 1;
   const site = tw.b.find(b => !b.done), mood = civMood(C, tw), n = tw.near;
   const has = Object.keys(cnt).map(k => `${CBD[k].ic} ${CBD[k].n}${cnt[k] > 1 ? " ×" + cnt[k] : ""}`).join(" · ") || "Nothing yet";
   const around = [n.grass > 20 ? "🌾 good farmland" : "", n.forest > 15 ? "🌲 forest" : "", n.rock > 8 ? "⛰️ hills" : "", n.coast ? "🌊 the sea" : "", n.ore ? "🔩 ore" : "", n.glow ? "💎 glowstone" : ""].filter(Boolean).join(", ") || "not much";
   const acts = { ok: closeTD }, rows = CB.map(B => { const why = civCan(C, tw, B.id); acts["b_" + B.id] = () => { const e = civBuild(W, tw, B.id); if (e) toast(e); else snd("eat"); civTownDlg(tw); };
     return `<button class="btn small cbtn${why ? " off" : ""}" data-a="b_${B.id}" title="${esc(B.d)}"><b>${B.ic} ${B.n}</b><span>${costTxt(B.c)}</span>${why && why !== "Not yours" ? `<em>${esc(why)}</em>` : `<em>${esc(B.d)}</em>`}</button>`; }).join("");
-  const free = civFree(W, W.sites[tw.site].isle);
+  const free = civHas(tw, "dock") ? civFree(W, -1) : civFree(W, W.sites[tw.site].isle);
   if (free.length) acts.settle = () => civSettleDlg(tw);
+  acts.out = () => civTargetsDlg(tw); const fo = Math.max(...tw.inf.f.slice(1)), co = Math.max(...tw.inf.c.slice(1));
   dialog(`<h2>${tw.cap ? "★ " : ""}${esc(tw.name)}</h2><p>👥 ${tw.pop} of ${civCap(tw)} · ${mood >= 70 ? "😊 happy" : mood >= 30 ? "🙂 content" : "😠 unhappy: working at half speed"} · workplaces ${civUsed(tw)} of ${civSlots(tw)}</p>
     <p style="font-size:.85rem">${has}${site ? `<br>🔨 Building: ${CBD[site.k].ic} ${CBD[site.k].n} (${fl0(site.prog / CBD[site.k].work * 100)}%)` : ""}<br>Round the town: ${around}.</p>
     <div class="cgrid">${rows}</div>
-    <div class="row">${free.length ? `<button class="btn" data-a="settle">🛻 Send settlers</button>` : ""}<button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+    ${fo > 5 || co > 5 ? `<p style="font-size:.85rem;color:#FF8A8A">⚠️ Other nations are winning hearts here: faith ${fl0(fo)}%, culture ${fl0(co)}%. At 100% the town goes over to them. A temple and a theatre push back.</p>` : ""}
+    <div class="row">${free.length ? `<button class="btn" data-a="settle">🛻 Send settlers</button>` : ""}<button class="btn" data-a="out">📯 Send out</button><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
 }
 function civSettleDlg(tw) {
-  const free = civFree(W, W.sites[tw.site].isle), acts = { back: () => civTownDlg(tw) }, from = W.sites[tw.site];
+  const free = civHas(tw, "dock") ? civFree(W, -1) : civFree(W, W.sites[tw.site].isle), acts = { back: () => civTownDlg(tw) }, from = W.sites[tw.site];
   free.forEach(s => { acts["s_" + s.n] = () => { const e = civSettle(W, tw, s.n); if (e) { toast(e); return; } toast(`Settlers set off for ${s.name}.`); closeTD(); }; });
   dialog(`<h2>Send settlers</h2><p>${SETTLE.pop} people leave ${esc(tw.name)} with 🍖 ${SETTLE.food} and 🪵 ${SETTLE.wood} to found a new town. ${tw.pop < SETTLE.min ? `(The town needs ${SETTLE.min} people first.)` : ""}</p>
     <div class="cgrid">${free.map(s => `<button class="btn small cbtn" data-a="s_${s.n}"><b>${esc(s.name)}</b><span>${Math.round(Math.hypot(s.x - from.x, s.y - from.y) / LT)} tiles away</span></button>`).join("")}</div>
@@ -4478,7 +4836,7 @@ function civTownsDlg() {
 function civGoalsDlg() {
   paused = true; const C = S.civ;
   dialog(`<h2>Goals</h2><p>${CIV_GOALS.map(g => (C.goals[g.id] ? "✅ " : "○ ") + g.n + ` <span style="color:var(--muted)">(${RES_IC.gold} ${g.g})</span>`).join("<br>")}</p>
-    <p style="font-size:.85rem;color:var(--muted)">Coming in the next updates: the three rival nations, conquest, persuasion and trade, boats and the sea, your own vehicle designs, and the Sky Ship.</p>
+    <p style="font-size:.85rem;color:var(--muted)">Coming next: your own vehicle designs (carts, ships and airships whose design decides how well they do), and the Sky Ship.</p>
     <div class="row"><button class="btn primary" data-a="ok">OK</button></div>`, { ok: closeTD }, closeTD);
 }
 /* tapping, dragging to look around, pinching to zoom */
