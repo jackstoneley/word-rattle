@@ -195,6 +195,12 @@ and rep rewards), rush warnings, a service streak (`G.streak` raises tips), end-
 Layout: `S.stations[i]` is the station in kitchen spot i (`slotPos(i)`) and may be `null` (an empty spot; use `kit()` for the
 list without gaps); `S.tpos[j]` is table j's position in `TABLE_POS` (old saves get `0..n-1` in `migrate`). The office's
 Rearrange map (`layout()`) swaps them. Drink recipes have no `plate` step (`plated(r)`), so they use no plate.
+Week and weather (free play only): `dayInfo(save, day)` gives `{wd, w, match}` from a seed, so the office forecast is exact;
+`dayCrowd` scales `expectedGroups` (clamped 0.7-1.35) and `prefW` weights orders by the recipe's `t` tag (`c` sells when hot,
+`w` when cold) and match day. Bookings live in `S.bookings` (`{id, day, at, size, occ, kids, dep, ok}`; requests come from
+`newBookingRequest` at the end of a day, accepted ones reserve a table, `t.res`, and arrive as a party group). Kids: recipes with
+`kid`, family groups have `kids` and people with `kid`. Pub bar: `S.bar` (index into `BAR`) adds standing spots from `BAR_SPOTS`
+as tables with `bar: true` that only drinkers use; drinkers order rounds. Tables can seat 6 (`seatOffsets`).
 
 ### Gravity Well (`games/gravity-well`)
 

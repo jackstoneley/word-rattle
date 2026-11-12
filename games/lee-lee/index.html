@@ -167,6 +167,12 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
 .lay-tb small{font-size:.55rem;font-weight:700;opacity:.85}
 .lay-st.empty,.lay-tb.empty{background:transparent;border:2px dashed rgba(0,0,0,.18)}
 .lay-st.sel,.lay-tb.sel{border:3px solid var(--accent);box-shadow:0 0 0 3px rgba(232,102,74,.3)}
+.fcs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.fc{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid var(--line);border-radius:12px;padding:6px 2px;font-size:.78rem}
+.fc.on{border-color:var(--accent);background:#FFF0E8}
+.fc .big{font-size:22px;line-height:1}
+.fc i{display:block;width:60%;background:var(--gold);border-radius:4px;margin-top:auto}
+.fc small{font-size:.66rem;color:var(--muted)}
 .news{background:#FFF0E8;border:1px solid #F5C9B6;border-radius:12px;padding:10px 12px;font-size:.9rem;line-height:1.4}
 </style>
 </head>
@@ -331,36 +337,41 @@ const STATIONS = {
 };
 // s: steps ("plate" = plate up at the counter), i: ingredients, p: price, c: cost to learn, st: stars needed, d: a drink
 const RECIPES = {
-  tea: { v: "cafe", n: "Pot of tea", e: "🍵", p: 2.8, s: ["kettle"], i: { tea: 1 }, c: 0, st: 0, d: 1 },
+  tea: { v: "cafe", t: "w", n: "Pot of tea", e: "🍵", p: 2.8, s: ["kettle"], i: { tea: 1 }, c: 0, st: 0, d: 1 },
   toast: { v: "cafe", n: "Buttered toast", e: "🍞", p: 3.5, s: ["fridge", "toaster", "plate"], i: { bread: 1 }, c: 0, st: 0 },
-  salad: { v: "cafe", n: "Garden salad", e: "🥗", p: 5, s: ["fridge", "board", "plate"], i: { veg: 1 }, c: 0, st: 0 },
-  latte: { v: "cafe", n: "Latte", e: "☕", p: 3.5, s: ["fridge", "coffee"], i: { coffee: 1, dairy: 1 }, c: 180, st: 0, d: 1 },
+  salad: { v: "cafe", t: "c", n: "Garden salad", e: "🥗", p: 5, s: ["fridge", "board", "plate"], i: { veg: 1 }, c: 0, st: 0 },
+  latte: { v: "cafe", t: "w", n: "Latte", e: "☕", p: 3.5, s: ["fridge", "coffee"], i: { coffee: 1, dairy: 1 }, c: 180, st: 0, d: 1 },
   toastie: { v: "cafe", n: "Cheese toastie", e: "🥪", p: 6, s: ["fridge", "board", "toaster", "plate"], i: { bread: 1, dairy: 1 }, c: 220, st: 0 },
-  soup: { v: "cafe", n: "Soup of the day", e: "🍲", p: 6.5, s: ["fridge", "board", "hob", "plate"], i: { veg: 2 }, c: 350, st: 1 },
+  soup: { v: "cafe", t: "w", n: "Soup of the day", e: "🍲", p: 6.5, s: ["fridge", "board", "hob", "plate"], i: { veg: 2 }, c: 350, st: 1 },
   muffin: { v: "cafe", n: "Blueberry muffin", e: "🧁", p: 4, s: ["fridge", "bowl", "oven", "plate"], i: { flour: 1, fruit: 1 }, c: 400, st: 1 },
-  eggs: { v: "cafe", n: "Eggs on toast", e: "🍳", p: 6, s: ["fridge", "hob", "toaster", "plate"], i: { eggs: 1, bread: 1 }, c: 500, st: 1 },
-  pancakes: { v: "cafe", n: "Pancake stack", e: "🥞", p: 7, s: ["fridge", "bowl", "hob", "plate"], i: { flour: 1, eggs: 1 }, c: 650, st: 2 },
+  eggs: { v: "cafe", t: "w", n: "Eggs on toast", e: "🍳", p: 6, s: ["fridge", "hob", "toaster", "plate"], i: { eggs: 1, bread: 1 }, c: 500, st: 1 },
+  pancakes: { v: "cafe", t: "w", n: "Pancake stack", e: "🥞", p: 7, s: ["fridge", "bowl", "hob", "plate"], i: { flour: 1, eggs: 1 }, c: 650, st: 2 },
   croissant: { v: "cafe", n: "Croissant", e: "🥐", p: 4, s: ["fridge", "bowl", "oven", "plate"], i: { flour: 1, dairy: 1 }, c: 700, st: 2 },
   wrap: { v: "cafe", n: "Deli wrap", e: "🌯", p: 8.5, s: ["fridge", "board", "grill", "plate"], i: { bread: 1, meat: 1 }, c: 950, st: 2 },
   quiche: { v: "cafe", n: "Quiche", e: "🥧", p: 9, s: ["fridge", "bowl", "board", "oven", "plate"], i: { flour: 1, eggs: 1, veg: 1 }, c: 1500, st: 3 },
   sponge: { v: "cafe", n: "Victoria sponge", e: "🍰", p: 6, s: ["fridge", "bowl", "oven", "board", "plate"], i: { flour: 1, eggs: 1, fruit: 1 }, c: 1900, st: 3 },
-  english: { v: "cafe", n: "Full English", e: "🥓", p: 12, s: ["fridge", "grill", "hob", "plate"], i: { meat: 1, eggs: 1, bread: 1 }, c: 3200, st: 4 },
-  hightea: { v: "cafe", n: "Afternoon tea", e: "🫖", p: 16, s: ["fridge", "board", "oven", "kettle", "plate"], i: { tea: 1, flour: 1, fruit: 1 }, c: 5500, st: 5 },
+  english: { v: "cafe", t: "w", n: "Full English", e: "🥓", p: 12, s: ["fridge", "grill", "hob", "plate"], i: { meat: 1, eggs: 1, bread: 1 }, c: 3200, st: 4 },
+  hightea: { v: "cafe", t: "w", n: "Afternoon tea", e: "🫖", p: 16, s: ["fridge", "board", "oven", "kettle", "plate"], i: { tea: 1, flour: 1, fruit: 1 }, c: 5500, st: 5 },
 
-  lager: { v: "pub", n: "Pint of lager", e: "🍺", p: 4.5, s: ["tap"], i: { beer: 1 }, c: 0, st: 0, d: 1 },
+  lager: { v: "pub", t: "c", n: "Pint of lager", e: "🍺", p: 4.5, s: ["tap"], i: { beer: 1 }, c: 0, st: 0, d: 1 },
   chips: { v: "pub", n: "Bowl of chips", e: "🍟", p: 3.5, s: ["fridge", "fryer", "plate"], i: { potato: 1 }, c: 0, st: 0 },
-  ploughmans: { v: "pub", n: "Ploughman's", e: "🧀", p: 7, s: ["fridge", "board", "plate"], i: { bread: 1, dairy: 1 }, c: 0, st: 0 },
-  wine: { v: "pub", n: "Glass of wine", e: "🍷", p: 5.5, s: ["fridge"], i: { wine: 1 }, c: 200, st: 0, d: 1 },
+  ploughmans: { v: "pub", t: "c", n: "Ploughman's", e: "🧀", p: 7, s: ["fridge", "board", "plate"], i: { bread: 1, dairy: 1 }, c: 0, st: 0 },
+  wine: { v: "pub", t: "c", n: "Glass of wine", e: "🍷", p: 5.5, s: ["fridge"], i: { wine: 1 }, c: 200, st: 0, d: 1 },
   burger: { v: "pub", n: "Burger", e: "🍔", p: 10, s: ["fridge", "board", "grill", "plate"], i: { meat: 1, bread: 1 }, c: 450, st: 1 },
   fishchips: { v: "pub", n: "Fish & chips", e: "🐟", p: 12, s: ["fridge", "board", "fryer", "plate"], i: { fish: 1, potato: 1 }, c: 700, st: 1 },
-  bangers: { v: "pub", n: "Bangers & mash", e: "🌭", p: 11, s: ["fridge", "hob", "board", "plate"], i: { meat: 1, potato: 1 }, c: 900, st: 2 },
-  cocktail: { v: "pub", n: "Cocktail", e: "🍹", p: 8, s: ["fridge", "bowl"], i: { spirits: 1 }, c: 800, st: 2, d: 1 },
-  pudding: { v: "pub", n: "Sticky toffee pudding", e: "🍮", p: 6.5, s: ["fridge", "bowl", "oven", "plate"], i: { flour: 1, dairy: 1 }, c: 1000, st: 2 },
-  pie: { v: "pub", n: "Steak pie", e: "🥧", p: 13, s: ["fridge", "bowl", "oven", "plate"], i: { meat: 1, flour: 1 }, c: 1500, st: 3 },
-  roast: { v: "pub", n: "Sunday roast", e: "🍗", p: 16, s: ["fridge", "board", "oven", "plate"], i: { meat: 1, veg: 1, potato: 1 }, c: 2400, st: 3 },
-  curry: { v: "pub", n: "Curry night", e: "🍛", p: 13, s: ["fridge", "board", "hob", "plate"], i: { meat: 1, veg: 1 }, c: 3000, st: 4 },
+  bangers: { v: "pub", t: "w", n: "Bangers & mash", e: "🌭", p: 11, s: ["fridge", "hob", "board", "plate"], i: { meat: 1, potato: 1 }, c: 900, st: 2 },
+  cocktail: { v: "pub", t: "c", n: "Cocktail", e: "🍹", p: 8, s: ["fridge", "bowl"], i: { spirits: 1 }, c: 800, st: 2, d: 1 },
+  pudding: { v: "pub", t: "w", n: "Sticky toffee pudding", e: "🍮", p: 6.5, s: ["fridge", "bowl", "oven", "plate"], i: { flour: 1, dairy: 1 }, c: 1000, st: 2 },
+  pie: { v: "pub", t: "w", n: "Steak pie", e: "🥧", p: 13, s: ["fridge", "bowl", "oven", "plate"], i: { meat: 1, flour: 1 }, c: 1500, st: 3 },
+  roast: { v: "pub", t: "w", n: "Sunday roast", e: "🍗", p: 16, s: ["fridge", "board", "oven", "plate"], i: { meat: 1, veg: 1, potato: 1 }, c: 2400, st: 3 },
+  curry: { v: "pub", t: "w", n: "Curry night", e: "🍛", p: 13, s: ["fridge", "board", "hob", "plate"], i: { meat: 1, veg: 1 }, c: 3000, st: 4 },
   steak: { v: "pub", n: "Steak dinner", e: "🥩", p: 19, s: ["fridge", "grill", "board", "plate"], i: { meat: 2 }, c: 4500, st: 4 },
-  fizz: { v: "pub", n: "Bottle of fizz", e: "🍾", p: 28, s: ["fridge"], i: { wine: 3 }, c: 5000, st: 5, d: 1 }
+  fizz: { v: "pub", t: "c", n: "Bottle of fizz", e: "🍾", p: 28, s: ["fridge"], i: { wine: 3 }, c: 5000, st: 5, d: 1 },
+  // kids' menu (kid: children order these; families come more at weekends)
+  soldiers: { v: "cafe", n: "Kids' egg & soldiers", e: "🥚", p: 3.5, s: ["fridge", "hob", "plate"], i: { eggs: 1, bread: 1 }, c: 150, st: 0, kid: 1, t: "w" },
+  icecream: { v: "cafe", n: "Ice cream", e: "🍦", p: 3, s: ["fridge", "plate"], i: { dairy: 1 }, c: 120, st: 0, kid: 1, t: "c" },
+  fishfingers: { v: "pub", n: "Kids' fish fingers", e: "🐠", p: 5, s: ["fridge", "fryer", "plate"], i: { fish: 1 }, c: 180, st: 0, kid: 1 },
+  sundae: { v: "pub", n: "Ice cream sundae", e: "🍨", p: 4, s: ["fridge", "bowl", "plate"], i: { dairy: 1 }, c: 220, st: 0, kid: 1, t: "c" }
 };
 const ROLES = {
   waiter: { n: "Waiter", w: 22, e: "🧾", job: "Takes orders, carries food from the counter to tables, clears tables." },
@@ -484,11 +495,11 @@ const DIFFS = [
   { n: "Busy", e: "🔥", pat: 1.22, crowd: 1.2, burn: .85, tips: 1.25, rep: 1.25, d: "More customers, less patience. Bigger tips and faster fame." }
 ];
 const diffOf = save => DIFFS[save && save.diff != null ? save.diff : 1] || DIFFS[1];
-const GOAL_TEXT = { streak: n => `A streak of ${n} happy tables`, served: n => `Serve ${n} customers`, out: n => n ? `No more than ${n} walk out` : "Nobody walks out", burnt: n => n ? `No more than ${n} burnt` : "Nothing burnt",
+const GOAL_TEXT = { party: () => "Give the booked party a great time", streak: n => `A streak of ${n} happy tables`, served: n => `Serve ${n} customers`, out: n => n ? `No more than ${n} walk out` : "Nobody walks out", burnt: n => n ? `No more than ${n} burnt` : "Nothing burnt",
   earn: n => `Take £${n} (with tips)`, perfect: n => `${n} perfect pours`, critic: () => "Make the critic happy", mess: n => "No mess left at closing" };
 function goalMet(kind, n, r) {
   return kind === "served" ? r.served >= n : kind === "out" ? r.angry <= n : kind === "burnt" ? r.burnt <= n : kind === "earn" ? r.rev + r.tips >= n
-    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : kind === "streak" ? r.streak >= n : false;
+    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : kind === "streak" ? r.streak >= n : kind === "party" ? r.party === "happy" : false;
 }
 function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function levelArrivals(i) {
@@ -503,6 +514,36 @@ function levelArrivals(i) {
   return arr.sort((a, b) => a.t - b.t);
 }
 
+/* Free play: a week, the weather and match days change how busy it is and what people want.
+   Everything about a day comes from dayInfo(save, day), seeded, so the forecast in the office is what happens. */
+const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const WEEK_CROWD = { cafe: [.8, .85, .9, .95, 1.05, 1.35, 1.25], pub: [.75, .8, .9, 1, 1.3, 1.4, 1.1] };
+const WEATHER = [
+  { n: "Sunny", e: "☀️", crowd: 1.1, pub: 1.05, cold: 1.9, warm: .7, w: 3, say: "cold drinks and salads" },
+  { n: "Cloudy", e: "⛅", crowd: 1, pub: 1, cold: 1, warm: 1, w: 3, say: "a bit of everything" },
+  { n: "Rainy", e: "🌧️", crowd: .85, pub: 1.05, cold: .7, warm: 1.7, w: 2.5, say: "hot drinks and warming food" },
+  { n: "Cold", e: "🥶", crowd: .9, pub: .95, cold: .6, warm: 2.1, w: 1.5, say: "hot drinks, soups and pies" },
+  { n: "Heatwave", e: "🔥", crowd: 1.05, pub: 1.15, cold: 2.6, warm: .5, w: .8, say: "anything cold" }
+];
+function dayInfo(save, day) {
+  const r = seeded((save.created % 1000003) * 7 + day * 131 + 17), wd = (day - 1) % 7;
+  let x = r() * WEATHER.reduce((a, w) => a + w.w, 0), w = 0;
+  while (x > WEATHER[w].w && w < WEATHER.length - 1) { x -= WEATHER[w].w; w++; }
+  const m = r(), match = save.venue === "pub" && (wd === 5 ? m < .6 : wd === 2 ? m < .25 : false);
+  return { wd, w, match };
+}
+function dayCrowd(save, day) { const d = dayInfo(save, day), W = WEATHER[d.w]; return Math.max(.7, Math.min(1.35, WEEK_CROWD[save.venue][d.wd] * (save.venue === "pub" ? W.pub : W.crowd) * (d.match ? 1.3 : 1))); }
+function prefW(info, r) {
+  if (!info) return 1;
+  const R = RECIPES[r], W = WEATHER[info.w];
+  let w = R.t === "c" ? W.cold : R.t === "w" ? W.warm : 1;
+  if (info.match && (r === "lager" || r === "chips" || r === "burger")) w *= r === "lager" ? 2.6 : 1.6;
+  return w;
+}
+const OCCASIONS = [{ n: "Birthday party", e: "🎂" }, { n: "Engagement drinks", e: "💍" }, { n: "Office party", e: "🏢" }, { n: "Graduation", e: "🎓" },
+  { n: "Family get-together", e: "👪", kids: 2 }, { n: "Kids' birthday", e: "🧸", kids: 3, v: "cafe" }, { n: "Hen do", e: "👰", v: "pub" }];
+const BAR = [{ n: "Bar & standing area", c: 1200, st: 1, spots: 2 }, { n: "Bigger standing area", c: 2500, st: 2, spots: 3 }];
+const BAR_SPOTS = [[6.4, 12.95], [8.15, 12.95], [4.6, 12.95]];
 const plated = r => RECIPES[r].s[RECIPES[r].s.length - 1] === "plate"; // drinks go out without a plate
 function starsOf(rep) { let s = 0; while (s < 5 && rep >= STAR_AT[s + 1]) s++; return s; }
 function starsF(rep) { const s = starsOf(rep); return s >= 5 ? 5 : s + (rep - STAR_AT[s]) / (STAR_AT[s + 1] - STAR_AT[s]); }
@@ -511,15 +552,15 @@ function fairWage(role, lvl) { return Math.round(ROLES[role].w * (1 + .35 * (lvl
 function boost(save) { return Math.min(1.5, (save.camp || []).reduce((a, c) => a + ((CAMPAIGNS.find(x => x.id === c.id) || {}).b || 0), 0)); }
 function expectedGroups(save) {
   const prem = PREMISES[save.prem];
-  let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * prem.demand * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1) * diffOf(save).crowd;
-  return Math.min(g, save.tables.length * 3.2 + 2);
+  let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * prem.demand * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1) * diffOf(save).crowd * dayCrowd(save, save.day);
+  return Math.min(g, save.tables.length * 2.8 + 2);
 }
 function newSave(venue, name) {
   const V = VENUES[venue], stock = {};
   for (const r of V.menu) for (const k in RECIPES[r].i) stock[k] = 14;
   return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
     owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], tpos: [0, 1, 2], plates: 6,
-    decor: 0, shoes: 0, prem: 0, autoStock: true, diff: 1, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
+    decor: 0, shoes: 0, prem: 0, autoStock: true, diff: 1, bookings: [], bar: 0, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
     stats: { served: 0, angry: 0, earned: 0, best: 0 } };
 }
 /*CORE-END*/
@@ -793,7 +834,11 @@ function startDay() {
     stock: Object.assign({}, S.stock), used: {},
     tables: S.tables.map((seats, i) => { const p = TABLE_POS[(S.tpos || [])[i] != null ? S.tpos[i] : i]; return { i, x: p[0], y: p[1], seats, group: null, dirty: 0, claim: null }; }),
     stations: S.stations.map((t, i) => t && Object.assign({ i, t, item: null, user: null, claim: null, load: 0, run: 0 }, slotPos(i))).filter(Boolean),
-    spots: [null, null, null, null, null, null], taps: [], idle: 0, coach: null, slack: 0, outBy: { queue: 0, order: 0, food: 0 }, plateless: 0, streak: 0, bestStreak: 0, clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
+    spots: [null, null, null, null, null, null], party: null, taps: [], idle: 0, coach: null, slack: 0, outBy: { queue: 0, order: 0, food: 0 }, plateless: 0, streak: 0, bestStreak: 0, clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
+  // the pub's standing area: bar spots behave like tables for drinkers only
+  if (LV == null && S.venue === "pub" && S.bar) BAR_SPOTS.slice(0, BAR[S.bar - 1].spots).forEach(([x, y], k) => G.tables.push({ i: G.tables.length, x, y, seats: 3, bar: true, group: null, dirty: 0, claim: null }));
+  G.info = LV == null ? dayInfo(S, S.day) : null;
+  const info = G.info;
   // arrivals
   if (LV != null) { G.len = LEVELS[LV].len; G.arr = levelArrivals(LV); }
   const n = LV != null ? 0 : Math.max(3, Math.round(expectedGroups(S) * rnd(.9, 1.1)));
@@ -805,7 +850,21 @@ function startDay() {
     let size = Math.random() < .42 ? 1 : Math.random() < .7 ? 2 : Math.random() < .6 ? 3 : 4;
     size = Math.min(size, big);
     const late = S.venue === "pub" && u > .6;
-    G.arr.push({ t: u * G.len, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep), late });
+    const a = { t: u * G.len, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep) + (info.match ? .08 : 0), late };
+    if (big >= 3 && !late && Math.random() < .1 + (info.wd >= 5 ? .15 : 0) + (S.venue === "cafe" && info.w === 0 ? .05 : 0)) { a.size = big >= 4 && Math.random() < .5 ? 4 : 3; a.kids = a.size - 2; a.rowdy = false; }
+    else if (S.bar && late && a.size <= 3 && Math.random() < .25) a.drinker = true;
+    G.arr.push(a);
+  }
+  // the bar brings in people who only want a drink
+  if (LV == null && S.venue === "pub" && S.bar) {
+    const extra = Math.min(Math.round(n * .22 * S.bar * (info.match ? 1.4 : 1)), BAR[S.bar - 1].spots * 2);
+    for (let i = 0; i < extra; i++) { const u = rnd(.2, .92); G.arr.push({ t: u * G.len, size: 1 + Math.floor(Math.random() * 3), drinker: true, late: u > .6, rowdy: u > .6 && Math.random() < .15 + (info.match ? .08 : 0) }); }
+  }
+  // booked parties: their table is reserved from opening time
+  if (LV == null) for (const b of (S.bookings || []).filter(b => b.ok && b.day === S.day)) {
+    const t = G.tables.filter(t => !t.bar && !t.res && t.seats >= b.size).sort((p, q) => p.seats - q.seats)[0];
+    if (t) t.res = b;
+    G.arr.push({ t: clamp(b.at, .05, .8) * G.len, size: b.size, party: b, kids: b.kids || 0 });
   }
   G.arr.sort((a, b) => a.t - b.t);
   if (critic) { const a = G.arr[Math.floor(G.arr.length * .4)]; if (a) { a.critic = 1; a.size = 1; a.rowdy = false; } }
@@ -838,6 +897,7 @@ function dailyGoals() {
   if (S.venue === "pub") pool.push(["mess", 0]);
   if (opts.mini && menu.some(x => RECIPES[x].s.some(t => STATIONS[t] && STATIONS[t].g === "pour"))) pool.push(["perfect", 3]);
   const out = [];
+  if ((S.bookings || []).some(b => b.ok && b.day === S.day)) out.push({ k: "party", n: 1, cash: Math.round(3 + expRev * .06), rep: 6 });
   while (out.length < 2 && pool.length) { const [k, n] = pool.splice(Math.floor(r() * pool.length), 1)[0]; out.push({ k, n, cash: Math.round(3 + expRev * .06), rep: 6 }); }
   return out;
 }
@@ -848,7 +908,9 @@ function clockAt(u) { const V = VENUES[S.venue], h = V.open + (V.close - V.open)
 function briefing() {
   const D = diffOf(S), tip = S.last && S.last.advice && S.last.advice[0];
   paused = true;
-  dialog(`<div class="small muted" style="text-align:center">${esc(S.name)} · ${D.e} ${D.n}</div><h3>Day ${S.day}</h3>
+  dialog(`<div class="small muted" style="text-align:center">${esc(S.name)} · ${D.e} ${D.n}</div><h3>${WEEKDAYS[G.info.wd]} · Day ${S.day}</h3>
+    <p class="small" style="text-align:center"><b>${WEATHER[G.info.w].e} ${WEATHER[G.info.w].n}</b>: people will want ${WEATHER[G.info.w].say}.${G.info.match ? " <b>⚽ Match day!</b> Lots of beer and chips." : ""}</p>
+    ${(S.bookings || []).filter(b => b.ok && b.day === S.day).map(b => `<p class="news small">${OCCASIONS[b.occ].e} <b>${OCCASIONS[b.occ].n}</b> for ${b.size} at ${clockAt(b.at)}. Their table is reserved.</p>`).join("")}
     <div class="goals">${G.goals.map(g => `<div><span>☆</span><span>${GOAL_TEXT[g.k](g.n)} <span class="muted small">+${money(g.cash)}</span></span></div>`).join("")}</div>
     <p class="small muted">About ${Math.round(expectedGroups(S))} groups expected. Busiest around ${VENUES[S.venue].peaks.map(([mu]) => clockAt(mu)).join(" and ")}.</p>
     ${tip ? `<p class="news small">💡 ${esc(tip)}</p>` : S.day === 1 ? `<p class="news small">💡 New here? Follow the green arrow: it shows what to do next.</p>` : ""}
@@ -906,8 +968,10 @@ function reserved(ing) { let n = 0; for (const r of S.owned) { const q = RECIPES
 function stockOk(r, extra) { for (const [k, q] of Object.entries(RECIPES[r].i)) if ((G.stock[k] || 0) - (extra ? reserved(k) : 0) < q) return false; return true; }
 function startable(t) { const seen = {}; const out = []; for (const { k } of openTickets()) { const R = RECIPES[k.r]; if (R.s[0] === t && !seen[k.r] && need(k.r) > 0) { seen[k.r] = 1; out.push(k.r); } } return out; }
 function useStock(r) { for (const [k, q] of Object.entries(RECIPES[r].i)) { G.stock[k] -= q; G.used[k] = (G.used[k] || 0) + q; } }
-function chooseOrder(g, taken) {
-  const late = g.late, menu = onMenu().filter(r => canMake(r));
+function chooseOrder(g, taken, kind) {
+  const late = g.late, all = onMenu().filter(r => canMake(r));
+  let menu = kind === "drink" ? all.filter(r => RECIPES[r].d) : kind === "kid" ? all.filter(r => RECIPES[r].kid) : all;
+  if (!menu.length && kind === "kid") menu = all;
   const opts = [];
   for (const r of menu) {
     const R = RECIPES[r];
@@ -917,6 +981,8 @@ function chooseOrder(g, taken) {
     if (R.d) w *= late ? 3 : .8;
     if (S.disc && S.disc.r === r) w *= 1 + S.disc.pct * 6;
     if (g.critic) w *= 1 + R.p / 5;
+    if (R.kid && kind !== "kid") w *= .25;
+    w *= prefW(G.info, r);
     opts.push([r, w]);
   }
   if (!opts.length) return null;
@@ -929,50 +995,63 @@ function takeOrder(g) {
   const taken = {}, tickets = [];
   const extra = .12 + .07 * starsOf(S.rep);
   for (let i = 0; i < g.size; i++) {
-    const n = Math.random() < extra ? 2 : 1;
+    const kind = g.drinker ? "drink" : g.people[i] && g.people[i].kid ? "kid" : null;
+    const n = !g.drinker && Math.random() < extra ? 2 : 1;
     for (let j = 0; j < n; j++) {
-      const r = chooseOrder(g, taken); if (!r) continue;
+      const r = chooseOrder(g, taken, kind); if (!r) continue;
       if (j === 1 && tickets.some(t => t.r === r && t.p === i)) continue;
       for (const [k, q] of Object.entries(RECIPES[r].i)) taken[k] = (taken[k] || 0) + q;
       tickets.push({ r, done: false, p: i });
     }
   }
   if (!tickets.length) {
+    if (g.tickets.length) { g.state = "eat"; g.timer = 1; return; }
     fx(g.table.x, g.table.y - 1, "Nothing we fancy is left 😞", "#D2483A");
     G.turned += g.size; G.repD -= 2 * g.size; groupLeave(g, false); return;
   }
-  g.tickets = tickets; g.state = "wait"; g.pat = Math.max(g.pat, .85);
+  if (g.kids && !onMenu().some(r => RECIPES[r].kid)) fx(g.table.x, g.table.y - 1.2, "Nothing for the kids? 🧒", "#8C7563");
+  g.tickets = g.tickets.concat(tickets); g.state = "wait"; g.pat = Math.max(g.pat, .85);
 }
 function serve(g, tk, dish) {
   tk.done = true; g.servedN++; if (plated(dish.r)) g.plates = (g.plates || 0) + 1; g.pat = Math.min(1, g.pat + .12);
   if (dish.perfect) g.bonus += .6;
   snd("serve");
   fx(g.table.x, g.table.y - .9, RECIPES[dish.r].e + " ✓", "#3E9B6B");
-  if (g.tickets.every(k => k.done)) { g.state = "eat"; g.timer = rnd(7, 10); }
+  if (g.tickets.every(k => k.done)) { g.state = "eat"; g.timer = g.drinker ? rnd(5, 8) : rnd(7, 10) + (g.party ? 4 : 0); }
 }
 
 /* ---------- customers ---------- */
 function spawnGroup(a) {
-  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
+  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, kids: a.kids || 0, drinker: !!a.drinker, party: a.party || null, rounds: 0, spilt: false, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
     claim: null, calmClaim: null, shout: 0, rt: rnd(6, 12), calmed: 0, people: [] };
-  for (let i = 0; i < a.size; i++) g.people.push({ x: DOOR[0] + (i - (a.size - 1) / 2) * .4, y: DOOR[1], look: randomLook(), tx: 0, ty: 0 });
+  for (let i = 0; i < a.size; i++) g.people.push({ x: DOOR[0] + (i - (a.size - 1) / 2) * .4, y: DOOR[1], look: randomLook(), tx: 0, ty: 0, kid: i >= a.size - (a.kids || 0) });
+  if (g.party) fx(4.5, 13, `${OCCASIONS[g.party.occ].e} The ${OCCASIONS[g.party.occ].n.toLowerCase()} has arrived!`, "#E8664A");
   G.groups.push(g); G.queue.push(g); G.people += a.size;
 }
-function seatOffsets(seats) { return seats >= 4 ? [[-.8, 0], [.8, 0], [0, -.72], [0, .72]] : [[-.8, 0], [.8, 0]]; }
+function seatOffsets(seats) { return seats >= 6 ? [[-1.12, 0], [1.12, 0], [-.45, -.72], [.45, -.72], [-.45, .72], [.45, .72]] : seats >= 4 ? [[-.8, 0], [.8, 0], [0, -.72], [0, .72]] : [[-.8, 0], [.8, 0]]; }
+function seatsOf(t) { return t.bar ? [[-.48, 0], [.02, .12], [.5, 0]] : seatOffsets(t.seats); }
+const tname = t => t.bar ? "the bar" : "table " + (t.i + 1);
 function trySeat() {
   for (let qi = 0; qi < G.queue.length; qi++) {
     const g = G.queue[qi];
-    const free = G.tables.filter(t => !t.group && !t.dirty && t.seats >= g.size).sort((a, b) => a.seats - b.seats);
-    if (!free.length) continue;
-    const t = free[0]; t.group = g; g.table = t; g.state = "walk"; g.pat = Math.max(g.pat, .9);
-    const offs = seatOffsets(t.seats);
+    let free = G.tables.filter(t => !t.group && !t.dirty && t.seats >= g.size && (!t.res || t.res === g.party) && (!t.bar || g.drinker))
+      .sort((a, b) => (b.res === g.party && g.party ? 1 : 0) - (a.res === g.party && g.party ? 1 : 0) || (g.drinker ? (b.bar ? 1 : 0) - (a.bar ? 1 : 0) : 0) || a.seats - b.seats);
+    if (!free.length) {
+      if (g.party && !G.tables.some(t => !t.bar && t.seats >= g.size)) { angryLeave(g, "No table big enough for us! 😞"); qi--; }
+      continue;
+    }
+    const t = free[0]; t.group = g; t.res = null; g.table = t; g.state = "walk"; g.pat = Math.max(g.pat, .9);
+    const offs = seatsOf(t);
     g.people.forEach((p, i) => { p.tx = t.x + offs[i][0]; p.ty = t.y + offs[i][1]; });
     G.queue.splice(qi, 1); qi--;
   }
-  G.queue.forEach((g, qi) => g.people.forEach((p, i) => { p.tx = 1.2 + qi * 1.3 + i * .32; p.ty = 13.4 + (i % 2) * .15; }));
+  let qx = .9;
+  G.queue.forEach(g => g.people.forEach((p, i) => { p.tx = qx + (qx > 3.7 ? -2.9 : 0); p.ty = qx > 3.7 ? 14.05 : 13.4 + (i % 2) * .15; qx += i === g.people.length - 1 ? .7 : .32; }));
 }
 function patMul(g) {
   let m = (1 - .06 * S.decor) * (LV != null ? (EASY ? .6 : .78) : diffOf(S).pat);
+  if (g.party) m *= .55;
+  if (g.kids && !onMenu().some(r => RECIPES[r].kid)) m *= 1.15;
   if (g.table && G.messes.some(ms => Math.hypot(ms.x - g.table.x, ms.y - g.table.y) < 2.2)) m *= 1.25;
   return m;
 }
@@ -997,9 +1076,13 @@ function payAndLeave(g) {
     if ([3, 5, 8, 10, 15, 20, 30].includes(G.streak)) { fx(g.table.x, g.table.y - 1.8, `🔥 ${G.streak} happy tables in a row!`, "#E8664A"); snd("streak"); }
   }
   snd("coin");
+  if (g.party) {
+    const dep = g.party.dep || 0, pleased = g.pat > .3; G.rev += dep; G.party = pleased ? "happy" : "meh"; G.repD += pleased ? 20 : 0;
+    fx(g.table.x, g.table.y - 2.2, pleased ? `🎉 The party loved it! +${money(dep)}` : `The party paid ${money(dep)}`, "#E8664A");
+  }
   if (g.critic) { G.critic = happy ? "loved" : "meh"; G.repD += happy ? 150 : 10; fx(g.table.x, g.table.y - 1.4, happy ? "The critic loved it! ⭐" : "The critic shrugs…", happy ? "#3E9B6B" : "#8C7563"); }
   fx(g.table.x, g.table.y - .6, "+" + money(total + tip), "#B07A10");
-  if (Math.random() < (S.venue === "cafe" ? .07 : .1)) addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.6, 1.2));
+  if (Math.random() < (g.kids ? .45 : g.party ? .3 : S.venue === "cafe" ? .07 : .1)) addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.6, 1.2));
   groupLeave(g, true);
 }
 function angryLeave(g, why) {
@@ -1008,6 +1091,7 @@ function angryLeave(g, why) {
   if (G.streak >= 3) fx(4.5, 9, "Streak lost", "#8C7563");
   G.streak = 0; snd("out");
   if (g.critic) { G.critic = "angry"; G.repD -= 90; }
+  if (g.party) { G.party = "angry"; G.repD -= 25; }
   const x = g.table ? g.table.x : g.people[0].x, y = g.table ? g.table.y : g.people[0].y;
   fx(x, y - 1, why || "Too slow! 😠", "#D2483A");
   groupLeave(g, false);
@@ -1036,7 +1120,14 @@ function groupsStep(dt) {
       case "think": g.timer -= dt; if (g.timer <= 0) { g.state = "order"; snd("order"); } break;
       case "order": g.pat -= dt / 60 * pm; if (g.pat <= 0) angryLeave(g, "Nobody took our order! 😠"); break;
       case "wait": { const left = g.tickets.filter(k => !k.done).length; g.pat -= dt / (85 + 10 * left) * pm; if (g.pat <= 0) angryLeave(g); break; }
-      case "eat": g.timer -= dt; if (g.timer <= 0) payAndLeave(g); break;
+      case "eat":
+        g.timer -= dt;
+        if (g.kids && !g.spilt && g.timer < 4) { g.spilt = true; if (Math.random() < .35) { addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.5, 1)); fx(g.table.x, g.table.y - 1, "Oops! 🥤", "#5B8DB8"); } }
+        if (g.timer <= 0) {
+          if (g.drinker && g.rounds < 2 && G.open && Math.random() < .5) { g.rounds++; g.state = "order"; g.pat = Math.max(g.pat, .8); fx(g.table.x, g.table.y - 1, "Same again! 🍻", "#B07A10"); snd("order"); }
+          else payAndLeave(g);
+        }
+        break;
       case "leave": if (!moving) G.groups.splice(G.groups.indexOf(g), 1); break;
     }
     if (g.rowdy && g.table && (g.state === "order" || g.state === "wait" || g.state === "eat")) {
@@ -1202,7 +1293,7 @@ function leeTable(t) {
     if (h.s < RECIPES[h.r].s.length) { toastMsg("Finish the dish first"); return; }
     if (!g || g.state !== "wait") { toastMsg("Nobody here is waiting for food"); return; }
     const tk = g.tickets.find(k => !k.done && k.r === h.r);
-    if (!tk) { toastMsg("Table " + (t.i + 1) + " didn't order " + RECIPES[h.r].n.toLowerCase()); return; }
+    if (!tk) { toastMsg(tname(t).replace(/^./, c => c.toUpperCase()) + " didn't order " + RECIPES[h.r].n.toLowerCase()); return; }
     serve(g, tk, h); L.hand = null; return;
   }
   if (t.dirty > 0) {
@@ -1238,7 +1329,7 @@ function coachNext() {
     const R = RECIPES[h.r];
     if (burning.length && R.s[h.s] !== burning[0].t) { const p = putDown("Something's about to burn"); if (p) return p; }
     if (h.s >= R.s.length) {
-      const g = wantedBy(h.r); if (g) return { o: { k: "table", t: g.table }, say: `Serve the ${rn(h.r)} to table ${g.table.i + 1}` };
+      const g = wantedBy(h.r); if (g) return { o: { k: "table", t: g.table }, say: `Serve the ${rn(h.r)} to ${tname(g.table)}` };
       if (G.clean <= 1 && need(h.r) < 0 && plated(h.r)) return { o: { k: "counter", what: "bin", x: COUNTER.bin }, say: "Nobody wants this now: bin it to free up the plate" };
       return putDown("Nobody needs this right now");
     }
@@ -1250,9 +1341,9 @@ function coachNext() {
   }
   if (burning.length) return { o: stObj(burning[0]), say: `Quick! Take the ${rn(burning[0].item.r)} off the ${sn(burning[0].t)}` };
   const rowdy = G.groups.find(g => g.rowdy && g.shout > 0 && g.table && !g.calmClaim);
-  if (rowdy) return { o: { k: "table", t: rowdy.table }, say: `Calm down table ${rowdy.table.i + 1}` };
+  if (rowdy) return { o: { k: "table", t: rowdy.table }, say: `Calm down ${tname(rowdy.table)}` };
   const ord = G.groups.filter(g => g.state === "order" && g.table && !g.claim).sort((a, b) => a.pat - b.pat)[0];
-  if (ord) return { o: { k: "table", t: ord.table }, say: `Take table ${ord.table.i + 1}'s order` };
+  if (ord) return { o: { k: "table", t: ord.table }, say: `Take ${tname(ord.table)}'s order` };
   const ready = st.find(s => s.item && STATIONS[s.t].k === "pas" && s.item.ready && !s.item.burnt && !watched(s));
   if (ready) return { o: stObj(ready), say: `The ${rn(ready.item.r)} is ready: pick it up` };
   const burnt = st.find(s => s.item && s.item.burnt && !watched(s));
@@ -1265,7 +1356,7 @@ function coachNext() {
     const R = RECIPES[d.r], done = d.s >= R.s.length;
     if (done) {
       const g = wantedBy(d.r);
-      if (g && !freeWaiter) return { o, say: `Pick up the ${rn(d.r)} for table ${g.table.i + 1}` };
+      if (g && !freeWaiter) return { o, say: `Pick up the ${rn(d.r)} for ${tname(g.table)}` };
       if (!g && need(d.r) < 0 && G.clean === 0 && plated(d.r)) return { o, say: `Nobody wants that ${rn(d.r)} now: bin it to free up the plate` };
       continue;
     }
@@ -1274,7 +1365,7 @@ function coachNext() {
   }
   if (G.clean <= 1 && !staffHas("porter")) {
     if (G.sink > 0 && !G.washer && sink) return { o: stObj(sink), say: "Nearly out of clean plates: wash up" };
-    const t = G.tables.find(t => t.dirty && !t.claim); if (t) return { o: { k: "table", t }, say: `Clear table ${t.i + 1}: you need the plates` };
+    const t = G.tables.find(t => t.dirty && !t.claim); if (t) return { o: { k: "table", t }, say: `Clear ${tname(t)}: you need the plates` };
   }
   // start a dish: the most impatient table first, and the slowest dish first
   const cands = openTickets().filter(x => x.g.state === "wait" && need(x.k.r) > 0 && stockOk(x.k.r) && canMake(x.k.r))
@@ -1285,7 +1376,7 @@ function coachNext() {
     if (s) return { o: Object.assign(stObj(s), { pref: k.r }), say: `Start the ${rn(k.r)} at the ${sn(t)}` };
   }
   const dt = G.tables.find(t => t.dirty && !t.claim);
-  if (dt && !staffHas("porter") && !staffHas("waiter")) return { o: { k: "table", t: dt }, say: `Clear the plates from table ${dt.i + 1}` };
+  if (dt && !staffHas("porter") && !staffHas("waiter")) return { o: { k: "table", t: dt }, say: `Clear the plates from ${tname(dt)}` };
   if (G.sink > 0 && !G.washer && sink && !staffHas("porter")) return { o: stObj(sink), say: "Wash up while it's quiet" };
   const m = G.messes.find(m => !m.claim); if (m && !staffHas("floor")) return { o: { k: "mess", m }, say: "Mop up the spill" };
   return null;
@@ -1574,10 +1665,17 @@ function draw() {
   }
   // messes
   for (const m of G.messes) { c.fillStyle = S.venue === "pub" ? "rgba(214,170,60,.75)" : "rgba(150,110,70,.55)"; c.beginPath(); c.ellipse(PX(m.x), PY(m.y), T * .42, T * .22, 0, 0, Math.PI * 2); c.fill(); c.beginPath(); c.ellipse(PX(m.x + .3), PY(m.y - .1), T * .16, T * .1, 0, 0, Math.PI * 2); c.fill(); }
+  // the pub bar along the bottom of the room
+  if (G.tables.some(t => t.bar)) {
+    const left = G.tables.filter(t => t.bar).reduce((a, t) => Math.min(a, t.x), 9) - .75;
+    c.fillStyle = P.counter; rr(c, PX(left), PY(13.4), (8.95 - left) * T, .45 * T, 6); c.fill();
+    c.fillStyle = P.top; rr(c, PX(left + .03), PY(13.42), (8.89 - left) * T, .22 * T, 4); c.fill();
+    emoji("🍺", PX(8.6), PY(13.55), T * .32); text("BAR", PX(left + .35), PY(13.62), T * .2, "#F5E9DA", 800);
+  }
   // sorted scene: tables, people, actors
   const items = [];
   for (const t of G.tables) items.push({ y: t.y, f: () => drawTable(t, P) });
-  for (const g of G.groups) for (const p of g.people) { const seated = g.table && (g.state !== "walk" && g.state !== "leave") && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T, { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
+  for (const g of G.groups) for (const p of g.people) { const seated = g.table && !g.table.bar && (g.state !== "walk" && g.state !== "leave") && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T * (p.kid ? .72 : 1), { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
   for (const a of G.actors) items.push({ y: a.y, f: () => drawActor(a) });
   items.sort((p, q) => p.y - q.y).forEach(i => i.f());
   // bubbles
@@ -1598,6 +1696,13 @@ function draw() {
   for (const tp of G.taps) { c.strokeStyle = `rgba(232,102,74,${1 - tp.t / .45})`; c.lineWidth = 2.5; circ(c, PX(tp.x), PY(tp.y), T * (.15 + tp.t)); c.stroke(); }
   // fx
   for (const f of G.fx) { c.globalAlpha = 1 - f.t / 1.8; text(f.text, PX(f.x), PY(f.y) - f.t * T * .6, T * .32, f.col, 800); c.globalAlpha = 1; }
+  // weather
+  if (G.info) {
+    const W = WEATHER[G.info.w];
+    if (G.info.w === 2 || G.info.w === 3) { c.fillStyle = "rgba(70,100,150,.07)"; c.fillRect(PX(0), PY(4.4), 9 * T, (H - 4.4) * T); }
+    if (G.info.w === 0 || G.info.w === 4) { c.fillStyle = "rgba(255,210,110,.07)"; c.fillRect(PX(0), PY(4.4), 9 * T, (H - 4.4) * T); }
+    emoji(W.e, PX(8.55), PY(4.85), T * .42); if (G.info.match) emoji("⚽", PX(7.95), PY(4.85), T * .38);
+  }
   // night (pub)
   if (S.venue === "pub") { const a = clamp((G.t / G.len - .45) * .45, 0, .2); if (a > 0) { c.fillStyle = `rgba(20,10,50,${a})`; c.fillRect(PX(0), PY(4.4), W * T, (H - 4.4) * T); } }
 }
@@ -1609,14 +1714,27 @@ function drawItem(d, x, y, s) {
   if (!done && !d.burnt) { const n = RECIPES[d.r].s.length; for (let i = 0; i < n; i++) { c.fillStyle = i < d.s ? "#3E9B6B" : "rgba(0,0,0,.3)"; circ(c, x - (n - 1) * s * .06 + i * s * .12, y + s * .28, s * .035); c.fill(); } }
 }
 function drawTable(t, P) {
-  const c = ctx, x = PX(t.x), y = PY(t.y);
+  const c = ctx, x = PX(t.x), y = PY(t.y), g = t.group;
+  if (t.bar) { // a high round table at the standing area
+    c.fillStyle = "rgba(0,0,0,.18)"; c.beginPath(); c.ellipse(x, y + T * .1, T * .26, T * .1, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = P.chair; c.fillRect(x - T * .03, y - T * .2, T * .06, T * .3);
+    c.fillStyle = P.table; c.beginPath(); c.ellipse(x, y - T * .22, T * .26, T * .15, 0, 0, Math.PI * 2); c.fill();
+    if (g) { let k = 0; for (const tk of g.tickets) if (tk.done && k < 3) { emoji(RECIPES[tk.r].e, x + (k - 1) * T * .18, y - T * .3, T * .24); k++; } }
+    return;
+  }
+  const wide = t.seats >= 6 ? 1.65 : 1;
   c.fillStyle = P.chair;
   for (const [dx, dy] of seatOffsets(t.seats)) { rr(c, PX(t.x + dx * 1.02) - T * .2, PY(t.y + dy * 1.02) - T * .14 + T * .12, T * .4, T * .36, 5); c.fill(); }
-  c.fillStyle = "rgba(0,0,0,.15)"; c.beginPath(); c.ellipse(x, y + T * .18, T * .58, T * .34, 0, 0, Math.PI * 2); c.fill();
-  c.fillStyle = P.table; c.beginPath(); c.ellipse(x, y, T * .58, T * .38, 0, 0, Math.PI * 2); c.fill();
-  c.strokeStyle = "rgba(255,255,255,.18)"; c.lineWidth = 2; c.beginPath(); c.ellipse(x, y - 1, T * .48, T * .28, 0, 0, Math.PI * 2); c.stroke();
-  text(String(t.i + 1), x - T * .42, y - T * .34, T * .2, "rgba(255,255,255,.75)", 800);
-  const g = t.group;
+  c.fillStyle = "rgba(0,0,0,.15)"; c.beginPath(); c.ellipse(x, y + T * .18, T * .58 * wide, T * .34, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = P.table; c.beginPath(); c.ellipse(x, y, T * .58 * wide, T * .38, 0, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = "rgba(255,255,255,.18)"; c.lineWidth = 2; c.beginPath(); c.ellipse(x, y - 1, T * .48 * wide, T * .28, 0, 0, Math.PI * 2); c.stroke();
+  text(String(t.i + 1), x - T * .42 * wide, y - T * .34, T * .2, "rgba(255,255,255,.75)", 800);
+  const party = t.res || (g && g.party);
+  if (party) {
+    const bob = Math.sin(G.t * 2) * T * .06, o = OCCASIONS[party.occ];
+    emoji("🎈", x - T * .55 * wide, y - T * .75 + bob, T * .42); emoji("🎈", x + T * .55 * wide, y - T * .8 - bob, T * .42);
+    if (t.res) { emoji(o.e, x, y - T * .02, T * .34); text("Reserved " + clockAt(party.at), x, y + T * .3, T * .19, "#fff", 800); }
+  }
   if (g) { let k = 0; for (const tk of g.tickets) if (tk.done) { emoji(RECIPES[tk.r].e, x + (k % 3 - 1) * T * .3, y + (k > 2 ? T * .1 : -T * .05), T * .3); k++; } }
   for (let i = 0; i < Math.min(t.dirty, 4); i++) { c.fillStyle = "#F4EFE6"; c.strokeStyle = "#A99C8A"; c.lineWidth = 1; c.beginPath(); c.ellipse(x + (i - 1.5) * T * .22, y, T * .14, T * .08, 0, 0, Math.PI * 2); c.fill(); c.stroke(); c.fillStyle = "#B48A5A"; circ(c, x + (i - 1.5) * T * .22, y, T * .04); c.fill(); }
   if (t.dirty && !g) emoji("🧽", x + T * .55, y - T * .45, T * .28);
@@ -1677,7 +1795,7 @@ function targets() {
   out.push({ o: { k: "counter", what: "bin", x: COUNTER.bin }, x: COUNTER.bin, y: CY, rx: .52, ry: .8 });
   out.push({ o: { k: "counter", what: "plates", x: COUNTER.plates }, x: COUNTER.plates, y: CY, rx: .52, ry: .8 });
   COUNTER.pass.forEach((x, i) => out.push({ o: { k: "counter", what: "pass", i, x }, x, y: CY, rx: .5, ry: .8 }));
-  for (const t of G.tables) out.push({ o: { k: "table", t }, x: t.x, y: t.y + .1, rx: 1.35, ry: 1.25 });
+  for (const t of G.tables) out.push({ o: { k: "table", t }, x: t.x, y: t.y + .1, rx: t.bar ? .8 : t.seats >= 6 ? 1.7 : 1.35, ry: t.bar ? .7 : 1.25 });
   for (const m of G.messes) out.push({ o: { k: "mess", m }, x: m.x, y: m.y, rx: .7, ry: .55, bias: .3 });
   return out;
 }
@@ -1711,7 +1829,7 @@ function clock() { const V = VENUES[S.venue], h = V.open + (V.close - V.open) * 
 function uiTick(dt) {
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $("toast").style.opacity = 0; }
   uiT -= dt; if (uiT > 0) return; uiT = .2;
-  $("pClock").textContent = `${LV != null ? CHAPTERS[LEVELS[LV].ch].e + " Day " + (LV + 1) : "Day " + S.day} · ${G.open ? clock() : "Closing up"}`;
+  $("pClock").textContent = `${LV != null ? CHAPTERS[LEVELS[LV].ch].e + " Day " + (LV + 1) : WEEKDAYS[G.info.wd].slice(0, 3) + " " + WEATHER[G.info.w].e + (G.info.match ? "⚽" : "") + " · Day " + S.day} · ${G.open ? clock() : "Closing up"}`;
   $("pCash").textContent = money(G.rev + G.tips);
   $("pServed").textContent = (LV != null ? `${G.served + G.thrown}/${LEVELS[LV].goals[0][1]} served${G.angry ? " · " + G.angry + " out" : ""}` : `${G.served} served${G.angry ? " · " + G.angry + " out" : ""}`) + (G.streak >= 2 ? ` · 🔥${G.streak}` : "");
   // tickets
@@ -1721,7 +1839,7 @@ function uiTick(dt) {
   let html = "";
   [...by.entries()].sort((a, b) => a[0].pat - b[0].pat).forEach(([g, ks]) => {
     if (!ks.length) return;
-    html += `<div class="tk ${g.pat < .28 ? "low" : g.pat < .55 ? "mid" : ""}" data-g="${g.id}">${g.table.i + 1}${ks.map(k => { const go = made[k.r] > 0; if (go) made[k.r]--; return `<span class="e${go ? " go" : ""}" data-r="${k.r}">${RECIPES[k.r].e}</span>`; }).join("")}</div>`;
+    html += `<div class="tk ${g.pat < .28 ? "low" : g.pat < .55 ? "mid" : ""}" data-g="${g.id}">${g.table.bar ? "🍺" : g.table.i + 1}${ks.map(k => { const go = made[k.r] > 0; if (go) made[k.r]--; return `<span class="e${go ? " go" : ""}" data-r="${k.r}">${RECIPES[k.r].e}</span>`; }).join("")}</div>`;
   });
   const waitingOrder = G.groups.filter(g => g.state === "order").length;
   if (waitingOrder) html = `<div class="tk mid" data-order="1">📝 ${waitingOrder}</div>` + html;
@@ -1791,6 +1909,8 @@ function dayTips(g) {
   add(g.turned * 3, "Some people couldn't get what they wanted because stock ran out. Turn on automatic stock in the office.");
   add(g.slack > 10 ? g.slack / 5 : 0, "Lee Lee stood still while work was waiting. Tap an order on the strip at the top to jump straight to it.");
   if (g.critic === "angry") add(10, "The critic walked out. Serve the 🧐 table first.");
+  if (LV == null && g.info && dayCrowd(S, S.day) > 1.15 && g.angry >= 4) add(g.angry * 1.2, `${WEEKDAYS[g.info.wd]}s${g.info.match ? " with a match on" : ""} are busy. Check the forecast in the office and get ready: more staff, more tables, or skip the adverts.`);
+  if (g.party === "angry") add(9, "The booked party walked out. Take their order as soon as they sit, and start their food first.");
   t.sort((a, b) => b[0] - a[0]);
   const out = t.slice(0, 2).map(x => x[1]);
   const dn = LV == null ? (S.diff != null ? S.diff : 1) : 2;
@@ -1798,8 +1918,18 @@ function dayTips(g) {
   return out;
 }
 
+/* Bookings: a request now and then for a party of 5 or 6 a few days ahead. Accept it in the office. */
+function newBookingRequest() {
+  S.bookings = (S.bookings || []).filter(b => b.day > S.day || (b.day === S.day && b.ok));
+  if (S.bookings.filter(b => !b.ok).length >= 2 || Math.random() > .3 + .08 * starsOf(S.rep)) return null;
+  const day = S.day + 1 + Math.floor(Math.random() * 3); if (S.bookings.some(b => b.day === day)) return null;
+  const occ = pickOne(OCCASIONS.filter(o => !o.v || o.v === S.venue)), size = Math.random() < .5 ? 5 : 6;
+  const b = { id: S.day * 10 + Math.floor(Math.random() * 10), day, at: Math.round(rnd(.2, .6) * 100) / 100, size, occ: OCCASIONS.indexOf(occ), kids: occ.kids || 0, dep: Math.round(size * (6 + 2 * starsOf(S.rep))), ok: false };
+  S.bookings.push(b); return b;
+}
+
 /* How the day is going, in the shape goalMet reads. */
-function progress() { return { served: G.served + G.thrown, angry: G.angry, burnt: G.burnt, rev: G.rev, tips: G.tips, perfect: G.perfect, critic: G.critic, messes: G.messes.length, streak: G.bestStreak }; }
+function progress() { return { served: G.served + G.thrown, angry: G.angry, burnt: G.burnt, rev: G.rev, tips: G.tips, perfect: G.perfect, critic: G.critic, messes: G.messes.length, streak: G.bestStreak, party: G.party }; }
 
 /* ---------- end of the day ---------- */
 function endDay() {
@@ -1838,6 +1968,8 @@ function endDay() {
   S.camp = (S.camp || []).map(c => ({ id: c.id, days: c.days - 1 })).filter(c => c.days > 0);
   const disc = S.disc; S.disc = null;
   S.cands = makeCands();
+  if (G.party === "happy") news.unshift("The party had a wonderful time and told all their friends.");
+  if (G.party === "angry") news.unshift("The booked party walked out. Ouch.");
   const starsNow = starsOf(S.rep);
   if (starsNow > starsBefore) news.unshift(`Your reputation grew to ${starsNow} star${starsNow > 1 ? "s" : ""}! More customers will come, and new recipes can be learned.`);
   if (starsNow < starsBefore) news.unshift(`Your reputation slipped to ${starsNow} star${starsNow === 1 ? "" : "s"}.`);
@@ -1850,6 +1982,7 @@ function endDay() {
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
   S.stats.served += G.served; S.stats.angry += G.angry; S.stats.earned += income; S.stats.best = Math.max(S.stats.best, Math.round(net));
   S.day++;
+  const req = newBookingRequest(); if (req) news.push(`📅 New booking request: ${OCCASIONS[req.occ].n.toLowerCase()} for ${req.size} on ${WEEKDAYS[dayInfo(S, req.day).wd]}. See Today.`);
   saveGame();
   const g = G; G = null;
   const rating = g.people ? g.happy / g.people : 0, dayStars = rating > .85 ? 3 : rating > .6 ? 2 : rating > .3 ? 1 : 0;
@@ -1881,12 +2014,12 @@ function openManage(t) { show("manage"); renderManage(t || "day"); }
 function canAfford(c) { return S.cash >= c; }
 function spend(c) { S.cash = Math.round((S.cash - c) * 100) / 100; }
 function suggested() {
-  const groups = expectedGroups(S), items = groups * 1.75 * (1.12 + .07 * starsOf(S.rep));
-  const menu = onMenuS().filter(r => r && RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t)));
+  const groups = expectedGroups(S) * (S.venue === "pub" && S.bar ? 1 + .3 * S.bar : 1), items = groups * 1.75 * (1.12 + .07 * starsOf(S.rep));
+  const menu = onMenuS().filter(r => r && RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t))), info = dayInfo(S, S.day);
   const out = {};
   if (!menu.length) return out;
-  const wsum = menu.reduce((a, r) => a + (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1), 0);
-  for (const r of menu) { const w = (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1) / wsum; for (const [k, q] of Object.entries(RECIPES[r].i)) out[k] = (out[k] || 0) + items * w * q * 1.15; }
+  const wsum = menu.reduce((a, r) => a + (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1) * prefW(info, r) * (RECIPES[r].kid ? .4 : 1), 0);
+  for (const r of menu) { const w = (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1) * prefW(info, r) * (RECIPES[r].kid ? .4 : 1) / wsum; for (const [k, q] of Object.entries(RECIPES[r].i)) out[k] = (out[k] || 0) + items * w * q * 1.15; }
   for (const k in out) out[k] = Math.ceil(out[k]);
   return out;
 }
@@ -1947,6 +2080,7 @@ function tabDay() {
   } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
   h += `<div class="card"><div class="row spread"><h2>Reputation</h2><span class="stars">${starStr(st)}</span></div><div class="meter"><i style="width:${prog * 100}%"></i></div>
     <p class="small muted">${next ? `${Math.round(S.rep)} of ${next} for the next star.` : "Five stars: the best in town!"} About <b>${Math.round(expectedGroups(S))}</b> groups expected tomorrow.</p></div>`;
+  h += forecastCard() + bookingsCard();
   const auto = S.autoStock !== false, cost = topUpCost();
   h += `<div class="card"><div class="row spread"><div class="grow"><h2>Stock</h2><p class="small muted">${auto ? (cost > 0 ? `Topped up automatically when you open: about ${money(cost)}.` : "You have enough for tomorrow.") : "You buy stock yourself."}</p></div>
       <button class="btn sm ${auto ? "good" : ""}" data-act="autotoggle">${auto ? "Auto: on" : "Auto: off"}</button></div>
@@ -1956,6 +2090,33 @@ function tabDay() {
     <p class="small muted">${esc(diffOf(S).d)}</p></div>`;
   h += `<button class="btn" data-act="title">Back to save slots</button>`;
   return h;
+}
+function forecastCard() {
+  const d0 = dayInfo(S, S.day), W = WEATHER[d0.w], base = expectedGroups(S) / dayCrowd(S, S.day);
+  const likes = onMenuS().filter(canMakeS).map(r => [r, prefW(d0, r)]).filter(x => x[1] > 1.2).sort((a, b) => b[1] - a[1]).slice(0, 4).map(x => RECIPES[x[0]].e);
+  const busy = c => c > 1.25 ? "Very busy" : c > 1.05 ? "Busy" : c > .9 ? "Normal" : "Quiet";
+  let cells = "";
+  for (let k = 0; k < 5; k++) {
+    const day = S.day + k, d = dayInfo(S, day), c = dayCrowd(S, day), bk = (S.bookings || []).find(b => b.ok && b.day === day);
+    cells += `<div class="fc${k === 0 ? " on" : ""}"><b>${WEEKDAYS[d.wd].slice(0, 3)}</b><span class="big">${WEATHER[d.w].e}</span><span>${d.match ? "⚽" : bk ? OCCASIONS[bk.occ].e : "&nbsp;"}</span><i style="height:${Math.round(clamp(c, .6, 1.9) * 22)}px"></i><small>${busy(c)}</small></div>`;
+  }
+  return `<div class="card"><div class="row spread"><h2>Tomorrow: ${WEEKDAYS[d0.wd]}</h2><span class="small muted">Day ${S.day}</span></div>
+    <p class="small"><b>${W.e} ${W.n}</b>${d0.match ? " · <b>⚽ Match day</b>" : ""} · ${busy(dayCrowd(S, S.day))}. People will want ${W.say}${d0.match ? ", and lots of beer" : ""}.${likes.length ? ` Selling well: ${likes.join(" ")}` : ""}</p>
+    <div class="fcs">${cells}</div>
+    <p class="small muted">Weekends are busiest. Plan stock, specials, staff and adverts for the days ahead.</p></div>`;
+}
+function bookingsCard() {
+  const list = (S.bookings || []).filter(b => b.day >= S.day).sort((a, b) => a.day - b.day);
+  const big = Math.max(0, ...S.tables);
+  let h = `<div class="card"><h2>📅 Bookings</h2>`;
+  if (!list.length) h += `<p class="small muted">No bookings yet. Parties book online now and then, more often as your reputation grows.</p>`;
+  for (const b of list) {
+    const o = OCCASIONS[b.occ], d = dayInfo(S, b.day), fits = big >= b.size;
+    h += `<div class="item"><div class="ic">${o.e}</div><div class="grow"><b>${o.n} · ${b.size} people</b><span>${WEEKDAYS[d.wd]} (day ${b.day}) at ${clockAt(b.at)}${b.kids ? ` · ${b.kids} kids` : ""} · pays an extra ${money(b.dep)}</span>
+      ${fits ? "" : `<span class="neg">Needs a table for ${b.size} by then: Upgrades → Make a table seat six</span>`}</div>
+      ${b.ok ? `<span class="pill g">Booked</span>` : `<span class="qty"><button class="btn sm pri" data-act="book" data-id="${b.id}">Accept</button><button class="btn sm" data-act="nobook" data-id="${b.id}">No</button></span>`}</div>`;
+  }
+  return h + `</div>`;
 }
 function stockList() {
   const sug = suggested();
@@ -1985,7 +2146,7 @@ function tabMenu() {
   if (!locked.length) h += `<p class="muted">You know every recipe!</p>`;
   for (const r of now) {
     const R = RECIPES[r], missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t));
-    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">sells for ${money(R.p)}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")}${missing.length ? ` · <b>also needs a ${missing.map(t => STATIONS[t].n.toLowerCase()).join(" and ")}</b>` : ""}</span></div>
+    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} ${R.kid ? `<span class="pill">Kids' menu</span> ` : ""}<span class="muted small">sells for ${money(R.p)}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")}${missing.length ? ` · <b>also needs a ${missing.map(t => STATIONS[t].n.toLowerCase()).join(" and ")}</b>` : ""}</span></div>
       <button class="btn sm pri" data-act="learn" data-r="${r}" ${canAfford(R.c) ? "" : "disabled"}>${money(R.c)}</button></div>`;
   }
   if (later.length) h += `<p class="small muted">More with a better reputation: ${later.map(r => `${RECIPES[r].e} ${RECIPES[r].st}★`).join(" · ")}</p>`;
@@ -2043,6 +2204,10 @@ function tabUp() {
   const tc = 100 + 60 * S.tables.length, small = S.tables.indexOf(2), d = DECOR[S.decor];
   h += upRow("🪑", "Another table", `${S.tables.length} of ${prem.tables} here`, "table", S.tables.length < prem.tables ? tc : null, S.tables.length < prem.tables);
   h += upRow("🍽", "Make a table seat four", small >= 0 ? `${S.tables.filter(n => n < 4).length} tables seat two` : "Every table seats four", "bigtable", small >= 0 ? 150 : null, small >= 0, `data-i="${small}"`);
+  const four = S.tables.indexOf(4);
+  h += upRow("🎉", "Make a table seat six", four >= 0 ? "A long table for booked parties and big families" : S.tables.includes(6) && S.tables.indexOf(2) < 0 ? "Done" : "Make a table seat four first", "sixtable", four >= 0 ? 300 : null, four >= 0, `data-i="${four}"`);
+  if (S.venue === "pub") { const nb = BAR[S.bar || 0];
+    h += upRow("🍻", nb ? nb.n : "Bar & standing area", nb ? `People who only want a drink stand at the bar, so more customers fit in (${nb.spots} spots).${st < nb.st ? ` <b>Needs ${nb.st}★.</b>` : ""}` : "Built, and as big as it gets", "bar", nb ? nb.c : null, !!nb && st >= nb.st); }
   h += upRow("🪴", d ? esc(d.n) : "Decor", d ? `Nicer room: more patient customers, bigger tips (${S.decor} of ${DECOR.length})` : "Fully decorated!", "decor", d ? d.c : null, !!d);
   h += `</div><div class="card"><h2>Advertise</h2>`;
   if ((S.camp || []).length) h += `<p class="small pos">${S.camp.map(c => { const C = CAMPAIGNS.find(x => x.id === c.id); return `${C.e} ${esc(C.n)}: ${c.days} day${c.days > 1 ? "s" : ""} left`; }).join("<br>")}</p>`;
@@ -2104,6 +2269,9 @@ $("mwrap").onclick = e => {
   if (a === "plates") { const pc = 30 + 10 * Math.max(0, S.plates - 6); if (canAfford(pc)) { spend(pc); S.plates += 2; } }
   if (a === "shoes") { const sh = SHOES[S.shoes]; if (sh && canAfford(sh.c)) { spend(sh.c); S.shoes++; } }
   if (a === "table") { const tc = 100 + 60 * S.tables.length; if (canAfford(tc) && S.tables.length < PREMISES[S.prem].tables) { spend(tc); S.tables.push(2); let p = 0; while (S.tpos.includes(p)) p++; S.tpos.push(p); } }
+  if (a === "sixtable") { const i = +b.dataset.i; if (S.tables[i] === 4 && canAfford(300)) { spend(300); S.tables[i] = 6; } }
+  if (a === "bar") { const nb = BAR[S.bar || 0]; if (nb && canAfford(nb.c)) { spend(nb.c); S.bar = (S.bar || 0) + 1; } }
+  if (a === "book" || a === "nobook") { const bk = (S.bookings || []).find(x => x.id === +b.dataset.id); if (bk) { if (a === "book") bk.ok = true; else S.bookings = S.bookings.filter(x => x !== bk); } }
   if (a === "bigtable") { const i = +b.dataset.i; if (canAfford(150)) { spend(150); S.tables[i] = 4; } }
   if (a === "decor") { const d = DECOR[S.decor]; if (d && canAfford(d.c)) { spend(d.c); S.decor++; } }
   if (a === "move") {

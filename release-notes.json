@@ -661,6 +661,19 @@
         "New in the office (Upgrades → Layout → Rearrange): move equipment and tables around so Lee Lee walks less. Tap one, then tap where it should go. It's free.",
         "Drinks (tea, coffee, pints, wine, cocktails, fizz) go straight to the table without a plate, and don't leave dirty plates behind."
       ]
+    },
+    {
+      "id": 58,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: weekdays, weather, bookings, kids and a bar",
+      "details": [
+        "Every day now has a weekday and weather. Weekends are busiest, sunny days sell cold drinks and salads, rainy and cold days sell hot drinks, soups and pies.",
+        "Pubs have match days: crowds, lots of beer and chips, and a few more rowdy fans.",
+        "The office shows tomorrow and a five-day forecast, so you can plan stock, specials, staff and adverts. Automatic stock follows the forecast.",
+        "Online bookings: parties of 5 or 6 (birthdays, engagements, hen dos…) ask to book. Accept, and their table is reserved with balloons. They pay extra if they have a good time. Buy a table for six in Upgrades.",
+        "Families with children come, especially at weekends, and make more mess. Learn the new kids' menu dishes to keep them happy.",
+        "Pub only: build a bar and standing area (Upgrades). People who just want a drink stand at the bar, order rounds, and bring in more customers."
+      ]
     }
   ]
 }
