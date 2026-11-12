@@ -413,9 +413,17 @@ invisible anchor and the camera roams). Towns `S.civ.towns` `{id, site, own (0 y
 share one store `S.civ.res` (food, wood, stone, ore, glow, gold; capped by `capR`). `CB` buildings (saved by id: append only): one built
 at a time per town, workplaces limited by `civSlots` (houses and walls don't count, houses max 8), output by `civFit` (what's round the
 town: `civNear`) and mood (`civMood`). Settlers (`civSettle`, `S.civ.wagons`) found towns on free sites of the same island. `CIV_GOALS`
-pay gold. Fog is saved in `S.civ.seen`. Planned next: rival nations and the three ways to win them (force, persuasion, trade), the sea
-and boats, a vehicle builder whose designs decide how well vehicles do, the Sky Ship finale. `tools/life-check.js` runs a simple
-civilisation player for 30 minutes (fails under 60 people or 6 goals).
+pay gold. Fog is saved in `S.civ.seen`. Part 2 (`civInit2` fills it in on any save): nations `S.civ.nat[1..3]` (`NAT_TRAITS` war / faith /
+arts, `rel` -100..100, `war`, `ally`, `deal`, abstract `gold`, cooldowns `cd`; run by `civAI`). Every town has `def` (`civDefMax`, worn by
+sieges against `civGarrison`, shared among besieging armies) and influence `inf.f` (faith) / `inf.c` (culture) per owner; `civTake` hands
+a town over (`C.how` counts your wins by war, faith, arts; a nation with no towns is `gone`; all gone sets `C.won`). Units `S.civ.units`
+(`UNIT`: army, miss, fest) go in straight lines from `civSource` (the right building, plus a dock to cross the sea); `civSend`, `civUnits`.
+Resource spots `W.spots` (all glowstone, then a meadow and spring per island from stream 2003, then ores appended; `SPOT_K`) are held by
+outposts in `S.civ.claims` {spot: {own, hp}} (`civClaim`). Diplomacy `civDiplo` (gift, deal, ally at 60, war, peace), trade `civTradeOffers`,
+nations' offers `C.offer`. Government `C.gov` {tax (`TAX`), pol (two `POLICIES`), polT}. A dock charts the map (`C.charted`). Every island has
+a town site that can take a dock (`W.harbour`). Losing every town: `civRestore` (normal) or death (hardcore). Next: the vehicle builder
+(designs decide how well carts, ships and airships do) and the Sky Ship finale. `tools/life-check.js` plays the whole stage with a bot
+that must unite the islands in under two hours and not under 15 minutes (about 30 minutes for the bot).
 
 ### Adding a new game
 

@@ -600,6 +600,20 @@
         "Coming next: the three rival nations and winning them over by force, persuasion or trade. Then boats, your own vehicle designs, and the Sky Ship.",
         "To try it straight away, start a new life and pick Civilisation stage under Start at."
       ]
+    },
+    {
+      "id": 53,
+      "type": "features",
+      "headline": "Life: the Civilisation stage, part 2: rival nations",
+      "details": [
+        "Three rival nations now share the islands: one warlike, one devout, one artistic. They grow, claim land, trade with you, send armies, missionaries and festival troupes, and go to war, with you and with each other.",
+        "Win towns three ways: by force (armies besiege a town until its walls break), by faith (missionaries from a temple) or with the arts (festival troupes from the new theatre). At 100% faith or culture a town joins you.",
+        "They'll try the same on your towns. A temple and a theatre in a town push back, and walls and barracks hold off armies.",
+        "Claim flower meadows (dye for festivals), holy springs (incense for missionaries), glowstone and ore rocks with outposts. Nations want them too, and will fight you for them.",
+        "Build a dock to chart the islands. Ships carry settlers, armies, missionaries and troupes across the sea.",
+        "🌍 Nations: send gifts, buy and sell, sign trade deals, form alliances, declare war and make peace. 📜 Govern: set taxes and pick two policies.",
+        "Unite all five islands to finish this part. Your own vehicle designs and the Sky Ship come next."
+      ]
     }
   ]
 }
