@@ -202,7 +202,7 @@ if (process.argv.includes("--tribe")) { // quick: the tribe stage alone, from a 
   for (const diet of ["plant", "meat"]) for (const seed of [11, 12]) { const S = C.testStart(C.newSave({ name: "Bot", diet, seed }), "land0"); S.land.done = true; S.landNature = ["mixed", "friendly", "fierce"][seed % 3]; runTribe(S, diet, seed); }
   console.log("tribe:", tribeOut.join(", ")); process.exit(bad ? 1 : 0);
 }
-for (const diet of ["plant", "meat"]) for (const seed of [11, 12]) {
+for (const diet of process.argv.includes("--civ") ? [] : ["plant", "meat"]) for (const seed of [11, 12]) { // (--civ: only the civilisation and space stages)
   const S = C.newSave({ name: "Bot", diet, seed }), W = C.newWorld(S, seed), inp = { mx: 0, my: 0, ab: null };
   const sizeAt = [];
   let guard = 0;
@@ -258,5 +258,131 @@ for (const [diet, seed, S] of grown) {
   if (verbose) console.log("land", diet, seed, "done", lmin, "min; friends", fr, "hunted", gone, "epics", JSON.stringify(L.epics), "deaths", dead, "evolves", L.evolves, "dna", Math.round(L.dna), "lean", L.lean.toFixed(2), "nature", S.landNature);
   if (verbose) console.log("sea", diet, seed, "sizes at", sizeAt.join(", "), "min; done", min, "min; deaths", c.deaths, "kills", c.kills, "goals", Object.keys(c.goals).join(" "), "lean", c.lean.toFixed(2), "young", c.young, "dna left", Math.round(c.dna));
 }
+// the civilisation stage: a player who grows towns, claims places, makes friends of the gentle nations, fights the warlike one
+// and wins towns by war, faith and the arts; it must unite the islands in under two hours (and not in under 15 minutes)
+const civOut = [];
+const spaceOut = [];
+const SPL = new Function(core[1] + ";return {newSave, newWorld, stepWorld, testStart, spFly, spRoute, spAct, spGo, spNear, spDiplo, spSaveShip, spCost, spAbil, spRespawn, spStar, spColCost, plXY, pKey, spOwner, spTA, spFit, spLife, hostile, vStats, vUnlocked, VPD, SPACE_GOALS};")();
+// the space stage: a player who explores, scans, collects creatures, settles and shapes worlds, sells goods,
+// does missions, makes friends of most empires, fights the ones that won't be friends, then flies to the Core
+function spBestShip(W) {
+  const L = SPL, un = id => L.vUnlocked(W, L.VPD[id]), len = 6, p = [];
+  const T = ["warp", "scanner", "shield", "missile", "laser", "laser"].filter(un), B = ["thrust", "thrust", "beam", "shaper", "seeder", "reactor"].filter(un), Sd = ["plate", "plate", "laser", "laser", "laser", "pod"].filter(un);
+  for (let c = 0; c < len; c++) { if (T[c]) p.push({ id: T[c], c, s: "t" }); else p.push({ id: "laser", c, s: "t" }); p.push({ id: B[c] || "pod", c, s: "b" }); p.push({ id: Sd[c] || "plate", c, s: "s" }); }
+  return { n: "Bot", k: "space", len, p };
+}
+function spaceBot(W, B) {
+  const L = SPL, X = W.S.space, G = W.G, sy = W.sys, vs = W.vs, mine = k => L.spOwner(X, k) === 0;
+  if (W.dead) { W.dead = false; L.spRespawn(W); return; }
+  if (X.travel) return;
+  const myStars = [...new Set(Object.keys(X.pown).filter(k => X.pown[k] === 0).map(k => +k.split(":")[0]))];
+  if (sy) { const foes = sy.ships.filter(e => L.hostile(X, e));
+    if (foes.length) {
+      if (X.hp < vs.hp * .5) L.spAbil(W, "repair"); L.spAbil(W, "missile");
+      if (X.hp < vs.hp * .25) { const to = myStars.filter(n => n !== sy.n)[0]; if (to != null && !L.spFly(W, to)) return; }
+      let t = null, bd = 1e9; for (const e of foes) { const d = Math.hypot(e.x - W.ship.x, e.y - W.ship.y); if (d < bd) { bd = d; t = e; } } W.ship.tg = t.id; return; } }
+  // a better ship, at one of your worlds
+  if (sy && sy.n >= 0 && myStars.includes(sy.n) && W.t - (B.shipT || -999) > 120) { B.shipT = W.t; const d = spBestShip(W), c = Math.max(0, L.spCost(d) - L.spCost(X.d)); if (c > 0 && X.cr > c + 120) { const e = L.spSaveShip(W, d); if (!e) B.ships = (B.ships || 0) + 1; } }
+  // the empires
+  for (let k = 1; k <= 6; k++) { const E = X.emp[k], tr = G.emp[k].trait; if (!E.met || E.gone) continue;
+    if (E.mis && (E.mis.ty === "goods" || E.mis.ty === "zoo")) L.spDiplo(W, k, "hand");
+    if (E.war && tr !== "war" && E.rel > -70) L.spDiplo(W, k, "peace");
+    if (!E.war && E.rel >= 60 && !E.ally) L.spDiplo(W, k, "ally");
+    if (!E.war && !E.ally && X.relic && tr === "faith") L.spDiplo(W, k, "relic");
+    if (!E.war && !E.ally && E.rel >= 0 && E.rel < 25 && X.cr > 500) L.spDiplo(W, k, "gift");
+    if (!E.war && !E.ally && tr === "war" && E.rel < -20 && X.t > 1800 && vs.dmg >= 30) L.spDiplo(W, k, "war"); }
+  // jobs at this star's planets
+  const keepG = X.emp.reduce((a, E) => a + (E && E.mis && E.mis.ty === "goods" ? E.mis.n : 0), 0);
+  if (sy && sy.n >= 0) {
+    const s = L.spStar(W, sy.n), keepCr = 60;
+    for (const p of s.pl) { const key = L.pKey(s.n, p.k), own = L.spOwner(X, key), [T, A] = L.spTA(X, s, p), E = own > 0 ? X.emp[own] : null, c = X.col[key], life = L.spLife(X, s, p), gl = Object.values(X.goods).reduce((a, b) => a + b, 0);
+      const jobs = [];
+      if (vs.scan && !X.scan[key]) jobs.push("scan");
+      if (X.scan[key] && p.ruin && !X.dug[key] && own <= 0) jobs.push("dig");
+      if (vs.beam && life >= 2 && !X.zoo.some(z => z.k === key) && X.en >= 25 && own <= 0) jobs.push("beam");
+      if (vs.shape && own <= 0 && p.ty !== "gas" && (T !== 2 || A !== 2) && L.spFit(p, [T, A]) <= 4 && X.cr > 80 && X.en >= 40 && (own === 0 || myStars.length < 9)) jobs.push("shape");
+      if (own < 0 && p.ty !== "gas" && Math.abs(T - 2) <= 1 && Math.abs(A - 2) <= 1 && X.cr >= L.spColCost(X) + keepCr && myStars.length < 10 && !s.pl.some(q => L.spOwner(X, L.pKey(s.n, q.k)) > 0)) jobs.push("colony");
+      if (vs.seed && own === 0 && T === 2 && A === 2 && life < 3 && X.zoo.length >= (life + 1) * 2) jobs.push("seed");
+      if (own === 0 && c.lvl < 3 && X.cr > 150 * c.lvl + keepCr && (c.lvl < 2 || (T === 2 && A === 2))) jobs.push("up");
+      if (own === 0 && (c.tur || 0) < (X.t > 1500 ? 2 : 1) && X.cr > 250) jobs.push("tur");
+      if (E && !E.war && !E.gone && gl - keepG >= 10) jobs.push("sell");
+      if (E && E.war) jobs.push("atk");
+      for (const j of jobs) { if (j === "atk") { L.spAct(W, p.k, "atk"); return; } if (L.spNear(W, p.k)) { const e = L.spAct(W, p.k, j); if (!e) return; } else { const [x, y] = L.plXY(X, p); L.spGo(W, x, y); return; } }
+    }
+  }
+  // where next
+  const at = L.spStar(W, X.at), dist = n => { const s = L.spStar(W, n); return Math.hypot(s.x - at.x, s.y - at.y); }, go = n => n != null && n !== X.at && !L.spFly(W, n);
+  if (X.united && X.core < 2) { if (go(-1)) return; }
+  for (let k = 1; k <= 6; k++) { const m = X.emp[k].mis; if (m && (m.ty === "visit" || m.ty === "band") && go(m.star)) return; }
+  for (const r of X.pir) if (W.t - (B.pirT || -999) > 60 && go(r.at)) { B.pirT = W.t; return; }
+  for (const f of X.fleets) if (f.t >= f.dur && go(f.to)) return;
+  const gl = Object.values(X.goods).reduce((a, b) => a + b, 0);
+  if (gl >= 30) { const tgt = G.st.filter(s => s.pl.some(p => { const o = L.spOwner(X, L.pKey(s.n, p.k)); return o > 0 && X.emp[o].met && !X.emp[o].war; })).sort((a, b) => dist(a.n) - dist(b.n))[0]; if (tgt && go(tgt.n)) return; }
+  const war = G.st.filter(s => s.pl.some(p => { const o = L.spOwner(X, L.pKey(s.n, p.k)); return o > 0 && X.emp[o].war; })).sort((a, b) => dist(a.n) - dist(b.n))[0]; if (war && vs.dmg >= 30 && go(war.n)) return;
+  const jobsAt = s => s.pl.some(p => { const key = L.pKey(s.n, p.k), own = L.spOwner(X, key), [T, A] = L.spTA(X, s, p); return (vs.scan && !X.scan[key]) || (vs.beam && L.spLife(X, s, p) >= 2 && own <= 0 && !X.zoo.some(z => z.k === key)) || (own < 0 && p.ty !== "gas" && Math.abs(T - 2) <= 1 && Math.abs(A - 2) <= 1 && X.cr > L.spColCost(X) + 60 && myStars.length < 10); });
+  const nx = G.st.filter(s => s.n !== X.at && (!X.vis[s.n] || jobsAt(s))).sort((a, b) => dist(a.n) - dist(b.n));
+  for (const s of nx.slice(0, 4)) if (go(s.n)) return;
+  // nothing to do: meet everyone (fly to the nearest empire not met yet)
+  for (let k = 1; k <= 6; k++) if (!X.emp[k].met && go(G.emp[k].home)) return;
+  const home = myStars.filter(n => n !== X.at)[Math.floor(W.t / 300) % Math.max(1, myStars.length)]; go(home);
+}
+
+// the space stage, from the Sky Ship's launch: it must unite the galaxy and beat the Warden in under four hours (not under 20 minutes)
+function runSpace(S, seed) {
+  const L = SPL, W = L.newWorld(S, seed), X = S.space, B = {}; let s = 0;
+  for (; s < 240 * 60 && !X.done; s++) { for (let k = 0; k < 4; k++) L.stepWorld(W, .25, {}); W.ev.length = 0; if (s % 2 === 0) spaceBot(W, B); }
+  const min = Math.round(s / 60);
+  if (!X.done) { bad++; console.error(`life: the space bot (seed ${seed}) didn't reach the Core in 4 hours (${X.emp.slice(1).filter(E => E.ally || E.gone).length} of 6 empires won over, ${Object.keys(X.goals).length} goals)`); }
+  else if (min < 20) { bad++; console.error(`life: the space bot (seed ${seed}) finished in ${min} min: too quick`); }
+  spaceOut.push(`done in ${min} min (${X.how.ally} allies, ${X.how.war} worlds taken, ${Object.values(X.pown).filter(o => o === 0).length} worlds, ${Object.keys(X.goals).length} of ${L.SPACE_GOALS.length} goals, ${X.deaths} deaths)`);
+}
+{ const C = new Function(core[1] + ";return {newSave, newWorld, stepWorld, testStart, civBuild, civCan, civSettle, civFree, civHas, civCap, civSend, civClaim, civDiplo, civTrade, civOffer, civSetPol, civSaveDesign, civLaunch, skyStarter, ownTowns, CIV_GOALS};")();
+function civDesigns(W, V) { // the bot's own vehicles: war wagons and warships once it has barracks and a mine, bell carts and stage carts for faith and the arts
+  const has = k => C.ownTowns(V, 0).some(t => C.civHas(t, k)), want = [], w = (c, id) => ({ id, c, s: "b" });
+  if (has("barracks") && has("mine")) want.push({ n: "War wagon", k: "cart", len: 3, p: [w(0, "iwheel"), w(2, "iwheel"), { id: "cannon", c: 1, s: "s" }, { id: "armour", c: 2, s: "s" }, { id: "ram", c: 0, s: "t" }] },
+    { n: "Warship", k: "ship", len: 3, p: [{ id: "sail", c: 0, s: "t" }, { id: "sail", c: 2, s: "t" }, { id: "cannon", c: 1, s: "s" }, { id: "keel", c: 1, s: "b" }] });
+  if (has("temple")) want.push({ n: "Bell cart", k: "cart", len: 2, p: [w(0, "wheel"), w(1, "wheel"), { id: "bell", c: 0, s: "t" }] }, { n: "Temple ship", k: "ship", len: 3, p: [{ id: "sail", c: 0, s: "t" }, { id: "bell", c: 1, s: "t" }, { id: "oars", c: 2, s: "s" }] });
+  if (has("theatre")) want.push({ n: "Show cart", k: "cart", len: 2, p: [w(0, "wheel"), w(1, "wheel"), { id: "stage", c: 0, s: "t" }, { id: "banner", c: 1, s: "t" }] }, { n: "Show boat", k: "ship", len: 3, p: [{ id: "sail", c: 0, s: "t" }, { id: "stage", c: 1, s: "t" }, { id: "banner", c: 2, s: "t" }] });
+  for (const d of want) if (!V.vd.some(x => x.n === d.n)) C.civSaveDesign(W, -1, d);
+}
+function civBot(W, V, s) {
+  const mine = C.ownTowns(V, 0), R = V.res; civDesigns(W, V);
+  if (V.offer) C.civOffer(W, true);
+  for (const tw of mine) { if (tw.b.some(b => !b.done)) continue;
+    let k = null; if (tw.near.coast && !C.civHas(tw, "dock") && !C.civCan(V, tw, "dock") && !mine.some(t => C.civHas(t, "dock"))) k = "dock"; else if (R.food < 60 || (C.civHas(tw, "farm") < Math.ceil(tw.pop / 9) && R.food < 300)) k = "farm"; else if (tw.pop >= C.civCap(tw) - 1) k = "house";
+    else for (const k2 of ["mill", "quarry", "temple", "dock", "theatre", "barracks", "market", "mine", "glow", "wall"]) if (!C.civHas(tw, k2) && !C.civCan(V, tw, k2) && !tw.b.some(b => b.k === k2)) { k = k2; break; }
+    if (k && !C.civCan(V, tw, k)) C.civBuild(W, tw, k); else for (const k2 of ["farm", "house", "mill", "quarry"]) if (!C.civCan(V, tw, k2)) { C.civBuild(W, tw, k2); break; }
+    const free = C.civFree(W, -1); if (free.length && tw.pop >= 12 && R.food > 60) { for (const f of free) if (!C.civSettle(W, tw, f.n)) break; } }
+  // claim what's free and reachable
+  for (const sp of W.spots) if (!V.claims[sp.n] && R.wood > 80) C.civClaim(W, 0, sp.n);
+  // be friends with the gentle nations, at war with the warlike one once strong
+  for (let k = 1; k <= 3; k++) { const N = V.nat[k]; if (N.gone) continue;
+    if (N.trait !== "war" && !N.war && N.rel < 60 && R.gold > 150) C.civDiplo(W, k, "gift");
+    if (N.trait !== "war" && N.rel >= 60 && !N.ally) C.civDiplo(W, k, "ally");
+    if (N.war && N.trait !== "war") C.civDiplo(W, k, "peace");
+    if (N.trait === "war" && !N.war && s > 900 && C.ownTowns(V, 0).some(t => C.civHas(t, "barracks") && C.civHas(t, "dock"))) C.civDiplo(W, k, "war");
+  }
+  // win towns: armies at war targets, faith and festivals at the rest
+  const tg = V.towns.filter(t => t.own > 0);
+  for (const t of tg) { const N = V.nat[t.own];
+    if (N.war && R.gold > 60 && R.ore > 20 && V.units.filter(u => u.own === 0 && u.k === "army").length < 5) C.civSend(W, 0, "army", { t: "town", id: t.id });
+    else if (!N.ally && R.incense >= 12 && R.gold > 40) C.civSend(W, 0, "miss", { t: "town", id: t.id });
+    else if (!N.ally && R.dye >= 12 && R.gold > 40) C.civSend(W, 0, "fest", { t: "town", id: t.id }); }
+  // allies too: once they're the last ones left, win them over with faith and the arts
+  if (V.nat.slice(1).filter(n => !n.gone).every(n => n.ally)) for (const t of tg) { if (R.incense >= 12 && R.gold > 40) C.civSend(W, 0, "miss", { t: "town", id: t.id }); if (R.dye >= 12 && R.gold > 40) C.civSend(W, 0, "fest", { t: "town", id: t.id }); }
+}
+  for (const seed of [3, 7]) {
+    let S = C.newSave({ name: "Bot", diet: "plant", seed }); S = C.testStart(S, "civ0"); const W = C.newWorld(S, seed), V = S.civ; let s = 0;
+    for (; s < 120 * 60 && !V.won; s++) { C.stepWorld(W, .5, {}); C.stepWorld(W, .5, {}); W.ev.length = 0; if (s % 5 === 0) civBot(W, V, s); }
+    const min = Math.round(s / 60);
+    // then the Sky Port and the launch
+    let t2 = 0; for (; t2 < 40 * 60 && S.stage === "civ" && V.won; t2++) { C.stepWorld(W, .5, {}); C.stepWorld(W, .5, {}); W.ev.length = 0; if (t2 % 5) continue; civBot(W, V, s + t2);
+      const cap = C.ownTowns(V, 0).find(t => t.cap); if (cap && !cap.b.some(b => b.k === "skyport")) C.civBuild(W, cap, "skyport"); if (C.ownTowns(V, 0).some(t => C.civHas(t, "skyport"))) C.civLaunch(W, C.skyStarter()); }
+    if (V.won && S.stage !== "space") { bad++; console.error(`life: the civilisation bot (seed ${seed}) couldn't build the Sky Port and launch in 40 minutes`); }
+    if (S.stage === "space") runSpace(S, seed);
+    if (!V.won) { bad++; console.error(`life: the civilisation bot (seed ${seed}) didn't unite the islands in 2 hours (${C.ownTowns(V, 0).length} of ${V.towns.length} towns)`); }
+    else if (min < 15) { bad++; console.error(`life: the civilisation bot (seed ${seed}) united the islands in ${min} min: too quick`); }
+    civOut.push(`united in ${min} min (by war ${V.how.war}, faith ${V.how.faith}, arts ${V.how.arts}; ${Object.keys(V.goals).length} of ${C.CIV_GOALS.length} goals; ${V.vd.length} vehicle designs; launched ${Math.round(t2 / 60)} min later)`);
+  } }
 if (bad) process.exit(1);
-console.log("life: cell stage finished by bots: " + out.join(", ") + "; sea stage: " + seaOut.join(", ") + "; land stage: " + landOut.join(", ") + "; tribe stage: " + tribeOut.join(", "));
+console.log("life: cell stage finished by bots: " + out.join(", ") + "; sea stage: " + seaOut.join(", ") + "; land stage: " + landOut.join(", ") + "; tribe stage: " + tribeOut.join(", ") + "; civilisation: " + civOut.join(", ") + "; space: " + spaceOut.join(", "));

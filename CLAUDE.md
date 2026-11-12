@@ -327,7 +327,7 @@ in `claimable` and the dig search); painted from the Dig tool (`digMode`).
 ### Life (`games/life`)
 
 An evolve-a-creature game (in the genre of the evolution sims, with its own names and art), built a stage at a time:
-`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell**, **sea**, **land** and **tribe** stages exist. `S.stage` is "cell", "sea", "land" or "tribe"; `cur(S)` is that stage's state
+`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; all six exist. `S.stage` is "cell", "sea", "land", "tribe", "civ" or "space"; `cur(S)` is that stage's state
 (`S.cell` / `S.sea` / `S.land`; the tribe stage keeps `S.land` as `cur` and has its own `S.tribe`) and `TS(S)` its sizes (`TIERS` / `SEA_TIERS` / `LAND_TIERS`, land has one: the brain bar). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
 A creature is a design `{s: [segment radii, head first], p: [{id, s: segment, a: angle (0 = front), m: mirrored}], h, l, h2,
 pat, edge}`; `geom` places the parts, `stats` turns them into speed, bite, health, sight and so on, `designValue` is its DNA
@@ -401,7 +401,9 @@ world for Playwright.
 **Tribe** (`S.tribe`, code after the land in CORE: `newTribe`, `tribeStep`; page: `renderTribeUI`, `tribeTap`, the Jobs / Build /
 Tools / Tribes panels, `tribe3` and `terr3` for the camp and land colours in 3D): the same island (`newLand` with `W.tribe`), the camp
 at `S.tribe.camp` (`campSpot`). You play the Chief (tap to walk); villagers (kind `vill`, team 1) work on their own from job counts
-(`S.tribe.jobs`, everyone else gathers food; `villThink`) and only gather inside your land. `W.own` (owner per tile: 1 you, 2 + j rival
+(`S.tribe.jobs`, everyone else gathers food; `villThink`) and only gather inside your land (stone diggers may use rocks on unclaimed land
+within 16 tiles of a fire; rocks inside cliffs are skipped). Villagers never collide with each other. Guards patrol fires, watch fires and
+totems and take on `villFoe`s anywhere within 22 tiles of their post; with `W.rally` (📣) they follow the Chief and also fight `raidFoe`s. `W.own` (owner per tile: 1 you, 2 + j rival
 j; `landOwners`) comes from camp fires (`W.fires`, `CAMP_R`) and totems. `BUILDS` (hut, totem, watch fire) are planned by the Chief,
 paid for at once and put up by builders; `TOOLS` need materials (`MATS`), found in deposits (`W.deps`, `makeDeps`, from the seed)
 that the Chief discovers (`S.tribe.deps`) and a totem claims; hides come from hunting. Four rivals (`S.tribe.rv`, `makeRivals`: kind
@@ -415,6 +417,47 @@ settled ends the stage (`S.tribeNature`). New camps (`BUILDS` "camp", `FOUND_D` 
 builders as a founding party and join `W.fires` after the rival camps. Upkeep every minute (`upkeep`: fires burn wood, totems and watch
 fires take stone; short stores damage buildings) and stores above `storeCap` waste away. `MATS`, `BUILDS`, `TOOLS`, `JOBS` are saved by id: append only. `tools/life-check.js`
 plays the tribe stage with a bot after the land (about 25 min; fails if not done in 120 or under 15); `--tribe` runs it alone.
+**Civilisation** (`S.civ`, code after the tribe in CORE: `newCiv`, `civStep`; page: `civ3`, `civOverlay`, `civTap`, the town / settlers /
+towns / goals panels). Real time, as the tribe. Its own map (`makeArchipelago` from `hash(seed, 2000, CIV_V)`, `W.isle` per tile): five
+`ISLES` (home, three rival nations, one empty), town sites `W.sites` (`ISLE_SITES`), ore `W.ores` and glowstone `W.glows`, all from
+their own random streams, so the map never moves. `W.land` and `W.civ` are both set (it reuses the 3D land engine; the player is an
+invisible anchor and the camera roams). Towns `S.civ.towns` `{id, site, own (0 you, 1-3 the nations), name, pop, b: [{k, done, prog}], cap}`
+share one store `S.civ.res` (food, wood, stone, ore, glow, gold; capped by `capR`). `CB` buildings (saved by id: append only): one built
+at a time per town, workplaces limited by `civSlots` (houses and walls don't count, houses max 8), output by `civFit` (what's round the
+town: `civNear`) and mood (`civMood`). Settlers (`civSettle`, `S.civ.wagons`) found towns on free sites of the same island. `CIV_GOALS`
+pay gold. Fog is saved in `S.civ.seen`. Part 2 (`civInit2` fills it in on any save): nations `S.civ.nat[1..3]` (`NAT_TRAITS` war / faith /
+arts, `rel` -100..100, `war`, `ally`, `deal`, abstract `gold`, cooldowns `cd`; run by `civAI`). Every town has `def` (`civDefMax`, worn by
+sieges against `civGarrison`, shared among besieging armies) and influence `inf.f` (faith) / `inf.c` (culture) per owner; `civTake` hands
+a town over (`C.how` counts your wins by war, faith, arts; a nation with no towns is `gone`; all gone sets `C.won`). Units `S.civ.units`
+(`UNIT`: army, miss, fest) go in straight lines from `civSource` (the right building, plus a dock to cross the sea); `civSend`, `civUnits`.
+Resource spots `W.spots` (all glowstone, then a meadow and spring per island from stream 2003, then ores appended; `SPOT_K`) are held by
+outposts in `S.civ.claims` {spot: {own, hp}} (`civClaim`). Diplomacy `civDiplo` (gift, deal, ally at 60, war, peace), trade `civTradeOffers`,
+nations' offers `C.offer`. Government `C.gov` {tax (`TAX`), pol (two `POLICIES`), polT}. A dock charts the map (`C.charted`). Every island has
+a town site that can take a dock (`W.harbour`). Losing every town: `civRestore` (normal) or death (hardcore). `tools/life-check.js` plays the whole stage with a bot
+that must unite the islands in under two hours and not under 15 minutes (about 30 minutes for the bot), then builds the Sky Port and launches.
+**Vehicles** (part 3, in CORE after the civ code): a design is `{n, k: cart|ship|air|space, len, p: [{id, c: section, s: "t"|"s"|"b"}]}`
+(section 0 is the front; side parts count twice). `VP` parts (saved by id: append only; `k` kinds, `sl` slots, `un` a building, or for
+starship parts a space goal, that unlocks it), `vStats` (speed, war/faith/arts, hp, cargo, cost `c`, and for starships range, shield, dmg,
+energy, tools; `ok` says why a design can't go), `vClean`. `S.civ.vd` is the list (max 8; `vStarter`), saved with `civSaveDesign`. Units and
+settlers pick the best fitting design (`vFits`: carts on one island, ships across the sea from a dock town, airships anywhere with a `yard`) and
+carry `f` (`vJob`), `tough` (`vTough`), speed (`vSpeedF`) and `dv` (the design, for 3D); the trip costs the design's materials; the nations'
+units get `natVF`. Buildings `yard` and `skyport` (only in the capital once `C.won`); `civLaunch` pays the Sky Ship (a space design) in gold
+and calls `goToSpace`. Page: `vehMesh` (3D model of any design), the builder `openVB` / `renderVB` (screen `#vbld`, preview `VBR`),
+`civVehDlg`, `civLaunchDlg`.
+**Space** (`S.space`, code after the vehicles in CORE; page after them): a galaxy from `makeGalaxy(seed)` (`hash(seed, 3000, SPACE_V)`, cached
+in `GALAXY`: 60 stars plus bridge stars so the first ship (range `HOP0`) can reach every one, and one near the Core; planets `{ty, T, A, life, res,
+ruin, orb, ph, sp, r, sd}`; six empires `G.emp` with traits `EMP_TRAITS`, homes and starting worlds). Planet keys "star:planet"; saved state:
+`pown` (owner per planet, -1 none), `col` (colonies `{lvl, tur, def, home}`), `shaped` (`[T, A]`), `life`, `scan`, `dug`, `vis`, `zoo`, `goods`,
+`relic`, `cr`, `d` (the ship design), `at` (star; -1 is the Core), `travel {path, i, t, charge}`, `emp[1..6] {rel, war, ally, gone, met, mis, cd}`,
+`pir` (raids), `fleets`, `bands` (pirate bands by star), `goals`, `how`, `core`, `done`. The world `W.space` keeps `W.sys` (the system: `ships`,
+`fx`, `pdef`; never saved) and `W.ship`. Rules: `spFly` / `spRoute` (jumps no longer than `vs.range`; the Core once `united`), `spGo` /
+`spGoPlanet`, `spAct` (scan, dig, beam, shape, seed, colony, up, tur, sell, atk), `spDiplo` (gift up to 25, relic, ally at 60, war, peace,
+hand), missions (`spMisText`, `spMisDone`; they expire), `systemStep` (auto-firing lasers, enemy ships, planet guns, the Warden and its drones,
+ally escorts at the Core), `spTick` (income, raids and fleets wearing down colonies while you're away, empire growth, war and peace, missions),
+`spGoals` (`SPACE_GOALS`, append only; each unlocks a part). Page: `drawSpace` (galaxy and system views on the shared renderer, `SP3`; flat
+`drawSpace2D` without WebGL), `spaceTap`, `renderSpaceUI`, the panels (`spEmpDlg`, `spWorldsDlg`, `spZooDlg`, `spGoalsDlg`), `spaceEvent`,
+`spaceWonDlg` (the life story). Test starts `civend` and `space0`. `tools/life-check.js` plays space with `spaceBot` after the civ launch: it must
+reach the Core within four hours and not under 20 minutes (about 40-130 minutes for the bot); `--civ` runs only the civ and space stages.
 
 ### Adding a new game
 

@@ -568,6 +568,79 @@
     },
     {
       "id": 50,
+      "type": "fixes",
+      "headline": "Life: tribe fixes for stone and guards",
+      "details": [
+        "Villagers no longer get stuck in a tangle with each other: they walk past one another now.",
+        "Stone diggers spread out over the rocks, skip rocks stuck inside cliffs, and will walk a little way out of your land if there's no stone inside it.",
+        "Guards walk the rounds of your fires, watch fires and totems, and go after raiders and anything attacking your people anywhere in your land, instead of standing still.",
+        "Tap 📣 to take your guards on a raid: they follow you and fight any enemy tribe's people near you, in their land too. Tap 📣 again to send them home."
+      ]
+    },
+    {
+      "id": 51,
+      "type": "fixes",
+      "headline": "Life: the map you've explored is kept",
+      "details": [
+        "On land and in the tribe stage, the parts of the island you've explored are now saved, so they stay uncovered when you close and reopen the game, and when your tribe starts.",
+        "At night the land you've explored stays faintly lit by the moon instead of going as dark as land you haven't seen.",
+        "Games saved before this update start with the map dark one last time; from then on it's remembered."
+      ]
+    },
+    {
+      "id": 52,
+      "type": "features",
+      "headline": "Life: the Civilisation stage, part 1",
+      "details": [
+        "Finish the Tribe stage and tap Found a nation: your tribe becomes a nation on a group of five islands. Yours, three for rival nations, and one empty island with plenty of glowstone.",
+        "Your capital and towns grow on their own. Tap a town to choose what it builds: houses, farms, lumber mills, quarries, mines, glowstone works, markets, temples, barracks, walls and docks.",
+        "Every town eats from one store, so keep enough farms. Farms do best on open grass, mills by forest, quarries by hills. Mines need ore nearby, glowstone works need glowstone.",
+        "Tap the Free land posts to send settlers by wagon and found new towns.",
+        "Ten goals to reach for, each worth gold.",
+        "Coming next: the three rival nations and winning them over by force, persuasion or trade. Then boats, your own vehicle designs, and the Sky Ship.",
+        "To try it straight away, start a new life and pick Civilisation stage under Start at."
+      ]
+    },
+    {
+      "id": 53,
+      "type": "features",
+      "headline": "Life: the Civilisation stage, part 2: rival nations",
+      "details": [
+        "Three rival nations now share the islands: one warlike, one devout, one artistic. They grow, claim land, trade with you, send armies, missionaries and festival troupes, and go to war, with you and with each other.",
+        "Win towns three ways: by force (armies besiege a town until its walls break), by faith (missionaries from a temple) or with the arts (festival troupes from the new theatre). At 100% faith or culture a town joins you.",
+        "They'll try the same on your towns. A temple and a theatre in a town push back, and walls and barracks hold off armies.",
+        "Claim flower meadows (dye for festivals), holy springs (incense for missionaries), glowstone and ore rocks with outposts. Nations want them too, and will fight you for them.",
+        "Build a dock to chart the islands. Ships carry settlers, armies, missionaries and troupes across the sea.",
+        "🌍 Nations: send gifts, buy and sell, sign trade deals, form alliances, declare war and make peace. 📜 Govern: set taxes and pick two policies.",
+        "Unite all five islands to finish this part. Your own vehicle designs and the Sky Ship come next."
+      ]
+    },
+    {
+      "id": 54,
+      "type": "features",
+      "headline": "Life: design your own vehicles, and the Sky Ship",
+      "details": [
+        "🛠️ Vehicles in the Civilisation stage: design your own carts, ships and airships, part by part, and see them in 3D.",
+        "Your designs decide how well your units do: cannons make armies stronger, bells and shrines help missionaries, stages and banners help festivals, more wheels or sails make them faster, and heavy parts slow them down.",
+        "New: the 🎈 airship yard. Airships fly over land and sea from any of your towns.",
+        "Once the islands are united, build the 🛸 Sky Port in your capital, design the Sky Ship and launch it into space."
+      ]
+    },
+    {
+      "id": 55,
+      "type": "features",
+      "headline": "Life: the Space stage, the last stage of Life",
+      "details": [
+        "Fly your ship around a galaxy of about 80 stars. Tap the 🌌 Map to choose a star and jump there.",
+        "Scan planets, start colonies on mild worlds, and use the world shaper to make harsh worlds liveable. Colonies earn money and goods to sell.",
+        "Beam up creatures from living worlds for your collection, and plant life on your own worlds.",
+        "Meet six alien empires. Do missions for them, trade, give gifts and make allies, or go to war and take their worlds. Pirates and enemy fleets will attack your worlds.",
+        "Reaching goals unlocks new ship parts. Refit your ship at any of your worlds.",
+        "Unite the galaxy, then fly to the Core at its centre for the final battle and your species' whole story, from cell to stars."
+      ]
+    },
+    {
+      "id": 56,
       "type": "features",
       "headline": "Hollowdeep: rival lords who build, fight and talk like keepers",
       "details": [
