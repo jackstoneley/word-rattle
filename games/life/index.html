@@ -875,6 +875,7 @@ function seaStep(W, dt, V) {
 function collide(W, L) {
   for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
     const A = L[i], B = L[j], dx = B.x - A.x, dy = B.y - A.y, rr = A.g.R * A.k + B.g.R * B.k;
+    if (A.kind === "vill" && B.kind === "vill") continue; // your own villagers walk past each other
     if (dx * dx + dy * dy > rr * rr) continue;
     let best = 0, nx = 0, ny = 0;
     for (let a = 0; a < A.g.r.length; a++) { const [ax, ay] = segW(A, a), ra = A.g.r[a] * A.k;
@@ -1916,14 +1917,17 @@ function homeFire(W, u) { let b = W.fires[0], bd = 1e18; for (const F of W.fires
 function guardPosts(W) { return W.fires.filter(F => F.o === 1).concat(W.S.tribe.builds.filter(b => b.k === "watch" && b.done)); }
 function srcList(W, kind) {
   if (W.srcRev !== W.ownRev) { W.srcRev = W.ownRev; W.srcC = {}; }
-  if (!W.srcC[kind]) { const all = kind === "food" ? W.foodSrc : kind === "wood" ? W.woodSrc : kind === "stone" ? W.rocks : W.deps; W.srcC[kind] = all.filter(s => W.own[tileI(s.x, s.y)] === 1); }
+  if (!W.srcC[kind]) { const all = kind === "food" ? W.foodSrc : kind === "wood" ? W.woodSrc : kind === "stone" ? W.rocks : W.deps;
+    const reach = o => passXY(W, o.x, o.y) || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => passXY(W, o.x + a * LT, o.y + b * LT)); // a rock inside a cliff can't be dug
+    const nearCamp = o => W.fires.some(F => F.o === 1 && Math.hypot(F.x - o.x, F.y - o.y) < LT * 16); // diggers will walk a little way out of your land for stone
+    W.srcC[kind] = all.filter(s => (W.own[tileI(s.x, s.y)] === 1 || (kind === "stone" && !W.own[tileI(s.x, s.y)] && nearCamp(s))) && (kind !== "stone" || reach(s))); }
   return W.srcC[kind];
 }
 function pickSource(W, u, kind) {
   const T = W.S.tribe, F = homeFire(W, u); let best = null, bs = 1e18;
   for (const s of srcList(W, kind)) {
     if (kind === "food" && s.food <= 0) continue; if (kind === "fetch" && !T.deps[s.n]) continue;
-    const d = Math.hypot(s.x - u.x, s.y - u.y) * .5 + Math.hypot(s.x - F.x, s.y - F.y) + (s.busy || 0) * LT * (kind === "food" ? 6 : 3) + (kind === "fetch" ? (T.res[s.m] || 0) * LT * .4 : 0);
+    const d = Math.hypot(s.x - u.x, s.y - u.y) * .5 + Math.hypot(s.x - F.x, s.y - F.y) + (s.busy || 0) * LT * (kind === "food" ? 6 : kind === "stone" ? 8 : 4) + (kind === "fetch" ? (T.res[s.m] || 0) * LT * .4 : 0);
     if (d < bs) { bs = d; best = s; }
   }
   if (best) best.busy = (best.busy || 0) + 1; return best;
@@ -1940,6 +1944,11 @@ function villFoe(W, o) {
   if (o.kind === "npc") return !isFriend(W, o) && !!o.ai.tg && o.ai.tg.team === 1 && !o.asleep && W.own[tileI(o.x, o.y)] === 1;
   return false;
 }
+/* On a raid with you, guards take on anyone from a tribe at odds with yours near you, in their land too. */
+function raidFoe(W, o) {
+  if (o.dead || o.kind !== "rival") return false; const r = W.S.tribe.rv[o.tr];
+  return !o.champ && !r.state && !isAlly(r) && (r.kind === "hostile" || r.mood < -30) && Math.hypot(o.x - W.player.x, o.y - W.player.y) < LT * 8;
+}
 function villScan(W, u) {
   const P = W.player, guard = u.job === "guard", hunter = u.job === "hunt";
   let thr = null, td = (LT * 4) ** 2;
@@ -1949,8 +1958,8 @@ function villScan(W, u) {
   if (u.tg) return;
   if (guard) {
     if (W.rally && P.mode === "hunt" && P.tg && !P.tg.dead && !(W.duel && P.tg === W.duel.T)) { u.tg = P.tg; return; }
-    const posts = guardPosts(W), c = W.rally ? P : posts[u.id % posts.length], R = LT * (W.rally ? 6 : 8); let b = null, bd = R * R;
-    for (const o of W.cr) { if (!villFoe(W, o)) continue; const d = d2(o, c); if (d < bd) { bd = d; b = o; } }
+    const posts = guardPosts(W), c = W.rally ? P : posts[u.id % posts.length], R = LT * (W.rally ? 8 : 22); let b = null, bd = R * R;
+    for (const o of W.cr) { if (!(villFoe(W, o) || (W.rally && raidFoe(W, o)))) continue; const d = d2(o, c) * (o.raid ? .5 : 1); if (d < bd) { bd = d; b = o; } }
     if (b) u.tg = b; return;
   }
   if (hunter && !u.carry) {
@@ -1972,8 +1981,8 @@ function villThink(W, u, dt) {
   if (job === "guard") {
     if (W.rally) { const G = W.cr.filter(q => q.kind === "vill" && q.job === "guard"), idx = G.indexOf(u), pt = W.trail[Math.min(W.trail.length - 1, (idx + 1) * 4)] || [P.x, P.y], d = Math.hypot(pt[0] - u.x, pt[1] - u.y);
       if (d > LT * 14) { u.x = P.x; u.y = P.y; u.path = null; return; } if (d > 18) goTo(W, u, pt[0], pt[1], Math.max(sp, landSpeed(W, P) * 1.1) * clamp(d / 60, .4, 1.15), dt, 14); else { u.vx *= .7; u.vy *= .7; } return; }
-    const posts = guardPosts(W), p = posts[u.id % posts.length], a = u.id * 2.4;
-    if (goTo(W, u, p.x + Math.cos(a) * LT * 1.5, p.y + Math.sin(a) * LT * 1.5, sp * .8, dt, 16)) { u.vx *= .8; u.vy *= .8; } return;
+    const posts = guardPosts(W).concat(T.builds.filter(b => b.k === "totem" && b.done)), k = (u.id + Math.floor(W.t / 18)) % posts.length, p = posts[k], a = u.id * 2.4; // walk the rounds of your fires, watch fires and totems
+    if (goTo(W, u, p.x + Math.cos(a) * LT * 1.5, p.y + Math.sin(a) * LT * 1.5, sp * .6, dt, 16)) { u.vx *= .8; u.vy *= .8; } return;
   }
   if (job === "build") {
     let s = null, sd = 1e18; for (const b of T.builds) if (!b.done) { const d = d2(b, u); if (d < sd) { sd = d; s = b; } }
@@ -1981,14 +1990,16 @@ function villThink(W, u, dt) {
   }
   if (job === "hunt") { const F = homeFire(W, u), a = u.id * 2.4; goTo(W, u, F.x + Math.cos(a) * LT * 3, F.y + Math.sin(a) * LT * 3, sp * .6, dt, 20); return; }
   const kind = job === "build" ? "wood" : job;
-  if (u.src && (W.own[tileI(u.src.x, u.src.y)] !== 1 || (kind === "food" && u.src.food <= 0))) u.src = null;
+  if (u.src && ((W.own[tileI(u.src.x, u.src.y)] !== 1 && !(kind === "stone" && !W.own[tileI(u.src.x, u.src.y)])) || (kind === "food" && u.src.food <= 0))) u.src = null;
   if (!u.src) {
     u.srcT = (u.srcT || 0) - dt;
     if (u.srcT > 0) { const F = homeFire(W, u), a = u.id * 1.7; goTo(W, u, F.x + Math.cos(a) * LT * 1.4, F.y + Math.sin(a) * LT * 1.4, sp * .5, dt, 16); return; }
     u.src = pickSource(W, u, kind); u.work = 0; u.noway = 0; if (!u.src) { u.srcT = 4; return; }
   }
   const s = u.src;
-  if (!goTo(W, u, s.x, s.y, sp, dt, s.kind === "tree" ? Math.min(40, (s.r || 30) * .6) + 16 : s.kind === "dep" ? LT * .8 : 28)) { if (u.noway > 2) { u.src = null; u.srcT = 2; } return; }
+  const near = s.kind === "tree" ? Math.min(40, (s.r || 30) * .6) + 16 : s.kind === "dep" ? LT * .8 : kind === "stone" ? (s.r || 14) + 24 + (passXY(W, s.x, s.y) ? 0 : LT * .7) : 28;
+  if (!goTo(W, u, s.x, s.y, sp, dt, near)) { u.dig = (u.dig || 0) + dt; if (u.noway > 2 || u.dig > 40) { if (s.busy) s.busy--; u.src = null; u.srcT = 2; u.dig = 0; } return; } // give up on one that can't be reached
+  u.dig = 0;
   u.work = (u.work || 0) + dt; const wt = { food: 2.5, wood: T.tools.axe ? 5 : 10, stone: 12, fetch: 7 }[kind];
   if (u.work >= wt) {
     u.work = 0; const n = T.tools.basket ? 5 : 3;
@@ -4390,7 +4401,7 @@ function jobsDlg() {
   const rows = JOBS.map(([id, ic, n]) => id === "food" ? `<div class="jrow"><span>${ic} ${n}</span><i></i><b>${tot - other}</b><i></i></div>`
     : `<div class="jrow"><span>${ic} ${n}</span><button class="btn small" data-a="m_${id}" aria-label="One fewer">−</button><b>${T.jobs[id] || 0}</b><button class="btn small" data-a="p_${id}" aria-label="One more">＋</button></div>`).join("");
   const acts = { ok: closeTD }; for (const [id] of JOBS) { acts["m_" + id] = () => { setJob(W, id, (T.jobs[id] || 0) - 1); jobsDlg(); }; acts["p_" + id] = () => { setJob(W, id, (T.jobs[id] || 0) + 1); jobsDlg(); }; }
-  dialog(`<h2>Jobs</h2><p>${tot} villagers. Anyone without another job gathers food.</p><div class="jobs">${rows}</div><p>💡 ${esc(tribeAdvice())}</p><div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+  dialog(`<h2>Jobs</h2><p>${tot} villagers. Anyone without another job gathers food.</p><div class="jobs">${rows}</div><p style="font-size:.85rem;color:var(--muted)">🛡️ Guards walk round your land and go after raiders and anything attacking your people. Tap 📣 to take them with you on a raid.</p><p>💡 ${esc(tribeAdvice())}</p><div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
 }
 function buildDlg() {
   paused = true; const T = S.tribe, sites = T.builds.filter(b => !b.done).length;
@@ -4456,7 +4467,7 @@ function tribeTap(sx, sy, wx, wy, best, toS) {
 }
 function tribeCall() {
   if (!jobCount(W, "guard")) { toast("Give some villagers the 🛡️ Guard job first: they're the ones who follow you."); return; }
-  W.rally = !W.rally; toast(W.rally ? "📣 Your guards follow you now, and fight what you fight." : "Your guards go back to their posts."); renderLandUI(true);
+  W.rally = !W.rally; toast(W.rally ? "📣 Your guards follow you now, and fight any enemy tribe's people near you. Tap 📣 again to send them home." : "Your guards go back to guarding your land."); renderLandUI(true);
 }
 /* ---- news ---- */
 function tribeEvent(e) {

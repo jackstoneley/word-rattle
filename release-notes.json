@@ -565,6 +565,17 @@
         "Rockfalls: the bigger you dig, the more often open, empty floor fills in again. You get a warning, and rooms hold the roof up.",
         "In the Long Dark, the richest gold, gems, treasure and tombs lie furthest from your Heart."
       ]
+    },
+    {
+      "id": 50,
+      "type": "fixes",
+      "headline": "Life: tribe fixes for stone and guards",
+      "details": [
+        "Villagers no longer get stuck in a tangle with each other: they walk past one another now.",
+        "Stone diggers spread out over the rocks, skip rocks stuck inside cliffs, and will walk a little way out of your land if there's no stone inside it.",
+        "Guards walk the rounds of your fires, watch fires and totems, and go after raiders and anything attacking your people anywhere in your land, instead of standing still.",
+        "Tap 📣 to take your guards on a raid: they follow you and fight any enemy tribe's people near you, in their land too. Tap 📣 again to send them home."
+      ]
     }
   ]
 }

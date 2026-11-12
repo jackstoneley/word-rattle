@@ -389,7 +389,9 @@ world for Playwright.
 **Tribe** (`S.tribe`, code after the land in CORE: `newTribe`, `tribeStep`; page: `renderTribeUI`, `tribeTap`, the Jobs / Build /
 Tools / Tribes panels, `tribe3` and `terr3` for the camp and land colours in 3D): the same island (`newLand` with `W.tribe`), the camp
 at `S.tribe.camp` (`campSpot`). You play the Chief (tap to walk); villagers (kind `vill`, team 1) work on their own from job counts
-(`S.tribe.jobs`, everyone else gathers food; `villThink`) and only gather inside your land. `W.own` (owner per tile: 1 you, 2 + j rival
+(`S.tribe.jobs`, everyone else gathers food; `villThink`) and only gather inside your land (stone diggers may use rocks on unclaimed land
+within 16 tiles of a fire; rocks inside cliffs are skipped). Villagers never collide with each other. Guards patrol fires, watch fires and
+totems and take on `villFoe`s anywhere within 22 tiles of their post; with `W.rally` (📣) they follow the Chief and also fight `raidFoe`s. `W.own` (owner per tile: 1 you, 2 + j rival
 j; `landOwners`) comes from camp fires (`W.fires`, `CAMP_R`) and totems. `BUILDS` (hut, totem, watch fire) are planned by the Chief,
 paid for at once and put up by builders; `TOOLS` need materials (`MATS`), found in deposits (`W.deps`, `makeDeps`, from the seed)
 that the Chief discovers (`S.tribe.deps`) and a totem claims; hides come from hunting. Four rivals (`S.tribe.rv`, `makeRivals`: kind
