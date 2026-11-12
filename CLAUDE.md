@@ -311,6 +311,18 @@ What is allowed is `darkAllow(D)` (`DARK_BASE` plus every held node's `gives`). 
 **Rockfalls** (`spec.falls`, Long Dark only; `W.fall {next, warn}`, `fallTick`, `fallOk`): open, roomless floor 6+ tiles from any Heart
 fills in after a 9 s warning, more often the more floor a keeper has. Page: `openDark`, `renderDark` (the SVG map), `darkBriefing`,
 `darkOver`, `keepIntro`. `tools`-style check: play the whole campaign in Node with the functions above (launch, end the lord, result, home).
+**How rivals build** (replaces the open hall): `newWorld` gives each a 5x5 Heart chamber with four arms (Lair, Farm, Treasury, the Gate;
+Training on Fair and up), each room a walled chamber. `aiRooms` plans more as `K.plan [{r, tiles, door, t0, done}]`: `aiChamber` finds
+a doorway in rock off plain floor with the room beyond it and rock all round (`CHAMBER` sizes, 3x3 by default), marks it, and paints the
+tiles as they are claimed; with nowhere to put one, `aiCorridor` pushes a one-wide tunnel out. Open floor that already exists (claimed
+caves, saves from before) is still used through `findBlock`. `aiTraps` sets doors and traps by difficulty: budgets `[2,5,12]` doors and
+`[1,4,8]` traps, door kind up to `diff+1`, on doorways (a tunnel tile with one of their rooms behind it; Gentle only treasury and lair),
+on the way in (`aiApproach`, from `K.threat`, where intruders last broke in) and, on Fierce, at the Heart. Change the layout and the
+no-R()-calls rule matters: the start layout uses none, so the rest of each seed's map is unchanged. Rivals also build Pit, Jail,
+Torture/Persuasion and Den, cast through `aiSpells`, flee when hurt (`u.flee`), avoid learnt traps (`W.av[o]`, `learnTrap`, `W._av` in
+`bfs`), guard held sites (`c.siteTiles`), strike early when the player's army is away (`K.early`), and speak (`say`, `LINES` by persona;
+toast class `say2`-`say4`). **No-go** for the player's diggers is `W.mark` bit 32 (`W._blk` in `bfs`, set round `digger`; also checked
+in `claimable` and the dig search); painted from the Dig tool (`digMode`).
 
 ### Life (`games/life`)
 

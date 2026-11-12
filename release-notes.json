@@ -565,6 +565,20 @@
         "Rockfalls: the bigger you dig, the more often open, empty floor fills in again. You get a warning, and rooms hold the roof up.",
         "In the Long Dark, the richest gold, gems, treasure and tombs lie furthest from your Heart."
       ]
+    },
+    {
+      "id": 50,
+      "type": "features",
+      "headline": "Hollowdeep: rival lords who build, fight and talk like keepers",
+      "details": [
+        "Rivals now build real dungeons: a Heart chamber, corridors, and every room its own walled chamber with a doorway, in place of one big open floor.",
+        "How hard a lord is decides its doors. Gentle lords lock only the treasury and lair with wood. Fair lords use iron and bar the way in. Fierce lords put the best door they can on every room and on the Heart, twice over on the way in, with traps behind.",
+        "Rivals use more of the game: Fighting pits, Jails and Torture chambers (they can capture your creatures and turn them: take the room back to free them), and Curse, Haste, Raise the dead and Hellfire.",
+        "Smarter fighting: badly hurt raiders slip home to heal, raids go round traps that have hurt them, lords guard the old places they hold, strike when your army is away, and gang up on whoever is far ahead.",
+        "The lords talk: each has a manner, and says so when they find you, raid you, rob you or lose.",
+        "No-go zones: tap Dig, then No-go, and paint where your diggers must keep out. They won't dig, claim or walk there.",
+        "Rivals lose far fewer creatures to wild beasts now, so they are tougher than before. Gentle lords keep a slightly smaller army to make up for it."
+      ]
     }
   ]
 }

@@ -33,6 +33,8 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .pk{display:flex;flex-wrap:wrap;gap:6px}
 .pk button{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:6px 9px;font-weight:700;font-size:.85rem;color:inherit}
 .pk button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.toast.say2,.toast.say3,.toast.say4{font-style:italic;background:rgba(24,14,12,.94)}
+.toast.say2{border-left-color:#E0503C}.toast.say3{border-left-color:#A06BE0}.toast.say4{border-left-color:#5C9BE8}
 .toast.evil{font-style:italic;color:#E2C8FF;background:rgba(28,8,40,.92);border-left-color:#9B5CFF}
 #menu{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -176,6 +178,8 @@ h2{font-family:var(--display);font-size:1.1rem;margin:0;font-weight:400}
         <li><b>Ending a realm</b> in the Long Dark: destroy the Heart (loot, but dread +2), starve the lord by holding every Gate for 2½ minutes (all their gold, no dread), or spare them when they beg (a vassal who pays every turn, and dread falls).</li>
         <li><b>Dread and the surface:</b> conquest, torture, sacrifice and raids on the surface raise your dread. Heroes attack your keep after every expedition, harder the more you are dreaded, and at dread 4 they follow you into realms. Some creatures only come to the dreaded. Raiding the Abbey stops Clerics; sacking the Castle thins the heroes.</li>
         <li><b>Rockfalls</b> (the Long Dark): the bigger you dig, the more often open, empty floor far from your Heart fills in again. You get a few seconds' warning. Rooms hold the roof up.</li>
+        <li><b>No-go:</b> tap ⛏ Dig, then 🚫 No-go, and paint anywhere your diggers must keep out of, such as a rival's land or a beast's cave. They won't dig, claim or walk there. Your fighting creatures still go where the flag sends them.</li>
+        <li><b>Rival lords</b> build like you do: a Heart chamber, corridors, and each room its own walled chamber with a doorway. How hard they are decides their doors: Gentle lords lock only the treasury and lair; Fair lords use iron and bar the way in; Fierce lords door every room and the Heart, with traps behind. They take prisoners, cast more spells, go round traps that have hurt them, and strike when your army is away.</li>
         <li><b>Heroes</b> come down the stairs from the surface in waves, with a Dwarf digging the way. Doors, traps and a strong guard keep them out.</li>
         <li><b>🚩 Flag:</b> plant it, and your creatures march there and fight anything on the way. Plant it on a rival's Heart to attack it.</li>
         <li><b>✋ Hand:</b> pick up as many as 8 creatures, then tap your own floor to drop them there.</li>
@@ -333,7 +337,7 @@ const WILD=5,HERO=6,NEUTRAL=7;
 const OWN_COL=[null,"#3FC1B0","#E0503C","#A06BE0","#5C9BE8","#9A927E","#F2E6B8","#BDBDBD"];
 const RIVALS=["Lord Grimble","Lady Murk","Old Snagtooth"];
 const DIFF=[
-  {name:"Gentle",arrive:58,cap:10,army:3,every:400,first:600,income:1.5,start:1},
+  {name:"Gentle",arrive:58,cap:8,army:3,every:400,first:600,income:1.5,start:1},
   {name:"Fair",arrive:44,cap:15,army:4,every:320,first:450,income:2.5,start:2},
   {name:"Fierce",arrive:34,cap:22,army:5,every:250,first:330,income:4,start:4}];
 /* Realms, keyed by number in hd.progress. par: minutes for the second star. s3: the third star
@@ -409,7 +413,7 @@ function initRuntime(W){
   W.resD=new Int32Array(N);W.resC=new Int32Array(N);W.digp=new Float32Array(N);W.vis=new Uint8Array(N);
   W.featAt=new Int16Array(N).fill(-1);W.feats=[];W.traps=[];W.tcd=new Float32Array(N);W.bould=[];
   W._p=new Int32Array(N);W._s=new Uint32Array(N);W._q=new Int32Array(N);W._st=0;
-  W.digN=new Uint8Array(N*4);W.sights=[];W.poss=null;
+  W.digN=new Uint8Array(N*4);W.sights=[];W.poss=null;W.av=[];W._av=null;W._blk=0;
   W.rc=0;W.vt=0;W.ft=40;
 }
 
@@ -456,7 +460,9 @@ function newWorld(spec){
     clearBlock(cx,cy,ai?8:4+Math.floor(R()*3));
     const ng=ai?2:1+Math.floor(R()*3);
     for(let g=0;g<ng;g++){const a=R()*6.283,dd=ai?8:4+R()*5;blob(Math.round(cx+Math.cos(a)*dd),Math.round(cy+Math.sin(a)*dd),ai?4:3+Math.floor(R()*4),T.GOLD)}
-    if(ai){for(let y=cy-5;y<=cy+5;y++)for(let x=cx-5;x<=cx+5;x++)floor(x,y,o)}
+    if(ai){const F=(x0,x1,y0,y1)=>{for(let dy=y0;dy<=y1;dy++)for(let dx=x0;dx<=x1;dx++)floor(cx+dx*sx,cy+dy*sy,o)};
+      F(-2,2,-2,2);F(-3,-3,0,0);F(-6,-4,-1,1);F(0,0,-3,-3);F(-1,1,-5,-4);F(3,3,0,0);F(4,6,-1,1);F(0,0,3,4);
+      if(spec.diff>=1&&(!spec.allow||spec.allow.r.includes(RM.TRAINING))){F(5,5,2,2);F(4,6,3,4)}}
     else{
       // your first hall comes in different shapes and sizes
       const rx=2+Math.floor(R()*3),ry=2+Math.floor(R()*3);
@@ -478,10 +484,10 @@ function newWorld(spec){
       mana:200,manaMax:400,rp:0,known:{lightning:1,possess:1},rpg:0,res:null};
     if(ai){
       const P=(dx,dy)=>[cx+dx*sx,cy+dy*sy];
-      gate(...P(3,3),o);
+      gate(...P(0,6),o);
       const room=(x0,x1,y0,y1,rm)=>{for(let dy=y0;dy<=y1;dy++)for(let dx=x0;dx<=x1;dx++){const [x,y]=P(dx,dy);W.room[I(x,y)]=rm;if(rm===RM.FARM)W.food[I(x,y)]=2}};
-      room(-4,-2,-4,-2,RM.LAIR);room(-4,-2,2,4,RM.FARM);room(2,4,-4,-4,RM.TREASURY);
-      if(spec.diff>=1&&(!spec.allow||spec.allow.r.includes(RM.TRAINING)))room(-1,1,3,4,RM.TRAINING);
+      room(-6,-4,-1,1,RM.LAIR);room(4,6,-1,1,RM.FARM);room(-1,1,-5,-4,RM.TREASURY);
+      if(spec.diff>=1&&(!spec.allow||spec.allow.r.includes(RM.TRAINING)))room(4,6,3,4,RM.TRAINING);
       targets.push([cx,cy]);
     }else{
       reveal(cx,cy,7);
@@ -622,8 +628,8 @@ function fx(W,o){o.t0=W.t;W.fx.push(o);if(W.fx.length>200)W.fx.shift()}
 
 /* breadth-first search over walkable tiles. visit(c) returns true to stop. Parents kept for pathTo. */
 function bfs(W,start,visit,limit,bo){
-  const P=W._p,S=W._s,Q=W._q,st=++W._st,w=W.w,N=W.w*W.h,tile=W.tile,door=W.door,own=W.own;let h=0,t=0,n=0;
-  const add=(j,c)=>{if(S[j]!==st&&walkT(tile[j])&&(!bo||!door[j]||own[j]===bo)){S[j]=st;P[j]=c;Q[t++]=j}};
+  const P=W._p,S=W._s,Q=W._q,st=++W._st,w=W.w,N=W.w*W.h,tile=W.tile,door=W.door,own=W.own,blk=W._blk,av=W._av,mark=W.mark;let h=0,t=0,n=0;
+  const add=(j,c)=>{if(S[j]!==st&&walkT(tile[j])&&(!bo||!door[j]||own[j]===bo)&&!(blk&&(mark[j]&blk))&&!(av&&av[j])){S[j]=st;P[j]=c;Q[t++]=j}};
   Q[t++]=start;S[start]=st;P[start]=-1;
   while(h<t){const c=Q[h++];if(visit(c))return c;if(++n>limit)return -1;const x=c%w;
     if(x>0)add(c-1,c);if(x<w-1)add(c+1,c);if(c>=w)add(c-w,c);if(c<N-w)add(c+w,c)}
@@ -658,7 +664,7 @@ function findFeats(W){
 const featAt=(W,i)=>W.featAt[i]>=0?W.feats[W.featAt[i]]:null;
 function recount(W){
   const N=W.w*W.h,RL=ROOMS.length;
-  for(let o=1;o<W.k.length;o++){const K=W.k[o];if(!K)continue;K.c={rooms:Array(RL).fill(0),tiles:ROOMS.map(()=>[]),feat:ROOMS.map(()=>[0,0,0,0]),floor:0,walk:[],gates:[],marks:0,fighters:0,diggers:0,undead:0,prisoners:0,lava:0,sites:{},x:{},fear:0,summoned:0}}
+  for(let o=1;o<W.k.length;o++){const K=W.k[o];if(!K)continue;K.c={rooms:Array(RL).fill(0),tiles:ROOMS.map(()=>[]),feat:ROOMS.map(()=>[0,0,0,0]),floor:0,walk:[],gates:[],marks:0,fighters:0,diggers:0,undead:0,prisoners:0,lava:0,sites:{},siteTiles:[],x:{},fear:0,summoned:0}}
   W.traps=[];
   if(W.hasLava==null)W.hasLava=W.tile.indexOf(T.LAVA)>=0;
   const tl=W.tile,ww=W.w,LV=T.LAVA;
@@ -720,7 +726,10 @@ function keeperTick(W,K,dt){
   if((K.payT-=dt)<=0){K.payT=PAYDAY;payday(W,K)}
   // enemy fighters inside our land near the Heart: raise the alarm so everyone turns out together
   if((K.alT=(K.alT||0)-dt)<=0){K.alT=1;const t=W.units.find(u=>foe(u,K.o)&&!hidden(W,u)&&u.k!=="digger"&&u.o!==WILD&&W.own[tileOf(W,u)]===K.o&&cheb(W,tileOf(W,u),K.hx,K.hy)<=14);
-    if(t){K.alarmT=W.t;K.alarmAt=tileOf(W,t);if(K.o===1)evT(W,"inv",30,"Enemies are inside your realm! Your creatures are turning out to fight.",K.alarmAt,"bad")}}
+    if(t){K.alarmT=W.t;K.alarmAt=tileOf(W,t);if(t.o<WILD&&W.t-(K.threatT||-999)>40){K.threat=K.alarmAt;K.threatBy=t.o}if(t.o<WILD)K.threatT=W.t;
+      if(K.o===1)evT(W,"inv",30,"Enemies are inside your realm! Your creatures are turning out to fight.",K.alarmAt,"bad")}
+    else if(c.siteTiles.length){const g=c.siteTiles.find(q=>W.units.some(u=>foe(u,K.o)&&!hidden(W,u)&&u.o!==WILD&&u.o!==NEUTRAL&&Math.hypot(u.x-q%W.w-.5,u.y-(q/W.w|0)-.5)<3.5));
+      if(g!=null){K.alarmT=W.t;K.alarmAt=g;if(K.o===1)evT(W,"sitealarm",40,"Rivals are at one of your old places! Your creatures are rushing there.",g,"bad")}}}
   if(K.ai&&W.spec.dark&&!W.spec.keep&&W.t>150){
     if(!c.gates.length){K.noGate=(K.noGate||0)+dt;
       if(K.noGate>20&&W.known[K.hy*W.w+K.hx])evT(W,"starve"+K.o,45,`${K.name} holds no Gate. Keep them off every Gate for ${Math.max(10,Math.ceil((150-K.noGate)/10)*10)} more seconds and they must give in.`,K.hy*W.w+K.hx,"good");
@@ -792,6 +801,7 @@ function hit(W,a,tg,amt,src){
     if(C&&C.alive&&tg.o!==by&&tg.k!=="digger"&&!KINDS[tg.k].undead&&jailRoom(W,C)>0){
       tg.hp=1;tg.ko=1;tg.koBy=by;tg.koT=C.c.feat[RM.JAIL][2]?100:40;tg.tgt=0;tg.path=null;tg.st=null;tg.raid=false;if(tg.task)endTask(W,tg);
       if(W.poss&&W.poss.id===tg.id)unpossess(W);
+      if(tg.o===1)ev(W,`Your ${KINDS[tg.k].name} was knocked out. ${C.name}'s diggers are dragging it off to their Jail!`,tileOf(W,tg),"bad");
       if(by===1)evT(W,"ko",10,`You knocked out a ${KINDS[tg.k].name}. Your diggers will carry it to your Jail.`,tileOf(W,tg),"good");
       return;
     }
@@ -861,13 +871,14 @@ function trapTick(W,dt){
     if(k===1||k===2){
       let trig=null;for(const u of W.units)if(hostileTo(u,o)&&!hidden(W,u)&&tileOf(W,u)===i){trig=u;break}
       if(!trig)continue;
+      learnTrap(W,trig,i,0);
       if(k===1){for(const u of W.units)if(hostileTo(u,o)&&tileOf(W,u)===i)hit(W,null,u,45,o);W.tcd[i]=2.5;fx(W,{k:"spike",x,y})}
       else{W.tcd[i]=14;rollBoulder(W,i,o,trig)}
     }else if(k===3){
       const near=W.units.filter(u=>hostileTo(u,o)&&Math.hypot(u.x-x,u.y-y)<1.7);if(!near.length)continue;
-      near.forEach(u=>hit(W,null,u,32,o));W.tcd[i]=4;fx(W,{k:"flame",x,y})
+      learnTrap(W,near[0],i,1);near.forEach(u=>hit(W,null,u,32,o));W.tcd[i]=4;fx(W,{k:"flame",x,y})
     }else if(k===4){
-      const t=nearestHostile(W,o,x,y,3.3);if(!t)continue;hit(W,null,t,24,o);W.tcd[i]=1.8;fx(W,{k:"bolt",x1:x,y1:y-.2,x2:t.x,y2:t.y,c:"#9FD8FF"})
+      const t=nearestHostile(W,o,x,y,3.3);if(!t)continue;learnTrap(W,t,i,2);hit(W,null,t,24,o);W.tcd[i]=1.8;fx(W,{k:"bolt",x1:x,y1:y-.2,x2:t.x,y2:t.y,c:"#9FD8FF"})
     }else if(k===5){
       const t=nearestHostile(W,o,x,y,2.6,true);if(!t)continue;const K=W.k[o];if(!K)continue;
       if(t.sp)t.spotT=W.t+8;
@@ -883,6 +894,9 @@ function trapTick(W,dt){
   }
   if(W.bould.length)W.bould=W.bould.filter(b=>!b.done);
 }
+/* a rival lord remembers where its creatures were hurt by a trap, and its raids go round if there is another way */
+function learnTrap(W,u,i,r){const K=u&&u.o<WILD?W.k[u.o]:null;if(!K||!K.ai)return;const N=W.w*W.h,a=W.av[u.o]||(W.av[u.o]=new Uint8Array(N));
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const j=i+dy*W.w+dx;if(j>=0&&j<N)a[j]=1}}
 function rollBoulder(W,i,o,trig){
   const w=W.w;let dx=0,dy=0;
   if(trig.path&&trig.pi<trig.path.length){let nx=trig.path[trig.pi];if(nx===i&&trig.pi+1<trig.path.length)nx=trig.path[trig.pi+1];
@@ -949,7 +963,7 @@ function unitTick(W,u,dt){
   if(u.jail){prisoner(W,u,dt);return}
   if(u.o===NEUTRAL){neutralTick(W,u,dt);return}
   if(W.poss&&W.poss.id===u.id){possessTick(W,u,dt);return}
-  if(u.k==="digger"){digger(W,u,dt);return}
+  if(u.k==="digger"){W._blk=u.o===1&&!(W.mark[tileOf(W,u)]&32)?32:0;digger(W,u,dt);W._blk=0;return}
   if(u.o<WILD&&!KINDS[u.k].undead){
     u.mood=Math.min(100,u.mood);
     if(u.mood<=0){u.hp=0;u.left=true;if(u.o===1)ev(W,`Your ${KINDS[u.k].name} was unhappy and left.`,tileOf(W,u),"bad");fx(W,{k:"poof",x:u.x,y:u.y,c:"#888"});return}
@@ -979,6 +993,7 @@ function prisoner(W,u,dt){
     // a broken prisoner tells everything: the map of its old master's realm
     let told="";if(tor&&was<WILD&&W.k[was]&&u.o===1){for(let j=0;j<W.own.length;j++)if(W.own[j]===was)W.known[j]=1;told=` It gave away the map of ${W.k[was].name}'s realm.`}
     if(u.o===1&&tor)W.stats.broken=(W.stats.broken||0)+1;
+    if(was===1&&u.o!==1)ev(W,`Your ${name} has been ${tor?"broken":"talked round"} by ${W.k[u.o].name}, and fights for them now.`,ti,"bad");
     if(u.o===1)ev(W,`A ${name}${was===HERO?" hero":was===WILD?" from the wild":""} has been ${tor?"broken":"won over"} and joins you!${told}`,ti,"good")}
 }
 /* lost creatures wait, and join whoever reaches them first */
@@ -1080,10 +1095,10 @@ function siteCount(W){
   for(const s of W.sites){
     if(s.k==="tomb"){if(!s.st){let g=0;for(const u of W.units)if(u.o===WILD&&u.hp>0&&u.home>=0&&cheb(W,u.home,s.i%W.w,s.i/W.w|0)<=1)g++;s.g=g}continue}
     const o=W.own[s.i],K=o&&o<WILD?W.k[o]:null,S=SITES[s.k],ho=K&&K.alive?o:0;
-    if(ho)K.c.sites[s.k]=(K.c.sites[s.k]||0)+1;
+    if(ho){K.c.sites[s.k]=(K.c.sites[s.k]||0)+1;K.c.siteTiles.push(s.i)}
     if(ho!==(s.o||0)){const was=s.o||0;s.o=ho;
       if(ho===1)ev(W,`You hold the ${S.name}: ${S.held}. Rivals will want it too.`,s.i,"good");
-      else if(was===1)ev(W,ho?`${K.name} has taken the ${S.name} from you!`:`You have lost the ${S.name}.`,s.i,"bad");
+      else if(was===1){ev(W,ho?`${K.name} has taken the ${S.name} from you!`:`You have lost the ${S.name}.`,s.i,"bad");if(ho)say(W,K,"took",s.i)}
       else if(ho&&W.known[s.i])ev(W,`${K.name} now holds the ${S.name}.`,s.i,"bad")}}
 }
 function siteTaken(W,s,o){
@@ -1094,7 +1109,7 @@ function siteTaken(W,s,o){
   else{K.manaBonus=(K.manaBonus||0)+200;K.mana+=200;const b=K.rp;K.rp+=60;spellCheck(W,K,b);txt="the Lich's Book: 200 more mana for good, and a leap in your research"}
   fx(W,{k:"sparkle",x:s.i%W.w+.5,y:(s.i/W.w|0)+.5});
   if(o===1){W.stats.treasure++;ev(W,`You opened the tomb! Inside: ${prize.toLocaleString("en-GB")} gold and ${txt}.`,s.i,"good")}
-  else ev(W,`${K.name} has opened a sealed tomb and carried off its treasure.`,W.known[s.i]?s.i:-1,"bad");
+  else{ev(W,`${K.name} has opened a sealed tomb and carried off its treasure.`,W.known[s.i]?s.i:-1,"bad");say(W,K,"tomb")}
 }
 
 /* ---------- things that happen as a game goes on ---------- */
@@ -1152,7 +1167,7 @@ function worldEvent(W,force){
 /* ---------- rockfalls: the bigger a dungeon grows, the more often part of what was dug fills in again ---------- */
 /* Rooms hold the roof up, and so does anything near a Heart. Open, empty floor far from home is what comes down. A warning comes first (W.fall.warn),
    so there is time to build a room on the spot */
-function fallOk(W,j){return W.tile[j]===T.FLOOR&&!W.room[j]&&!W.trap[j]&&!W.door[j]&&!siteAt(W,j)&&!W.k.some(K=>K&&K.alive&&cheb(W,j,K.hx,K.hy)<6)}
+function fallOk(W,j){return W.tile[j]===T.FLOOR&&!corridor(W,j)&&!W.room[j]&&!W.trap[j]&&!W.door[j]&&!siteAt(W,j)&&!W.k.some(K=>K&&K.alive&&cheb(W,j,K.hx,K.hy)<6)}
 function fallTick(W){
   const F=W.fall,w=W.w;
   if(F.warn.length){for(const q of F.warn)if(W.t>=q.at){q.done=1;let n=0;
@@ -1370,7 +1385,7 @@ function freeD(W,j,c){return W.digN[j*4+sideOf(W,j,c)]<DIG_SIDE}
 function freeC(W,i){const r=W.resC[i];if(!r)return true;const v=W.byId.get(r);return !(v&&v.hp>0&&!v.held&&v.task&&v.task.t==="claim"&&v.task.i===i)}
 function claimable(W,c,o){
   if(W.door[c]&&W.own[c]&&W.own[c]!==o)return false;
-  if(W.own[c]===o||!claimT(W.tile[c])||!freeC(W,c))return false;
+  if(W.own[c]===o||!claimT(W.tile[c])||!freeC(W,c)||o===1&&(W.mark[c]&32))return false;
   if(!nb4(W,c).some(j=>W.own[j]===o))return false;
   if(W.own[c]&&W.k[W.own[c]]&&W.k[W.own[c]].alive&&hostileNear(W,o,c,2.5))return false;
   // a tomb can't be claimed while its guardians stand
@@ -1382,7 +1397,7 @@ function endTask(W,u){const t=u.task;u.crate=null;if(t){
     if(t.t==="claim"&&W.resC[t.i]===u.id)W.resC[t.i]=0;
     if(t.t==="drag"){const v=W.byId.get(t.v);if(v&&v.carriedBy===u.id){v.carriedBy=0;v.x=u.x;v.y=u.y}}}
   u.task=null;u.path=null;u.pi=0;u.work=0}
-function collapse(W,i,o){const tr=W.treas[i];W.treas[i]=0;if(tr)treasure(W,i,tr,o);W.tile[i]=T.FLOOR;W.own[i]=0;W.gold[i]=0;W.mark[i]=0;W.digp[i]=0;fx(W,{k:"dust",x:i%W.w+.5,y:(i/W.w|0)+.5})}
+function collapse(W,i,o){const tr=W.treas[i];W.treas[i]=0;if(tr)treasure(W,i,tr,o);W.tile[i]=T.FLOOR;W.own[i]=0;W.gold[i]=0;W.mark[i]&=32;W.digp[i]=0;fx(W,{k:"dust",x:i%W.w+.5,y:(i/W.w|0)+.5})}
 function claimTile(W,i,o){
   const prev=W.own[i];W.own[i]=o;
   if(prev){W.room[i]=0;W.food[i]=0;W.trap[i]=0;W.door[i]=0;const P=W.k[prev];if(P&&P.bp)P.bp=P.bp.filter(b=>b.i!==i)}
@@ -1468,6 +1483,7 @@ function digger(W,u,dt){
       v.x=u.x;v.y=u.y;
       if(!dWalk(W,u,dt))return;
       v.carriedBy=0;v.x=u.x;v.y=u.y;
+      if(v.ko&&v.o===1&&u.o!==1){W.stats.lost++;ev(W,`${K.name} has locked your ${KINDS[v.k].name} in their Jail. Take that room from them to free it.`,tk.to,"bad");say(W,K,"caught",tk.to)}
       if(v.ko){v.ko=0;v.koBy=0;v.jail=u.o;v.pers=0;v.out=0;fresh(v);if(u.o===1){W.stats.captured++;ev(W,`A ${KINDS[v.k].name} is locked in your Jail.${K.c.rooms[RM.PERSUADE]||K.c.rooms[RM.TORTURE]?"":" Build a Persuasion room or a Torture chamber to turn prisoners to your side."}`,tk.to,"good")}}
       endTask(W,u);return;
     }
@@ -1505,7 +1521,7 @@ function digger(W,u,dt){
   const o=u.o,bit=1<<o,preferClaim=u.id%2===0;
   let dig=null,claim=-1;
   bfs(W,tileOf(W,u),c=>{
-    if(!dig)for(const j of nb4(W,c))if((W.mark[j]&bit)&&isRock(W.tile[j])&&freeD(W,j,c)){dig={i:j,stand:c};break}
+    if(!dig)for(const j of nb4(W,c))if((W.mark[j]&bit)&&isRock(W.tile[j])&&freeD(W,j,c)&&!(o===1&&(W.mark[j]&32))){dig={i:j,stand:c};break}
     if(claim<0&&claimable(W,c,o))claim=c;
     return preferClaim?claim>=0:!!dig;
   },2600,o);
@@ -1548,12 +1564,14 @@ function fighter(W,u,dt){
   if(st.regen&&u.hp<maxHp(u))u.hp=Math.min(maxHp(u),u.hp+maxHp(u)*st.regen*dt);
   if(st.greedy&&K&&K.gold<1500){u.mood-=.25*dt;if(u.o===1)evT(W,"wyrm",90,"Your Wyrm is sulking: it wants at least 1,500 gold in the hoard.",tileOf(W,u),"bad")}
   if(st.sneak&&spyTick(W,u,dt))return;
+  // a rival's raider that is badly hurt and far from home slips away to its bed
+  if(K&&K.ai&&u.raid&&!K.defending&&u.hp<maxHp(u)*.3&&cheb(W,tileOf(W,u),K.hx,K.hy)>8){u.raid=false;u.flee=W.t+30;u.tgt=0;u.path=null;u.st=null}
   if(st.heal&&(u.healT=(u.healT||0)-dt)<=0){u.healT=1;let best=null,bd=3.3;
     for(const v of W.units){if(v===u||v.o!==u.o||v.held||v.hp<=0||v.ko||v.jail)continue;if(v.hp>=maxHp(v))continue;const d=Math.hypot(v.x-u.x,v.y-u.y);if(d<bd){bd=d;best=v}}
     if(best){best.hp=Math.min(maxHp(best),best.hp+st.heal*mult);fx(W,{k:"heal",x1:u.x,y1:u.y-.2,x2:best.x,y2:best.y})}}
   if((u.scan-=dt)<=0){u.scan=.3+Math.random()*.15;let nt=findTarget(W,u);
     // Shades don't go looking for a fight: they only hit back at something on top of them
-    if(nt&&st.sneak){const c=W.byId.get(nt);if(!c||Math.hypot(c.x-u.x,c.y-u.y)>1.8)nt=0}
+    if(nt&&(st.sneak||u.flee>W.t)){const c=W.byId.get(nt);if(!c||Math.hypot(c.x-u.x,c.y-u.y)>1.8)nt=0}
     // never ignore something that is right next to us and fighting
     if(!nt&&u.tgt){const c=W.byId.get(u.tgt);if(c&&foe(c,u.o)&&Math.hypot(c.x-u.x,c.y-u.y)<3)nt=u.tgt}
     if(nt!==u.tgt){u.tgt=nt;u.path=null;u.rp=0}}
@@ -1583,7 +1601,9 @@ function fighter(W,u,dt){
       const d=Math.hypot(H.hx+.5-u.x,H.hy+.5-u.y)-1.5;
       if(d<=st.rng){u.st=null;u.face=H.hx+.5<u.x?-1:1;if(u.cd<=0){u.cd=cdOf(W,u);u.atkT=W.t;if(st.rng>2)fx(W,{k:"bolt",x1:u.x,y1:u.y-.2,x2:H.hx+.5,y2:H.hy+.5,c:"#C59BFF"});hitHeart(W,u,H,st.atk*mult)}return}
       if(u.st!=="rally"||!u.path||u.pi>=u.path.length||(u.rp-=dt)<=0){u.rp=3;
-        const p=findPath(W,tileOf(W,u),c=>Math.hypot(c%w+.5-H.hx-.5,(c/w|0)+.5-H.hy-.5)-1.5<=st.rng-.15);
+        const goal=c=>Math.hypot(c%w+.5-H.hx-.5,(c/w|0)+.5-H.hy-.5)-1.5<=st.rng-.15;
+        let p=null;if(K.ai&&W.av[u.o]){W._av=W.av[u.o];p=findPath(W,tileOf(W,u),goal);W._av=null}
+        if(!p)p=findPath(W,tileOf(W,u),goal);
         u.path=p;u.pi=0;u.st="rally";if(!p){u.st="rallyStuck";u.stT=3}}
       if(u.st==="rallyStuck"){if((u.stT-=dt)<=0)u.st=null;return}
       walk(W,u,dt);return;
@@ -1661,8 +1681,9 @@ function fighter(W,u,dt){
   if(T0[RM.PIT].length&&u.lvl<10&&u.k!=="hexer"&&u.k!=="spirit"&&u.hp>mh*.8&&Math.random()<.45){const g=pickTile(W,T0[RM.PIT]);if(go(W,u,c=>c===g,"spar",4000))return}
   const tr=u.k==="hexer"?RM.LIBRARY:RM.TRAINING,tl=T0[tr];
   if(tl.length&&K.gold>=(K.ai?(K.reserve||0)+150:20)&&u.lvl<10&&Math.random()<.65){const g=pickTile(W,tl);if(go(W,u,c=>c===g,"train",4000))return}
+  if(K.ai&&K.c.siteTiles.length&&Math.random()<.2){const g=pickOf(K.c.siteTiles),gx=g%w,gy=g/w|0;if(go(W,u,c=>Math.abs(c%w-gx)<=1&&Math.abs((c/w|0)-gy)<=1,"guard",4000))return}
   if(T0[RM.GUARD].length&&Math.random()<.45){const g=pickTile(W,T0[RM.GUARD]);if(go(W,u,c=>c===g,"guard",4000))return}
-  const near=K.c.walk.length?pickOf(K.c.walk):-1;
+  let near=-1;for(let q=0;q<5&&K.c.walk.length;q++){near=pickOf(K.c.walk);if(cheb(W,near,K.hx,K.hy)<=12)break}
   if(near>=0&&go(W,u,c=>c===near,"idle",1500))return;
   u.st="idle";u.stT=2;
 }
@@ -1728,16 +1749,18 @@ function aiThink(W,K,D){
   K.reserve=Math.round(wages*1.1);
   const want=Math.min(16,4+Math.floor(c.floor/35));
   if(c.diggers<3&&K.gold>=diggerCost(c.diggers)||c.diggers<want&&K.gold>diggerCost(c.diggers)+K.reserve*.5+100)summonDigger(W,K);
-  aiRooms(W,K);aiTraps(W,K);
-  // spells: lightning on intruders, healing for a hurt raid
-  if(W.spec.diff>0&&K.mana>=SPELLS[SP.LIGHT].cost&&W.t>=(K.spellT||0)){K.spellT=W.t+(W.spec.diff>1?6:11);const reach=W.spec.diff>1?14:9;const t=W.units.find(u=>foe(u,K.o)&&!hidden(W,u)&&u.o<=4&&u.k!=="digger"&&W.own[tileOf(W,u)]===K.o&&cheb(W,tileOf(W,u),K.hx,K.hy)<=reach);if(t)castSpell(W,K,SP.LIGHT,tileOf(W,t))}
-  if(K.attacking&&K.mana>=SPELLS[SP.HEAL].cost&&spellKnown(K,SP.HEAL)){const r=W.units.find(u=>u.o===K.o&&u.raid&&!u.ko&&u.hp<maxHp(u)*.45);if(r)castSpell(W,K,SP.HEAL,tileOf(W,r))}
+  aiTraps(W,K);aiRooms(W,K);aiSpells(W,K);
+  if(W.av[K.o]&&W.t>(K.avT||0)){K.avT=W.t+200;W.av[K.o].fill(0)}
+  // they talk
+  if(!K.met&&W.known[K.hy*w+K.hx]){K.met=1;K.idleT=W.t+200+Math.random()*120;say(W,K,"met",K.hy*w+K.hx)}
+  else if(K.met&&W.t>(K.idleT||0)){K.idleT=W.t+260+Math.random()*160;say(W,K,"idle")}
+  if(!K.saidHurt&&K.hp<K.maxhp*.5){K.saidHurt=1;say(W,K,"hurt",K.hy*w+K.hx)}
   // a guarded tomb on the doorstep: send the creatures to clear it, so the diggers can claim it
   if(!K.attacking&&!K.defending){
     if(K.siteT){const s=W.sites[K.siteN];if(W.t>K.siteT||!s||s.st||!s.g){K.siteT=0;K.rally=-1;for(const u of W.units)if(u.o===K.o)u.raid=false}}
     else if(W.t>(K.siteWait||0)){K.siteWait=W.t+20;
       const n=W.sites.findIndex(s=>s.k==="tomb"&&!s.st&&s.g>0&&c.walk.some(i=>cheb(W,i,s.i%w,s.i/w|0)<=3));
-      if(n>=0&&c.fighters>=6&&c.walk.length&&bfs(W,c.walk[0],i=>i===W.sites[n].i,w*W.h,K.o)>=0){K.siteT=W.t+80;K.siteN=n;K.siteWait=W.t+200;K.rally=W.sites[n].i;
+      if(n>=0&&c.fighters>=Math.max(6,W.sites[n].g*2+2)&&c.walk.length&&bfs(W,c.walk[0],i=>i===W.sites[n].i,w*W.h,K.o)>=0){K.siteT=W.t+80;K.siteN=n;K.siteWait=W.t+200;K.rally=W.sites[n].i;
         for(const u of W.units)if(u.o===K.o&&u.k!=="digger"&&!u.jail&&!u.ko&&!KINDS[u.k].sneak)u.raid=true}}
   }else K.siteT=0;
   aiWar(W,K,D,pe);
@@ -1749,7 +1772,7 @@ function aiWar(W,K,D,pe){
   const raiders=()=>W.units.filter(u=>u.o===K.o&&u.raid&&u.hp>0&&!u.ko&&!u.jail);
   // intruders inside the realm: everyone turns out to deal with them
   if(!K.attacking){
-    const intr=W.units.filter(u=>foe(u,K.o)&&!hidden(W,u)&&u.k!=="digger"&&u.o!==NEUTRAL&&W.own[tileOf(W,u)]===K.o);
+    const intr=W.units.filter(u=>foe(u,K.o)&&!hidden(W,u)&&u.k!=="digger"&&u.o!==NEUTRAL&&W.own[tileOf(W,u)]===K.o&&(u.o!==WILD||cheb(W,tileOf(W,u),K.hx,K.hy)<=7));
     if(intr.length>=2){const t=intr[0];K.rally=tileOf(W,t);K.defending=true;for(const u of W.units)if(u.o===K.o&&u.k!=="digger"&&!u.jail&&!u.ko)u.raid=true;return}
     if(K.defending){K.defending=false;K.rally=-1;for(const u of W.units)if(u.o===K.o)u.raid=false}
   }
@@ -1760,29 +1783,37 @@ function aiWar(W,K,D,pe){
       K.attacking=false;K.rally=-1;K.wave=(K.wave||0)+1;for(const u of W.units)if(u.o===K.o)u.raid=false;
       // after a beating, wait to heal and regroup; after a win, push on sooner
       K.attackAt=W.t+(done&&!beaten?60:D.every*.6/pe.bold)*(.8+Math.random()*.4);
-      if(beaten&&K.target===1&&T0&&T0.alive)ev(W,`${K.name}'s army is falling back.`,K.hy*w+K.hx,"good");
+      if(beaten&&K.target===1&&T0&&T0.alive){ev(W,`${K.name}'s army is falling back.`,K.hy*w+K.hx,"good");say(W,K,"back")}
       return;
     }
     if(K.phase==="gather"){
       const near=left.filter(u=>Math.hypot(u.x-(K.rally%w+.5),u.y-((K.rally/w|0)+.5))<4).length;
       if(near>=left.length*.7||W.t>K.gatherEnd){K.phase="march";K.rally=T0.hy*w+T0.hx;for(const u of left){u.st=null;u.path=null}
-        if(K.target===1)ev(W,`${K.name}'s army of ${left.length} is marching on your Heart!`,K.hy*w+K.hx,"bad");
+        if(K.target===1){ev(W,`${K.name}'s army of ${left.length} is marching on your Heart!`,K.hy*w+K.hx,"bad");say(W,K,K.early?"early":"raid")}
         else if(W.known[T0.hy*w+T0.hx]||W.known[K.hy*w+K.hx])ev(W,`${K.name} is attacking ${T0.name}!`,T0.hy*w+T0.hx,"")}
     }
     return;
   }
-  const first=D.first*.8/pe.bold;
-  if(W.t<Math.max(first,K.attackAt||0))return;
+  const first=D.first*.8/pe.bold,P1=W.k[1];
+  // your army is away from home with the flag: a Fair or Fierce lord takes the chance
+  let early=false;
+  if(W.spec.diff>=1&&P1&&P1.alive&&P1.rally>=0&&W.t>first*.6&&W.t>(K.oppT||0)&&W.t<Math.max(first,K.attackAt||0)&&cheb(W,P1.rally,P1.hx,P1.hy)>14){
+    let home=0,all=0;for(const u of W.units)if(u.o===1&&u.k!=="digger"&&u.hp>0&&!u.held){all++;if(cheb(W,tileOf(W,u),P1.hx,P1.hy)<=10)home++}
+    if(all>=4&&home<all*.4){early=true;K.oppT=W.t+240}}
+  if(!early&&W.t<Math.max(first,K.attackAt||0))return;
   const army=W.units.filter(u=>u.o===K.o&&u.k!=="digger"&&!KINDS[u.k].sneak&&u.hp>0&&!u.jail&&!u.ko&&u.hp>maxHp(u)*.6);
   const need=Math.min(D.army+2*(K.wave||0),aiCap(W,K)-2);
   if(army.length<need)return;
   // choose a target: the weakest realm we can reach, with a lean towards the player for bold lords
   const mine=strength(W,K);let best=null,bs=1e9;
+  // when one realm has run away with the game, everybody else turns on it
+  const all=W.k.filter(Q=>Q&&Q.alive).map(Q=>[strength(W,Q),Q]).sort((a,b)=>b[0]-a[0]),top=all.length>2&&all[0][0]>all[1][0]*1.5?all[0][1]:null;
   for(const T0 of W.k){if(!T0||T0===K||!T0.alive)continue;
     if(T0.o!==1&&W.t<D.first*1.6)continue;
     const st=strength(W,T0),d=Math.hypot(T0.hx-K.hx,T0.hy-K.hy);
-    let sc=st/mine*40+d*.5-(T0.o===1?8*pe.bold:0);if(st>mine*1.4)sc+=60;
+    let sc=st/mine*40+d*.5-(T0.o===1?8*pe.bold:0);if(st>mine*1.4)sc+=60;if(T0===top)sc-=45;
     if(sc<bs){bs=sc;best=T0}}
+  if(early)best=P1;
   if(!best)return;
   const start=c.walk.find(i=>ringOf(W,K,i));
   if(start==null||bfs(W,start,i=>ringOf(W,best,i),w*W.h)<0){
@@ -1793,7 +1824,7 @@ function aiWar(W,K,D,pe){
   let stage=-1,sd=1e9;for(const i of c.walk){const d=Math.hypot(i%w-best.hx,(i/w|0)-best.hy);if(d<sd&&walkT(W.tile[i])){sd=d;stage=i}}
   const send=army.sort((a,b)=>b.lvl-a.lvl).slice(0,W.spec.diff===0&&best.o===1?need:Math.max(need,army.length-2));
   for(const u of send){u.raid=true;u.st=null;u.path=null}
-  K.attacking=true;K.target=best.o;K.raidSize=send.length;K.phase="gather";K.gatherEnd=W.t+45;K.rally=stage;K.attackEnd=W.t+300;
+  K.attacking=true;K.early=early;K.target=best.o;K.raidSize=send.length;K.phase="gather";K.gatherEnd=W.t+45;K.rally=stage;K.attackEnd=W.t+300;
   if(best.o===1)ev(W,`${K.name} is gathering an army near your border…`,stage,"bad");
 }
 /* the realm keeps growing all game: out from the Heart, towards gold, Gates, lost creatures and the middle of the map */
@@ -1809,18 +1840,43 @@ function aiExpand(W,K,pe){
     if(c.gates.length<3)markRoute(W,K,digRoute(W,K,i=>W.gates.includes(i)&&W.own[i]!==K.o&&!(W.own[i]&&W.own[i]<WILD)&&cheb(W,i,K.hx,K.hy)<range,160));
     const lost=W.units.find(u=>u.o===NEUTRAL&&cheb(W,tileOf(W,u),K.hx,K.hy)<range);if(lost){const li=tileOf(W,lost);markRoute(W,K,digRoute(W,K,i=>i===li,200))}
     // old places: unopened tombs and anything worth holding that isn't ours yet
-    const st=W.sites.find(s=>!(s.k==="tomb"&&s.st)&&W.own[s.i]!==K.o&&cheb(W,s.i,K.hx,K.hy)<range+6);if(st)markRoute(W,K,digRoute(W,K,i=>i===st.i,220));
+    const st=W.sites.find(s=>!(s.k==="tomb"&&(s.st||s.g>0&&c.fighters<s.g*2+2))&&W.own[s.i]!==K.o&&cheb(W,s.i,K.hx,K.hy)<range+6);if(st)markRoute(W,K,digRoute(W,K,i=>i===st.i,220));
     if(K.gold<K.cap*.6)markRoute(W,K,digRoute(W,K,i=>(W.tile[i]===T.GOLD||W.tile[i]===T.GEM)&&cheb(W,i,K.hx,K.hy)<=range,100));
     if(c.marks>0)return;
   }
-  if(c.floor>=desired)return;
-  // frontier rock next to our floor, scored by closeness to home and to the middle of the map
-  const mx=W.w/2,my=W.h/2,cand=[];
-  for(const i of c.walk)for(const j of nb4(W,i)){if(W.tile[j]!==T.ROCK||(W.mark[j]&bit))continue;
-    const x=j%w,y=j/w|0;if(x<2||y<2||x>w-3||y>W.h-3)continue;
-    cand.push([Math.hypot(x-K.hx,y-K.hy)*.7+Math.hypot(x-mx,y-my)*.3+Math.random()*3,j])}
-  cand.sort((a,b)=>a[0]-b[0]);for(const [,j] of cand.slice(0,8))W.mark[j]|=bit;
+  // more ground: a new corridor, which later rooms will hang off
+  if(c.floor>=desired*.55||(K.plan||[]).some(q=>!q.done))return;
+  aiCorridor(W,K);
 }
+/* Rivals build like a keeper: corridors one tile wide, and every room its own chamber cut out of the rock, with a wall all round and one doorway.
+   K.plan [{r, tiles, door, t0, done 0 | 1 built | 2 given up}] */
+const CHAMBER={[RM.TREASURY]:[2,2],[RM.GUARD]:[2,2],[RM.CRYPT]:[2,2],[RM.JAIL]:[2,2],[RM.DEN]:[2,2],[RM.PERSUADE]:[2,2]};
+const DIR4=[[1,0],[-1,0],[0,1],[0,-1]];
+function aiChamber(W,K,r){
+  const w=W.w,h=W.h,[cw,ch]=CHAMBER[r]||[3,3],mx=w/2,my=h/2;let best=null,bs=1e9;
+  const rock=j=>W.tile[j]===T.ROCK||W.tile[j]===T.GOLD,taken=new Set();
+  for(const q of K.plan)if(!q.done){for(const j of q.tiles)taken.add(j);taken.add(q.door)}
+  for(const i of K.c.walk){if(W.room[i]||W.tile[i]!==T.FLOOR||W.door[i]||cheb(W,i,K.hx,K.hy)<2)continue;const x0=i%w,y0=i/w|0;
+    for(const [dx,dy] of DIR4){const ax=x0+dx,ay=y0+dy,d=ay*w+ax,px=dy,py=dx;
+      if(ax<3||ay<3||ax>w-4||ay>h-4||!rock(d)||taken.has(d))continue;
+      const depth=dx?cw:ch,wid=dx?ch:cw,off=-(wid>>1),tiles=[];let ok=true;
+      for(let a=1;a<=depth&&ok;a++)for(let b=off;b<off+wid;b++){const x=ax+dx*a+px*b,y=ay+dy*a+py*b,j=y*w+x;if(x<2||y<2||x>w-3||y>h-3||!rock(j)||taken.has(j)){ok=false;break}tiles.push(j)}
+      // rock all round it, apart from the doorway
+      for(let a=0;a<=depth+1&&ok;a++)for(let b=off-1;b<=off+wid;b++){if(a>=1&&a<=depth&&b>=off&&b<off+wid||a===0&&b===0)continue;
+        const x=ax+dx*a+px*b,y=ay+dy*a+py*b,j=y*w+x;if(x<1||y<1||x>w-2||y>h-2||walkT(W.tile[j])||taken.has(j)){ok=false;break}}
+      if(!ok)continue;
+      const cx=ax+dx*(depth+1)/2,cy=ay+dy*(depth+1)/2,sc=Math.hypot(cx-K.hx,cy-K.hy)+Math.hypot(cx-mx,cy-my)*.15+Math.random()*2;
+      if(sc<bs){bs=sc;best={r,tiles,door:d,t0:W.t,done:0}}}}
+  return best}
+function aiCorridor(W,K){
+  const w=W.w,h=W.h,bit=1<<K.o,mx=w/2,my=h/2,solid=j=>!walkT(W.tile[j]);let best=null,bs=1e9;
+  for(const i of K.c.walk){if(W.room[i]||W.tile[i]!==T.FLOOR||cheb(W,i,K.hx,K.hy)<2)continue;const x0=i%w,y0=i/w|0;
+    for(const [dx,dy] of DIR4){const L=5+Math.floor(Math.random()*3),px=dy,py=dx,tiles=[];let ok=true;
+      for(let a=1;a<=L;a++){const x=x0+dx*a,y=y0+dy*a,j=y*w+x;if(x<3||y<3||x>w-4||y>h-4||W.tile[j]!==T.ROCK&&W.tile[j]!==T.GOLD||!solid(j+py*w+px)||!solid(j-py*w-px)){ok=false;break}tiles.push(j)}
+      if(!ok||!solid((y0+dy*(L+1))*w+x0+dx*(L+1)))continue;
+      const ex=x0+dx*L,ey=y0+dy*L,sc=Math.hypot(ex-mx,ey-my)*.5+Math.hypot(ex-K.hx,ey-K.hy)*.4+Math.random()*4;
+      if(sc<bs){bs=sc;best=tiles}}}
+  if(!best)return false;for(const j of best)W.mark[j]|=bit;return true}
 /* the 3x3 block of free floor nearest the Heart, so a rival's rooms get their special shapes */
 function findBlock(W,K,free){let best=-1,bd=1e9;const w=W.w;
   for(const i of K.c.walk){if(!free(i))continue;let ok=true;for(let dy=0;dy<3&&ok;dy++)for(let dx=0;dx<3;dx++)if(!free(i+dy*w+dx)){ok=false;break}
@@ -1828,39 +1884,103 @@ function findBlock(W,K,free){let best=-1,bd=1e9;const w=W.w;
   return best}
 function blockNext(W,K,a,r,free){for(let dy=0;dy<3;dy++)for(let dx=0;dx<3;dx++){const j=a+dy*W.w+dx;if(W.room[j]===r&&W.own[j]===K.o)continue;return free(j)?j:-1}return -1}
 function aiRooms(W,K){
-  const c=K.c,R=c.rooms,F=c.fighters,d=W.spec.diff;
+  const c=K.c,R=c.rooms,F=c.fighters,d=W.spec.diff,bit=1<<K.o,pe=persona(K);
+  K.plan=K.plan||[];
+  // carry on with the chambers already planned: paint what has been dug and claimed, keep the digging marked, give up on ones that never get done
+  const pend=ROOMS.map(()=>0),inPlan=new Set();
+  for(const q of K.plan){if(q.done)continue;let left=0,painted=0;
+    for(const j of q.tiles){inPlan.add(j);if(W.room[j]===q.r&&W.own[j]===K.o)continue;left++;
+      if(W.tile[j]===T.FLOOR&&W.own[j]===K.o&&!W.room[j]){if(painted<3&&K.gold>=ROOMS[q.r].cost+50+(K.doorSave||0)&&buildRoom(W,K,j,q.r)){left--;painted++;R[q.r]++;c.tiles[q.r].push(j)}}
+      else if(isRock(W.tile[j]))W.mark[j]|=bit}
+    if(isRock(W.tile[q.door]))W.mark[q.door]|=bit;
+    if(!left)q.done=1;else{pend[q.r]+=left;if(W.t-q.t0>420){q.done=2;for(const j of q.tiles)W.mark[j]&=~bit}}}
+  if(K.plan.length>60)K.plan=K.plan.filter(q=>q.done!==2);
   const wants=[[RM.LAIR,Math.max(6,F-c.undead+3)],[RM.FARM,Math.ceil(F/2)+3],[RM.TRAINING,W.t>90?6:0],[RM.TREASURY,K.gold>K.cap*.8?R[RM.TREASURY]+2:0],
-    [RM.LIBRARY,W.t>300?6:0],[RM.WORKSHOP,W.t>360&&d>=1?4:0],[RM.TRAINING,W.t>600?10:0],[RM.LAIR,W.t>600?10:0],[RM.FARM,W.t>600?7:0],
+    [RM.LIBRARY,W.t>300?6:0],[RM.WORKSHOP,W.t>(d?360:520)?4:0],[RM.PIT,W.t>450&&d>=1?9:0],[RM.TRAINING,W.t>600?10:0],[RM.LAIR,W.t>600?10:0],[RM.FARM,W.t>600?7:0],
+    [RM.JAIL,W.t>520&&d>=1?4:0],[RM.TORTURE,W.t>680&&d>=1&&R[RM.JAIL]?(pe.id==="schemer"||d>1?9:0):0],[RM.PERSUADE,W.t>680&&d>=1&&R[RM.JAIL]&&pe.id!=="schemer"&&d<2?4:0],
     [RM.WORKSHOP,W.t>700&&d>=1?9:0],[RM.GUARD,W.t>800?4:0],[RM.CRYPT,W.t>900&&d>=2?4:0]];
-  // a rich lord spends: room for a bigger army, grander training and study, more guards
-  if(K.gold>(K.reserve||0)+2500){const cap=aiCap(W,K);wants.push([RM.LAIR,cap+2],[RM.FARM,Math.ceil(cap/2)+3],[RM.TRAINING,Math.max(9,Math.ceil(F*.7))],[RM.LIBRARY,9],[RM.GUARD,8],[RM.SHRINE,4],[RM.TREASURY,R[RM.TREASURY]+(K.gold>K.cap*.8?2:0)])}
-  const free=i=>W.tile[i]===T.FLOOR&&W.own[i]===K.o&&!W.room[i]&&!W.trap[i]&&!W.door[i]&&cheb(W,i,K.hx,K.hy)>2&&!K.bp.some(b=>b.i===i);
+  // a rich lord spends: room for a bigger army, grander training and study, more guards, somewhere to gamble
+  if(K.gold>(K.reserve||0)+2500){const cap=aiCap(W,K);wants.push([RM.LAIR,cap+2],[RM.FARM,Math.ceil(cap/2)+3],[RM.TRAINING,Math.max(9,Math.ceil(F*.7))],[RM.LIBRARY,9],[RM.GUARD,8],[RM.SHRINE,4],[RM.DEN,4],[RM.TREASURY,R[RM.TREASURY]+(K.gold>K.cap*.8?2:0)])}
+  const free=i=>W.tile[i]===T.FLOOR&&W.own[i]===K.o&&!W.room[i]&&!W.trap[i]&&!W.door[i]&&!inPlan.has(i)&&cheb(W,i,K.hx,K.hy)>2&&!siteAt(W,i)&&!K.bp.some(b=>b.i===i);
   K.anchor=K.anchor||{};
   for(const [r,n] of wants){
-    if(R[r]>=n||!allowed(W,"r",r))continue;
-    if(K.gold<ROOMS[r].cost+150)return;
+    if(R[r]+pend[r]>=n||!allowed(W,"r",r))continue;
+    if(K.gold<ROOMS[r].cost+150+(K.doorSave||0))return;
+    // open floor already there (a cave we have claimed, or a hall in a game saved before rivals built this way): use it
     let best=-1,a=K.anchor[r];
     if(a!=null&&a>=0)best=blockNext(W,K,a,r,free);
     if(best<0){a=findBlock(W,K,free);K.anchor[r]=a;if(a>=0)best=blockNext(W,K,a,r,free)}
-    if(best<0){let bs=1e9;for(const i of c.walk){if(!free(i))continue;
-      const adj=nb4(W,i).filter(j=>W.room[j]===r&&W.own[j]===K.o).length,sc=Math.hypot(i%W.w-K.hx,(i/W.w|0)-K.hy)-4*adj;
-      if(sc<bs){bs=sc;best=i}}}
-    if(best>=0){buildRoom(W,K,best,r);R[r]++;c.tiles[r].push(best)}
+    if(best>=0){buildRoom(W,K,best,r);R[r]++;c.tiles[r].push(best);return}
+    // otherwise cut a new chamber out of the rock; if there is nowhere for one, push a corridor out first
+    if(K.plan.filter(q=>!q.done).length<2){const q=aiChamber(W,K,r);
+      if(q){K.plan.push(q);for(const j of q.tiles)W.mark[j]|=bit;W.mark[q.door]|=bit}else if(c.marks<4)aiCorridor(W,K)}
     return;
   }
 }
+/* the way in: from where an enemy last broke in (or else the nearest rival's side), the tunnel tiles on the route to our Heart, outermost first */
+function aiApproach(W,K){
+  const c=K.c,w=W.w,start=c.walk.find(i=>ringOf(W,K,i));if(start==null)return [];
+  let tg=K.threat!=null&&W.own[K.threat]===K.o?K.threat:-1;
+  if(tg<0){let E=null,ed=1e9;for(const Q of W.k)if(Q&&Q.alive&&Q!==K){const dd=Math.hypot(Q.hx-K.hx,Q.hy-K.hy)-(Q.o===1?6:0);if(dd<ed){ed=dd;E=Q}}
+    if(!E)return [];let bd=1e9;for(const i of c.walk){const dd=Math.hypot(i%w-E.hx,(i/w|0)-E.hy);if(dd<bd){bd=dd;tg=i}}}
+  const p=findPath(W,start,q=>q===tg,6000,K.o);if(!p)return [];
+  const out=[];let last=-99;for(let n=p.length-1;n>=0;n--){const i=p[n];if(W.own[i]===K.o&&corridor(W,i)&&cheb(W,i,K.hx,K.hy)>=3&&last-n>=3||out.length===0&&W.own[i]===K.o&&corridor(W,i)&&cheb(W,i,K.hx,K.hy)>=3){out.push(i);last=n}}
+  return out}
+/* Doors and traps, and how hard a lord is decides where and how many.
+   Gentle: two wooden doors at most, on the treasury and the lair, and a spike pit or a bell. Fair: iron when they can, on the main rooms and across the way in.
+   Fierce: the best doors they can make on every room, at the Heart itself and twice over on the way in, with traps waiting behind them */
 function aiTraps(W,K){
-  const c=K.c,d=W.spec.diff;
-  if(!c.rooms[RM.WORKSHOP]||K.bp.length>=2||K.gold<350+(K.reserve||0))return;
-  const rich=K.gold>(K.reserve||0)+2500?2:0;
-  let doors=0,traps=0;for(const i of c.walk){if(W.door[i])doors++;if(W.trap[i])traps++}
-  for(const b of K.bp)if(b.t==="d")doors++;else traps++;
-  const ok=i=>W.tile[i]===T.FLOOR&&!W.room[i]&&!W.trap[i]&&!W.door[i]&&!K.bp.some(b=>b.i===i);
-  if(doors<1+d+rich){const cand=c.walk.filter(i=>ok(i)&&corridor(W,i)&&cheb(W,i,K.hx,K.hy)>=4&&cheb(W,i,K.hx,K.hy)<=12);
-    if(cand.length){const ks=[3,2,1].filter(k=>allowed(W,"i","d"+k)&&itemNeedOk(K,DOORS[k].need)&&(k<3||d>=2));if(ks.length){placeBP(W,K,pickOf(cand),"d",ks[0]);return}}}
-  if(traps<2+2*d+rich*2){const cand=c.walk.filter(i=>ok(i)&&cheb(W,i,K.hx,K.hy)>=3&&cheb(W,i,K.hx,K.hy)<=7);
-    if(cand.length){const ks=[1,2,3,4].filter(k=>allowed(W,"i","t"+k)&&itemNeedOk(K,TRAPS[k].need));if(ks.length)placeBP(W,K,pickOf(cand),"t",ks.length>1&&Math.random()<.7?ks[ks.length-1]:pickOf(ks))}}
+  const c=K.c,d=W.spec.diff,w=W.w;
+  K.doorSave=0;
+  if(!c.rooms[RM.WORKSHOP]||K.bp.length>=2)return;
+  const rich=K.gold>(K.reserve||0)+2500?1:0,spare=K.gold-(K.reserve||0)*.5-40;
+  let doors=0,traps=0;const dl=[];for(const i of c.walk){if(W.door[i]){doors++;dl.push(i)}if(W.trap[i])traps++}
+  for(const b of K.bp)if(b.t==="d"){doors++;dl.push(b.i)}else traps++;
+  const ok=i=>W.tile[i]===T.FLOOR&&W.own[i]===K.o&&!W.room[i]&&!W.trap[i]&&!W.door[i]&&!siteAt(W,i)&&!K.bp.some(b=>b.i===i);
+  const dk=[3,2,1].filter(k=>k<=d+1&&allowed(W,"i","d"+k)&&itemNeedOk(K,DOORS[k].need)&&DOORS[k].gold<=spare);
+  if(dk.length&&doors<[2,5,12][d]+rich*2){
+    const pri=d===0?[RM.TREASURY,RM.LAIR]:d===1?[RM.TREASURY,RM.LAIR,RM.LIBRARY,RM.TRAINING,RM.JAIL]:null,spots=[];
+    // doorways: a tunnel tile with one of our rooms right behind it
+    for(const i of c.walk){if(!ok(i)||!corridor(W,i))continue;const r=nb4(W,i).map(j=>W.own[j]===K.o?W.room[j]:0).find(x=>x);
+      if(r&&(!pri||pri.includes(r)))spots.push([pri?1+pri.indexOf(r):4,i]);
+      else if(d>=2&&cheb(W,i,K.hx,K.hy)===3)spots.push([3,i])}
+    if(d>=1){const ap=aiApproach(W,K).filter(ok);ap.slice(0,d>1?4:2).forEach((i,n)=>spots.push([d>1?n*.5:2+n,i]))}
+    if(spots.length){spots.sort((a,b)=>a[0]-b[0]);placeBP(W,K,spots[0][1],"d",dk[0]);return}}
+  else if(!dk.length&&doors<[2,5,12][d]&&[1,2,3].some(k=>k<=d+1&&allowed(W,"i","d"+k)&&itemNeedOk(K,DOORS[k].need)))K.doorSave=DOORS[1].gold+(K.reserve||0)*.5+60;
+  if(traps<[1,4,8][d]+rich*2){
+    const ks=(d?[1,2,3,4]:[1,5]).filter(k=>allowed(W,"i","t"+k)&&itemNeedOk(K,TRAPS[k].need)&&TRAPS[k].gold<=spare);if(!ks.length)return;
+    // behind a door first (the side nearer the Heart), then anywhere on the way in
+    let cand=[];for(const i of dl)for(const j of nb4(W,i))if(ok(j)&&Math.hypot(j%w-K.hx,(j/w|0)-K.hy)<Math.hypot(i%w-K.hx,(i/w|0)-K.hy))cand.push(j);
+    if(!cand.length)cand=c.walk.filter(i=>ok(i)&&cheb(W,i,K.hx,K.hy)>=3&&cheb(W,i,K.hx,K.hy)<=8);
+    if(cand.length)placeBP(W,K,pickOf(cand),"t",ks.length>1&&Math.random()<.7?ks[ks.length-1]:pickOf(ks))}
 }
+/* spells: Gentle lords cast none. Fair ones strike, curse, heal and hasten. Fierce ones also raise the dead at a threatened Heart and burn a crowd */
+function aiSpells(W,K){
+  const d=W.spec.diff;if(!d||W.t<(K.spellT||0))return;K.spellT=W.t+(d>1?5:10);
+  const can=k=>allowed(W,"s",k)&&spellKnown(K,k)&&K.mana>=spellCost(K,k),reach=d>1?16:10;
+  const inl=W.units.filter(u=>foe(u,K.o)&&!hidden(W,u)&&u.o<=4&&u.k!=="digger"&&W.own[tileOf(W,u)]===K.o&&cheb(W,tileOf(W,u),K.hx,K.hy)<=reach);
+  if(inl.length){const t=inl[0],ti=tileOf(W,t),near=inl.filter(u=>Math.hypot(u.x-t.x,u.y-t.y)<2.3).length;
+    if(d>1&&near>=4&&can(SP.HELL)){castSpell(W,K,SP.HELL,ti);return}
+    if(near>=3&&can(SP.CURSE)&&!(t.curseT>W.t)){castSpell(W,K,SP.CURSE,ti);return}
+    if(d>1&&W.t-K.hitT<4&&can(SP.RAISE)){const g=K.c.walk.find(i=>ringOf(W,K,i));if(g!=null){castSpell(W,K,SP.RAISE,g);return}}
+    if(can(SP.LIGHT)){castSpell(W,K,SP.LIGHT,ti);return}}
+  if(K.attacking){const rs=W.units.filter(u=>u.o===K.o&&u.raid&&!u.ko&&u.hp>0),hurt=rs.find(u=>u.hp<maxHp(u)*.45);
+    if(hurt&&can(SP.HEAL)){castSpell(W,K,SP.HEAL,tileOf(W,hurt));return}
+    const f=K.phase==="march"&&rs.find(u=>u.tgt&&!(u.haste>W.t));if(f&&can(SP.HASTE))castSpell(W,K,SP.HASTE,tileOf(W,f))}
+}
+/* what the lords say. Each has a manner: the builder is pompous, the raider blunt, the schemer smooth */
+const LINES={
+  builder:{met:["So that scratching was you. Do try not to track mud into my halls.","A neighbour! How tiresome. I had plans for that rock."],raid:["I have counted your creatures. I have more.","Do stand aside. My army is coming through."],early:["Your creatures are out, and your door is open. How careless."],
+    back:["A tactical withdrawal. I had the measure of you.","We shall call that a rehearsal."],hurt:["My Heart! Do you know what that cost to build?"],took:["That was wasted on you. It looks far better in my realm."],caught:["Your creature will be very comfortable. My cells are the best in the deep."],tomb:["An old king's treasure, for a better king."],
+    idle:["I have added a new wing. You would not understand the proportions.","Still digging in circles, I see.","My doors are iron. I only mention it.","One does wonder what you spend your gold on."]},
+  raider:{met:["Found you.","You. Good. I was getting bored."],raid:["I'm coming for your Heart. Try to make it last.","Lock your doors. It won't help."],early:["Nobody home? Then I'll let myself in."],
+    back:["Next time I bring everyone.","You bleed too. I saw it."],hurt:["Hit me again. See what happens."],took:["Mine now. Come and take it back."],caught:["Your creature screams well. It'll fight for me by morning."],tomb:["Dead kings don't need gold. I do."],
+    idle:["I can hear your diggers. They sound slow.","Sharpen something. You'll want it.","Your walls are thin.","I've eaten bigger realms than yours."]},
+  schemer:{met:["Ah. There you are. I have been watching for some time.","We should be friends. It is so much easier to reach a friend's Heart."],raid:["Nothing personal. You were simply nearest.","I did warn you. Or I meant to."],early:["Such a pity to leave your Heart unwatched."],
+    back:["I have learnt everything I came for.","Go on thinking you won that."],hurt:["Clever. I shall remember exactly who did this."],took:["You were not using it properly, dear."],caught:["Your creature has told me such interesting things about you."],tomb:["The dead keep secrets badly."],
+    idle:["I know how many beds you have. Shall I tell you?","One of your creatures is unhappy. I would look into that.","Someone is stealing from you. I could not say who.","Sleep well. I shall."]}};
+function say(W,K,key,i){if(!K||!K.ai||!K.alive||W.spec.surface)return;if(key!=="met"&&!W.known[K.hy*W.w+K.hx])return;
+  const L=LINES[persona(K).id][key];if(!L)return;ev(W,`${K.name}: “${L[Math.floor(Math.random()*L.length)]}”`,i==null?-1:i,"say"+K.o)}
 /* ---------- saving ---------- */
 function b64(u8){let s="";for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(s)}
 function unb64(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
@@ -1957,7 +2077,7 @@ function save(){if(!W)return;
 function quitToMenu(){save();W=null;renderMenu();show("menu")}
 
 /* ---------- The Long Dark: keep, war map, expeditions ---------- */
-let D=null,dkSel=-1,dkPick=null;
+let D=null,dkSel=-1,dkPick=null,digMode="dig";
 $("darkBtn").onclick=()=>{
   D=LS.get("hd.dark",null);
   if(!D){D=darkNew(Math.floor(Math.random()*1e9));W=newWorld(keepSpec(D));updVis(W);enterGame();keepIntro();return}
@@ -2152,6 +2272,9 @@ function renderFloat(){
   const K=W.k[1];
   if(held.length){const b=document.createElement("button");b.className="chip";b.textContent=`✋ Holding ${held.length} · tap your floor to drop`;b.onclick=()=>setTool("hand");f.append(b)}
   if(K.rally>=0){const b=document.createElement("button");b.className="chip";b.textContent="🚩 Call off the flag";b.onclick=()=>{K.rally=-1;renderFloat();toast("Your creatures are back to their own business.")};f.append(b)}
+  if(tool==="dig")for(const [m,t] of [["dig","⛏ Mark digging"],["nogo","🚫 No-go for diggers"]]){const b=document.createElement("button");b.className="chip";b.textContent=t;
+    if(digMode===m)b.style.cssText="background:var(--accent);color:var(--accent-ink)";
+    b.onclick=()=>{digMode=m;renderFloat();toast(m==="nogo"?"Tap or drag over anywhere your diggers must keep out of. They won't dig, claim or walk there. Tap again to lift it.":"Tap rock to mark it for digging. Hold, then drag, to mark lots.")};f.append(b)}
   if(W.spec.keep){const b=document.createElement("button");b.className="chip";b.style.borderLeft="3px solid #9B5CFF";b.textContent="🗺 War map";b.onclick=openDark;f.append(b)}
   $("handTool").innerHTML=held.length?`✋<small>Hand ${held.length}</small>`:"✋<small>Hand</small>";
 }
@@ -2164,8 +2287,9 @@ function tap(px,py){
   const i=tileAtScreen(px,py);if(i<0)return;
   const K=W.k[1],t=W.tile[i];
   if(tool==="look"){const u=unitAtScreen(px,py,false);if(u){sel={u:u.id};showInfo();return}sel={i};showInfo();return}
+  if(tool==="dig"&&digMode==="nogo"){if(!W.known[i]||t===T.HARD&&!W.own[i]){toast("Mark somewhere you have seen.");return}W.mark[i]^=32;if(W.mark[i]&32)W.mark[i]&=~2;W.rc=0;return}
   if(tool==="dig"){
-    if(isRock(t)){W.mark[i]^=2;W.rc=0}
+    if(isRock(t)){W.mark[i]^=2;W.mark[i]&=~32;W.rc=0}
     else if(t===T.HARD)toast("That rock is too hard to dig.","bad");
     return;
   }
@@ -2206,6 +2330,8 @@ function tap(px,py){
 }
 function rectApply(a,b){
   const w=W.w,x0=Math.min(a%w,b%w),x1=Math.max(a%w,b%w),y0=Math.min(a/w|0,b/w|0),y1=Math.max(a/w|0,b/w|0),K=W.k[1];
+  if(tool==="dig"&&digMode==="nogo"){const un=W.mark[a]&32;
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*w+x;if(!W.known[i])continue;if(un)W.mark[i]&=~32;else{W.mark[i]|=32;W.mark[i]&=~2}}W.rc=0;return}
   if(tool==="dig"){const unmark=isRock(W.tile[a])&&(W.mark[a]&2);
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*w+x;if(isRock(W.tile[i])){if(unmark)W.mark[i]&=~2;else W.mark[i]|=2}}W.rc=0;return}
   if(tool==="build"&&typeof buildSel==="string"&&buildSel!=="sell")return;
@@ -3108,6 +3234,9 @@ function draw(){
   const P=W.k[1];
   if(P.rally>=0){const [fx2,fy2]=w2s(P.rally%w+.5,(P.rally/w|0)+.5);c.strokeStyle="#ddd";c.lineWidth=Math.max(1.5,s*.05);c.beginPath();c.moveTo(fx2,fy2+s*.3);c.lineTo(fx2,fy2-s*.6);c.stroke();
     c.fillStyle=OWN_COL[1];c.beginPath();c.moveTo(fx2,fy2-s*.6);c.lineTo(fx2+s*.45,fy2-s*.45+Math.sin(W.t*5)*s*.04);c.lineTo(fx2,fy2-s*.3);c.fill()}
+  // no-go ground for your diggers
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*w+x;if(!(W.mark[i]&32)||!W.known[i])continue;const [sx,sy]=w2s(x,y);
+    c.fillStyle="rgba(210,40,40,.16)";c.fillRect(sx,sy,s,s);c.strokeStyle="rgba(235,70,70,.75)";c.lineWidth=Math.max(1.5,s*.06);c.beginPath();c.moveTo(sx+s*.15,sy+s*.85);c.lineTo(sx+s*.85,sy+s*.15);c.moveTo(sx+s*.15,sy+s*.4);c.lineTo(sx+s*.4,sy+s*.15);c.moveTo(sx+s*.6,sy+s*.85);c.lineTo(sx+s*.85,sy+s*.6);c.stroke()}
   // the roof is about to come down here
   if(W.fall)for(const q of W.fall.warn){if(!q.snd){q.snd=1;if(W.known[q.i])snd("rumble")}
     for(const j of q.tiles){if(!W.known[j])continue;const [sx,sy]=w2s(j%w,j/w|0);if(sx>VW||sy>VH||sx<-s||sy<-s)continue;const left=Math.max(0,q.at-W.t),a=.25+.25*Math.sin(W.t*(14-left));
