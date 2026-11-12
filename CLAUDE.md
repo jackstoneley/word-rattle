@@ -315,7 +315,7 @@ fills in after a 9 s warning, more often the more floor a keeper has. Page: `ope
 ### Life (`games/life`)
 
 An evolve-a-creature game (in the genre of the evolution sims, with its own names and art), built a stage at a time:
-`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell**, **sea**, **land**, **tribe** and (part 1 of) **civ** stages exist. `S.stage` is "cell", "sea", "land", "tribe" or "civ"; `cur(S)` is that stage's state
+`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; all six exist. `S.stage` is "cell", "sea", "land", "tribe", "civ" or "space"; `cur(S)` is that stage's state
 (`S.cell` / `S.sea` / `S.land`; the tribe stage keeps `S.land` as `cur` and has its own `S.tribe`) and `TS(S)` its sizes (`TIERS` / `SEA_TIERS` / `LAND_TIERS`, land has one: the brain bar). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
 A creature is a design `{s: [segment radii, head first], p: [{id, s: segment, a: angle (0 = front), m: mirrored}], h, l, h2,
 pat, edge}`; `geom` places the parts, `stats` turns them into speed, bite, health, sight and so on, `designValue` is its DNA
@@ -421,9 +421,31 @@ a town over (`C.how` counts your wins by war, faith, arts; a nation with no town
 Resource spots `W.spots` (all glowstone, then a meadow and spring per island from stream 2003, then ores appended; `SPOT_K`) are held by
 outposts in `S.civ.claims` {spot: {own, hp}} (`civClaim`). Diplomacy `civDiplo` (gift, deal, ally at 60, war, peace), trade `civTradeOffers`,
 nations' offers `C.offer`. Government `C.gov` {tax (`TAX`), pol (two `POLICIES`), polT}. A dock charts the map (`C.charted`). Every island has
-a town site that can take a dock (`W.harbour`). Losing every town: `civRestore` (normal) or death (hardcore). Next: the vehicle builder
-(designs decide how well carts, ships and airships do) and the Sky Ship finale. `tools/life-check.js` plays the whole stage with a bot
-that must unite the islands in under two hours and not under 15 minutes (about 30 minutes for the bot).
+a town site that can take a dock (`W.harbour`). Losing every town: `civRestore` (normal) or death (hardcore). `tools/life-check.js` plays the whole stage with a bot
+that must unite the islands in under two hours and not under 15 minutes (about 30 minutes for the bot), then builds the Sky Port and launches.
+**Vehicles** (part 3, in CORE after the civ code): a design is `{n, k: cart|ship|air|space, len, p: [{id, c: section, s: "t"|"s"|"b"}]}`
+(section 0 is the front; side parts count twice). `VP` parts (saved by id: append only; `k` kinds, `sl` slots, `un` a building, or for
+starship parts a space goal, that unlocks it), `vStats` (speed, war/faith/arts, hp, cargo, cost `c`, and for starships range, shield, dmg,
+energy, tools; `ok` says why a design can't go), `vClean`. `S.civ.vd` is the list (max 8; `vStarter`), saved with `civSaveDesign`. Units and
+settlers pick the best fitting design (`vFits`: carts on one island, ships across the sea from a dock town, airships anywhere with a `yard`) and
+carry `f` (`vJob`), `tough` (`vTough`), speed (`vSpeedF`) and `dv` (the design, for 3D); the trip costs the design's materials; the nations'
+units get `natVF`. Buildings `yard` and `skyport` (only in the capital once `C.won`); `civLaunch` pays the Sky Ship (a space design) in gold
+and calls `goToSpace`. Page: `vehMesh` (3D model of any design), the builder `openVB` / `renderVB` (screen `#vbld`, preview `VBR`),
+`civVehDlg`, `civLaunchDlg`.
+**Space** (`S.space`, code after the vehicles in CORE; page after them): a galaxy from `makeGalaxy(seed)` (`hash(seed, 3000, SPACE_V)`, cached
+in `GALAXY`: 60 stars plus bridge stars so the first ship (range `HOP0`) can reach every one, and one near the Core; planets `{ty, T, A, life, res,
+ruin, orb, ph, sp, r, sd}`; six empires `G.emp` with traits `EMP_TRAITS`, homes and starting worlds). Planet keys "star:planet"; saved state:
+`pown` (owner per planet, -1 none), `col` (colonies `{lvl, tur, def, home}`), `shaped` (`[T, A]`), `life`, `scan`, `dug`, `vis`, `zoo`, `goods`,
+`relic`, `cr`, `d` (the ship design), `at` (star; -1 is the Core), `travel {path, i, t, charge}`, `emp[1..6] {rel, war, ally, gone, met, mis, cd}`,
+`pir` (raids), `fleets`, `bands` (pirate bands by star), `goals`, `how`, `core`, `done`. The world `W.space` keeps `W.sys` (the system: `ships`,
+`fx`, `pdef`; never saved) and `W.ship`. Rules: `spFly` / `spRoute` (jumps no longer than `vs.range`; the Core once `united`), `spGo` /
+`spGoPlanet`, `spAct` (scan, dig, beam, shape, seed, colony, up, tur, sell, atk), `spDiplo` (gift up to 25, relic, ally at 60, war, peace,
+hand), missions (`spMisText`, `spMisDone`; they expire), `systemStep` (auto-firing lasers, enemy ships, planet guns, the Warden and its drones,
+ally escorts at the Core), `spTick` (income, raids and fleets wearing down colonies while you're away, empire growth, war and peace, missions),
+`spGoals` (`SPACE_GOALS`, append only; each unlocks a part). Page: `drawSpace` (galaxy and system views on the shared renderer, `SP3`; flat
+`drawSpace2D` without WebGL), `spaceTap`, `renderSpaceUI`, the panels (`spEmpDlg`, `spWorldsDlg`, `spZooDlg`, `spGoalsDlg`), `spaceEvent`,
+`spaceWonDlg` (the life story). Test starts `civend` and `space0`. `tools/life-check.js` plays space with `spaceBot` after the civ launch: it must
+reach the Core within four hours and not under 20 minutes (about 40-130 minutes for the bot); `--civ` runs only the civ and space stages.
 
 ### Adding a new game
 

@@ -614,6 +614,30 @@
         "🌍 Nations: send gifts, buy and sell, sign trade deals, form alliances, declare war and make peace. 📜 Govern: set taxes and pick two policies.",
         "Unite all five islands to finish this part. Your own vehicle designs and the Sky Ship come next."
       ]
+    },
+    {
+      "id": 54,
+      "type": "features",
+      "headline": "Life: design your own vehicles, and the Sky Ship",
+      "details": [
+        "🛠️ Vehicles in the Civilisation stage: design your own carts, ships and airships, part by part, and see them in 3D.",
+        "Your designs decide how well your units do: cannons make armies stronger, bells and shrines help missionaries, stages and banners help festivals, more wheels or sails make them faster, and heavy parts slow them down.",
+        "New: the 🎈 airship yard. Airships fly over land and sea from any of your towns.",
+        "Once the islands are united, build the 🛸 Sky Port in your capital, design the Sky Ship and launch it into space."
+      ]
+    },
+    {
+      "id": 55,
+      "type": "features",
+      "headline": "Life: the Space stage, the last stage of Life",
+      "details": [
+        "Fly your ship around a galaxy of about 80 stars. Tap the 🌌 Map to choose a star and jump there.",
+        "Scan planets, start colonies on mild worlds, and use the world shaper to make harsh worlds liveable. Colonies earn money and goods to sell.",
+        "Beam up creatures from living worlds for your collection, and plant life on your own worlds.",
+        "Meet six alien empires. Do missions for them, trade, give gifts and make allies, or go to war and take their worlds. Pirates and enemy fleets will attack your worlds.",
+        "Reaching goals unlocks new ship parts. Refit your ship at any of your worlds.",
+        "Unite the galaxy, then fly to the Core at its centre for the final battle and your species' whole story, from cell to stars."
+      ]
     }
   ]
 }

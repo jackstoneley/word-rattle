@@ -174,6 +174,26 @@ h1 span{color:var(--accent)}
 .ncard{border:2px solid;border-radius:14px;padding:8px 10px;margin:6px 0;display:flex;flex-direction:column;gap:4px}.ncard span{font-size:.8rem;color:var(--muted)}
 .nrel{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}.nrel i{display:block;height:100%}.nbtns{display:flex;flex-wrap:wrap;gap:4px}
 .cbtn.on{outline:2px solid #7CF2C8}
+#vbld{background:var(--bg);z-index:40}
+#vbName{width:100%;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 8px;font-weight:800;font-size:1.05rem}
+.vb3{flex:1;min-height:120px;width:100%;touch-action:none;background:radial-gradient(circle at 50% 40%,#1f4a66,#04161D)}
+.vbk{display:flex;gap:5px;padding:6px 10px;flex-wrap:wrap;align-items:center}
+.vbk button{padding:6px 10px;border-radius:99px;font-weight:800;font-size:.82rem;background:#0E3640;color:var(--muted)}
+.vbk button.on{background:var(--accent);color:var(--accent-ink)}
+.vbl{margin-left:auto;font-size:.82rem;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:6px}
+.vbl button{width:32px;height:32px;padding:0;font-size:1.1rem}
+.vbh{padding:2px 10px;display:flex;flex-direction:column;gap:4px;overflow-x:auto}
+.vbrow{display:flex;gap:4px;align-items:center}
+.vbrow i{flex:none;width:52px;font-style:normal;font-size:.72rem;font-weight:800;color:var(--muted)}
+.vbhd i{text-align:center;width:46px}.vbhd i:first-child{width:52px}
+.vbslot{flex:none;width:46px;height:40px;border-radius:10px;background:var(--panel);border:2px solid var(--line);font-size:1.25rem;color:var(--muted)}
+.vbslot.on{border-color:var(--accent);background:#0D3A3A}.vbslot.no{opacity:.2}
+.vbok{grid-column:1/-1;font-size:.78rem!important;color:var(--ink)!important}.vbok.no{color:var(--bad)!important}
+.vbs div b{color:var(--ink);font-size:.72rem}
+.vbhelp{color:var(--muted);font-size:.85rem;margin:auto;padding:0 10px;text-align:center}
+#vbTray .card{width:104px;gap:3px}#vbTray .card em{font-size:.62rem;font-style:normal;color:var(--muted);line-height:1.15}#vbTray .card.on{border-color:var(--accent)}
+.story{display:flex;flex-direction:column;gap:6px}.story div{background:var(--bg);border-radius:10px;padding:7px 10px;display:flex;flex-direction:column}.story b{font-size:.9rem}.story span{font-size:.82rem;color:var(--muted)}
+.zoo{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:50vh;overflow:auto}.zoo canvas{background:var(--bg);border-radius:10px}
 .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:46vh;overflow:auto;margin:6px 0}
 .cbtn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:7px 9px!important;white-space:normal;height:auto}
 .cbtn span{font-size:.75rem;opacity:.9}.cbtn em{font-size:.68rem;font-style:normal;color:var(--muted);line-height:1.2}.cbtn.off{opacity:.55}
@@ -200,7 +220,7 @@ h1 span{color:var(--accent)}
     <div class="road">
       <h3>The stages of life</h3>
       <ol id="road"></ol>
-      <p>The cell, sea, land and tribe stages are here now. Civilisation and Space arrive in later updates, and your species carries on into them.</p>
+      <p>All six stages are here: one species, from a speck in a pond to the heart of the galaxy.</p>
     </div>
   </div>
 </div>
@@ -229,6 +249,14 @@ h1 span{color:var(--accent)}
   <div class="abil" id="abil"></div>
 </div>
 
+<div id="vbld" class="screen" hidden>
+  <div class="etop"><button class="btn small" id="vbBack">Back</button><div class="emid"><input id="vbName" maxlength="20" aria-label="Design name"><span id="vbInfo"></span></div><button class="btn small primary" id="vbSave">Save</button></div>
+  <canvas id="vb3" class="vb3"></canvas>
+  <div class="vbk" id="vbKinds"></div>
+  <div class="vbh" id="vbHull"></div>
+  <div class="estats vbs" id="vbStats"></div>
+  <div class="etray" id="vbTray"></div>
+</div>
 <div id="edit" class="screen" hidden>
   <div class="etop">
     <button class="btn small" id="eBack">Leave</button>
@@ -260,8 +288,8 @@ const TAU = Math.PI * 2;
 const TIERS = [{ n: "Speck", g: 50 }, { n: "Mote", g: 85 }, { n: "Droplet", g: 120 }, { n: "Bloom", g: 160 }, { n: "Titan", g: 200 }];
 const KT = t => Math.pow(1.7, t);
 const SEA_TIERS = [{ n: "Fry", g: 95 }, { n: "Finling", g: 140 }, { n: "Glider", g: 185 }, { n: "Roamer", g: 230 }, { n: "Leviathan", g: 265 }];
-function cur(S) { return (S.stage === "land" || S.stage === "tribe" || S.stage === "civ") && S.land ? S.land : S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
-function TS(S) { return S && (S.stage === "land" || S.stage === "tribe" || S.stage === "civ") ? LAND_TIERS : S && S.stage === "sea" ? SEA_TIERS : TIERS; }
+function cur(S) { return (S.stage === "land" || S.stage === "tribe" || S.stage === "civ" || S.stage === "space") && S.land ? S.land : S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
+function TS(S) { return S && (S.stage === "land" || S.stage === "tribe" || S.stage === "civ" || S.stage === "space") ? LAND_TIERS : S && S.stage === "sea" ? SEA_TIERS : TIERS; }
 /* The sea: a bounded world, surface (and the shore) at y = 0, bands of depth going down. Each band has its own food
    size (it), plant and meat density, and share of hunters. Creatures belong to the band that suits their size. */
 const SEA = { W: 6000, D: 10000, bands: [
@@ -417,10 +445,13 @@ const STARTS = [["s0", "Cell stage, from the start", ""], ["s2", "Cell stage, Dr
   ["grown", "End of the cell stage", "A fully grown Titan: meet your mate to finish"], ["sea0", "Sea stage, from the start", "Fresh out of the pond"],
   ["sea2", "Sea stage, Glider size", "Size 3 of 5"], ["seaend", "End of the sea stage", "Fully grown, with lungs and leg fins: swim up to the shore"],
   ["land0", "Land stage, from the start", "Just out of the sea"], ["land50", "Land stage, halfway", "Brain half full"], ["land95", "End of the land stage", "One more friend or hunt fills the brain"],
-  ["tribe0", "Tribe stage, from the start", "Your first camp, with four neighbouring tribes"], ["civ0", "Civilisation stage, from the start", "Your capital and two towns on your own island"]];
+  ["tribe0", "Tribe stage, from the start", "Your first camp, with four neighbouring tribes"], ["civ0", "Civilisation stage, from the start", "Your capital and two towns on your own island"],
+  ["civend", "End of the Civilisation stage", "The islands united: build the Sky Port"], ["space0", "Space stage, from the start", "Your Sky Ship at your home world"]];
 function testStart(S, start) {
   if (!start || start === "s0") return S;
   S.test = true; const all = PARTS.map(p => p.id);
+  if (start.startsWith("space")) { testStart(S, "civ0"); S.civ.won = true; S.civ.how = { war: 1, faith: 2, arts: 1 }; goToSpace(S, skyStarter(), 500); return S; }
+  if (start === "civend") { testStart(S, "civ0"); S.civ.endTest = 1; return S; }
   if (start.startsWith("civ")) { testStart(S, "tribe0"); S.tribeNature = "shrewd"; goToCiv(S); return S; }
   if (start.startsWith("tribe")) { testStart(S, "land0"); S.landNature = "mixed"; goToTribe(S); return S; }
   if (start.startsWith("land")) {
@@ -468,6 +499,8 @@ function migrate(S) {
   } else if (S.stage === "tribe") S.stage = S.land ? "land" : "cell";
   if (S.civ && S.tribe) { const N5 = civStart(S); for (const k in N5) if (S.civ[k] === undefined) S.civ[k] = N5[k]; for (const k in N5.res) if (S.civ.res[k] === undefined) S.civ.res[k] = 0; }
   else if (S.stage === "civ") S.stage = S.tribe ? "tribe" : "land";
+  if (S.space && S.civ) { const N6 = spaceStart(S, S.space.d || skyStarter(), 0); for (const k in N6) if (S.space[k] === undefined) S.space[k] = N6[k]; vClean(S.space.d); }
+  else if (S.stage === "space") S.stage = S.civ ? "civ" : "land";
   return S;
 }
 function natureOf(c) { const t = c.ate.plant + c.ate.meat || 1, m = c.ate.meat / t; return m > .66 ? "hunter" : m < .34 ? "grazer" : "forager"; }
@@ -567,6 +600,7 @@ function addAlly(W) {
 }
 function viewR(W) { return W.player.st.view * W.player.k; }
 function newWorld(S, rs) {
+  if (S.stage === "space") return newSpace(S, rs);
   if (S.stage === "civ") return newCiv(S, rs);
   if (S.stage === "tribe") return newTribe(S, rs);
   if (S.stage === "land") return newLand(S, rs);
@@ -801,6 +835,7 @@ function useAb(W, P, ab) {
 }
 
 function stepWorld(W, dt, inp) {
+  if (W.space) return stepSpace(W, dt);
   if (W.land) return stepLand(W, dt);
   if (W.over) return;
   W.t += dt; const P = W.player, S = W.S, c0 = cur(S); S.time += dt;
@@ -2336,13 +2371,16 @@ const CB = [
   { id: "barracks", ic: "🛡️", n: "Barracks", c: { wood: 30, stone: 20, ore: 5 }, work: 34, max: 1, d: "Guards the town, and raises armies to take other towns or outposts." },
   { id: "wall", ic: "🧱", n: "Walls", c: { stone: 40 }, work: 38, max: 1, d: "Makes the town much harder to take by force." },
   { id: "dock", ic: "⚓", n: "Dock", c: { wood: 40, stone: 10 }, work: 32, max: 1, need: "coast", d: "Only by the sea. Ships carry settlers, armies, missionaries and troupes to other islands, and your sailors chart the islands." },
-  { id: "theatre", ic: "🎭", n: "Theatre", c: { wood: 30, stone: 20, gold: 20 }, work: 32, max: 1, make: { dye: .05 }, d: "Plays keep the town's own culture strong. Makes a little dye, and sends festival troupes to win other towns over." }];
+  { id: "theatre", ic: "🎭", n: "Theatre", c: { wood: 30, stone: 20, gold: 20 }, work: 32, max: 1, make: { dye: .05 }, d: "Plays keep the town's own culture strong. Makes a little dye, and sends festival troupes to win other towns over." },
+  { id: "yard", ic: "🎈", n: "Airship yard", c: { wood: 40, stone: 25, ore: 15, glow: 5 }, work: 40, max: 1, d: "Builds airships, which fly over land and sea from any of your towns. Unlocks balloons and propellers in the vehicle builder." },
+  { id: "skyport", ic: "🛸", n: "Sky Port", c: { wood: 80, stone: 80, ore: 40, glow: 30, gold: 150 }, work: 90, max: 1, d: "Only in your capital, once the islands are united. Builds the Sky Ship that carries your people to the stars." }];
 const CBD = {}; CB.forEach(b => { CBD[b.id] = b; });
 const CIV_GOALS = [{ id: "towns3", n: "Have three towns", g: 40 }, { id: "pop60", n: "Grow to 60 people", g: 60 }, { id: "ore", n: "Dig your first ore", g: 30 },
   { id: "glow", n: "Dig glowstone", g: 60 }, { id: "market", n: "Open a market", g: 30 }, { id: "temple", n: "Build a temple", g: 30 }, { id: "barracks", n: "Build barracks", g: 30 },
   { id: "gold", n: "Save up 300 gold", g: 50 }, { id: "wall", n: "Wall a town", g: 40 }, { id: "fill", n: "Settle every town site on your island", g: 80 },
   { id: "claim", n: "Claim a meadow, spring or glowstone", g: 40 }, { id: "ally", n: "Make an ally", g: 60 }, { id: "faith", n: "Win a town by faith", g: 60 }, { id: "arts", n: "Win a town with the arts", g: 60 },
-  { id: "conquer", n: "Take a town by force", g: 60 }, { id: "unite", n: "Unite all five islands", g: 200 }];
+  { id: "conquer", n: "Take a town by force", g: 60 }, { id: "unite", n: "Unite all five islands", g: 200 },
+  { id: "vdesign", n: "Design your own vehicle", g: 30 }, { id: "airship", n: "Build an airship yard", g: 50 }, { id: "skyport", n: "Build the Sky Port", g: 100 }];
 const SETTLE = { pop: 3, food: 30, wood: 30, min: 9 };
 function civStart(S) { return { v: CIV_V, t: 0, res: { food: 80, wood: 70, stone: 30, ore: 0, glow: 0, gold: 20, dye: 0, incense: 0 }, towns: null, goals: {}, wagons: [], seen: "", done: false }; }
 function goToCiv(S) { if (S.tribe) S.tribe.done = true; S.civ = S.civ || civStart(S); S.stage = "civ"; return S; }
@@ -2416,6 +2454,8 @@ function newCiv(S, rs) {
   W.seen = unpackBits(C.seen, LN * LN);
   if (!C.seen) for (let i = 0; i < LN * LN; i++) { const x = i % LN, y = (i / LN) | 0; if (A.isle[i] === 0 || nearIsle(A, x, y, 0, 3)) W.seen[i] = 1; } // you know your own island and its shores
   civInit2(W);
+  if (C.endTest) { C.endTest = 0; for (const tw of C.towns) { tw.own = 0; tw.rev++; } for (let k = 1; k <= 3; k++) C.nat[k].gone = true; C.won = true; C.charted = 1; C.how = { war: 1, faith: 1, arts: 1 };
+    Object.assign(C.res, { food: 300, wood: 300, stone: 300, ore: 150, glow: 80, gold: 700, dye: 60, incense: 60 }); for (let i = 0; i < LN * LN; i++) W.seen[i] = 1; }
   return W;
 }
 function nearIsle(A, x, y, k, r) { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < LN && ny < LN && A.isle[ny * LN + nx] === k) return true; } return false; }
@@ -2431,7 +2471,7 @@ function civNear(W, s) {
 const civHas = (tw, k) => tw.b.filter(b => b.k === k && b.done).length;
 function civCap(tw) { return 4 + civHas(tw, "house") * 5 + (tw.cap ? 6 : 0); }
 function civSlots(tw) { return Math.min(10, 3 + Math.floor(tw.pop / 6)); } // room for workplaces (houses and walls don't count)
-const civUsed = tw => tw.b.filter(b => b.k !== "house" && b.k !== "wall").length;
+const civUsed = tw => tw.b.filter(b => b.k !== "house" && b.k !== "wall" && b.k !== "skyport").length;
 function civMood(C, tw) { return clamp(55 + (C.gov ? TAX[C.gov.tax].mood + (hasPol(C, "draft") ? -10 : 0) + (hasPol(C, "ration") ? -10 : 0) + (hasPol(C, "arts") ? 10 : 0) : 0) + (tw.unrest > 0 ? -30 : 0) + civHas(tw, "theatre") * 10 + civHas(tw, "temple") * 25 - Math.max(0, tw.pop - civCap(tw)) * 5 - (C.res.food <= 0 ? 30 : 0) - Math.max(0, civUsed(tw) - 6) * 2, 0, 100); }
 /* How well a building does here: farms want grass, mills forest, quarries rock. */
 function civFit(tw, k) { const n = tw.near; return k === "farm" ? clamp(.35 + n.grass / 40, .35, 1.2) : k === "mill" ? clamp(.3 + n.forest / 30, .3, 1.2) : k === "quarry" ? clamp(.4 + n.rock / 20, .4, 1.2) : k === "mine" ? n.ore : k === "glow" ? n.glow : 1; }
@@ -2440,7 +2480,8 @@ function civCan(C, tw, k) {
   const B = CBD[k]; if (!B || tw.own !== 0) return "Not yours";
   if (B.need && !tw.near[B.need]) return B.need === "ore" ? "No ore near this town" : B.need === "glow" ? "No glowstone near this town" : "Not by the sea";
   if (B.max && tw.b.filter(b => b.k === k).length >= B.max) return "Already built";
-  if (k !== "house" && k !== "wall" && civUsed(tw) >= civSlots(tw)) return "No room: the town needs more people";
+  if (k === "skyport") { if (!C.won) return "Unite the islands first"; if (!tw.cap) return "Only in your capital"; }
+  if (k !== "house" && k !== "wall" && k !== "skyport" && civUsed(tw) >= civSlots(tw)) return "No room: the town needs more people";
   for (const r in B.c) if ((C.res[r] || 0) < B.c[r]) return "Not enough " + r;
   return "";
 }
@@ -2448,15 +2489,17 @@ function civBuild(W, tw, k) { const C = W.S.civ, why = civCan(C, tw, k); if (why
 function civFree(W, isle) { // free sites (isle -1: anywhere your ships can reach)
   if (isle === -1) return W.sites.filter(s => !W.S.civ.towns.some(tw => tw.site === s.n) && !W.S.civ.wagons.some(g => g.to === s.n)); const C = W.S.civ; return W.sites.filter(s => (isle == null || s.isle === isle) && !C.towns.some(tw => tw.site === s.n) && !C.wagons.some(g => g.to === s.n)); }
 /* Settlers: a wagon of people and supplies sets off to found a town on a free site on the same island. */
-function civSettle(W, tw, n) {
-  const C = W.S.civ, s = W.sites[n], from = W.sites[tw.site];
-  if (tw.own !== 0) return "Not yours"; if (s.isle !== from.isle && !civHas(tw, "dock")) return "That's across the sea: send settlers from a town with a dock";
-  if (!civFree(W, s.isle).includes(s)) return "Taken"; if (tw.pop < SETTLE.min) return `The town needs ${SETTLE.min} people first`;
+function civSettle(W, tw, n, vi) {
+  const C = W.S.civ, s = W.sites[n], from = W.sites[tw.site], cross = s.isle !== from.isle;
+  if (tw.own !== 0) return "Not yours"; if (!civFree(W, s.isle).includes(s)) return "Taken"; if (tw.pop < SETTLE.min) return `The town needs ${SETTLE.min} people first`;
   if (C.res.food < SETTLE.food || C.res.wood < SETTLE.wood) return `Settlers need ${SETTLE.food} food and ${SETTLE.wood} wood`;
-  const path = s.isle === from.isle ? findPath(W, from.x, from.y + LT, s.x, s.y + LT) : [[s.x, s.y + LT]]; if (!path) return "No way there over land";
+  const v = vi != null ? vi : vBest(W, "settle", cross), d = C.vd[v]; if (!d) return cross ? "That's across the sea: you need a ship design (and a dock), or an airship" : "None of your designs can carry them: make a cart";
+  const why = vFits(W, 0, d, cross); if (why) return why; if (cross && d.k === "ship" && !civHas(tw, "dock")) return "That's across the sea: send settlers from a town with a dock";
+  const path = !cross && d.k !== "air" ? findPath(W, from.x, from.y + LT, s.x, s.y + LT) : [[s.x, s.y + LT]]; if (!path) return "No way there over land";
   const pts = [[from.x, from.y + LT], ...path]; let len = 0; for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
-  C.res.food -= SETTLE.food; C.res.wood -= SETTLE.wood; tw.pop -= SETTLE.pop; tw.rev++;
-  C.wagons.push({ from: tw.site, to: n, t: 0, dur: Math.max(8, len / 45), pts: pts.map(p => p.map(Math.round)) }); return "";
+  const vs = vStats(d), extra = clamp(Math.floor(vs.cargo / 10), 0, tw.pop - SETTLE.min); for (const r in vs.c) C.res[r] -= vs.c[r];
+  C.res.food -= SETTLE.food; C.res.wood -= SETTLE.wood; tw.pop -= SETTLE.pop + extra; tw.rev++;
+  C.wagons.push({ from: tw.site, to: n, t: 0, dur: Math.max(8, len / (45 * vSpeedF(vs))), pts: pts.map(p => p.map(Math.round)), pop: SETTLE.pop + extra, dv: { k: d.k, len: d.len, p: d.p } }); return "";
 }
 function civStep(W, dt) {
   const C = W.S.civ; C.t += dt; W.civT += dt; if (W.civT < .5) return; const st = W.civT; W.civT = 0;
@@ -2480,7 +2523,7 @@ function civStep(W, dt) {
   if (!C.charted && hasDock(C, 0)) { C.charted = 1; for (let i = 0; i < LN * LN; i++) if (!W.seen[i]) { W.seen[i] = 1; W.seenNew.push(i); } W.ev.push({ t: "ccharted" }); }
   civUnits(W, st); civAI(W, st);
   const capR = 150 + C.towns.filter(tw => tw.own === 0).length * 60; for (const r of ["food", "wood", "stone", "ore", "dye", "incense"]) if (C.res[r] > capR) C.res[r] = capR; // stores only hold so much
-  for (let k = C.wagons.length - 1; k >= 0; k--) { const g = C.wagons[k]; g.t += st; if (g.t >= g.dur) { C.wagons.splice(k, 1); const s = W.sites[g.to]; const tw = civTown(C, s, 0, SETTLE.pop, []); tw.near = civNear(W, s); tw.rev = 1; W.ev.push({ t: "cfound", n: s.name }); } }
+  for (let k = C.wagons.length - 1; k >= 0; k--) { const g = C.wagons[k]; g.t += st; if (g.t >= g.dur) { C.wagons.splice(k, 1); const s = W.sites[g.to]; const tw = civTown(C, s, 0, g.pop || SETTLE.pop, []); tw.near = civNear(W, s); tw.rev = 1; W.ev.push({ t: "cfound", n: s.name }); } }
   civGoals(W);
 }
 function civGoals(W) {
@@ -2490,6 +2533,7 @@ function civGoals(W) {
   if (C.res.gold >= 300) done("gold"); if (any("wall")) done("wall"); if (!civFree(W, 0).length && !C.wagons.length) done("fill");
   if (C.claims && Object.values(C.claims).some(c => c.own === 0)) done("claim"); if (C.nat && C.nat.some(n => n && n.ally)) done("ally");
   if (C.how) { if (C.how.faith) done("faith"); if (C.how.arts) done("arts"); if (C.how.war) done("conquer"); } if (C.won) done("unite");
+  if (C.vdone) done("vdesign"); if (any("yard")) done("airship"); if (any("skyport")) done("skyport");
 }
 const civPop = C => C.towns.filter(tw => tw.own === 0).reduce((a, tw) => a + tw.pop, 0);
 /* ---- part 2: nations, the three ways to win, contested resources, diplomacy, taxes and policies ----
@@ -2535,6 +2579,7 @@ function civInit2(W) {
     W.spots.forEach((o, n) => { o.n = n; });
     if (!C.claimInit) { C.claimInit = 1; for (const o of W.spots) if (o.isle >= 1 && o.isle <= 3 && o.k !== "glow") C.claims[o.n] = { own: o.isle, hp: 60 }; } // each nation starts holding its own island's meadow and spring
   }
+  civInit3(C);
 }
 function civDefMax(tw) { return 60 + civHas(tw, "wall") * 120 + civHas(tw, "barracks") * 40 + tw.pop * 2; }
 function civGarrison(tw) { return 6 + civHas(tw, "barracks") * 12 + civHas(tw, "wall") * 10 + tw.pop * .15; }
@@ -2542,28 +2587,35 @@ const ownTowns = (C, o) => C.towns.filter(tw => tw.own === o);
 const hasDock = (C, o) => C.towns.some(tw => tw.own === o && civHas(tw, "dock"));
 function civArmyStr(C, o) { const b = ownTowns(C, o).reduce((a, tw) => a + civHas(tw, "barracks"), 0); return (40 + Math.min(6, b) * 12) * (o === 0 && hasPol(C, "draft") ? 1.33 : 1) * (o > 0 && C.nat[o].trait === "war" ? 1.2 : 1); }
 /* Which of an owner's towns can send this kind of unit to (x, y): it needs the right building, and a dock to cross the sea. */
-function civSource(W, o, kind, x, y, isle) {
+function civSource(W, o, kind, x, y, isle, air) {
   const C = W.S.civ, need = UNIT[kind].need; let best = null, bd = 1e18;
-  for (const tw of ownTowns(C, o)) { if (!civHas(tw, need)) continue; const s = W.sites[tw.site]; if (s.isle !== isle && !civHas(tw, "dock")) continue; const d = Math.hypot(s.x - x, s.y - y); if (d < bd) { bd = d; best = tw; } }
+  for (const tw of ownTowns(C, o)) { if (!civHas(tw, need)) continue; const s = W.sites[tw.site]; if (s.isle !== isle && !air && !civHas(tw, "dock")) continue; const d = Math.hypot(s.x - x, s.y - y); if (d < bd) { bd = d; best = tw; } }
   return best;
 }
 /* Send a unit at a town (to = {t: "town", id}) or a resource spot (to = {t: "spot", n}). Returns "" or why not. */
-function civSend(W, o, kind, to) {
+function civSend(W, o, kind, to, vi) {
   const C = W.S.civ, U = UNIT[kind], tg = to.t === "town" ? C.towns[to.id] : W.spots[to.n], tx = to.t === "town" ? W.sites[tg.site].x : tg.x, ty = to.t === "town" ? W.sites[tg.site].y : tg.y, isle = to.t === "town" ? W.sites[tg.site].isle : tg.isle;
   if (to.t === "town" && tg.own === o) return "That's yours already";
   if (kind === "army" && to.t === "town" && tg.own > 0 && o === 0 && !C.nat[tg.own].war) return "You're not at war with them";
   if (kind === "army" && o === 0 && to.t === "town" && tg.own > 0 && C.nat[tg.own].ally) return "They're your allies";
-  const src = civSource(W, o, kind, tx, ty, isle); if (!src) return `You need a town with ${CBD[U.need].ic} ${CBD[U.need].n.toLowerCase()}${hasDock(C, o) ? "" : " (and a dock to cross the sea)"}`;
-  if (o === 0) { for (const r in U.c) { const c = r === "gold" && kind === "army" && hasPol(C, "draft") ? U.c[r] * .7 : U.c[r]; if ((C.res[r] || 0) < c) return `Not enough ${r}`; } for (const r in U.c) C.res[r] -= r === "gold" && kind === "army" && hasPol(C, "draft") ? U.c[r] * .7 : U.c[r]; }
-  else { const n = C.nat[o], cost = kind === "army" ? 70 : 35; if (n.gold < cost) return "No gold"; n.gold -= cost; }
-  const s = W.sites[src.site], d = Math.hypot(tx - s.x, ty - s.y);
-  C.units.push({ id: C.nid++, own: o, k: kind, from: src.id, to, x0: s.x, y0: s.y, x1: tx, y1: ty, t: 0, dur: Math.max(6, d / U.sp), str: kind === "army" ? civArmyStr(C, o) : 0, st: "go", sie: 0 }); return "";
+  const noSrc = `You need a town with ${CBD[U.need].ic} ${CBD[U.need].n.toLowerCase()}${hasDock(C, o) ? "" : " (and a dock or an airship yard to cross the sea)"}`;
+  let src = null, V = null;
+  if (o === 0) { // pick the vehicle: the one asked for, or your best design that can make the trip
+    let why = "", bs = -1; for (const i of vi != null ? [vi] : C.vd.map((_, j) => j)) { const d = C.vd[i]; if (!d) continue; const sr = civSource(W, 0, kind, tx, ty, isle, d.k === "air"); if (!sr) { why = why || noSrc; continue; }
+      const cross = W.sites[sr.site].isle !== isle, e = vFits(W, 0, d, cross); if (e) { why = e; continue; }
+      const s = vStats(d), sc = vJob(s, kind) * (.6 + vSpeedF(s) * .4) / (kind === "army" ? vTough(s) : 1); if (sc > bs) { bs = sc; src = sr; V = { d, s }; } }
+    if (!src) return why || noSrc;
+    const c = Object.assign({}, V.s.c); delete c.cr; for (const r in U.c) c[r] = (c[r] || 0) + (r === "gold" && kind === "army" && hasPol(C, "draft") ? U.c[r] * .7 : U.c[r]);
+    for (const r in c) if ((C.res[r] || 0) < c[r]) return `Not enough ${r} (with the vehicle: ${Object.keys(c).map(k => k + " " + Math.round(c[k])).join(", ")})`; for (const r in c) C.res[r] -= c[r];
+  } else { src = civSource(W, o, kind, tx, ty, isle); if (!src) return noSrc; const n = C.nat[o], cost = kind === "army" ? 70 : 35; if (n.gold < cost) return "No gold"; n.gold -= cost; }
+  const s = W.sites[src.site], d = Math.hypot(tx - s.x, ty - s.y), f = o === 0 ? vJob(V.s, kind) : natVF(C), sp = o === 0 ? vSpeedF(V.s) : 1;
+  C.units.push({ id: C.nid++, own: o, k: kind, from: src.id, to, x0: s.x, y0: s.y, x1: tx, y1: ty, t: 0, dur: Math.max(6, d / (U.sp * sp)), str: kind === "army" ? civArmyStr(C, o) * f : 0, st: "go", sie: 0, f, tough: o === 0 ? vTough(V.s) : 1, dv: o === 0 ? { k: V.d.k, len: V.d.len, p: V.d.p } : null }); return "";
 }
 function unitXY(u) { const f = clamp(u.t / u.dur, 0, 1); return [u.x0 + (u.x1 - u.x0) * f, u.y0 + (u.y1 - u.y0) * f]; }
 /* Influence: faith from missionaries, culture from troupes; the town's own temples and theatres push back. */
-function civInfluence(W, o, tw, kind) {
+function civInfluence(W, o, tw, kind, vf) {
   const C = W.S.civ, f = kind === "miss" ? "f" : "c", home = tw.own, B = kind === "miss" ? civHas(tw, "temple") : civHas(tw, "theatre");
-  let p = 24 * (o === 0 && hasPol(C, kind === "miss" ? "faith" : "arts") ? 1.5 : 1) * (o > 0 && C.nat[o].trait === (kind === "miss" ? "faith" : "arts") ? 1.25 : 1) / (1 + B * .7);
+  let p = 24 * (vf || 1) * (o === 0 && hasPol(C, kind === "miss" ? "faith" : "arts") ? 1.5 : 1) * (o > 0 && C.nat[o].trait === (kind === "miss" ? "faith" : "arts") ? 1.25 : 1) / (1 + B * .7);
   if (home === 0 && hasPol(C, "closed")) p *= .5; if (home === 0 && kind === "fest" && hasPol(C, "trade")) p *= 1.3; if (home === 0 && kind === "miss" && hasPol(C, "faith")) p *= .6;
   tw.inf[f][o] = Math.min(100, tw.inf[f][o] + p); for (let k = 0; k < 4; k++) if (k !== o) tw.inf[f][k] = Math.max(0, tw.inf[f][k] - p * .35);
   W.ev.push({ t: "cinf", o, k: kind, n: tw.name, v: Math.round(tw.inf[f][o]), mine: home === 0 });
@@ -2629,14 +2681,14 @@ function civUnits(W, st) {
     if (u.st === "go") { u.t += st; if (u.t < u.dur) continue; u.st = "there"; }
     if (u.to.t === "spot") { // armies break outposts
       const cl = C.claims[u.to.n]; if (!cl || cl.own === u.own) { u.st = "done"; continue; }
-      cl.hp -= u.str * .15 * st; u.str -= 2 * st; if (cl.hp <= 0) { delete C.claims[u.to.n]; W.ev.push({ t: "cpost", o: u.own, k: W.spots[u.to.n].k }); u.st = "done"; if (u.own === 0 || cl.own === 0) civRel(W, u.own || cl.own, -10); } if (u.str <= 0) u.st = "done"; continue;
+      cl.hp -= u.str * .15 * st; u.str -= 2 * st * (u.tough || 1); if (cl.hp <= 0) { delete C.claims[u.to.n]; W.ev.push({ t: "cpost", o: u.own, k: W.spots[u.to.n].k }); u.st = "done"; if (u.own === 0 || cl.own === 0) civRel(W, u.own || cl.own, -10); } if (u.str <= 0) u.st = "done"; continue;
     }
     const tw = C.towns[u.to.id]; if (!tw || tw.own === u.own) { u.st = "done"; continue; }
-    if (u.k === "miss" || u.k === "fest") { civInfluence(W, u.own, tw, u.k); u.st = "done"; if (tw.own > 0 && u.own === 0 && C.nat[tw.own].trait !== "arts") civRel(W, tw.own, u.k === "miss" ? -4 : -2); continue; }
+    if (u.k === "miss" || u.k === "fest") { civInfluence(W, u.own, tw, u.k, u.f); u.st = "done"; if (tw.own > 0 && u.own === 0 && C.nat[tw.own].trait !== "arts") civRel(W, tw.own, u.k === "miss" ? -4 : -2); continue; }
     // a siege: the army wears the walls down while the garrison wears the army down
     const ally = u.own === 0 ? C.nat.slice(1).filter(n => n && n.ally && !n.gone).length * .25 : 0;
     const foes = C.units.filter(v => v.st === "there" && v.k === "army" && v.to.t === "town" && v.to.id === tw.id).length || 1;
-    tw.def -= u.str * .06 * (1 + ally) * st; u.str -= civGarrison(tw) * .25 / foes * st; tw.siege = W.t; u.sie += st;
+    tw.def -= u.str * .06 * (1 + ally) * st; u.str -= civGarrison(tw) * .25 / foes * st * (u.tough || 1); tw.siege = W.t; u.sie += st;
     if (tw.def <= 0) { civTake(W, tw, u.own, "war"); u.st = "done"; }
     else if (u.str <= 0) { u.st = "done"; W.ev.push({ t: "cbeaten", o: u.own, n: tw.name }); if (u.own > 0) for (const t2 of ownTowns(C, 0)) t2.def = Math.min(civDefMax(t2), t2.def + 10); }
   }
@@ -2691,6 +2743,438 @@ function civRestore(W) {
 function civOffer(W, yes) {
   const C = W.S.civ, o = C.offer; if (!o) return; C.offer = null;
   if (yes) { if ((C.res[o.r] || 0) < o.n) return; C.res[o.r] -= o.n; C.res.gold += o.gold; civRel(W, o.k, 8); } else civRel(W, o.k, -3);
+}
+/* ---- part 3: vehicles. A design is a hull of len sections; each section has a top (t), a side (s: one each side,
+   so side parts count twice) and a bottom (b) slot. Designs decide how fast units go and how well they do:
+   war parts make armies stronger, faith parts missionaries, arts parts festival troupes, armour and toughness cut
+   losses, holds carry more settlers. Starships (kind "space") are built the same way. VP is saved by id: append only. */
+const VK = { cart: { n: "Cart", ic: "🛻", min: 2, max: 4, c: { wood: 3 }, w: 1 }, ship: { n: "Ship", ic: "⛵", min: 2, max: 5, c: { wood: 3 }, w: 1 },
+  air: { n: "Airship", ic: "🎈", min: 2, max: 4, c: { wood: 2, gold: 3 }, w: .6 }, space: { n: "Starship", ic: "🚀", min: 2, max: 6, c: { cr: 10 }, w: 2 } };
+const VP = [
+  { id: "wheel", ic: "🛞", n: "Wheels", k: "cart", sl: "b", spd: 7, w: 1, c: { wood: 4 }, d: "A pair of wheels. A cart needs wheels under at least two sections." },
+  { id: "iwheel", ic: "⚙️", n: "Iron wheels", k: "cart", sl: "b", spd: 9, hp: 3, w: 2, c: { wood: 3, ore: 3 }, un: "mine", d: "Faster and tougher wheels." },
+  { id: "sail", ic: "⛵", n: "Sail", k: "ship", sl: "t", spd: 10, w: 1, c: { wood: 6 }, d: "Catches the wind. The more sails, the faster." },
+  { id: "oars", ic: "🚣", n: "Oars", k: "ship", sl: "s", spd: 3, w: .6, c: { wood: 3 }, d: "Rowers on both sides." },
+  { id: "keel", ic: "🔻", n: "Deep keel", k: "ship", sl: "b", spd: 2, hp: 6, w: 2, c: { wood: 6 }, d: "Steadier and tougher at sea." },
+  { id: "balloon", ic: "🎈", n: "Gas balloon", k: "air", sl: "t", lift: 9, w: .5, c: { wood: 2, gold: 8 }, un: "yard", d: "Lifts the airship. You need as much lift as weight." },
+  { id: "prop", ic: "🌀", n: "Propeller", k: "air ship", sl: "s", spd: 6, w: 1.2, c: { ore: 4 }, un: "yard", d: "Pushes airships and ships along." },
+  { id: "gcore", ic: "💎", n: "Glow engine", k: "cart ship air", sl: "b", spd: 15, lift: 3, w: 1, c: { glow: 3 }, un: "glow", d: "A glowstone engine: much faster, and it lifts a little." },
+  { id: "cannon", ic: "💣", n: "Cannon", k: "cart ship air", sl: "s", war: 9, w: 2.2, c: { ore: 4 }, un: "barracks", d: "Armies hit far harder. Heavy." },
+  { id: "ram", ic: "🐏", n: "Battering ram", k: "cart", sl: "t", war: 7, hp: 4, w: 2, c: { wood: 8 }, un: "barracks", d: "Breaks town walls faster." },
+  { id: "armour", ic: "🛡️", n: "Iron plates", k: "cart ship air", sl: "s", hp: 9, w: 2.5, c: { ore: 3 }, un: "mine", d: "Fewer losses in a siege. Heavy." },
+  { id: "bell", ic: "🔔", n: "Temple bell", k: "cart ship air", sl: "t", faith: 9, w: 1.5, c: { ore: 2, incense: 3 }, un: "temple", d: "Missionaries win hearts faster." },
+  { id: "shrine", ic: "⛩️", n: "Travelling shrine", k: "cart ship air", sl: "t", faith: 15, w: 3, c: { stone: 6, incense: 5 }, un: "temple", d: "Missionaries do much more. Heavy." },
+  { id: "banner", ic: "🎏", n: "Banners", k: "cart ship air", sl: "ts", arts: 5, w: .3, c: { dye: 2 }, un: "theatre", d: "Festival troupes do a little more. Light." },
+  { id: "stage", ic: "🎪", n: "Stage", k: "cart ship air", sl: "t", arts: 15, w: 3, c: { wood: 8, dye: 5 }, un: "theatre", d: "Festival troupes do much more. Heavy." },
+  { id: "hold", ic: "📦", n: "Hold", k: "cart ship air", sl: "sb", cargo: 10, w: 1.2, c: { wood: 5 }, d: "Room for supplies: settlers bring more people." },
+  { id: "thrust", ic: "🔥", n: "Thruster", k: "space", sl: "bs", spd: 9, w: 2, c: { cr: 20 }, d: "Speed between the stars and in a fight." },
+  { id: "warp", ic: "🌌", n: "Warp drive", k: "space", sl: "t", range: 150, w: 2.5, c: { cr: 60 }, un: "visit5", d: "Each one lets you jump 150 light years further." },
+  { id: "tank", ic: "🛢️", n: "Fuel tanks", k: "space", sl: "s", range: 25, w: 1, c: { cr: 12 }, d: "A little more jump range." },
+  { id: "plate", ic: "🛡️", n: "Hull plates", k: "space", sl: "s", hp: 35, w: 2.5, c: { cr: 15 }, d: "More hull: you can take more hits." },
+  { id: "shield", ic: "🔵", n: "Shield", k: "space", sl: "t", shield: 45, w: 2, c: { cr: 45 }, un: "sell", d: "Soaks up hits, and recharges when you're out of the fight." },
+  { id: "laser", ic: "🔫", n: "Laser", k: "space", sl: "st", dmg: 5, w: 1.3, c: { cr: 22 }, d: "Fires on its own at the nearest enemy." },
+  { id: "missile", ic: "🚀", n: "Missile rack", k: "space", sl: "t", msl: 1, w: 2, c: { cr: 40 }, un: "pirates", d: "Tap 🚀 to fire a heavy missile (uses energy)." },
+  { id: "scanner", ic: "📡", n: "Scanner", k: "space", sl: "t", scan: 1, w: .8, c: { cr: 10 }, d: "Scan planets: what they're like and what they hold." },
+  { id: "beam", ic: "🛸", n: "Abduction beam", k: "space", sl: "b", beam: 1, w: 1.2, c: { cr: 30 }, un: "scan5", d: "Beam up a creature from a living world for your collection." },
+  { id: "shaper", ic: "🌍", n: "World shaper", k: "space", sl: "b", shape: 1, w: 2, c: { cr: 50 }, un: "colony", d: "Warm, cool, thicken or thin a planet's air, a step at a time." },
+  { id: "seeder", ic: "🌱", n: "Life seeder", k: "space", sl: "b", seed: 1, w: 1.5, c: { cr: 50 }, un: "zoo3", d: "Plant your collected creatures on a world of yours." },
+  { id: "pod", ic: "📦", n: "Cargo pod", k: "space", sl: "sb", cargo: 15, w: 1.2, c: { cr: 10 }, d: "Carry more goods to sell each trip." },
+  { id: "reactor", ic: "⚡", n: "Glow reactor", k: "space", sl: "b", energy: 50, w: 2, c: { cr: 45 }, un: "shape", d: "More energy for missiles, repairs and tools." }];
+const VPD = {}; VP.forEach(p => { VPD[p.id] = p; });
+const VSTAT = ["spd", "lift", "war", "faith", "arts", "hp", "cargo", "range", "shield", "dmg", "msl", "scan", "beam", "shape", "seed", "energy"];
+function vStats(d) {
+  const K = VK[d.k], s = { w: d.len * K.w, c: {}, hp: 10 + d.len * 4, energy: 60, drive: 0 };
+  for (const f of VSTAT) if (s[f] == null) s[f] = 0;
+  const add = (c, m) => { for (const r in c) s.c[r] = (s.c[r] || 0) + c[r] * m; };
+  add(K.c, d.len);
+  for (const q of d.p) { const P = VPD[q.id]; if (!P) continue; const m = q.s === "s" ? 2 : 1; for (const f of VSTAT) if (P[f]) s[f] += P[f] * m; s.w += P.w * m; add(P.c, m);
+    if (q.s === "b" && (q.id === "wheel" || q.id === "iwheel" || q.id === "gcore")) s.drive++; }
+  if (d.k === "space") { s.hp += 40; s.speed = s.spd / (1 + s.w * .045); s.range = 200 + s.range; s.dmg = s.dmg || 1; }
+  else s.speed = s.spd / (1 + s.w * .09);
+  s.ok = d.k === "cart" && s.drive < 2 ? "A cart needs wheels under at least two sections" : (d.k === "ship" || d.k === "space") && s.spd <= 0 ? (d.k === "ship" ? "A ship needs a sail, oars or an engine" : "A starship needs a thruster")
+    : d.k === "air" && s.lift < s.w ? `Too heavy to fly: lift ${Math.round(s.lift)} for weight ${Math.round(s.w)}. Add balloons or take something off` : d.k === "air" && s.spd <= 0 ? "An airship needs a propeller or an engine" : "";
+  for (const r in s.c) s.c[r] = Math.round(s.c[r]);
+  return s;
+}
+/* How a design changes a unit: speed, its job (war, faith or arts), and how few it loses. */
+const vSpeedF = s => clamp(s.speed / 10, .45, 2.6);
+const vJob = (s, kind) => .85 + (kind === "army" ? s.war : kind === "miss" ? s.faith : s.arts) / 40;
+const vTough = s => 1 / (1 + Math.max(0, s.hp - 18) / 40);
+/* Which of a design's slots a part may go in, and the parts this save may use now. */
+function vSlotOk(P, k, sl) { return P.k.split(" ").includes(k) && P.sl.includes(sl); }
+function vUnlocked(W, P) {
+  if (!P.un) return true; const S = W.S;
+  if (P.k === "space") return !!(S.space && S.space.goals[P.un]);
+  return !!S.civ && S.civ.towns.some(tw => tw.own === 0 && civHas(tw, P.un));
+}
+function vStarter() {
+  return [{ n: "Farm cart", k: "cart", len: 2, p: [{ id: "wheel", c: 0, s: "b" }, { id: "wheel", c: 1, s: "b" }, { id: "hold", c: 1, s: "s" }] },
+    { n: "Longboat", k: "ship", len: 3, p: [{ id: "sail", c: 1, s: "t" }, { id: "oars", c: 0, s: "s" }, { id: "oars", c: 2, s: "s" }] }];
+}
+function skyStarter() { return { n: "Sky Ship", k: "space", len: 3, p: [{ id: "thrust", c: 2, s: "b" }, { id: "laser", c: 0, s: "s" }, { id: "plate", c: 1, s: "s" }, { id: "scanner", c: 1, s: "t" }, { id: "pod", c: 2, s: "s" }] }; }
+/* Clean a design (from the builder or an old save): known parts, in range, one per slot, allowed in that slot. */
+function vClean(d) {
+  const K = VK[d.k] || VK.cart; d.len = clamp(d.len | 0, K.min, K.max); const seen = {};
+  d.p = (d.p || []).filter(q => { const P = VPD[q.id], key = q.c + q.s; if (!P || q.c < 0 || q.c >= d.len || seen[key] || !vSlotOk(P, d.k, q.s)) return false; seen[key] = 1; return true; });
+  d.n = String(d.n || VK[d.k].n).slice(0, 20); return d;
+}
+function civInit3(C) { if (!C.vd) C.vd = vStarter(); C.vd.forEach(vClean); }
+/* Save a design to the list (i = -1 for a new one). */
+function civSaveDesign(W, i, d) {
+  const C = W.S.civ; vClean(d); const s = vStats(d); if (s.ok) return s.ok;
+  for (const q of d.p) if (!vUnlocked(W, VPD[q.id])) return "You haven't unlocked " + VPD[q.id].n;
+  if (i >= 0 && C.vd[i]) C.vd[i] = d; else { if (C.vd.length >= 8) return "Eight designs at most: change or delete one"; C.vd.push(d); }
+  C.vdone = 1; return "";
+}
+/* Can design d carry a unit from an island to another (cross) one, and is it ready? */
+function vFits(W, o, d, cross) {
+  const s = vStats(d); if (s.ok) return s.ok; const C = W.S.civ;
+  if (d.k === "air" && !C.towns.some(tw => tw.own === o && civHas(tw, "yard"))) return "You need an airship yard";
+  if (d.k === "space") return "That's a starship";
+  if (cross && d.k === "cart") return "Across the sea: use a ship or an airship";
+  if (!cross && d.k === "ship") return "That's on this island: use a cart or an airship";
+  for (const r in s.c) if (r !== "cr" && (C.res[r] || 0) < s.c[r]) return `Not enough ${r} to build it`;
+  return "";
+}
+/* The best of your designs for a job and a crossing, or -1. */
+function vBest(W, kind, cross) {
+  const C = W.S.civ; let b = -1, bs = -1;
+  C.vd.forEach((d, i) => { if (vFits(W, 0, d, cross)) return; const s = vStats(d), sc = (kind === "settle" ? 1 + s.cargo / 20 : vJob(s, kind)) * (.6 + vSpeedF(s) * .4) / (kind === "army" ? vTough(s) : 1); if (sc > bs) { bs = sc; b = i; } });
+  return b;
+}
+const natVF = C => 1 + Math.min(.6, C.t / 3000); // the nations' own engineers improve with time
+/* The Sky Ship: once the Sky Port stands, a starship design (paid for in gold) carries your people to the stars. */
+function civLaunch(W, d) {
+  const S = W.S, C = S.civ; if (!C.towns.some(tw => tw.own === 0 && civHas(tw, "skyport"))) return "Build the Sky Port first";
+  vClean(d); if (d.k !== "space") return "That's not a starship"; const s = vStats(d); if (s.ok) return s.ok;
+  for (const q of d.p) if (!vUnlocked(W, VPD[q.id])) return "Not available yet: " + VPD[q.id].n;
+  const cost = s.c.cr || 0; if (C.res.gold < cost) return `Building it costs ${cost} gold`;
+  C.res.gold -= cost; goToSpace(S, d, Math.min(800, C.res.gold) + 150); return "";
+}
+/* ======== The Space stage ========
+   A galaxy of about 60 stars (makeGalaxy: made from the seed, so it never changes), six alien empires and pirates.
+   S.space holds everything saved; the world W (W.space true) has W.G (the galaxy), W.sys (the star system you're in:
+   ships and shots, never saved) and W.vs (your ship's stats from vStats). Between stars you jump (spFly: no hop longer
+   than your range); in a system you fly where you tap (spGo), and act on a planet when close (spAct). Planets are
+   keyed "star:planet". Unite the galaxy (every empire an ally or gone), then reach the Core (star -1) and beat the Warden.
+   SPACE_GOALS, GOODS, EMP_TRAITS are saved by id: append only. */
+const SPACE_V = 1, CORE_R = 300, PIRATE = 9, WARDEN = 99, HOP0 = 200;
+const STAR_K = [{ n: "Red dwarf", c: 0xff8a6a, h: 1.6 }, { n: "Yellow sun", c: 0xffe08a, h: 2.4 }, { n: "White star", c: 0xf4f6ff, h: 3 }, { n: "Blue giant", c: 0x8ab4ff, h: 3.6 }];
+const PTYPES = { rock: { n: "Rocky world", c: 0x9a8a7a }, ice: { n: "Ice world", c: 0xcfe8ff }, lava: { n: "Lava world", c: 0xd8502a }, ocean: { n: "Ocean world", c: 0x2a7ad8 },
+  desert: { n: "Desert world", c: 0xd8b070 }, garden: { n: "Garden world", c: 0x5ab04a }, gas: { n: "Gas giant", c: 0xc8a0e0 } };
+const TEMPS = ["frozen", "cold", "mild", "hot", "scorching"], AIRS = ["no air", "thin air", "good air", "thick air", "crushing air"], LIFES = ["lifeless", "plants", "animals", "teeming with life"];
+const GOODS = { crystal: { ic: "💠", n: "Star crystal", p: 7 }, bloom: { ic: "🌺", n: "Moonbloom", p: 6 }, plasma: { ic: "🔥", n: "Plasma", p: 9 } };
+const EMP_TRAITS = [{ id: "war", n: "warlike", ic: "⚔️", likes: "beating pirates" }, { id: "trade", n: "traders", ic: "🪙", likes: "trade" }, { id: "faith", n: "devout", ic: "🙏", likes: "relics from old ruins" },
+  { id: "arts", n: "artistic", ic: "🎭", likes: "seeing new creatures in your collection" }, { id: "wise", n: "scholars", ic: "📚", likes: "news of stars you've explored" }];
+const EMP_COL = [0x7cf2c8, 0xff6b6b, 0xffc04a, 0xb48cff, 0x5db0e8, 0xff9adf, 0xa8e05a]; // you, then six empires
+const SPACE_GOALS = [{ id: "visit5", n: "Visit five stars", g: 80, un: "warp" }, { id: "scan5", n: "Scan five planets", g: 60, un: "beam" }, { id: "colony", n: "Found a colony", g: 80, un: "shaper" },
+  { id: "zoo3", n: "Collect three kinds of creature", g: 60, un: "seeder" }, { id: "shape", n: "Shape a world", g: 60, un: "reactor" }, { id: "sell", n: "Sell goods to an empire", g: 60, un: "shield" },
+  { id: "pirates", n: "Beat a pirate band", g: 80, un: "missile" }, { id: "mission", n: "Finish a mission for an empire", g: 100 }, { id: "relic", n: "Dig up a relic", g: 60 },
+  { id: "garden", n: "Bring life to a world", g: 120 }, { id: "colonies4", n: "Have four colonies", g: 120 }, { id: "ally", n: "Make an ally", g: 150 },
+  { id: "conquer", n: "Take a world by force", g: 120 }, { id: "unite", n: "Unite the galaxy", g: 300 }, { id: "core", n: "Reach the centre of the galaxy", g: 500 }];
+const GALAXY = {};
+function makeGalaxy(seed) {
+  if (GALAXY[seed]) return GALAXY[seed];
+  const R = rng(hash(seed, 3000, SPACE_V)), st = [], D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  for (let tries = 0; st.length < 60 && tries < 30000; tries++) {
+    const r = CORE_R + 30 + Math.sqrt(R()) * (980 - CORE_R - 30), arm = Math.floor(R() * 3), a = arm * TAU / 3 + r / 1000 * 3 + (R() - .5) * (R() < .7 ? .8 : 2.4);
+    const p = { x: Math.round(Math.cos(a) * r), y: Math.round(Math.sin(a) * r) }; if (st.some(s => D(s, p) < 105)) continue; st.push(p);
+  }
+  for (let n = 0; n < 40; n++) { // bridge any gap wider than the first ship's jump, so every star can be reached
+    const inn = new Set([0]); let grow = true; while (grow) { grow = false; for (let i = 0; i < st.length; i++) if (!inn.has(i)) for (const j of inn) if (D(st[i], st[j]) <= HOP0 - 15) { inn.add(i); grow = true; break; } }
+    if (inn.size === st.length) break;
+    let bi = 0, bj = 0, bd = 1e9; for (const i of inn) for (let j = 0; j < st.length; j++) if (!inn.has(j)) { const d = D(st[i], st[j]); if (d < bd) { bd = d; bi = i; bj = j; } }
+    const f = (HOP0 - 30) / bd; st.push({ x: Math.round(st[bi].x + (st[bj].x - st[bi].x) * f), y: Math.round(st[bi].y + (st[bj].y - st[bi].y) * f), br: 1 });
+  }
+  { const c = st.reduce((b, q) => Math.hypot(q.x, q.y) < Math.hypot(b.x, b.y) ? q : b), r = Math.hypot(c.x, c.y); if (r > 335) st.push({ x: Math.round(c.x / r * 335), y: Math.round(c.y / r * 335), br: 1 }); } // a way in to the Core, for a ship with a warp drive
+  const SY = ["ze", "ka", "or", "vy", "lu", "the", "qa", "ri", "mon", "sol", "xi", "dra", "ul", "pha", "en", "tor", "ae", "nyx", "bel", "cor", "is", "va"];
+  const nm = () => { let s = ""; const n = 2 + (R() < .35 ? 1 : 0); for (let i = 0; i < n; i++) s += SY[Math.floor(R() * SY.length)]; return s[0].toUpperCase() + s.slice(1); };
+  st.forEach((s, i) => {
+    s.n = i; s.name = nm(); const kr = R(); s.k = kr < .35 ? 0 : kr < .65 ? 1 : kr < .85 ? 2 : 3; s.pl = [];
+    const np = 1 + Math.floor(R() * 4);
+    for (let k = 0; k < np; k++) {
+      const T = clamp(Math.round(STAR_K[s.k].h - k * .9 + (R() - .5) * 1.6), 0, 4), A = clamp(Math.round(R() * 4.4 - .2), 0, 4);
+      const ty = k >= 1 && R() < .2 ? "gas" : T >= 4 ? "lava" : T <= 0 ? "ice" : T === 2 && A === 2 ? (R() < .65 ? "garden" : "ocean") : A >= 3 && T >= 2 ? "ocean" : A <= 1 && T >= 3 ? "desert" : "rock";
+      const life = ty === "garden" ? 2 : ty === "ocean" && T >= 1 && T <= 3 ? (R() < .6 ? 2 : 1) : ty === "rock" && A >= 1 && T >= 1 && T <= 3 && R() < .3 ? 1 : 0;
+      const res = ty !== "gas" && R() < .6 ? { rock: "crystal", desert: "crystal", ice: "crystal", lava: "plasma", ocean: "bloom", garden: "bloom" }[ty] : null;
+      s.pl.push({ k, ty, T, A, life, res, ruin: ty !== "gas" && R() < .16, r: ty === "gas" ? 9 + R() * 4 : 4 + R() * 3.5, orb: 30 + k * 22 + R() * 6, ph: R() * TAU, sp: .02 + R() * .025, name: s.name + " " + ["I", "II", "III", "IV"][k], sd: Math.floor(R() * 1e9) });
+    }
+  });
+  const far = (i, set) => Math.min(...set.map(j => D(st[i], st[j])));
+  let home = 0; st.forEach(s => { if (!s.br && Math.hypot(s.x, s.y) > Math.hypot(st[home].x, st[home].y)) home = s.n; });
+  const homes = [home]; for (let k = 0; k < 6; k++) { let b = -1, bd = -1; st.forEach(s => { if (homes.includes(s.n) || s.br) return; const d = far(s.n, homes); if (d > bd) { bd = d; b = s.n; } }); homes.push(b); }
+  const world = (s, ty) => { s.pl[0] = Object.assign(s.pl[0], { ty, T: 2, A: 2, life: 2, res: "bloom", ruin: false }); };
+  world(st[home], "garden");
+  const traits = ["war", "trade", "faith", "arts", "wise", ["war", "trade", "arts"][Math.floor(R() * 3)]].sort(() => R() - .5);
+  const emp = [null], pown = {}, lvl = {};
+  for (let k = 1; k <= 6; k++) {
+    const h = st[homes[k]]; world(h, R() < .5 ? "garden" : "ocean"); const d = randomDesign(rng(hash(seed, 3100, k)), traits[k - 1] === "war" ? "meat" : R() < .5 ? "plant" : "both", 3);
+    emp.push({ name: nm() + ["i", "ar", "ons", "ese", "ith"][Math.floor(R() * 5)], trait: traits[k - 1], home: h.n, d });
+    pown[h.n + ":0"] = k; lvl[h.n + ":0"] = 3;
+  }
+  for (let k = 1; k <= 6; k++) { // each empire starts with the stars nearest its home
+    const h = st[homes[k]], near = st.filter(s => !homes.includes(s.n) && D(s, st[home]) > 320 && !s.pl.some((p, j) => pown[s.n + ":" + j])).sort((a, b) => D(a, h) - D(b, h)).slice(0, 3 + Math.floor(R() * 2));
+    for (const s of near) { if (D(s, h) > 420) continue; const j = s.pl.map((p, j2) => j2).filter(j2 => s.pl[j2].ty !== "gas").sort((a, b) => spFit(s.pl[a]) - spFit(s.pl[b]))[0]; if (j == null) continue; pown[s.n + ":" + j] = k; lvl[s.n + ":" + j] = 1 + Math.floor(R() * 2); }
+  }
+  return GALAXY[seed] = { st, home, homes, emp, pown, lvl };
+}
+const spColCost = X => 100 + 50 * Math.max(0, Object.values(X.pown).filter(o => o === 0).length - 1);
+const spFit = (p, sh) => { const [T, A] = sh || [p.T, p.A]; return Math.abs(T - 2) + Math.abs(A - 2); }; // 0 is just right for life
+const pKey = (s, p) => s + ":" + p;
+function spStar(W, n) { return n === -1 ? { n: -1, x: 0, y: 0, name: "The Core", k: 3, pl: [], core: 1 } : W.G.st[n]; }
+function spTA(X, s, p) { return X.shaped[pKey(s.n, p.k)] || [p.T, p.A]; }
+function spLife(X, s, p) { const v = X.life[pKey(s.n, p.k)]; return v == null ? p.life : v; }
+function spOwner(X, key) { const o = X.pown[key]; return o == null ? -1 : o; }
+function starOwner(X, s) { const o = new Set(); s.pl.forEach(p => { const w = spOwner(X, pKey(s.n, p.k)); if (w >= 0) o.add(w); }); return [...o]; }
+function spaceStart(S, d, cr) {
+  return { v: SPACE_V, t: 0, cr: Math.round(cr), goods: { crystal: 0, bloom: 0, plasma: 0 }, relic: 0, d, at: null, travel: null, hp: null, en: 60, sh: 0,
+    pown: null, col: {}, shaped: {}, life: {}, scan: {}, dug: {}, vis: {}, zoo: [], goals: {}, emp: null, pir: [], fleets: [], bands: {}, kills: 0, deaths: 0, how: { ally: 0, war: 0 }, core: 0, done: false, united: false, pirT: 420 };
+}
+function goToSpace(S, d, cr) { if (S.civ) S.civ.done = true; S.space = S.space || spaceStart(S, d, cr); S.stage = "space"; return S; }
+function colDefMax(c) { return 60 + c.lvl * 40 + (c.tur || 0) * 60; }
+function newSpace(S, rs) {
+  const X = S.space, G = makeGalaxy(S.seed);
+  const W = { S, space: true, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), ev: [], G, sys: null, nid: 1, cr: [], items: [], pods: [] };
+  if (!X.pown) { X.pown = Object.assign({}, G.pown); for (const k in G.lvl) X.col[k] = { lvl: G.lvl[k], tur: G.lvl[k] > 2 ? 1 : 0 }; X.pown[pKey(G.home, 0)] = 0; X.col[pKey(G.home, 0)] = { lvl: 3, tur: 1, home: 1 }; }
+  for (const k in X.col) if (X.col[k].def == null) X.col[k].def = colDefMax(X.col[k]);
+  if (!X.emp) X.emp = [null].concat(G.emp.slice(1).map(E => ({ rel: E.trait === "war" ? -25 : E.trait === "trade" ? 10 : 0, war: false, ally: false, gone: false, met: false, warT: 0, mis: null, cd: { exp: 300 + W.R() * 200, fleet: 200, mis: 40 } })));
+  if (X.at == null) X.at = G.home;
+  W.vs = vStats(X.d); if (X.hp == null) X.hp = W.vs.hp; X.hp = Math.min(X.hp, W.vs.hp);
+  W.ship = { x: 0, y: 0, tx: 0, ty: 0, a: 0, cd: 0, tg: null, atk: null, hitT: -99 };
+  W.player = { get hp() { return X.hp; }, get max() { return W.vs.hp; }, ab: {}, st: { ab: {} }, x: 0, y: 0, k: 1, g: { R: 1 } };
+  X.vis[X.at] = 1;
+  if (X.travel) { X.travel.charge = 0; } else spEnter(W, X.at, true);
+  return W;
+}
+/* Arriving in a system: who's there. */
+function spEnter(W, n, quiet) {
+  const X = W.S.space, s = spStar(W, n), sy = W.sys = { n, t: 0, ships: [], fx: [], pdef: {} };
+  X.at = n; const first = !X.vis[n]; X.vis[n] = 1; W.ship.x = -125; W.ship.y = 10; W.ship.tx = -80; W.ship.ty = 10; W.ship.fp = null; W.ship.tg = null; W.ship.atk = null;
+  if (n === -1) { spawn(W, WARDEN, 1800, { t: "core" }, 1); for (let k = 1; k <= 6; k++) if (X.emp[k].ally && !X.emp[k].gone) { const e = spawn(W, -1, 160, { t: "esc" }, 1)[0]; e.x = -140; e.y = (k - 3.5) * 12; } W.ev.push({ t: "sCore" }); return; }
+  for (const k of starOwner(X, s)) if (k > 0 && !X.emp[k].met) { X.emp[k].met = true; W.ev.push({ t: "sMet", k }); }
+  if (first) { for (let k = 1; k <= 6; k++) { const E = X.emp[k]; if (E.met && !E.gone && W.G.emp[k].trait === "wise") spRel(W, k, 1.5); } }
+  for (const r of X.pir) if (r.at === n) spawn(W, PIRATE, r.str, { t: "pir", r }, 0);
+  for (const f of X.fleets) if (f.to === n && f.t >= f.dur) spawn(W, f.own, f.str, { t: "fleet", f }, 0);
+  if (X.bands[n]) spawn(W, PIRATE, X.bands[n].str, { t: "band", n }, 0);
+  else if (!quiet && !starOwner(X, s).length && X.t > 300 && W.R() < .15) { X.bands[n] = { str: 70 + Math.min(250, X.t / 25) }; spawn(W, PIRATE, X.bands[n].str, { t: "band", n }, 0); }
+  for (const p of s.pl) { const o = spOwner(X, pKey(n, p.k)); if (o > 0 && X.emp[o].war) spawn(W, o, 60 + X.t / 40, { t: "guard", k: o }, 0); }
+  // a mission to visit this star counts once you're here
+  for (let k = 1; k <= 6; k++) { const E = X.emp[k]; if (E.mis && E.mis.ty === "visit" && E.mis.star === n) spMisDone(W, k); }
+}
+function spawn(W, own, str, src, big) {
+  const X = W.S.space, out = [], each = big ? str : 55 + X.t / 30, n = big ? 1 : Math.max(1, Math.round(str / each));
+  for (let i = 0; i < n; i++) { const hp = str / n, a = W.R() * TAU, r = big ? 60 : 70 + W.R() * 40;
+    const e = { id: W.nid++, own, x: Math.cos(a) * r, y: Math.sin(a) * r, hp, max: hp, dmg: own === WARDEN ? 10 : own === -1 ? 7 : 3 + hp / 35, rng: own === WARDEN ? 55 : 36, cd: W.R(), spd: own === WARDEN ? 10 : 22, src, a };
+    W.sys.ships.push(e); out.push(e); }
+  return out;
+}
+const hostile = (X, e) => e.own === PIRATE || e.own === WARDEN || (e.own > 0 && e.own < 9 && X.emp[e.own].war);
+function plXY(X, p) { const a = p.ph + X.t * p.sp; return [Math.cos(a) * p.orb, Math.sin(a) * p.orb]; }
+/* Jump routes: hops no longer than the ship's range; the Core only once the galaxy is united. */
+function spRoute(W, from, to) {
+  const X = W.S.space, st = W.G.st, rg = W.vs.range, N = st.length, node = i => i === -1 ? { x: 0, y: 0 } : st[i];
+  if (to === -1 && !X.united) return null;
+  const dist = new Map([[from, 0]]), prev = new Map(), open = [from], done = new Set();
+  while (open.length) {
+    open.sort((a, b) => dist.get(a) - dist.get(b)); const u = open.shift(); if (done.has(u)) continue; done.add(u); if (u === to) break;
+    const nb = []; for (let i = 0; i < N; i++) nb.push(i); if (X.united) nb.push(-1);
+    for (const v of nb) { if (v === u || done.has(v)) continue; const d = Math.hypot(node(u).x - node(v).x, node(u).y - node(v).y); if (d > rg) continue; const nd = dist.get(u) + d + 40; if (!dist.has(v) || nd < dist.get(v)) { dist.set(v, nd); prev.set(v, u); open.push(v); } }
+  }
+  if (!dist.has(to)) return null; const path = [to]; while (path[0] !== from) path.unshift(prev.get(path[0])); return path;
+}
+function spFly(W, to) {
+  const X = W.S.space; if (X.travel) return "Already on the way"; if (to === X.at) return "You're here";
+  const path = spRoute(W, X.at, to); if (!path) return to === -1 ? (X.united ? "Too far: you need a longer jump (a warp drive)" : "The Core is sealed until the galaxy is united") : "Too far to jump: you need more range (fuel tanks or a warp drive)";
+  const fight = W.sys && W.sys.ships.some(e => hostile(X, e));
+  X.travel = { path, i: 0, t: 0, charge: fight ? 3 : .8 }; return "";
+}
+const spSpeedF = vs => clamp(vs.speed / 5, .5, 3);
+function spGo(W, x, y) { const sh = W.ship, r = Math.hypot(x, y), m = 160; if (r > m) { x *= m / r; y *= m / r; } sh.tx = x; sh.ty = y; sh.tg = null; sh.atk = null; sh.fp = null; }
+function spGoPlanet(W, k) { const sh = W.ship; sh.fp = k; sh.tg = null; sh.atk = null; } // fly to a planet and keep up with it
+/* Next to a planet? Returns it (with its position) or why not. */
+function spNear(W, k) { const X = W.S.space, s = spStar(W, W.sys.n), p = s.pl[k]; if (!p) return null; const [x, y] = plXY(X, p); return Math.hypot(W.ship.x - x, W.ship.y - y) < p.r + 16 ? p : null; }
+/* Planet actions: scan, dig, beam, shape, seed, colony, up(grade), tur(ret), sell, atk. Returns "" or why not. */
+function spAct(W, k, act) {
+  const X = W.S.space, s = spStar(W, W.sys.n), p = s.pl[k], vs = W.vs; if (!p) return "No planet";
+  const key = pKey(s.n, p.k), own = spOwner(X, key), [T, A] = spTA(X, s, p), E = own > 0 ? X.emp[own] : null, c = X.col[key];
+  if (act === "atk") { if (!E || !E.war) return "You're not at war with them"; W.ship.atk = key; W.ship.tg = null; return ""; }
+  if (!spNear(W, k)) return "Fly closer first";
+  if (act === "scan") { if (!vs.scan) return "You need a scanner"; if (X.scan[key]) return "Already scanned"; X.scan[key] = 1; X.cr += 5; W.ev.push({ t: "sScan", key }); return ""; }
+  if (act === "dig") { if (!X.scan[key] || !p.ruin) return "Nothing to dig"; if (X.dug[key]) return "Already dug"; if (own > 0) return "Not on someone else's world"; X.dug[key] = 1; X.relic++; X.cr += 20; W.ev.push({ t: "sRelic" }); return ""; }
+  if (act === "beam") { if (!vs.beam) return "You need an abduction beam"; if (spLife(X, s, p) < 2) return "No animals here"; if (X.zoo.some(z => z.k === key)) return "You've got one of these"; if (X.en < 25) return "Not enough energy";
+    X.en -= 25; X.zoo.push({ k: key, sd: p.sd }); X.cr += 10; if (E) spRel(W, own, -6); for (let j = 1; j <= 6; j++) if (X.emp[j].met && !X.emp[j].gone && W.G.emp[j].trait === "arts") spRel(W, j, 3); W.ev.push({ t: "sBeam" }); return ""; }
+  if (act === "shape") { if (!vs.shape) return "You need a world shaper"; if (p.ty === "gas") return "You can't shape a gas giant"; if (E) return "It's theirs"; if (T === 2 && A === 2) return "It's just right already";
+    if (X.en < 40 || X.cr < 20) return "Shaping needs ⚡40 and 🪙20"; X.en -= 40; X.cr -= 20; const nt = Math.abs(T - 2) >= Math.abs(A - 2) ? [T + Math.sign(2 - T), A] : [T, A + Math.sign(2 - A)]; X.shaped[key] = nt; W.ev.push({ t: "sShape", key }); return ""; }
+  if (act === "seed") { if (!vs.seed) return "You need a life seeder"; if (own !== 0) return "Only on your own worlds"; if (T !== 2 || A !== 2) return "It needs to be mild with good air first"; const L = spLife(X, s, p); if (L >= 3) return "It's full of life";
+    if (X.zoo.length < (L + 1) * 2) return `You need ${(L + 1) * 2} kinds of creature in your collection`; X.life[key] = L + 1; X.lifeUp = 1; W.ev.push({ t: "sSeed", key }); return ""; }
+  if (act === "colony") { if (own >= 0) return "Someone lives there"; if (p.ty === "gas") return "No ground to build on"; if (spFit(p, [T, A]) > 2 || Math.abs(T - 2) > 1 || Math.abs(A - 2) > 1) return "Too harsh for a colony: shape it first";
+    const cc = spColCost(X); if (X.cr < cc) return `A colony costs 🪙${cc}`; X.cr -= cc; X.pown[key] = 0; X.col[key] = { lvl: 1, tur: 0 }; X.col[key].def = colDefMax(X.col[key]);
+    for (const o of starOwner(X, s)) if (o > 0) spRel(W, o, -15); W.ev.push({ t: "sColony", key }); return ""; }
+  if (act === "up") { if (own !== 0) return "Not yours"; if (c.lvl >= 3) return "As big as it gets"; if (c.lvl === 2 && (T !== 2 || A !== 2)) return "To grow bigger it needs to be mild with good air"; const cost = 150 * c.lvl; if (X.cr < cost) return `It costs 🪙${cost}`; X.cr -= cost; c.lvl++; return ""; }
+  if (act === "tur") { if (own !== 0) return "Not yours"; if ((c.tur || 0) >= 3) return "Three at most"; if (X.cr < 80) return "A defence turret costs 🪙80"; X.cr -= 80; c.tur = (c.tur || 0) + 1; c.def = colDefMax(c); return ""; }
+  if (act === "sell") { if (!E || E.gone) return "Nobody to sell to"; if (E.war) return "Not while you're at war"; const cap = 10 + vs.cargo; let got = 0;
+    for (const g of Object.keys(GOODS).sort((a, b) => GOODS[b].p - GOODS[a].p)) { const n = Math.min(cap - got, Math.floor(X.goods[g])); if (n <= 0) continue; X.goods[g] -= n; got += n; X.cr += Math.round(n * GOODS[g].p * (W.G.emp[own].trait === "trade" ? 1.4 : 1) * (1 + E.rel / 250)); }
+    if (!got) return "You have no goods to sell"; if (got >= 10 && X.t - (E.tradeT || -999) > 90) { E.tradeT = X.t; if (E.rel < 50) spRel(W, own, W.G.emp[own].trait === "trade" ? 6 : 3); } X.sold = 1; W.ev.push({ t: "sSell", n: got, k: own }); return ""; }
+  return "?";
+}
+function spRel(W, k, d) { const E = W.S.space.emp[k]; E.rel = clamp(E.rel + d, -100, 100); if (E.ally && E.rel < 20) { E.ally = false; W.ev.push({ t: "sAllyEnd", k }); } }
+/* Talking to an empire: gift, relic, ally, war, peace, hand (finish a goods or creature mission). */
+function spDiplo(W, k, act) {
+  const X = W.S.space, E = X.emp[k], tr = W.G.emp[k].trait; if (E.gone) return "They're gone"; if (!E.met) return "You haven't met them";
+  if (act === "gift") { if (X.cr < 80) return "A gift needs 🪙80"; if (E.rel >= 25) return "Gifts won't win them over any further: they want your help (missions)"; X.cr -= 80; spRel(W, k, 8); return ""; }
+  if (act === "relic") { if (X.relic < 1) return "You have no relics"; X.relic--; spRel(W, k, tr === "faith" ? 25 : 8); return ""; }
+  if (act === "ally") { if (E.war) return "Make peace first"; if (E.rel < 60) return "They need to like you more (60)"; E.ally = true; X.how.ally++; W.ev.push({ t: "sAlly", k }); spUnite(W); return ""; }
+  if (act === "war") { if (E.ally) return "They're your allies"; E.war = true; E.warT = 0; E.mis = null; spRel(W, k, -40); W.ev.push({ t: "sWar", k, by: 0 }); return ""; }
+  if (act === "peace") { if (!E.war) return "You're not at war"; if (E.rel < -70 && E.warT < 240) return "They won't talk yet. Win some battles, or wait."; E.war = false; E.rel = Math.max(E.rel, -30); W.ev.push({ t: "sPeace", k }); return ""; }
+  if (act === "hand") { const m = E.mis; if (!m) return "No mission";
+    if (m.ty === "goods") { if (X.goods[m.g] < m.n) return `You need ${m.n} ${GOODS[m.g].n.toLowerCase()}`; X.goods[m.g] -= m.n; }
+    else if (m.ty === "zoo") { if (X.zoo.length < m.n) return `Your collection needs ${m.n} kinds of creature`; }
+    else return "Not yet: " + spMisText(W, k);
+    spMisDone(W, k); return ""; }
+  return "?";
+}
+function spMisText(W, k) { const m = W.S.space.emp[k].mis; if (!m) return ""; return m.ty === "visit" ? `Explore ${W.G.st[m.star].name} and report back` : m.ty === "band" ? `Drive off the pirates at ${W.G.st[m.star].name}` : m.ty === "goods" ? `Bring us ${m.n} ${GOODS[m.g].ic} ${GOODS[m.g].n.toLowerCase()}` : `Show us a collection of ${m.n} kinds of creature`; }
+function spMisDone(W, k) {
+  const X = W.S.space, E = X.emp[k], m = E.mis; if (!m) return; E.mis = null; E.cd.mis = 240 + W.R() * 120; const tr = W.G.emp[k].trait;
+  X.cr += m.rew; spRel(W, k, 15 + ((tr === "war" && m.ty === "band") || (tr === "trade" && m.ty === "goods") || (tr === "arts" && m.ty === "zoo") || (tr === "wise" && m.ty === "visit") ? 6 : 0));
+  X.misDone = (X.misDone || 0) + 1; W.ev.push({ t: "sMis", k, rew: m.rew });
+}
+function spUnite(W) { const X = W.S.space; if (!X.united && X.emp.slice(1).every(E => E.gone || E.ally)) { X.united = true; W.ev.push({ t: "sUnited" }); } }
+function spAbil(W, k) {
+  const X = W.S.space, vs = W.vs, sh = W.ship, sy = W.sys; if (!sy) return "Not now";
+  if (k === "missile") { if (!vs.msl) return "No missiles"; if (X.en < 35) return "Not enough energy"; const tg = spTarget(W, 90); if (!tg) return "Nothing to fire at"; X.en -= 35; spHit(W, tg, 80 * Math.min(2, vs.msl)); sy.fx.push({ ty: "msl", x0: sh.x, y0: sh.y, x1: tg.x, y1: tg.y, t: 0 }); return ""; }
+  if (k === "repair") { if (X.en < 45) return "Not enough energy"; if (X.hp >= vs.hp) return "Not damaged"; X.en -= 45; X.hp = Math.min(vs.hp, X.hp + vs.hp * .35); return ""; }
+  return "?";
+}
+function spTarget(W, rg) {
+  const X = W.S.space, sh = W.ship, sy = W.sys; let tg = sh.tg != null ? sy.ships.find(e => e.id === sh.tg && hostile(X, e)) : null;
+  if (tg && Math.hypot(tg.x - sh.x, tg.y - sh.y) > rg) tg = null;
+  if (!tg) { let bd = rg; for (const e of sy.ships) if (hostile(X, e)) { const d = Math.hypot(e.x - sh.x, e.y - sh.y); if (d < bd) { bd = d; tg = e; } } }
+  if (!tg && sh.atk) { const [, pk] = sh.atk.split(":").map(Number), p = spStar(W, sy.n).pl[pk]; if (p) { const [x, y] = plXY(X, p); if (Math.hypot(x - sh.x, y - sh.y) < rg + p.r) return { planet: sh.atk, x, y }; } }
+  return tg;
+}
+function spHit(W, tg, dmg) {
+  const X = W.S.space, sy = W.sys;
+  if (tg.planet) { const key = tg.planet, o = spOwner(X, key), c = X.col[key]; if (o <= 0) return; const mx = 70 + c.lvl * 70; if (sy.pdef[key] == null) sy.pdef[key] = mx; sy.pdef[key] -= dmg;
+    if (sy.pdef[key] <= 0) { X.pown[key] = 0; c.lvl = Math.max(1, c.lvl - 1); c.tur = 0; c.def = colDefMax(c); W.ship.atk = null; X.how.war++; spRel(W, o, -15); W.ev.push({ t: "sTake", key, k: o }); spGone(W, o); } return; }
+  tg.hp -= dmg; tg.hurt = sy.t;
+}
+function spGone(W, k) { const X = W.S.space; if (Object.values(X.pown).includes(k)) return; const E = X.emp[k]; E.gone = true; E.war = false; E.ally = false; E.mis = null; X.fleets = X.fleets.filter(f => f.own !== k); W.ev.push({ t: "sGone", k }); spUnite(W); }
+/* A fight's end: what the beaten ships were doing. */
+function spWon(W, src) {
+  const X = W.S.space;
+  if (src.t === "pir") { X.pir = X.pir.filter(r => r !== src.r); X.cr += 40; X.beat = (X.beat || 0) + 1; W.ev.push({ t: "sPirates" }); spLikePir(W); }
+  else if (src.t === "band") { const b = X.bands[src.n]; delete X.bands[src.n]; X.cr += 50; X.beat = (X.beat || 0) + 1; W.ev.push({ t: "sPirates" }); spLikePir(W); for (let k = 1; k <= 6; k++) { const E = X.emp[k]; if (E.mis && E.mis.ty === "band" && E.mis.star === src.n) spMisDone(W, k); } }
+  else if (src.t === "fleet") { X.fleets = X.fleets.filter(f => f !== src.f); W.ev.push({ t: "sFleet", k: src.f.own }); spRel(W, src.f.own, 4); }
+  else if (src.t === "core") { X.core = 2; X.done = true; W.ev.push({ t: "sWarden" }); }
+}
+function spLikePir(W) { const X = W.S.space; for (let k = 1; k <= 6; k++) { const E = X.emp[k]; if (E.met && !E.gone && !E.war) spRel(W, k, W.G.emp[k].trait === "war" ? 7 : 2); } }
+/* Change the ship: only at one of your worlds. You pay for what's new. */
+function spCost(d) { return vStats(d).c.cr || 0; }
+function spSaveShip(W, d) {
+  const X = W.S.space; vClean(d); const s = vStats(d); if (s.ok) return s.ok;
+  for (const q of d.p) if (!vUnlocked(W, VPD[q.id])) return "Not unlocked yet: " + VPD[q.id].n;
+  if (X.travel || !W.sys || W.sys.n < 0 || !spStar(W, W.sys.n).pl.some(p => spOwner(X, pKey(W.sys.n, p.k)) === 0)) return "Only at one of your own worlds";
+  if (W.sys.ships.some(e => hostile(X, e))) return "Not in the middle of a fight";
+  const cost = Math.max(0, spCost(d) - spCost(X.d)); if (X.cr < cost) return `That costs 🪙${cost}`;
+  X.cr -= cost; const f = X.hp / W.vs.hp; X.d = d; W.vs = vStats(d); X.hp = Math.max(1, W.vs.hp * Math.max(f, .5)); return "";
+}
+function spRespawn(W) { const X = W.S.space; X.deaths++; X.cr = Math.floor(X.cr * .85); X.travel = null; X.hp = W.vs.hp; X.en = W.vs.energy; spEnter(W, W.G.home, true); }
+function stepSpace(W, dt) {
+  const S = W.S, X = S.space, vs = W.vs; if (W.over) return; S.time += dt; W.t += dt; X.t += dt;
+  if (X.travel) { const tr = X.travel;
+    if (tr.charge > 0) { tr.charge -= dt; if (W.sys) systemStep(W, dt); if (tr.charge <= 0) { W.sys = null; W.ev.push({ t: "sJump" }); } }
+    else { const a = spStar(W, tr.path[tr.i]), b = spStar(W, tr.path[tr.i + 1]), L = Math.hypot(a.x - b.x, a.y - b.y); tr.t += dt * 60 * spSpeedF(vs) / Math.max(1, L);
+      if (tr.t >= 1) { tr.i++; tr.t = 0; X.at = tr.path[tr.i]; if (X.at >= 0 && !X.vis[X.at]) { X.vis[X.at] = 1; for (let k = 1; k <= 6; k++) { const E = X.emp[k]; if (E.met && !E.gone && W.G.emp[k].trait === "wise") spRel(W, k, 1.5); } }
+        if (tr.i >= tr.path.length - 1) { X.travel = null; spEnter(W, X.at); W.ev.push({ t: "sArrive", n: X.at }); } } } }
+  else if (W.sys) systemStep(W, dt);
+  X.en = Math.min(vs.energy, X.en + (3 + vs.energy / 60) * dt);
+  if (!W.sys || W.sys.t - W.ship.hitT > 4) X.sh = Math.min(vs.shield, X.sh + 8 * dt);
+  if (!W.sys || !W.sys.ships.some(e => hostile(X, e))) X.hp = Math.min(vs.hp, X.hp + vs.hp * .01 * dt);
+  W.spT = (W.spT || 0) + dt; if (W.spT >= .5) { const st = W.spT; W.spT = 0; spTick(W, st); }
+}
+function systemStep(W, dt) {
+  const X = W.S.space, sy = W.sys, sh = W.ship, vs = W.vs; sy.t += dt;
+  // your ship: towards its target or where you tapped
+  let gx = sh.tx, gy = sh.ty; const tg = sh.tg != null ? sy.ships.find(e => e.id === sh.tg) : null;
+  if (tg) { const d = Math.hypot(tg.x - sh.x, tg.y - sh.y); if (d > 30) { gx = tg.x; gy = tg.y; } else { gx = sh.x; gy = sh.y; } }
+  else if (sh.fp != null && spStar(W, sy.n).pl[sh.fp]) { const p = spStar(W, sy.n).pl[sh.fp], [x, y] = plXY(X, p), d = Math.hypot(x - sh.x, y - sh.y); if (d > p.r + 7) { gx = x + (sh.x - x) / d * (p.r + 6); gy = y + (sh.y - y) / d * (p.r + 6); } else { gx = sh.x; gy = sh.y; } }
+  else if (sh.atk) { const p = spStar(W, sy.n).pl[+sh.atk.split(":")[1]]; if (p) { const [x, y] = plXY(X, p), d = Math.hypot(x - sh.x, y - sh.y); if (d > p.r + 24) { gx = x; gy = y; } else { gx = sh.x; gy = sh.y; } } }
+  const dx = gx - sh.x, dy = gy - sh.y, d = Math.hypot(dx, dy), v = 20 + 8 * vs.speed;
+  if (d > 1) { const m = Math.min(d, v * dt); sh.x += dx / d * m; sh.y += dy / d * m; sh.a = Math.atan2(dy, dx); }
+  sh.cd -= dt; if (sh.cd <= 0) { const t2 = spTarget(W, 42); if (t2) { spHit(W, t2, vs.dmg); sy.fx.push({ ty: "las", x0: sh.x, y0: sh.y, x1: t2.x, y1: t2.y, t: 0, own: 0 }); sh.a = Math.atan2(t2.y - sh.y, t2.x - sh.x); } sh.cd = .6; }
+  // everyone else
+  const hurt = n => { if (X.sh > 0) { const a = Math.min(X.sh, n); X.sh -= a; n -= a; } X.hp -= n; sh.hitT = sy.t; if (X.hp <= 0 && !W.dead) { W.dead = true; W.ev.push({ t: "die" }); } };
+  for (const e of sy.ships) {
+    const foe = hostile(X, e); let tx = e.x, ty = e.y, tgt = null;
+    if (e.own === -1) { let bd = 90; for (const f of sy.ships) if (hostile(X, f)) { const dd = Math.hypot(f.x - e.x, f.y - e.y); if (dd < bd) { bd = dd; tgt = f; } } if (!tgt) { tx = sh.x - 14; ty = sh.y + (e.id % 3 - 1) * 10; } }
+    else if (foe) { tgt = sh; const esc = sy.ships.find(f => f.own === -1 && Math.hypot(f.x - e.x, f.y - e.y) < Math.hypot(sh.x - e.x, sh.y - e.y)); if (esc) tgt = esc; }
+    else { e.a += dt * .2; tx = Math.cos(e.a) * 80; ty = Math.sin(e.a) * 80; }
+    if (tgt) { const dd = Math.hypot(tgt.x - e.x, tgt.y - e.y); if (dd > e.rng * .7) { tx = tgt.x; ty = tgt.y; } else { tx = e.x + (tgt.y - e.y) * .3; ty = e.y - (tgt.x - e.x) * .3; } }
+    const ddx = tx - e.x, ddy = ty - e.y, dl = Math.hypot(ddx, ddy); if (dl > 1) { const m = Math.min(dl, e.spd * dt); e.x += ddx / dl * m; e.y += ddy / dl * m; }
+    e.cd -= dt; if (tgt && e.cd <= 0 && Math.hypot(tgt.x - e.x, tgt.y - e.y) < e.rng) { e.cd = e.own === WARDEN ? .9 : 1; if (tgt === sh) hurt(e.dmg); else tgt.hp -= e.dmg; sy.fx.push({ ty: "las", x0: e.x, y0: e.y, x1: tgt.x, y1: tgt.y, t: 0, own: e.own }); }
+  }
+  // the Warden calls drones
+  const wd = sy.ships.find(e => e.own === WARDEN); if (wd) { wd.dr = (wd.dr || 0) + dt; if (wd.dr > 15) { wd.dr = 0; for (let i = 0; i < 2; i++) { const e = spawn(W, PIRATE, 70, { t: "drone" }, 1)[0]; e.x = wd.x; e.y = wd.y; } } }
+  // enemy worlds' guns
+  for (const p of spStar(W, sy.n).pl) { const key = pKey(sy.n, p.k), o = spOwner(X, key); if (o <= 0 || !X.emp[o].war) continue; const [x, y] = plXY(X, p); sy.pt = sy.pt || {}; sy.pt[key] = (sy.pt[key] || 0) - dt;
+    if (sy.pt[key] <= 0 && Math.hypot(x - sh.x, y - sh.y) < 40 + p.r) { sy.pt[key] = 1.3; hurt(3 + X.col[key].lvl * 2 + (X.col[key].tur || 0) * 2); sy.fx.push({ ty: "las", x0: x, y0: y, x1: sh.x, y1: sh.y, t: 0, own: o }); } }
+  // the beaten
+  for (const e of sy.ships) if (e.hp <= 0 && !e.dead) { e.dead = true; if (hostile(X, e)) { X.kills++; W.ev.push({ t: "sBoom", x: e.x, y: e.y, big: e.own === WARDEN }); } }
+  const gone = sy.ships.filter(e => e.dead); sy.ships = sy.ships.filter(e => !e.dead);
+  for (const e of gone) if (e.src && !sy.ships.some(f => f.src === e.src) && e.src.t !== "drone" && e.src.t !== "guard" && e.src.t !== "esc") spWon(W, e.src);
+  for (const f of sy.fx) f.t += dt; sy.fx = sy.fx.filter(f => f.t < .3);
+}
+/* Twice a second: colonies, the empires, pirates and fleets, goals. */
+function spTick(W, st) {
+  const X = W.S.space, G = W.G, here = W.sys ? W.sys.n : null;
+  for (const key in X.pown) { if (X.pown[key] !== 0) continue; const c = X.col[key], [sn, pk] = key.split(":").map(Number), s = G.st[sn], p = s.pl[pk], L = spLife(X, s, p);
+    X.cr += (.025 + .025 * c.lvl) * (1 + L * .2) * st + (c.home ? .12 * st : 0); if (p.res) X.goods[p.res] = Math.min(150, X.goods[p.res] + .009 * c.lvl * st); c.def = Math.min(colDefMax(c), c.def + 2 * st); }
+  // raids and fleets wear down your worlds while you're away
+  const siege = (o, at, sw) => { for (const key in X.pown) { if (X.pown[key] !== 0 || +key.split(":")[0] !== at) continue; const c = X.col[key]; c.def -= sw.str * .05 * st; sw.str -= (2 + 4 * (c.tur || 0) + c.lvl * 1.5) * st;
+      if (c.def <= 0) { if (o === PIRATE) { c.lvl--; c.def = colDefMax(c); W.ev.push({ t: "sRaided", key }); if (c.lvl <= 0 && !c.home) { delete X.col[key]; delete X.pown[key]; } else c.lvl = Math.max(1, c.lvl); }
+        else { X.pown[key] = o; c.lvl = Math.max(1, c.lvl - 1); c.def = colDefMax(c); W.ev.push({ t: "sLost", key, k: o }); } return true; } return sw.str <= 0 ? "held" : false; } return "none"; };
+  for (const r of [...X.pir]) { if (here === r.at) continue; r.t += st; const res = siege(PIRATE, r.at, r); if (res) { X.pir = X.pir.filter(q => q !== r); if (res === "held") W.ev.push({ t: "sHeld", at: r.at }); } }
+  for (const f of [...X.fleets]) { if (f.t < f.dur) { f.t += st; if (f.t >= f.dur) { W.ev.push({ t: "sFleetHere", k: f.own, at: f.to }); if (here === f.to) spawn(W, f.own, f.str, { t: "fleet", f }, 0); } continue; }
+    if (here === f.to) continue; const res = siege(f.own, f.to, f); if (res) { X.fleets = X.fleets.filter(q => q !== f); if (res === "held") W.ev.push({ t: "sHeld", at: f.to }); } }
+  // pirates turn up at your worlds now and then
+  X.pirT -= st; if (X.pirT <= 0) { X.pirT = 300 + W.R() * 160; const mine = [...new Set(Object.keys(X.pown).filter(k => X.pown[k] === 0 && (!X.col[k].home || X.t > 1500)).map(k => +k.split(":")[0]))];
+    if (mine.length && !X.done) { const at = mine[Math.floor(W.R() * mine.length)]; X.pir.push({ at, str: 70 + Math.min(330, X.t / 14), t: 0 }); W.ev.push({ t: "sRaid", at }); if (here === at) spawn(W, PIRATE, X.pir[X.pir.length - 1].str, { t: "pir", r: X.pir[X.pir.length - 1] }, 0); } }
+  // the empires
+  const mineS = [...new Set(Object.keys(X.pown).filter(k => X.pown[k] === 0).map(k => +k.split(":")[0]))], myN = Object.values(X.pown).filter(o => o === 0).length;
+  for (let k = 1; k <= 6; k++) {
+    const E = X.emp[k], tr = G.emp[k].trait; if (E.gone) continue; const keys = Object.keys(X.pown).filter(q => X.pown[q] === k), stars = [...new Set(keys.map(q => +q.split(":")[0]))];
+    for (const c in E.cd) E.cd[c] -= st; if (E.war) E.warT += st;
+    if (!E.ally) E.rel += ((tr === "war" ? -25 : 0) - E.rel) * .0006 * st + (tr === "war" && myN > keys.length * 1.5 ? -.01 * st : 0);
+    // they spread to free worlds near them
+    if (E.cd.exp <= 0) { E.cd.exp = 260 + W.R() * 160; if (keys.length < 9) { let best = null, bd = 1e9; for (const s of G.st) { if (mineS.includes(s.n)) continue; const dn = Math.min(...stars.map(j => Math.hypot(G.st[j].x - s.x, G.st[j].y - s.y))); if (dn > 260) continue;
+        for (const p of s.pl) { const q = pKey(s.n, p.k); if (p.ty === "gas" || X.pown[q] != null) continue; const sc = dn + spFit(p) * 60; if (sc < bd) { bd = sc; best = q; } } }
+      if (best) { X.pown[best] = k; X.col[best] = { lvl: 1, tur: 0 }; X.col[best].def = colDefMax(X.col[best]); } } }
+    // war and peace
+    if (!E.war && !E.ally && E.met && E.rel < (tr === "war" ? -40 : -70) && X.t > 600) { E.war = true; E.warT = 0; E.mis = null; W.ev.push({ t: "sWar", k, by: k }); }
+    if (E.war && E.warT > 300 && E.rel > -45 && W.R() < st / 90) { E.war = false; E.rel = Math.max(E.rel, -30); W.ev.push({ t: "sPeace", k, by: k }); }
+    if (E.war && E.cd.fleet <= 0 && mineS.length && X.t > 420) { E.cd.fleet = (tr === "war" ? 170 : 240) + W.R() * 80;
+      const from = G.st[G.emp[k].home], to = mineS.slice().sort((a, b) => Math.hypot(G.st[a].x - from.x, G.st[a].y - from.y) - Math.hypot(G.st[b].x - from.x, G.st[b].y - from.y))[0];
+      X.fleets.push({ own: k, to, t: 0, dur: Math.max(30, Math.hypot(G.st[to].x - from.x, G.st[to].y - from.y) / 12), str: 80 + 28 * keys.length + Math.min(300, X.t / 14), x0: from.x, y0: from.y }); W.ev.push({ t: "sFleetOut", k, at: to }); }
+    // missions for friends and neutrals
+    if (E.mis && X.t > E.mis.until) { E.mis = null; E.cd.mis = 20; }
+    if (E.met && !E.war && !E.mis && E.cd.mis <= 0 && E.rel > -50) { E.cd.mis = 60; const R = W.R, ty = ["visit", "band", "goods", "zoo"][Math.floor(R() * 4)], rew = Math.round(60 + Math.min(120, X.t / 40));
+      const me = G.st[X.at < 0 ? G.home : X.at], dme = q => Math.hypot(q.x - me.x, q.y - me.y);
+      if (ty === "visit") { const far = G.st.filter(q => !X.vis[q.n]).sort((a, b) => dme(a) - dme(b)), alt = G.st.filter(q => dme(q) > 250 && !stars.includes(q.n)); const t = far.length ? far[Math.min(far.length - 1, Math.floor(R() * 3))] : alt[Math.floor(R() * alt.length)]; if (t) E.mis = { ty, star: t.n, rew }; }
+      else if (ty === "band") { const c = G.st.filter(q => !starOwner(X, q).length && !X.bands[q.n] && Math.min(...stars.map(j => Math.hypot(G.st[j].x - q.x, G.st[j].y - q.y))) < 330), c2 = c.length ? c : stars.filter(j => !X.bands[j]).map(j => G.st[j]);
+        if (c2.length) { const q = c2[Math.floor(R() * c2.length)]; X.bands[q.n] = { str: 80 + Math.min(280, X.t / 18) }; E.mis = { ty, star: q.n, rew: rew + 30 }; } }
+      else if (ty === "goods") { const g = Object.keys(GOODS)[Math.floor(R() * 3)]; E.mis = { ty, g, n: 10 + Math.floor(R() * 3) * 5, rew }; }
+      else E.mis = { ty, n: X.zoo.length + 1 + Math.floor(R() * 2), rew };
+      if (E.mis) E.mis.until = X.t + 600; }
+  }
+  spGoals(W);
+}
+function spGoals(W) {
+  const X = W.S.space, mine = Object.values(X.pown).filter(o => o === 0).length;
+  const done = id => { if (X.goals[id]) return; X.goals[id] = 1; const g = SPACE_GOALS.find(q => q.id === id); X.cr += g.g; W.ev.push({ t: "sGoal", id, g: g.g }); };
+  if (Object.keys(X.vis).length >= 5) done("visit5"); if (Object.keys(X.scan).length >= 5) done("scan5"); if (mine >= 2) done("colony"); if (X.zoo.length >= 3) done("zoo3");
+  if (Object.keys(X.shaped).length) done("shape"); if (X.sold) done("sell"); if (X.beat) done("pirates"); if (X.misDone) done("mission"); if (X.relic || Object.keys(X.dug).length) done("relic");
+  if (X.lifeUp) done("garden"); if (mine >= 5) done("colonies4"); if (X.emp.some(E => E && E.ally)) done("ally"); if (X.how.war) done("conquer"); if (X.united) done("unite"); if (X.core >= 2) done("core");
 }
 /*CORE-END*/
 
@@ -3027,13 +3511,13 @@ function renderMenu() {
     const nm = document.createElement("b"); nm.textContent = s.name; const chip = document.createElement("span"); chip.className = "chip" + (s.mode === "hard" ? " hc" : ""); chip.textContent = s.mode === "hard" ? "☠ Hardcore" : "Normal"; nm.append(chip);
     if (s.test) { const tc = document.createElement("span"); tc.className = "chip"; tc.textContent = "Test start"; nm.append(tc); }
     const sm = document.createElement("span"); sm.className = "sm";
-    const sea = s.stage === "sea", land = s.stage === "land", tribe = s.stage === "tribe", civ = s.stage === "civ", cs = cur(s), TT = TS(s), stg = tribe ? "Tribe" : land ? "Land" : sea ? "Sea" : "Cell", tm = fmtTime(s.time);
-    sm.textContent = civ ? `Civilisation stage · 👥 ${civPop(s.civ)} in ${s.civ.towns ? s.civ.towns.filter(tw => tw.own === 0).length : 1} towns · ${fmtTime(s.time)}` : tribe ? (s.dead ? `Died out in the tribe stage · ${tm}` : s.tribe.done ? `Tribe stage complete · ${tm}` : `Tribe stage · 👥 ${popAll(s.tribe)} · ${s.tribe.rv ? s.tribe.rv.filter(r => r.state).length : 0} of ${s.tribe.rv ? s.tribe.rv.length : 4} neighbours settled · ${tm}`) : land ? (s.dead ? `Died out in the land stage · ${tm}` : cs.done ? `Land stage complete: a clever species · ${tm}` : `Land stage · brain ${Math.floor(cs.grow)} of 100 · ${tm}`)
+    const sea = s.stage === "sea", land = s.stage === "land", tribe = s.stage === "tribe", civ = s.stage === "civ", spc = s.stage === "space", cs = cur(s), TT = TS(s), stg = tribe ? "Tribe" : land ? "Land" : sea ? "Sea" : "Cell", tm = fmtTime(s.time);
+    sm.textContent = spc ? (s.dead ? `Lost in space · ${tm}` : `Space stage${s.space.done ? " · the Core reached ✦" : ""} · 🌍 ${s.space.pown ? Object.values(s.space.pown).filter(o => o === 0).length : 1} worlds · ${tm}`) : civ ? `Civilisation stage · 👥 ${civPop(s.civ)} in ${s.civ.towns ? s.civ.towns.filter(tw => tw.own === 0).length : 1} towns · ${fmtTime(s.time)}` : tribe ? (s.dead ? `Died out in the tribe stage · ${tm}` : s.tribe.done ? `Tribe stage complete · ${tm}` : `Tribe stage · 👥 ${popAll(s.tribe)} · ${s.tribe.rv ? s.tribe.rv.filter(r => r.state).length : 0} of ${s.tribe.rv ? s.tribe.rv.length : 4} neighbours settled · ${tm}`) : land ? (s.dead ? `Died out in the land stage · ${tm}` : cs.done ? `Land stage complete: a clever species · ${tm}` : `Land stage · brain ${Math.floor(cs.grow)} of 100 · ${tm}`)
       : s.dead ? `Died out in the ${stg.toLowerCase()} stage at ${TT[cs.tier].n} size · ${tm}` : sea && cs.done ? `Sea stage complete: ready for land · ${tm}`
       : !sea && cs.done ? `Cell stage complete · ${NATURES[s.nature] ? NATURES[s.nature].n : ""} · ready for the sea · ${tm}` : `${stg} stage · ${TT[cs.tier].n} (size ${cs.tier + 1} of 5) · ${tm}`;
     const row = document.createElement("div"); row.className = "row";
     if (!s.dead) {
-      const toSea = !sea && !land && !tribe && !civ && cs.done, toLand = sea && cs.done, toTribe = land && cs.done, toCiv = tribe && s.tribe.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : toLand ? "Onto the land ▶" : toTribe ? "Start a tribe ▶" : toCiv ? "Found a nation ▶" : "Play";
+      const toSea = !sea && !land && !tribe && !civ && !spc && cs.done, toLand = sea && cs.done, toTribe = land && cs.done, toCiv = tribe && s.tribe.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : toLand ? "Onto the land ▶" : toTribe ? "Start a tribe ▶" : toCiv ? "Found a nation ▶" : "Play";
       p.onclick = () => { if (toSea) { goToSea(s); store.set(slotKey(i), s); } if (toLand) { goToLand(s); store.set(slotKey(i), s); } if (toTribe) { goToTribe(s); store.set(slotKey(i), s); } if (toCiv) { goToCiv(s); store.set(slotKey(i), s); } startSlot(i); }; row.append(p);
     }
     const del = document.createElement("button"); del.className = "btn small bad"; del.textContent = s.dead ? "Clear" : "Delete";
@@ -3041,7 +3525,7 @@ function renderMenu() {
     row.append(del); info.append(nm, sm, row); el.append(info); box.append(el);
     preview(cv, cs.design, 84, 72); if (s.dead) cv.style.filter = "grayscale(1) brightness(.6)";
   }
-  $("road").innerHTML = STAGES.map((n, i) => `<li class="${i < 4 ? "on" : ""}">${i + 1}. ${n}${i > 3 ? " · soon" : ""}</li>`).join("");
+  $("road").innerHTML = STAGES.map((n, i) => `<li class="on">${i + 1}. ${n}</li>`).join("");
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
 const SYL = ["zo", "bli", "qua", "mi", "ru", "xe", "po", "lo", "vin", "ka", "fli", "nu", "tor", "gla", "pip", "oz", "wib", "sna", "dro", "ul", "ki", "mop", "zee", "bo"];
@@ -3067,7 +3551,7 @@ function newLifeDlg(i) {
     <button class="opt" data-a="hard"><b>☠ Hardcore</b><span>One life. If you're eaten, your species is gone for good.</span></button></div>
     <div class="lbl">Start at</div>
     <div class="pick" id="startPick">${STARTS.map((x, j) => `<button class="opt${j ? "" : " on"}" data-a="st_${x[0]}"><b>${x[1]}</b><span>${j ? x[2] + ". For testing: every part and 300 DNA." : "The normal way to play."}</span></button>`).join("")}
-    ${STAGES.slice(4).map(n => `<button class="opt" disabled style="opacity:.45"><b>${n} stage</b><span>Not built yet.</span></button>`).join("")}</div>
+</div>
     <div class="row"><button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="go">Begin</button></div>`, {
     dice: () => { $("nmIn").value = randName(); },
     plant: b => { diet = "plant"; mark("dietPick", b); }, meat: b => { diet = "meat"; mark("dietPick", b); },
@@ -3090,20 +3574,21 @@ function show(v) { view = v; $("menu").hidden = v !== "menu"; $("play").hidden =
 function startSlot(i) { PLACE = null;
   const s = loadSlot(i); if (!s || s.dead) return;
   S = s; slot = i; W = newWorld(S); paused = false; parts = []; fx = []; saveT = 15; abilKeys = ""; ENC = null; IMP = null; CALL = false; cam.z = 1; cam.free = false; LUI_KEY = ""; $("imp").hidden = true;
-  cam.x = W.player.x; cam.y = W.player.y; cam.s = Math.min(CW, CH) * .62 / viewR(W);
+  cam.x = W.player.x; cam.y = W.player.y; cam.s = W.space ? 1 : Math.min(CW, CH) * .62 / viewR(W);
+  if (W.space) { SPV.map = !W.sys; SPV.sel = null; SPV.star = null; SPV.fol = true; cam.x = W.ship.x; cam.y = W.ship.y; }
   if (W.civ) { cam.x = W.home.x; cam.y = W.home.y; cam.free = true; }
   $("lCall").style.display = "";
   show("play"); resize(); store.set("lf.last", i); hintT = 1; updateAbil();
 }
-function quitToMenu() { saveSlot(); W = null; S = null; slot = -1; closeDlg(); show("menu"); renderMenu(); }
+function quitToMenu() { if (VB) { $("vbld").hidden = true; VB = null; } saveSlot(); W = null; S = null; slot = -1; closeDlg(); show("menu"); renderMenu(); }
 function pause() {
   if (!W || W.over) return; paused = true; saveSlot();
-  const c = cur(S), Tt = S.tribe, Cv = S.civ, gl = W.civ ? `<div class="lbl">Your nation</div><p>👥 ${civPop(Cv)} people in ${Cv.towns.filter(tw => tw.own === 0).length} towns<br>${civLabel().split(" · ").slice(1).join(" · ")}</p><div class="lbl">Goals</div><p>${CIV_GOALS.map(g => (Cv.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><p style="font-size:.85rem;color:var(--muted)">Unite all five islands by force, faith or the arts. Your own vehicle designs and the Sky Ship arrive in the next updates.</p>`
+  const c = cur(S), Tt = S.tribe, Cv = S.civ, Xs = S.space, gl = W.space ? `<div class="lbl">Your worlds</div><p>🌍 ${Object.values(Xs.pown).filter(o => o === 0).length} worlds · 🪙 ${fl0(Xs.cr)} · 🦎 ${Xs.zoo.length} creatures · ${Object.keys(Xs.vis).length} of ${W.G.st.length} stars visited</p><div class="lbl">Empires</div><p>${Xs.emp.slice(1).map((E, i) => E.met ? `<span style="color:${empCol(i + 1)}">●</span> ${esc(W.G.emp[i + 1].name)}: ${spRelTxt(E)}` : "? not met yet").join("<br>")}</p><div class="lbl">Goals</div><p>${SPACE_GOALS.map(g => (Xs.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>` : W.civ ? `<div class="lbl">Your nation</div><p>👥 ${civPop(Cv)} people in ${Cv.towns.filter(tw => tw.own === 0).length} towns<br>${civLabel().split(" · ").slice(1).join(" · ")}</p><div class="lbl">Goals</div><p>${CIV_GOALS.map(g => (Cv.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><p style="font-size:.85rem;color:var(--muted)">Unite all five islands by force, faith or the arts, then build the Sky Port and launch the Sky Ship.</p>`
     : W.tribe ? `<div class="lbl">Your tribe</div><p>👥 ${popAll(Tt)} of ${room(Tt)} · 🍖 ${fl0(Tt.res.food)} · 🪵 ${fl0(Tt.res.wood)} · 🪨 ${fl0(Tt.res.stone)}<br>Upkeep a minute: 🪵 ${upkeep(W).wood} 🪨 ${upkeep(W).stone} · stores hold ${storeCap(Tt)} of each<br>Tools: ${TOOLS.filter(t => Tt.tools[t.id]).map(t => t.ic + " " + t.n).join(", ") || "none yet"}</p>
       <div class="lbl">Neighbours</div><p>${Tt.rv.map(r => `<span style="color:${rvCol(r)}">●</span> ${esc(r.name)}: ${r.state === "joined" ? "joined you 💚" : r.state === "broken" ? "gave in to you" : r.kind === "open" ? `friendship ${fl0(r.mood)}/100${isAlly(r) ? " 🤝 ally" : ""}` : `spirit ${fl0(r.spirit)}/100`}`).join("<br>")}</p><p>💡 ${esc(tribeAdvice())}</p>` : W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>`
     : W.land ? `<div class="lbl">Goals</div><p>${LAND_GOALS.map(g => (c.goals && c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><div class="lbl">Species on the island</div><p>${W.lsp.filter(L => (c.met || {})[L.i] || lspStatus(c, L.i)).map(L => { const st = lspStatus(c, L.i); return (st === "friend" ? "💚 " : st === "gone" ? "✖ " : "○ ") + esc(L.name) + ` (${LIFE[L.life]})` + (st ? "" : ` · won over ${c.friends[L.i] || 0}/${FRIEND_NEED}, hunted ${c.hunted[L.i] || 0}/${HUNT_NEED}`); }).join("<br>")}${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length ? `<br>? ${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length} species not met yet` : ""}<br>${W.epics.map(E => (c.epics[E.j] === "friend" ? "💚 " : c.epics[E.j] === "gone" ? "✖ " : "○ ") + esc(E.name) + " (giant)").join("<br>")}</p>
       <div class="lbl">Places found</div><p>${W.marks.filter(m => c.found[m.id]).map(m => "✦ " + m.name).join("<br>") || "None yet."}${W.marks.length - Object.keys(c.found).length ? `<br>${W.marks.length - Object.keys(c.found).length} more to discover` : ""}</p>` : "";
-  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${W.civ ? "civilisation stage" : W.tribe ? "tribe stage" : TS(S)[c.tier].n + " size"} · ${W.tribe || W.civ ? "" : W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : W.land ? `🧠 ${Math.floor(c.grow)}/100 · ` : ""}${fmtTime(S.time)} played</p>${gl}
+  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${W.space ? "space stage" : W.civ ? "civilisation stage" : W.tribe ? "tribe stage" : TS(S)[c.tier].n + " size"} · ${W.tribe || W.civ || W.space ? "" : W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : W.land ? `🧠 ${Math.floor(c.grow)}/100 · ` : ""}${fmtTime(S.time)} played</p>${gl}
     <div class="row"><button class="btn primary" data-a="go">Carry on</button></div>
     <div class="row"><button class="btn" data-a="snd">Sound: ${opts.sound ? "on" : "off"}</button><button class="btn" data-a="help">How to play</button></div>
     <div class="row"><button class="btn" data-a="quit">Save and leave</button></div>`, {
@@ -3113,6 +3598,24 @@ function pause() {
 }
 function resume() { closeDlg(); paused = false; }
 function helpDlg() {
+  const back = { ok: () => { if (W && !W.over && view === "play") pause(); else closeDlg(); } };
+  if (W && W.space) return dialog(`<h2>How to play: Space</h2>
+    <p><b>Flying:</b> in a star system, tap anywhere to fly there and tap a planet to fly to it; its card shows what you can do. Drag to look around, pinch (or ＋ －) to zoom.</p>
+    <p><b>🌌 The map:</b> tap a star, then 🚀 Fly here. Each jump is limited by your ship's range: fuel tanks and warp drives reach further.</p>
+    <p><b>Planets:</b> 📡 scan them. Mild worlds with good air can take a 🏠 colony; a 🌍 world shaper warms, cools, thickens or thins the air a step at a time. Colonies earn 🪙 and dig up goods (💠 🌺 🔥) to sell to the empires. 🛸 Beam up creatures from living worlds for your collection, and 🌱 seed them on your own worlds.</p>
+    <p><b>🛸 Empires:</b> six of them. Do their missions to win their friendship: at 60 on the bar they'll be your allies. Or go to war and take their worlds: fly there and ⚔️ attack. Some like trade, some relics 🏺, some new creatures.</p>
+    <p><b>🛠️ Your ship:</b> refit it at any of your own worlds. Goals 🎯 unlock new parts. Lasers fire on their own; 🚀 missiles and 🔧 repairs use energy ⚡.</p>
+    <p><b>Danger:</b> pirates ☠️ and enemy fleets ⚔️ attack your worlds. Guns 🔫 help them hold out, but flying there to fight is best.</p>
+    <p><b>The end:</b> unite the galaxy (every empire an ally, or gone), fit a warp drive, and fly to the Core at its centre.</p>
+    <div class="row"><button class="btn primary" data-a="ok">Got it</button></div>`, back, back.ok);
+  if (W && W.civ) return dialog(`<h2>How to play: Civilisation</h2>
+    <p><b>Towns:</b> tap one to choose what it builds. Farms feed everyone; houses let towns grow; bigger towns have room for more buildings. Drag to look around, pinch (or ＋ －) to zoom.</p>
+    <p><b>Free land:</b> tap a post to send settlers and found a new town. A dock (or an airship yard) lets them cross the sea.</p>
+    <p><b>🌍 Nations:</b> gifts, trade and deals make friends; at 60 they'll be allies. Or go to war.</p>
+    <p><b>📯 Send out:</b> from a town, send armies (barracks), missionaries (temple) or festival troupes (theatre) to win other towns by force, faith or the arts.</p>
+    <p><b>🛠️ Vehicles:</b> every unit travels in one of your designs. Cannons make armies stronger, bells and shrines help missionaries, stages and banners help festivals, more wheels or sails make them faster, and heavy parts slow them down.</p>
+    <p><b>📜 Govern:</b> taxes and two policies. <b>The end:</b> unite the islands, build the 🛸 Sky Port in your capital and launch the Sky Ship.</p>
+    <div class="row"><button class="btn primary" data-a="ok">Got it</button></div>`, back, back.ok);
   dialog(`<h2>How to play</h2>
     <p><b>Swim:</b> put your thumb anywhere and drag. Your cell swims that way.</p>
     <p><b>Eat:</b> steer your mouth into food. Filter mouths and siphons eat the green bits; jaws bite creatures and eat the red bits.</p>
@@ -3140,24 +3643,24 @@ function helpDlg() {
     <div class="row"><button class="btn primary" data-a="ok">Got it</button></div>`, { ok: () => { if (W && !W.over && view === "play") pause(); else closeDlg(); } }, () => { if (W && view === "play") pause(); else closeDlg(); });
 }
 $("pauseBtn").onclick = pause;
-$("lHome").onclick = () => { if (W && W.civ) { cam.x = W.home.x; cam.y = W.home.y; cam.free = true; return; } if (W && W.land) { ENC = null; landGoTo(W, W.home); cam.free = false; renderLandUI(true); } };
+$("lHome").onclick = () => { if (W && W.space) { cam.free = false; SPV.fol = true; if (spGal()) { const [gx, gy] = spShipGal(); cam.x = gx / 10; cam.y = gy / 10; } return; } if (W && W.civ) { cam.x = W.home.x; cam.y = W.home.y; cam.free = true; return; } if (W && W.land) { ENC = null; landGoTo(W, W.home); cam.free = false; renderLandUI(true); } };
 $("lCall").onclick = () => { if (W && W.tribe) return tribeCall(); CALL = !CALL; if (CALL) toast("Now tap a creature to send your pack after it (or tap yourself to call them back)."); renderLandUI(true); };
 $("lZin").onclick = () => { cam.z = clamp((cam.z || 1) * 1.25, .5, 2.5); }; $("lZout").onclick = () => { cam.z = clamp((cam.z || 1) * .8, .5, 2.5); };
 
 /* thumb stick: anywhere on the water */
 let stickId = null, sx0 = 0, sy0 = 0;
 cv.addEventListener("pointerdown", e => {
-  if (W && W.land) return landDown(e);
+  if (W && (W.land || W.space)) return landDown(e);
   if (stickId != null || paused) return; stickId = e.pointerId; sx0 = e.clientX; sy0 = e.clientY; cv.setPointerCapture(e.pointerId);
   const st = $("stick"); st.hidden = false; st.style.left = sx0 + "px"; st.style.top = sy0 + "px"; $("knob").style.transform = ""; inp.mx = inp.my = 0;
 });
 cv.addEventListener("pointermove", e => {
-  if (W && W.land) return landMoveP(e);
+  if (W && (W.land || W.space)) return landMoveP(e);
   if (e.pointerId !== stickId) return; let dx = e.clientX - sx0, dy = e.clientY - sy0; const R = 50, d = Math.hypot(dx, dy);
   if (d > R) { dx *= R / d; dy *= R / d; } // the stick stays where your thumb first landed; past the rim is full speed that way
   inp.mx = dx / R; inp.my = dy / R; $("knob").style.transform = `translate(${dx}px,${dy}px)`; moved += 1;
 });
-const endStick = e => { if (W && W.land) return landUp(e); if (e.pointerId !== stickId) return; stickId = null; inp.mx = inp.my = 0; $("stick").hidden = true; };
+const endStick = e => { if (W && (W.land || W.space)) return landUp(e); if (e.pointerId !== stickId) return; stickId = null; inp.mx = inp.my = 0; $("stick").hidden = true; };
 cv.addEventListener("pointerup", endStick); cv.addEventListener("pointercancel", endStick);
 addEventListener("keydown", e => { keys[e.key.toLowerCase()] = 1; if (e.key === " " && W) inp.ab = "dash"; if (e.key === "Escape" && view === "play" && !paused) pause(); });
 addEventListener("keyup", e => { keys[e.key.toLowerCase()] = 0; });
@@ -3165,7 +3668,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) { if 
 
 const AB = { dash: ["⚡", "Dash"], poison: ["☁", "Stink"], zap: ["✶", "Zap"], ink: ["✺", "Ink"] };
 function updateAbil() {
-  if (W.land) { $("abil").textContent = ""; abilKeys = "land"; return; } // on land, moves sit in the bar at the bottom
+  if (W.land || W.space) { $("abil").textContent = ""; abilKeys = "land"; return; } // on land, moves sit in the bar at the bottom
   const P = W.player, ks = Object.keys(P.st.ab).sort().join(","); if (ks === abilKeys) return; abilKeys = ks;
   const box = $("abil"); box.textContent = "";
   for (const k of Object.keys(AB)) if (P.st.ab[k]) {
@@ -3176,11 +3679,21 @@ function updateAbil() {
 
 /* hints for a new player, each shown once (bits in S.hints) */
 let hintT = 0, moved = 0, hintOn = -1, hintEnd = 0;
-function hint(n, text, secs) { if (S.hints & (1 << n) || hintOn >= 0) return; $("hint").classList.toggle("top", !!(W && W.land)); S.hints |= 1 << n; hintOn = n; hintEnd = performance.now() + (secs || 6) * 1000; $("hint").textContent = text; $("hint").hidden = false; }
+function hint(n, text, secs) { if ((n < 31 ? S.hints & (1 << n) : (S.hx || {})[n]) || hintOn >= 0) return; $("hint").classList.toggle("top", !!(W && (W.land || W.space))); if (n < 31) S.hints |= 1 << n; else (S.hx = S.hx || {})[n] = 1; hintOn = n; hintEnd = performance.now() + (secs || 6) * 1000; $("hint").textContent = text; $("hint").hidden = false; }
 function hints() {
   if (hintOn >= 0 && performance.now() > hintEnd && !(hintOn === 0 && moved < 30)) { hintOn = -1; $("hint").hidden = true; }
   if (!W) return; const P = W.player;
+  if (W.space) {
+    if (W.t > 1) hint(40, "Welcome to space! Tap a planet to fly to it, then use the buttons on its card. Tap 🌌 Map to see the galaxy and jump to other stars.", 11);
+    if (W.t > 30) hint(41, "📡 Scan planets to learn what they're like. Mild worlds with good air can take a 🏠 colony, which earns 🪙 and goods.", 10);
+    if (W.t > 90 && Object.values(S.space.emp).some(E => E && E.met)) hint(42, "You've met an empire. Tap 🛸 Empires: missions win their friendship. At 60 they'll be your allies.", 10);
+    if (W.t > 160) hint(43, "Reaching goals 🎯 unlocks new ship parts. Refit your ship with 🛠️ Ship at any of your own worlds.", 10);
+    if (spFoes().length) hint(44, "Enemies! Your lasers fire by themselves at anything close. Tap an enemy to chase it, and 🔧 repair if you get hurt.", 9);
+    return;
+  }
   if (W.civ) {
+    if (W.t > 260) hint(28, "Tap 🛠️ Vehicles to design your own carts, ships and airships. Cannons make armies stronger, bells help missionaries, stages help festivals.", 11);
+    if (S.civ.won) hint(29, "The islands are united! Build the 🛸 Sky Port in your capital, then launch the Sky Ship to reach the stars.", 11);
     if (W.t > 1) hint(23, "Your tribe is a nation now! Tap a town to choose what it builds. Drag to look around, pinch (or ＋ －) to zoom.", 10);
     if (W.t > 40) hint(24, "Every town eats from one store, so keep building farms. Houses let towns grow; bigger towns have room for more buildings.", 10);
     if (W.t > 90) hint(25, "Tap the 'Free land' posts to send settlers and found more towns.", 9);
@@ -3227,6 +3740,7 @@ function handleEvents() {
   for (const e of W.ev) {
     if (W.tribe && tribeEvent(e)) continue;
     if (W.civ && civEvent(e)) continue;
+    if (W.space && spaceEvent(e)) continue;
     if (e.t === "eat") { snd(e.ty === "plant" ? "eat" : "meat"); for (let i = 0; i < 4; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 40 * P.k, vy: (Math.random() - .5) * 40 * P.k, life: .5, col: `hsl(${e.hue} 90% 70%)`, r: 1.5 * P.k }); }
     else if (e.t === "hurt") { snd("hurt"); cam.shake = Math.min(12, cam.shake + 4 + e.f * 30); $("vig").style.opacity = Math.min(1, .3 + e.f * 3); }
     else if (e.t === "kill") { snd("kill"); for (let i = 0; i < 14; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90 * e.k, vy: (Math.random() - .5) * 90 * e.k, life: .8, col: `hsl(${e.h} 70% 60%)`, r: 2.4 * e.k }); }
@@ -3288,6 +3802,7 @@ function died() {
 const DEPTH = [["#13646A", "#06303A"], ["#0F5868", "#052634"], ["#18476E", "#081A36"], ["#2B3A70", "#0C1030"], ["#3E2A66", "#120A26"]];
 const BG = [{ x: .2, y: .3, ph: 0, sp: 3 }, { x: .75, y: .7, ph: 2, sp: 5 }];
 function draw(dt) {
+  if (W.space) return drawSpace(dt);
   if (W.land) { if (!G3FAIL) { if (!T3) { load3D(); return drawLoading3(); } if (draw3D(dt) !== false) return; } PANK = TILT; return drawLand(dt); }
   const P = W.player, T = P.tier, t = performance.now() / 1000;
   const ts = Math.min(CW, CH) * .62 / viewR(W); cam.s += (ts - cam.s) * Math.min(1, dt * 2);
@@ -3454,15 +3969,15 @@ function drawMap() {
 function hud() {
   const P = W.player, c = cur(S), T = TS(S)[c.tier];
   $("hpFill").style.width = Math.max(0, P.hp / P.max * 100) + "%"; $("hpFill").parentNode.style.visibility = W.civ ? "hidden" : "";
-  $("grFill").style.width = (W.civ ? Object.keys(S.civ.goals).length / CIV_GOALS.length * 100 : W.tribe ? tribeProgress(S.tribe) * 100 : c.done ? 100 : c.grow / T.g * 100) + "%";
-  $("grBar").classList.toggle("ready", !W.tribe && !W.civ && (!!c.ready || (W.land && c.grow >= 90)));
-  const lbl = W.civ ? civLabel() : W.tribe ? tribeLabel() : W.land ? `${S.name} · 🧠 ${Math.floor(c.grow)}/100 · 💚 ${W.lsp.filter(L => lspStatus(c, L.i) === "friend").length} · ✖ ${W.lsp.filter(L => lspStatus(c, L.i) === "gone").length} · ${W.night ? "☾ night" : "☀ day"}`
+  $("grFill").style.width = (W.space ? Object.keys(S.space.goals).length / SPACE_GOALS.length * 100 : W.civ ? Object.keys(S.civ.goals).length / CIV_GOALS.length * 100 : W.tribe ? tribeProgress(S.tribe) * 100 : c.done ? 100 : c.grow / T.g * 100) + "%";
+  $("grBar").classList.toggle("ready", !W.tribe && !W.civ && !W.space && (!!c.ready || (W.land && c.grow >= 90)));
+  const lbl = W.space ? spLabel() : W.civ ? civLabel() : W.tribe ? tribeLabel() : W.land ? `${S.name} · 🧠 ${Math.floor(c.grow)}/100 · 💚 ${W.lsp.filter(L => lspStatus(c, L.i) === "friend").length} · ✖ ${W.lsp.filter(L => lspStatus(c, L.i) === "gone").length} · ${W.night ? "☾ night" : "☀ day"}`
     : W.sea ? (c.done ? `${S.name} · on land!` : c.ashore ? `${T.n} · swim up to the shore ⬆` : c.ready ? `${T.n} · fully grown: back to your nest ⌂` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5) · ${SEA.bands[bandAt(P.y)].n}`)
     : c.done ? `${S.name} · cell stage complete` : c.ready ? `${T.n} · fully grown: find your mate ❤` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5)`;
   $("dietBar").hidden = !(W.sea || W.land) || !!W.tribe || !!W.civ; if (W.sea || W.land) $("dietMark").style.left = ((c.lean + 1) / 2 * 100) + "%";
   if ($("grLabel").textContent !== lbl) $("grLabel").textContent = lbl;
-  const ic = W.tribe || W.civ ? "👥" : "🧬"; if ($("dnaIc").textContent !== ic) $("dnaIc").textContent = ic;
-  const dn = W.civ ? String(civPop(S.civ)) : W.tribe ? `${popAll(S.tribe)}/${room(S.tribe)}` : String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
+  const ic = W.space ? "🪙" : W.tribe || W.civ ? "👥" : "🧬"; if ($("dnaIc").textContent !== ic) $("dnaIc").textContent = ic;
+  const dn = W.space ? String(fl0(S.space.cr)) : W.civ ? String(civPop(S.civ)) : W.tribe ? `${popAll(S.tribe)}/${room(S.tribe)}` : String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
   $("abil").querySelectorAll(".ab").forEach(b => { const k = b.dataset.ab, cd = { dash: 3.5, poison: 7, zap: 8, ink: 8 }[k]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
   const v = $("vig"); if (+v.style.opacity > 0) v.style.opacity = Math.max(0, +v.style.opacity - .03);
   if (toastT && performance.now() > toastT) { $("toast").hidden = true; toastT = 0; }
@@ -4585,7 +5100,7 @@ function civSendDlg(to, back) {
   const rows = kinds.map(k => { const U = UNIT[k], c = k === "army" && hasPol(C, "draft") ? Object.fromEntries(Object.entries(U.c).map(([r, v]) => [r, r === "gold" ? Math.round(v * .7) : v])) : U.c;
     acts["u_" + k] = () => { const e = civSend(W, 0, k, to); if (e) { toast(e); return; } toast(`${U.ic} ${U.n} set off for ${name}.`); snd("eat"); (back || closeTD)(); };
     const what = k === "army" ? (to.t === "spot" ? "Break their outpost so you can claim it." : `Lay siege: break the walls (defence ${fl0(tg.def)}) and the town is yours. Several armies at once work best.`) : k === "miss" ? `Spread your faith (yours there now: ${fl0(tg.inf.f[0])}%). At 100% the town joins you.` : `Win hearts with a festival (yours there now: ${fl0(tg.inf.c[0])}%). At 100% the town joins you.`;
-    return `<button class="btn small cbtn" data-a="u_${k}"><b>${U.ic} ${U.n}</b><span>${costTxt(c)}</span><em>${what}</em></button>`; }).join("");
+    const v = civPickV(k, to); return `<button class="btn small cbtn" data-a="u_${k}"><b>${U.ic} ${U.n}</b><span>${costTxt(c)}${v ? " + the vehicle" : ""}</span><em>${what}</em><em>${v ? `In your ${VK[v.k].ic} ${esc(v.n)}` : "⚠️ None of your vehicles can make this trip"}</em></button>`; }).join("");
   dialog(`<h2>${esc(name)}</h2><p style="font-size:.85rem">${to.t === "town" && tg.own > 0 ? `A town of ${esc(C.nat[tg.own].name)} (${civStatus(C.nat[tg.own])}). 👥 ${tg.pop}.` : to.t === "spot" ? `Held by ${esc(C.nat[C.claims[to.n].own].name)}.` : ""} Units go from your nearest town with the right building (and a dock if it's across the sea).</p>
     <div class="cgrid">${rows}</div><div class="row"><button class="btn primary" data-a="ok">Back</button></div>`, acts, back || closeTD);
 }
@@ -4625,15 +5140,17 @@ function civUnits3(t) {
   // units: carts on land, ships at sea
   const live = new Set();
   for (const u of C.units) {
-    let m = V.u.get(u.id); if (!m) { const col = new T.Color(CIV_COL[u.own]), L = [];
+    let m = V.u.get(u.id); if (!m && u.dv) { const g = new T.Group(), vm = vehMesh(u.dv, CIV_COL[u.own]); vm.scale.setScalar(.45); g.add(vm); g.userData = { veh: u.dv.k }; V.g.add(g); m = g; V.u.set(u.id, m); }
+    if (!m) { const col = new T.Color(CIV_COL[u.own]), L = [];
       if (u.k === "army") for (let k = 0; k < 6; k++) { const x = (k % 3 - 1) * .22, z = (Math.floor(k / 3) - .5) * .25; L.push([new T.BoxGeometry(.1, .22, .1), new T.Matrix4().makeTranslation(x, .2, z), col], [new T.SphereGeometry(.06, 6, 5), new T.Matrix4().makeTranslation(x, .36, z), new T.Color(0xf0d8b0)], [new T.CylinderGeometry(.012, .012, .5, 3), new T.Matrix4().makeTranslation(x + .06, .35, z), new T.Color(0xd0d0d0)]); }
       else { L.push([new T.BoxGeometry(.45, .2, .28), new T.Matrix4().makeTranslation(0, .25, 0), new T.Color(u.k === "miss" ? 0xf2ead8 : 0xe85dbd)], [new T.ConeGeometry(.22, .3, 4), new T.Matrix4().makeTranslation(0, .5, 0), u.k === "miss" ? new T.Color(0xffd23d) : new T.Color(0x5db0e8)]);
         for (const [dx, dz] of [[-.15, .16], [.15, .16], [-.15, -.16], [.15, -.16]]) L.push([new T.CylinderGeometry(.08, .08, .04, 8), new T.Matrix4().compose(new T.Vector3(dx, .08, dz), new T.Quaternion().setFromEuler(new T.Euler(Math.PI / 2, 0, 0)), new T.Vector3(1, 1, 1)), new T.Color(0x5a3a1e)]); }
       L.push([new T.CylinderGeometry(.015, .015, .8, 3), new T.Matrix4().makeTranslation(-.2, .5, 0), new T.Color(0x3a2a1a)], [new T.BoxGeometry(.28, .16, .02), new T.Matrix4().makeTranslation(-.06, .8, 0), col]);
       const g = new T.Group(), land = new T.Mesh(merge3(L), V.um), boat = new T.Mesh(merge3([[new T.BoxGeometry(1.1, .22, .45), new T.Matrix4().makeTranslation(0, .05, 0), new T.Color(0x7a5530)], [new T.CylinderGeometry(.03, .03, 1.1, 4), new T.Matrix4().makeTranslation(.1, .65, 0), new T.Color(0x3a2a1a)], [new T.BoxGeometry(.04, .6, .55), new T.Matrix4().makeTranslation(.12, .75, 0), col]]), V.um);
       land.castShadow = boat.castShadow = true; g.add(land, boat); g.userData = { land, boat }; V.g.add(g); m = g; V.u.set(u.id, m); }
-    live.add(u.id); const [x, y] = unitXY(u), sea = tileAt(W, x, y) === T_SEA; m.userData.land.visible = !sea; m.userData.boat.visible = sea;
+    live.add(u.id); const [x, y] = unitXY(u), sea = tileAt(W, x, y) === T_SEA; if (m.userData.land) { m.userData.land.visible = !sea; m.userData.boat.visible = sea; }
     m.position.set(x / LT, sea ? -.05 + Math.sin(t * 2 + u.id) * .04 : h3(x, y), y / LT); m.rotation.y = -Math.atan2(u.y1 - u.y0, u.x1 - u.x0); m.scale.setScalar(1.7);
+    if (m.userData.veh === "air") m.position.y = Math.max(0, h3(x, y)) + 2.4 + Math.sin(t * 1.5 + u.id) * .1;
     m.visible = !!W.seen[tileI(x, y)];
     if (u.st === "there" && u.k === "army") m.position.y += Math.abs(Math.sin(t * 9 + u.id)) * .1;
   }
@@ -4677,7 +5194,7 @@ function civEvent(e) {
 function civWonDlg() {
   paused = true; const h = S.civ.how, top = h.war >= h.faith && h.war >= h.arts ? "conquerors" : h.faith >= h.arts ? "a people of faith" : "a people of the arts";
   dialog(`<h2>The islands are united!</h2><p>${esc(S.name)} rule all five islands: ${top}.</p><div class="stats"><div>By force<b>${h.war}</b></div><div>By faith<b>${h.faith}</b></div><div>By the arts<b>${h.arts}</b></div><div>Time<b>${fmtTime(S.time)}</b></div></div>
-    <p>Next comes the Sky Ship, and space. It arrives in a later update; your nation is saved and carries on until then.</p><div class="row"><button class="btn primary" data-a="go">Keep playing</button></div>`, { go: closeTD }, closeTD);
+    <p>Next: build the 🛸 Sky Port in your capital, then design and launch the Sky Ship to take your people to the stars.</p><div class="row"><button class="btn primary" data-a="go">Keep playing</button></div>`, { go: closeTD }, closeTD);
 }
 function civFallenDlg() {
   paused = true; saveSlot();
@@ -4744,10 +5261,11 @@ function civ3(t, dt) {
   // settlers on the road
   const live = new Set();
   for (const wg of C.wagons) {
-    let m = V.wag.get(wg); if (!m) { const L = [[new T.BoxGeometry(.5, .22, .3), new T.Matrix4().makeTranslation(0, .3, 0), new T.Color(0x9a6a3e)], [new T.CylinderGeometry(.3, .3, .5, 10, 1, false, 0, Math.PI), new T.Matrix4().compose(new T.Vector3(0, .42, 0), new T.Quaternion().setFromEuler(new T.Euler(0, 0, Math.PI / 2)), new T.Vector3(1, 1, 1)), new T.Color(0xf2ead8)]];
+    let m = V.wag.get(wg); if (!m && wg.dv) { m = vehMesh(wg.dv, CIV_COL[0]); V.g.add(m); V.wag.set(wg, m); }
+    if (!m) { const L = [[new T.BoxGeometry(.5, .22, .3), new T.Matrix4().makeTranslation(0, .3, 0), new T.Color(0x9a6a3e)], [new T.CylinderGeometry(.3, .3, .5, 10, 1, false, 0, Math.PI), new T.Matrix4().compose(new T.Vector3(0, .42, 0), new T.Quaternion().setFromEuler(new T.Euler(0, 0, Math.PI / 2)), new T.Vector3(1, 1, 1)), new T.Color(0xf2ead8)]];
       for (const [dx, dz] of [[-.18, .17], [.18, .17], [-.18, -.17], [.18, -.17]]) L.push([new T.CylinderGeometry(.1, .1, .04, 10), new T.Matrix4().compose(new T.Vector3(dx, .1, dz), new T.Quaternion().setFromEuler(new T.Euler(Math.PI / 2, 0, 0)), new T.Vector3(1, 1, 1)), new T.Color(0x5a3a1e)]);
       m = new T.Mesh(merge3(L), new T.MeshLambertMaterial({ vertexColors: true, flatShading: true })); m.castShadow = true; V.g.add(m); V.wag.set(wg, m); }
-    live.add(wg); const [x, y, a] = civAlong(wg); m.position.set(x / LT, h3(x, y), y / LT); m.scale.setScalar(1.8); m.rotation.y = -a + Math.sin(t * 8) * .03;
+    live.add(wg); const [x, y, a] = civAlong(wg); m.position.set(x / LT, wg.dv && wg.dv.k === "air" ? Math.max(0, h3(x, y)) + 2.4 : wg.dv && wg.dv.k === "ship" && tileAt(W, x, y) === T_SEA ? -.05 : h3(x, y), y / LT); m.scale.setScalar(wg.dv ? .8 : 1.8); m.rotation.y = -a + Math.sin(t * 8) * .03;
   }
   for (const [wg, m] of V.wag) if (!live.has(wg)) { V.g.remove(m); m.geometry.dispose(); m.material.dispose(); V.wag.delete(wg); }
   civUnits3(t);
@@ -4784,8 +5302,8 @@ function renderCivUI(force) {
   const card = $("lCard"), o = C.offer; card.hidden = !o;
   if (o) { card.innerHTML = `<b style="color:${natCol(o.k)}">${esc(C.nat[o.k].name)}</b><span>offer ${RES_IC.gold} ${o.gold} for ${RES_IC[o.r]} ${o.n}</span><div class="row"><button class="btn small primary" id="ofY">Deal</button><button class="btn small" id="ofN">No thanks</button></div>`;
     $("ofY").onclick = () => { civOffer(W, true); LUI_KEY = ""; renderCivUI(true); }; $("ofN").onclick = () => { civOffer(W, false); LUI_KEY = ""; renderCivUI(true); }; }
-  $("lBar").innerHTML = `<button class="lb" data-c="towns">🏛️<small>Towns</small></button><button class="lb" data-c="nat">🌍<small>Nations</small></button><button class="lb" data-c="gov">📜<small>Govern</small></button><button class="lb" data-c="goals">🎯<small>${Object.keys(C.goals).length}/${CIV_GOALS.length}</small></button>`;
-  $("lBar").querySelectorAll("[data-c]").forEach(b => b.onclick = () => ({ towns: civTownsDlg, nat: civNationsDlg, gov: civGovDlg, goals: civGoalsDlg })[b.dataset.c]());
+  $("lBar").innerHTML = `<button class="lb" data-c="towns">🏛️<small>Towns</small></button><button class="lb" data-c="nat">🌍<small>Nations</small></button><button class="lb" data-c="gov">📜<small>Govern</small></button><button class="lb" data-c="veh">🛠️<small>Vehicles</small></button><button class="lb" data-c="goals">🎯<small>${Object.keys(C.goals).length}/${CIV_GOALS.length}</small></button>`;
+  $("lBar").querySelectorAll("[data-c]").forEach(b => b.onclick = () => ({ towns: civTownsDlg, nat: civNationsDlg, gov: civGovDlg, veh: civVehDlg, goals: civGoalsDlg })[b.dataset.c]());
 }
 function civTap(sx, sy, wx, wy) {
   const C = S.civ; let best = null, bd = LT * 3.2;
@@ -4804,26 +5322,27 @@ function civTownDlg(tw) {
   const around = [n.grass > 20 ? "🌾 good farmland" : "", n.forest > 15 ? "🌲 forest" : "", n.rock > 8 ? "⛰️ hills" : "", n.coast ? "🌊 the sea" : "", n.ore ? "🔩 ore" : "", n.glow ? "💎 glowstone" : ""].filter(Boolean).join(", ") || "not much";
   const acts = { ok: closeTD }, rows = CB.map(B => { const why = civCan(C, tw, B.id); acts["b_" + B.id] = () => { const e = civBuild(W, tw, B.id); if (e) toast(e); else snd("eat"); civTownDlg(tw); };
     return `<button class="btn small cbtn${why ? " off" : ""}" data-a="b_${B.id}" title="${esc(B.d)}"><b>${B.ic} ${B.n}</b><span>${costTxt(B.c)}</span>${why && why !== "Not yours" ? `<em>${esc(why)}</em>` : `<em>${esc(B.d)}</em>`}</button>`; }).join("");
-  const free = civHas(tw, "dock") ? civFree(W, -1) : civFree(W, W.sites[tw.site].isle);
-  if (free.length) acts.settle = () => civSettleDlg(tw);
+  const free = civCross(tw) ? civFree(W, -1) : civFree(W, W.sites[tw.site].isle);
+  if (free.length) acts.settle = () => civSettleDlg(tw); if (civHas(tw, "skyport")) acts.sky = civLaunchDlg;
   acts.out = () => civTargetsDlg(tw); const fo = Math.max(...tw.inf.f.slice(1)), co = Math.max(...tw.inf.c.slice(1));
   dialog(`<h2>${tw.cap ? "★ " : ""}${esc(tw.name)}</h2><p>👥 ${tw.pop} of ${civCap(tw)} · ${mood >= 70 ? "😊 happy" : mood >= 30 ? "🙂 content" : "😠 unhappy: working at half speed"} · workplaces ${civUsed(tw)} of ${civSlots(tw)}</p>
     <p style="font-size:.85rem">${has}${site ? `<br>🔨 Building: ${CBD[site.k].ic} ${CBD[site.k].n} (${fl0(site.prog / CBD[site.k].work * 100)}%)` : ""}<br>Round the town: ${around}.</p>
     <div class="cgrid">${rows}</div>
     ${fo > 5 || co > 5 ? `<p style="font-size:.85rem;color:#FF8A8A">⚠️ Other nations are winning hearts here: faith ${fl0(fo)}%, culture ${fl0(co)}%. At 100% the town goes over to them. A temple and a theatre push back.</p>` : ""}
-    <div class="row">${free.length ? `<button class="btn" data-a="settle">🛻 Send settlers</button>` : ""}<button class="btn" data-a="out">📯 Send out</button><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+    <div class="row">${free.length ? `<button class="btn" data-a="settle">🛻 Send settlers</button>` : ""}<button class="btn" data-a="out">📯 Send out</button>${civHas(tw, "skyport") ? `<button class="btn primary" data-a="sky">🚀 The Sky Ship</button>` : ""}<button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
 }
+const civCross = tw => civHas(tw, "dock") || ownTowns(S.civ, 0).some(t => civHas(t, "yard"));
 function civSettleDlg(tw) {
-  const free = civHas(tw, "dock") ? civFree(W, -1) : civFree(W, W.sites[tw.site].isle), acts = { back: () => civTownDlg(tw) }, from = W.sites[tw.site];
+  const free = civCross(tw) ? civFree(W, -1) : civFree(W, W.sites[tw.site].isle), acts = { back: () => civTownDlg(tw) }, from = W.sites[tw.site];
   free.forEach(s => { acts["s_" + s.n] = () => { const e = civSettle(W, tw, s.n); if (e) { toast(e); return; } toast(`Settlers set off for ${s.name}.`); closeTD(); }; });
   dialog(`<h2>Send settlers</h2><p>${SETTLE.pop} people leave ${esc(tw.name)} with 🍖 ${SETTLE.food} and 🪵 ${SETTLE.wood} to found a new town. ${tw.pop < SETTLE.min ? `(The town needs ${SETTLE.min} people first.)` : ""}</p>
     <div class="cgrid">${free.map(s => `<button class="btn small cbtn" data-a="s_${s.n}"><b>${esc(s.name)}</b><span>${Math.round(Math.hypot(s.x - from.x, s.y - from.y) / LT)} tiles away</span></button>`).join("")}</div>
     <div class="row"><button class="btn" data-a="back">Back</button></div>`, acts, () => civTownDlg(tw));
 }
 function civSiteDlg(s) {
-  paused = true; const C = S.civ, from = C.towns.filter(tw => tw.own === 0 && W.sites[tw.site].isle === s.isle).sort((a, b) => b.pop - a.pop)[0];
+  paused = true; const C = S.civ, from = C.towns.filter(tw => tw.own === 0 && W.sites[tw.site].isle === s.isle).sort((a, b) => b.pop - a.pop)[0] || C.towns.filter(tw => tw.own === 0 && civCross(tw)).sort((a, b) => b.pop - a.pop)[0];
   const acts = { ok: closeTD }; if (from) acts.go = () => { const e = civSettle(W, from, s.n); if (e) toast(e); else toast(`Settlers set off from ${from.name}.`); closeTD(); };
-  dialog(`<h2>${esc(s.name)}</h2><p>Free land for a new town. ${from ? `Send settlers from ${esc(from.name)}: ${SETTLE.pop} people, 🍖 ${SETTLE.food} and 🪵 ${SETTLE.wood}.` : "It's on another island: you'll need boats (coming in a later update)."}</p>
+  dialog(`<h2>${esc(s.name)}</h2><p>Free land for a new town. ${from ? `Send settlers from ${esc(from.name)}: ${SETTLE.pop} people, 🍖 ${SETTLE.food} and 🪵 ${SETTLE.wood}.` : "It's on another island: build a ⚓ dock (or an airship yard) to send settlers across the sea."}</p>
     <div class="row">${from ? `<button class="btn" data-a="go">🛻 Send settlers</button>` : ""}<button class="btn primary" data-a="ok">OK</button></div>`, acts, closeTD);
 }
 function civTownsDlg() {
@@ -4836,8 +5355,453 @@ function civTownsDlg() {
 function civGoalsDlg() {
   paused = true; const C = S.civ;
   dialog(`<h2>Goals</h2><p>${CIV_GOALS.map(g => (C.goals[g.id] ? "✅ " : "○ ") + g.n + ` <span style="color:var(--muted)">(${RES_IC.gold} ${g.g})</span>`).join("<br>")}</p>
-    <p style="font-size:.85rem;color:var(--muted)">Coming next: your own vehicle designs (carts, ships and airships whose design decides how well they do), and the Sky Ship.</p>
+    <p style="font-size:.85rem;color:var(--muted)">Your vehicle designs (🛠️) decide how fast and how well your units do. Once the islands are united, the Sky Port launches the Sky Ship.</p>
     <div class="row"><button class="btn primary" data-a="ok">OK</button></div>`, { ok: closeTD }, closeTD);
+}
+/* ---------- vehicles on screen: a 3D model from a design (vehMesh), and the builder (openVB) ----------
+   A model is one merged, vertex-coloured mesh. Section 0 is the front (+x); side parts are mirrored on both sides (±z). */
+function vehMesh(d, team) {
+  const T = T3, L = [], V = (x, y, z) => new T.Vector3(x, y, z), C = c => new T.Color(c), tc = C(team == null ? 0x7cf2c8 : team), n = d.len, cx = c => (n - 1) / 2 - c;
+  const put = (g, p, c, rot, sc) => L.push([g, new T.Matrix4().compose(p, new T.Quaternion().setFromEuler(new T.Euler(...(rot || [0, 0, 0]))), V(...(sc || [1, 1, 1]))), c instanceof T.Color ? c : C(c)]);
+  const box = (x, y, z, sx, sy, sz, c, rot) => put(new T.BoxGeometry(sx, sy, sz), V(x, y, z), c, rot);
+  const cyl = (x, y, z, r1, r2, h, c, rot, seg) => put(new T.CylinderGeometry(r1, r2, h, seg || 10), V(x, y, z), c, rot);
+  const sph = (x, y, z, r, c, sc, seg) => put(new T.SphereGeometry(r, seg || 12, 9), V(x, y, z), c, null, sc);
+  const cone = (x, y, z, r, h, c, rot, seg) => put(new T.ConeGeometry(r, h, seg || 10), V(x, y, z), c, rot);
+  const k = d.k, sp = k === "space", air = k === "air", top = sp ? .45 : air ? .2 : .32, bot = sp ? -.45 : air ? -.18 : -.22, side = sp ? .48 : .44;
+  // the hull
+  for (let c = 0; c < n; c++) { const x = cx(c);
+    if (sp) { cyl(x, 0, 0, .46, .46, 1, c % 2 ? 0xc8d0dc : 0xb0bac8, [0, 0, Math.PI / 2], 14); box(x, 0, .44, .98, .08, .06, tc); box(x, 0, -.44, .98, .08, .06, tc); }
+    else if (k === "ship") { box(x, 0, 0, 1, .42, .86, c % 2 ? 0x8a5a32 : 0x7a4e2a); box(x, .22, 0, 1, .04, .8, 0xc8a070); }
+    else if (air) { box(x, 0, 0, 1, .32, .6, c % 2 ? 0x9a6a3e : 0x8a5c34); }
+    else { box(x, 0, 0, 1, .4, .8, c % 2 ? 0xa0703e : 0x93653a); box(x, .21, 0, .9, .03, .7, 0x6b4a2e); } }
+  const fx = cx(0) + .5;
+  if (sp) cone(fx + .45, 0, 0, .46, .9, 0xe8eef6, [0, 0, -Math.PI / 2], 14);
+  else if (k === "ship") { cone(fx + .4, 0, 0, .45, .8, 0x7a4e2a, [0, 0, -Math.PI / 2], 4); box(cx(n - 1) - .55, .1, 0, .1, .6, .86, 0x6b4426); }
+  else if (!air) box(fx + .1, -.05, 0, .2, .3, .5, 0x6b4a2e);
+  if (air) for (let c = 0; c < n; c++) cyl(cx(c), .55, 0, .015, .015, .8, 0x3a2a1a, null, 4);
+  // the parts
+  for (const q of d.p) { const x = cx(q.c);
+    for (const z of q.s === "s" ? [side, -side] : [0]) { const y = q.s === "t" ? top : q.s === "b" ? bot : 0, o = Math.sign(z) || 1;
+      switch (q.id) {
+        case "wheel": case "iwheel": for (const wz of [.45, -.45]) cyl(x, bot - .05, wz, .3, .3, .1, q.id === "iwheel" ? 0x5a5f66 : 0x5a3a1e, [Math.PI / 2, 0, 0], 12); break;
+        case "sail": cyl(x, top + .7, 0, .03, .03, 1.5, 0x3a2a1a, null, 5); box(x - .05, top + .85, 0, .06, .9, .9, 0xf6efe0); box(x - .05, top + 1.35, 0, .06, .12, .5, tc); break;
+        case "oars": for (let i = -1; i <= 1; i += 2) cyl(x + i * .2, 0, z * 1.5, .02, .02, .8, 0xc8a070, [Math.PI / 2 - .35 * o, 0, 0], 4); break;
+        case "keel": box(x, bot - .2, 0, .9, .3, .12, 0x4a3018); break;
+        case "balloon": sph(x, top + 1.1, 0, .55, c3(q.c), [1.25, .85, .95], 14); break;
+        case "prop": cyl(x, 0, z + o * .1, .06, .06, .2, 0x5a5f66, [Math.PI / 2, 0, 0], 6); box(x - .02, 0, z + o * .22, .04, .7, .1, 0xd8d8d8); box(x - .02, 0, z + o * .22, .04, .1, .7, 0xd8d8d8); break;
+        case "gcore": put(new T.OctahedronGeometry(.22, 0), V(x, bot - .12, 0), 0xc89cff); break;
+        case "cannon": cyl(x, .05, z + o * .2, .08, .1, .5, 0x2a2a2e, [Math.PI / 2, 0, 0], 8); break;
+        case "ram": cyl(x + .5, top + .12, 0, .1, .12, 1.4, 0x6b4a2e, [0, 0, Math.PI / 2], 8); cone(x + 1.25, top + .12, 0, .14, .2, 0x8a8f96, [0, 0, -Math.PI / 2], 8); break;
+        case "armour": box(x, 0, z + o * .03, .9, .36, .05, 0x8a8f96); break;
+        case "bell": for (const bz of [-.25, .25]) cyl(x, top + .3, bz, .02, .02, .6, 0x6b4a2e, null, 4); cone(x, top + .42, 0, .16, .26, 0xe8b83a, null, 10); break;
+        case "shrine": box(x, top + .15, 0, .6, .3, .5, 0xf2ead8); cone(x, top + .42, 0, .42, .3, 0xd84a4a, [0, Math.PI / 4, 0], 4); sph(x, top + .62, 0, .07, 0xffd23d); break;
+        case "banner": cyl(x, (q.s === "t" ? top : .1) + .4, z, .015, .015, .8, 0x3a2a1a, null, 4); box(x - .14, (q.s === "t" ? top : .1) + .65, z, .26, .2, .02, [0xe85d5d, 0xf2c94c, 0x5db0e8, 0xe85dbd][q.c % 4]); break;
+        case "stage": box(x, top + .06, 0, .9, .1, .7, 0x8a5a32); for (const [bx, bz] of [[-.4, -.3], [.4, -.3], [-.4, .3], [.4, .3]]) cyl(x + bx, top + .35, bz, .02, .02, .5, 0x3a2a1a, null, 4); box(x, top + .62, 0, .95, .06, .75, 0xd84a6a); break;
+        case "hold": box(x, q.s === "b" ? bot - .12 : 0, z + (q.s === "s" ? o * .12 : 0), .7, .26, q.s === "s" ? .24 : .55, 0xb08850); break;
+        case "thrust": if (q.s === "b") { cyl(x, bot - .12, 0, .16, .24, .3, 0x5a5f66, null, 10); sph(x, bot - .3, 0, .14, 0xffa040); } else { cyl(x, 0, z + o * .15, .14, .14, .7, 0x8a929e, [0, 0, Math.PI / 2], 10); cone(x - .45, 0, z + o * .15, .16, .25, 0xffa040, [0, 0, Math.PI / 2], 10); } break;
+        case "warp": put(new T.TorusGeometry(.38, .07, 8, 18), V(x, top + .2, 0), 0x6ab0ff, [Math.PI / 2, 0, 0]); break;
+        case "tank": cyl(x, 0, z + o * .12, .16, .16, .8, 0xd8dee8, [0, 0, Math.PI / 2], 10); break;
+        case "plate": box(x, 0, z + o * .04, .92, .6, .07, 0x7a828e); break;
+        case "shield": sph(x, top, 0, .4, 0x7cd8ff, [1, .5, 1], 12); break;
+        case "laser": cyl(x + .25, q.s === "t" ? top + .12 : 0, z + o * (q.s === "s" ? .1 : 0), .04, .05, .6, 0x3a3f46, [0, 0, Math.PI / 2], 6); sph(x + .56, q.s === "t" ? top + .12 : 0, z + o * (q.s === "s" ? .1 : 0), .05, 0xff5a5a); break;
+        case "missile": for (let i = 0; i < 3; i++) cone(x + .1, top + .1, (i - 1) * .16, .06, .4, 0xe8e8e8, [0, 0, -Math.PI / 2], 6); break;
+        case "scanner": cyl(x, top + .2, 0, .02, .02, .4, 0x8a929e, null, 4); put(new T.ConeGeometry(.28, .12, 14, 1, true), V(x, top + .42, 0), 0xe8eef6, [Math.PI, 0, 0]); break;
+        case "beam": cone(x, bot - .2, 0, .26, .35, 0x9affc8, null, 12); break;
+        case "shaper": sph(x, bot - .22, 0, .2, 0x5ab0e0); break;
+        case "seeder": sph(x, bot - .2, 0, .18, 0x7cd85a, [1, 1.3, 1]); break;
+        case "pod": box(x, q.s === "b" ? bot - .1 : 0, z + (q.s === "s" ? o * .12 : 0), .7, .3, q.s === "s" ? .24 : .5, 0xc8b080); break;
+        case "reactor": sph(x, bot - .16, 0, .2, 0xffe060); break;
+      } } }
+  const m = new T.Mesh(merge3(L), new T.MeshLambertMaterial({ vertexColors: true, flatShading: true })); m.castShadow = true; return m;
+}
+const c3 = c => [0xf2c94c, 0xe85d5d, 0x5db0e8, 0x7cd85a, 0xe85dbd, 0xffa040][c % 6];
+/* ---- the builder: a full-screen panel over the game. VB = { d, mode ("civ", "ship" or "launch"), i, sel {c, s}, back } ---- */
+let VB = null;
+function openVB(o) {
+  VB = Object.assign({ sel: null, rot: .6 }, o); VB.d = JSON.parse(JSON.stringify(o.d)); vClean(VB.d); paused = true; closeDlg();
+  $("vbld").hidden = false; $("vbName").value = VB.d.n; load3D().then(() => { if (VB) renderVB(); }); renderVB();
+}
+function closeVB() { $("vbld").hidden = true; const b = VB && VB.back; VB = null; if (b) b(); else { paused = false; LUI_KEY = ""; } }
+function vbLine(s, d) {
+  if (d.k === "space") return [["Speed", s.speed / 12], ["Jump range", (s.range - 150) / 500, Math.round(s.range) + " ly"], ["Hull", s.hp / 400, Math.round(s.hp)], ["Shield", s.shield / 200, Math.round(s.shield)], ["Firepower", s.dmg / 60, Math.round(s.dmg)], ["Energy", s.energy / 200, Math.round(s.energy)], ["Cargo", s.cargo / 90, 10 + s.cargo]];
+  return [["Speed", vSpeedF(s) / 2.6, "×" + vSpeedF(s).toFixed(1)], ["War", (s.war) / 60, "×" + vJob(s, "army").toFixed(2)], ["Faith", s.faith / 60, "×" + vJob(s, "miss").toFixed(2)], ["Arts", s.arts / 60, "×" + vJob(s, "fest").toFixed(2)], ["Toughness", 1 - vTough(s), Math.round(s.hp)], ["Cargo", s.cargo / 60, "+" + Math.floor(s.cargo / 10) + " 👥"]];
+}
+function renderVB() {
+  if (!VB) return; const d = VB.d, s = vStats(d), K = VK[d.k], sel = VB.sel, sp = d.k === "space";
+  const kinds = VB.mode === "civ" ? ["cart", "ship", "air"] : ["space"];
+  $("vbKinds").innerHTML = kinds.map(k => `<button class="${d.k === k ? "on" : ""}" data-k="${k}">${VK[k].ic} ${VK[k].n}</button>`).join("") + `<span class="vbl"><button data-l="-1">−</button> ${d.len} sections <button data-l="1">+</button></span>`;
+  $("vbKinds").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { if (d.k === b.dataset.k) return; d.k = b.dataset.k; d.p = []; if (d.k === "cart") d.p = [{ id: "wheel", c: 0, s: "b" }, { id: "wheel", c: 1, s: "b" }]; if (d.k === "ship") d.p = [{ id: "sail", c: 0, s: "t" }]; vClean(d); VB.sel = null; renderVB(); });
+  $("vbKinds").querySelectorAll("[data-l]").forEach(b => b.onclick = () => { d.len = clamp(d.len + +b.dataset.l, K.min, K.max); vClean(d); if (VB.sel && VB.sel.c >= d.len) VB.sel = null; renderVB(); });
+  // the hull grid: a column per section, front on the left
+  let h = `<div class="vbrow vbhd"><i></i>${Array.from({ length: d.len }, (_, c) => `<i>${c === 0 ? "front" : c === d.len - 1 ? "back" : ""}</i>`).join("")}</div>`;
+  for (const [sl, nm] of [["t", "Top"], ["s", "Sides"], ["b", "Bottom"]]) { h += `<div class="vbrow"><i>${nm}</i>`;
+    for (let c = 0; c < d.len; c++) { const q = d.p.find(x => x.c === c && x.s === sl), any = VP.some(P => vSlotOk(P, d.k, sl)); h += `<button class="vbslot${sel && sel.c === c && sel.s === sl ? " on" : ""}${any ? "" : " no"}" data-c="${c}" data-s="${sl}">${q ? VPD[q.id].ic : any ? "+" : ""}</button>`; } h += `</div>`; }
+  $("vbHull").innerHTML = h;
+  $("vbHull").querySelectorAll(".vbslot").forEach(b => b.onclick = () => { if (b.classList.contains("no")) return; VB.sel = { c: +b.dataset.c, s: b.dataset.s }; renderVB(); });
+  // stats
+  const cost = Object.keys(s.c).map(r => (r === "cr" ? "🪙" : RES_IC[r]) + s.c[r]).join(" ");
+  $("vbStats").innerHTML = vbLine(s, d).map(([n, f, v]) => `<div>${n} <b>${v == null ? "" : v}</b><i><u style="width:${clamp(f, 0, 1) * 100}%"></u></i></div>`).join("") + `<div class="vbok${s.ok ? " no" : ""}">${s.ok ? "⚠️ " + esc(s.ok) : (sp ? `Tools: ${["scan", "beam", "shape", "seed", "msl"].filter(t => s[t]).map(t => ({ scan: "📡", beam: "🛸", shape: "🌍", seed: "🌱", msl: "🚀" })[t]).join(" ") || "none"} · ` : "") + (VB.mode === "civ" ? `Each trip costs ${cost}` : VB.mode === "launch" ? `Building it costs ${cost.replace("🪙", "🪙 gold ")}` : `Parts cost ${cost} (you pay for what's new)`)}</div>`;
+  // the tray: parts for the picked slot
+  const tray = $("vbTray"); tray.textContent = "";
+  if (!sel) { tray.innerHTML = `<p class="vbhelp">Tap a slot above (top, sides or bottom of a section) to choose what goes there. Side parts come in pairs, one each side.</p>`; }
+  else {
+    const q = d.p.find(x => x.c === sel.c && x.s === sel.s);
+    if (q) { const b = document.createElement("button"); b.className = "card"; b.innerHTML = `<b style="font-size:1.4rem">✖</b><b>Take off</b><span>${VPD[q.id].n}</span>`; b.onclick = () => { d.p = d.p.filter(x => x !== q); renderVB(); }; tray.append(b); }
+    for (const P of VP) { if (!vSlotOk(P, d.k, sel.s)) continue; const ok = vUnlocked(W, P), b = document.createElement("button"); b.className = "card" + (ok ? "" : " locked") + (q && q.id === P.id ? " on" : "");
+      const un = P.un ? (P.k === "space" ? "Goal: " + (SPACE_GOALS.find(g => g.id === P.un) || {}).n : "Needs " + CBD[P.un].ic + " " + CBD[P.un].n.toLowerCase()) : "";
+      b.innerHTML = `<b style="font-size:1.4rem">${P.ic}</b><b>${P.n}</b><span>${ok ? Object.keys(P.c).map(r => (r === "cr" ? "🪙" : RES_IC[r]) + P.c[r] * (sel.s === "s" ? 2 : 1)).join(" ") : esc(un)}</span><em>${esc(P.d)}</em>`;
+      b.onclick = () => { if (!ok) { toast(un ? "Locked. " + un : "Locked"); return; } d.p = d.p.filter(x => !(x.c === sel.c && x.s === sel.s)); d.p.push({ id: P.id, c: sel.c, s: sel.s }); renderVB(); }; tray.append(b); }
+  }
+  $("vbSave").textContent = VB.mode === "launch" ? "🚀 Launch" : "Save";
+  $("vbInfo").textContent = VB.mode === "civ" ? "Design a vehicle" : VB.mode === "launch" ? "Design the Sky Ship" : `Refit your starship · 🪙 ${fl0(S.space.cr)}`;
+  if (T3) vbBuild3();
+}
+/* the turning 3D preview (one renderer, kept for the whole visit) */
+let VBR = null;
+function vbBuild3() {
+  const T = T3, cvs = $("vb3");
+  if (!VBR) { let R; try { R = new T.WebGLRenderer({ canvas: cvs, antialias: true, alpha: true }); } catch (e) { return; } R.setPixelRatio(Math.min(2, devicePixelRatio || 1)); const scene = new T.Scene(), cam3 = new T.PerspectiveCamera(36, 1, .1, 100);
+    scene.add(new T.HemisphereLight(0xffffff, 0x445566, 1.4)); const dl = new T.DirectionalLight(0xffffff, 1.6); dl.position.set(3, 5, 4); scene.add(dl); VBR = { R, scene, cam: cam3, m: null };
+    let px = null; cvs.onpointerdown = e => { px = e.clientX; cvs.setPointerCapture(e.pointerId); }; cvs.onpointermove = e => { if (px != null && VB) { VB.rot += (e.clientX - px) * .01; px = e.clientX; } }; cvs.onpointerup = () => { px = null; }; }
+  if (VBR.m) { VBR.scene.remove(VBR.m); VBR.m.geometry.dispose(); VBR.m.material.dispose(); }
+  VBR.m = vehMesh(VB.d, S.space ? EMP_COL[0] : CIV_COL[0]); VBR.scene.add(VBR.m);
+}
+function vbFrame() {
+  if (!VB || !VBR) return; const cvs = $("vb3"), w = cvs.clientWidth, h = cvs.clientHeight; if (!w || !h) return;
+  if (cvs.width !== Math.round(w * VBR.R.getPixelRatio())) VBR.R.setSize(w, h, false); VBR.cam.aspect = w / h; VBR.cam.updateProjectionMatrix();
+  const r = VB.d.len * .9 + 2.6; VBR.cam.position.set(Math.cos(VB.rot) * r, r * .55, Math.sin(VB.rot) * r); VBR.cam.lookAt(0, .3, 0); VB.rot += .004; VBR.R.render(VBR.scene, VBR.cam);
+}
+$("vbBack").onclick = () => closeVB();
+$("vbName").oninput = () => { if (VB) VB.d.n = $("vbName").value.slice(0, 20); };
+$("vbSave").onclick = () => {
+  if (!VB) return; const d = VB.d; d.n = ($("vbName").value || VK[d.k].n).trim().slice(0, 20);
+  if (VB.mode === "civ") { const e = civSaveDesign(W, VB.i, d); if (e) return toast(e); snd("grow"); toast(`Saved: ${d.n}`); closeVB(); }
+  else if (VB.mode === "ship") { const e = spSaveShip(W, d); if (e) return toast(e); snd("grow"); toast("Your starship is refitted."); VB.back = null; closeVB(); }
+  else { const e = civLaunch(W, d); if (e) return toast(e); VB.back = null; closeVB(); paused = true; saveSlot(); spaceIntro(); }
+};
+/* the list of designs (Civilisation) */
+function civVehDlg() {
+  paused = true; const C = S.civ, acts = { ok: closeTD };
+  C.vd.forEach((d, i) => { acts["e" + i] = () => openVB({ mode: "civ", i, d, back: civVehDlg }); acts["x" + i] = () => { if (C.vd.length <= 1) return toast("Keep at least one design"); C.vd.splice(i, 1); civVehDlg(); }; });
+  for (const k of ["cart", "ship", "air"]) acts["n" + k] = () => { if (C.vd.length >= 8) return toast("Eight designs at most: delete one first"); openVB({ mode: "civ", i: -1, d: k === "cart" ? { n: "New cart", k, len: 2, p: [{ id: "wheel", c: 0, s: "b" }, { id: "wheel", c: 1, s: "b" }] } : k === "ship" ? { n: "New ship", k, len: 3, p: [{ id: "sail", c: 1, s: "t" }] } : { n: "New airship", k, len: 2, p: [] }, back: civVehDlg }); };
+  const row = (d, i) => { const s = vStats(d); return `<div class="ncard" style="border-color:var(--line)"><b>${VK[d.k].ic} ${esc(d.n)}</b><span>${s.ok ? "⚠️ " + esc(s.ok) : `speed ×${vSpeedF(s).toFixed(1)} · war ×${vJob(s, "army").toFixed(2)} · faith ×${vJob(s, "miss").toFixed(2)} · arts ×${vJob(s, "fest").toFixed(2)}${s.cargo ? ` · +${Math.floor(s.cargo / 10)} settlers` : ""}`}</span><span>Each trip: ${costTxt(Object.fromEntries(Object.entries(s.c).filter(([r]) => r !== "cr")))}</span><div class="nbtns"><button class="btn small" data-a="e${i}">✏️ Change</button><button class="btn small bad" data-a="x${i}">Delete</button></div></div>`; };
+  dialog(`<h2>Vehicles</h2><p style="font-size:.85rem">Armies, missionaries, festival troupes and settlers travel in your vehicles, and the design decides how well they do: cannons make armies stronger, bells and shrines help missionaries, stages and banners help festivals, and more wheels, sails or engines get them there faster. Heavy parts slow them down. When you send a unit, your best design for the job is used: carts on land, ships across the sea (from a town with a dock), airships anywhere.</p>
+    ${C.vd.map(row).join("")}<div class="row"><button class="btn small" data-a="ncart">+ 🛻 Cart</button><button class="btn small" data-a="nship">+ ⛵ Ship</button><button class="btn small" data-a="nair">+ 🎈 Airship</button></div><div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+}
+/* which design a unit would use (shown in the send panel) */
+function civPickV(kind, to) {
+  const C = S.civ, tg = to.t === "town" ? C.towns[to.id] : W.spots[to.n], tx = to.t === "town" ? W.sites[tg.site].x : tg.x, ty = to.t === "town" ? W.sites[tg.site].y : tg.y, isle = to.t === "town" ? W.sites[tg.site].isle : tg.isle; let b = null, bs = -1;
+  C.vd.forEach(d => { const sr = civSource(W, 0, kind, tx, ty, isle, d.k === "air"); if (!sr) return; if (vFits(W, 0, d, W.sites[sr.site].isle !== isle)) return; const s = vStats(d), sc = vJob(s, kind) * (.6 + vSpeedF(s) * .4) / (kind === "army" ? vTough(s) : 1); if (sc > bs) { bs = sc; b = d; } });
+  return b;
+}
+function civLaunchDlg() {
+  paused = true; const C = S.civ, d = C.sky || skyStarter();
+  dialog(`<h2>🛸 The Sky Ship</h2><p>Your people are ready to leave the islands for the stars. Design the Sky Ship: thrusters to fly, lasers and hull plates to fight, a scanner to study planets, cargo pods to trade. Better parts open up out in space as you reach goals. It's paid for in gold, and the gold left over comes with you.</p>
+    <p style="font-size:.85rem;color:var(--muted)">When you launch, the Civilisation stage ends and the Space stage begins. Your save carries on from there.</p>
+    <div class="row"><button class="btn" data-a="no">Not yet</button><button class="btn primary" data-a="go">Design the Sky Ship ▶</button></div>`, { no: closeTD, go: () => openVB({ mode: "launch", i: -1, d, back: closeTD }) }, closeTD);
+}
+/* ---------- the Space stage on screen ----------
+   Two views share the 3D renderer: the galaxy map (stars as glows, owners as rings, your ship, fleets) and the star system
+   you're in (the sun, planets with painted surfaces, colonies, ships and lasers). SPV holds what's picked and which view
+   is showing; SP3 the three.js objects. cam.x/cam.y are the view's centre: system units, or galaxy units / 10 on the map. */
+const SPV = { map: false, sel: null, star: null, fol: true };
+let SP3 = null;
+const empCol = o => o === PIRATE ? "#FF5A5A" : o === WARDEN ? "#FF4FD8" : "#" + (EMP_COL[o] || 0xffffff).toString(16).padStart(6, "0");
+const empName = k => k === 0 ? "You" : k === PIRATE ? "Pirates" : W.G.emp[k].name;
+const spGal = () => SPV.map || !W.sys;
+function glowTex(T) { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.25, "rgba(255,255,255,.8)"); r.addColorStop(.6, "rgba(255,255,255,.18)"); r.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = r; g.fillRect(0, 0, 64, 64); const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t; }
+/* A painted surface for a planet, from its own seed: oceans, land, ice caps, lava cracks, gas bands. */
+function planetTex(T, p, X, s) {
+  const c = document.createElement("canvas"); c.width = 128; c.height = 64; const g = c.getContext("2d"), R = rng(p.sd), [Tm, A] = spTA(X, s, p), L = spLife(X, s, p);
+  const base = { rock: ["#8a7a6a", "#6a5a4c"], ice: ["#dfefff", "#a8c8e8"], lava: ["#3a1a12", "#ff6a2a"], ocean: ["#2a6ad0", "#3a9a5a"], desert: ["#d8b070", "#b08848"], garden: ["#3a8ad8", "#5ab04a"], gas: ["#c8a0e0", "#9a70c0"] }[p.ty];
+  let [c1, c2] = base; if (p.ty !== "gas" && Tm === 2 && A === 2 && p.ty !== "garden" && p.ty !== "ocean") { c1 = "#3a8ad8"; c2 = L ? "#5ab04a" : "#9a8a6a"; } // a shaped world turns blue and green
+  g.fillStyle = c1; g.fillRect(0, 0, 128, 64);
+  if (p.ty === "gas") { for (let y = 0; y < 64; y += 3) { g.fillStyle = `hsla(${270 + (R() - .5) * 60},${40 + R() * 30}%,${55 + (R() - .5) * 30}%,.7)`; g.fillRect(0, y, 128, 2 + R() * 4); } }
+  else { g.fillStyle = c2; for (let i = 0; i < 26; i++) { const x = R() * 128, y = 8 + R() * 48, r = 4 + R() * 14; g.beginPath(); g.ellipse(x, y, r * 1.6, r, 0, 0, TAU); g.fill(); g.beginPath(); g.ellipse(x + 128, y, r * 1.6, r, 0, 0, TAU); g.fill(); g.beginPath(); g.ellipse(x - 128, y, r * 1.6, r, 0, 0, TAU); g.fill(); }
+    if (L >= 2) { g.fillStyle = "rgba(40,120,40,.6)"; for (let i = 0; i < 18; i++) { g.beginPath(); g.arc(R() * 128, 10 + R() * 44, 2 + R() * 5, 0, TAU); g.fill(); } }
+    if (Tm <= 1) { g.fillStyle = "rgba(240,248,255,.9)"; g.fillRect(0, 0, 128, 8 - Tm * 3); g.fillRect(0, 56 + Tm * 3, 128, 8); }
+    if (A >= 3) { g.fillStyle = "rgba(255,255,255,.25)"; for (let i = 0; i < 20; i++) g.fillRect(R() * 128, R() * 64, 20 + R() * 30, 2); } }
+  const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t;
+}
+function buildSpace3() {
+  const T = T3, X = S.space, G = W.G;
+  if (SP3) { SP3.scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); }
+  const scene = new T.Scene(), cam3 = new T.PerspectiveCamera(50, CW / CH, .5, 6000); scene.background = new T.Color(0x03050c);
+  const glow = glowTex(T), sky = new T.BufferGeometry(), sp = [], sc = []; const R = rng(hash(S.seed, 77));
+  for (let i = 0; i < 1600; i++) { const u = R() * 2 - 1, a = R() * TAU, r = 2500, q = Math.sqrt(1 - u * u); sp.push(Math.cos(a) * q * r, u * r, Math.sin(a) * q * r); const b = .4 + R() * .6; sc.push(b, b, b * (1 + R() * .2)); }
+  sky.setAttribute("position", new T.Float32BufferAttribute(sp, 3)); sky.setAttribute("color", new T.Float32BufferAttribute(sc, 3)); scene.add(new T.Points(sky, new T.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true })));
+  scene.add(new T.AmbientLight(0x6070a0, .7), new T.HemisphereLight(0xb0c8ff, 0x302040, .5)); const sun = new T.PointLight(0xfff2d8, 2.2, 0, 0), head = new T.DirectionalLight(0xffffff, .7); scene.add(sun, head, head.target);
+  // the galaxy
+  const gal = new T.Group(); scene.add(gal);
+  { const g = new T.BufferGeometry(), p = [], c = [], R2 = rng(hash(S.seed, 78)); for (let i = 0; i < 5000; i++) { const arm = i % 3, r = 15 + Math.pow(R2(), .7) * 85, a = arm * TAU / 3 + r / 100 * 3 + (R2() - .5) * .9; p.push(Math.cos(a) * r + (R2() - .5) * 6, (R2() - .5) * 2 * (1 - r / 120), Math.sin(a) * r + (R2() - .5) * 6); const h = r < 40 ? [1, .7, .9] : R2() < .5 ? [.5, .6, 1] : [.9, .6, 1]; c.push(...h.map(v => v * (.25 + R2() * .35))); }
+    g.setAttribute("position", new T.Float32BufferAttribute(p, 3)); g.setAttribute("color", new T.Float32BufferAttribute(c, 3)); gal.add(new T.Points(g, new T.PointsMaterial({ size: .9, vertexColors: true, transparent: true, opacity: .9, blending: T.AdditiveBlending, depthWrite: false }))); }
+  const core = new T.Sprite(new T.SpriteMaterial({ map: glow, color: 0xffb0e8, transparent: true, blending: T.AdditiveBlending, depthWrite: false })); core.scale.set(34, 34, 1); gal.add(core);
+  const stars = G.st.map(s => { const m = new T.Sprite(new T.SpriteMaterial({ map: glow, color: STAR_K[s.k].c, transparent: true, blending: T.AdditiveBlending, depthWrite: false })); m.position.set(s.x / 10, 0, s.y / 10); const z = 5 + s.k; m.scale.set(z, z, 1); gal.add(m);
+    const ring = new T.Mesh(new T.RingGeometry(3, 3.7, 24), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .85, side: T.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.copy(m.position); ring.position.y = -.1; ring.visible = false; gal.add(ring); return { m, ring }; });
+  const me = new T.Mesh(new T.ConeGeometry(.9, 2.4, 4), new T.MeshBasicMaterial({ color: EMP_COL[0] })); me.rotation.z = -Math.PI / 2; gal.add(me);
+  const route = new T.Line(new T.BufferGeometry(), new T.LineDashedMaterial({ color: 0x7cf2c8, dashSize: 1.2, gapSize: .8 })); gal.add(route);
+  // the system
+  const sys = new T.Group(); scene.add(sys);
+  SP3 = { W, scene, cam: cam3, gal, sys, sun, head, glow, core, stars, me, route, sysN: null, pl: [], ships: new Map(), shipKey: "", fx: [], booms: [], ownT: 0 };
+}
+function buildSystem3() {
+  const T = T3, X = S.space, sy = W.sys, V = SP3; V.sysN = sy.n;
+  for (const o of [...V.sys.children]) { V.sys.remove(o); o.traverse(q => { if (q.geometry) q.geometry.dispose(); if (q.material) { if (q.material.map && q.material.map !== V.glow) q.material.map.dispose(); q.material.dispose(); } }); }
+  V.ships.clear(); V.pl = []; V.mine = null; V.shipKey = "";
+  const s = spStar(W, sy.n), col = STAR_K[s.k].c;
+  const star = new T.Mesh(new T.SphereGeometry(sy.n === -1 ? 14 : 7 + s.k, 32, 20), new T.MeshBasicMaterial({ color: sy.n === -1 ? 0xffc0f0 : col })); V.sys.add(star);
+  const halo = new T.Sprite(new T.SpriteMaterial({ map: V.glow, color: sy.n === -1 ? 0xff80e0 : col, transparent: true, blending: T.AdditiveBlending, depthWrite: false })); halo.scale.set(70, 70, 1); V.sys.add(halo); V.sun.color.setHex(col);
+  for (const p of s.pl) {
+    const m = new T.Mesh(new T.SphereGeometry(p.r, 36, 22), new T.MeshStandardMaterial({ map: planetTex(T, p, X, s), roughness: .9, metalness: 0 })); m.rotation.z = .3; V.sys.add(m);
+    if (p.ty === "gas" && p.sd % 3 === 0) { const r = new T.Mesh(new T.RingGeometry(p.r * 1.4, p.r * 2, 40), new T.MeshBasicMaterial({ color: 0xd8c0f0, transparent: true, opacity: .45, side: T.DoubleSide })); r.rotation.x = -Math.PI / 2 + .35; m.add(r); }
+    const orb = new T.LineLoop(new T.BufferGeometry().setFromPoints(Array.from({ length: 96 }, (_, i) => new T.Vector3(Math.cos(i / 96 * TAU) * p.orb, 0, Math.sin(i / 96 * TAU) * p.orb))), new T.LineBasicMaterial({ color: 0x5a7aa0, transparent: true, opacity: .35 })); V.sys.add(orb);
+    const ring = new T.Mesh(new T.TorusGeometry(p.r + 2, .25, 6, 40), new T.MeshBasicMaterial({ color: 0xffffff })); ring.rotation.x = Math.PI / 2; ring.visible = false; m.add(ring);
+    const sel = new T.Mesh(new T.RingGeometry(p.r + 3.2, p.r + 3.9, 40), new T.MeshBasicMaterial({ color: 0x7cf2c8, transparent: true, opacity: .8, side: T.DoubleSide })); sel.rotation.x = -Math.PI / 2; sel.visible = false; V.sys.add(sel);
+    const town = new T.Group(); for (let i = 0; i < 6; i++) { const b = new T.Mesh(new T.BoxGeometry(.5, .5 + (i % 3) * .3, .5), new T.MeshBasicMaterial({ color: 0xfff0b0 })); const a = i * 1.1, la = .4 + (i % 2) * .3; b.position.set(Math.cos(a) * Math.cos(la) * p.r, Math.sin(la) * p.r, Math.sin(a) * Math.cos(la) * p.r); b.lookAt(0, 0, 0); town.add(b); } town.visible = false; m.add(town);
+    V.pl.push({ p, m, ring, sel, town, key: pKey(s.n, p.k), tex: JSON.stringify(spTA(X, s, p)) + spLife(X, s, p) });
+  }
+}
+function spShipMesh(e) {
+  const T = T3, L = [], C = c => new T.Color(c), put = (g, x, y, z, c, rot, sc) => L.push([g, new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromEuler(new T.Euler(...(rot || [0, 0, 0]))), new T.Vector3(...(sc || [1, 1, 1]))), C(c)]);
+  if (e.own === WARDEN) { put(new T.IcosahedronGeometry(5, 1), 0, 0, 0, 0x4a1a5a); for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; put(new T.ConeGeometry(.9, 4, 6), Math.cos(a) * 6, (i % 3 - 1) * 2, Math.sin(a) * 6, 0xff4fd8, [Math.PI / 2, 0, -a + Math.PI / 2]); } put(new T.SphereGeometry(2, 16, 12), 3.5, 1, 0, 0xffe0ff); }
+  else if (e.own === PIRATE) { put(new T.ConeGeometry(1.1, 3.2, 5), 0, 0, 0, 0x5a1e1e, [0, 0, -Math.PI / 2]); put(new T.BoxGeometry(1.4, .2, 3.2), -.6, 0, 0, 0x2a2a2e); put(new T.SphereGeometry(.35, 8, 6), 1.2, .3, 0, 0xff4040); }
+  else { const c = EMP_COL[e.own === -1 ? 0 : e.own] || 0xffffff; put(new T.OctahedronGeometry(1.3, 0), 0, 0, 0, c, null, [1.6, .6, 1]); put(new T.BoxGeometry(.4, .15, 3), -.4, 0, 0, 0xd8dee8); put(new T.SphereGeometry(.3, 8, 6), 1.6, 0, 0, 0xffffff); }
+  return new T.Mesh(merge3(L), new T.MeshLambertMaterial({ vertexColors: true, flatShading: true, emissive: 0x111111 }));
+}
+function drawSpace(dt) {
+  if (!G3FAIL && !T3) { load3D(); return drawLoading3(); }
+  if (G3FAIL || (!G3 && !init3D())) return drawSpace2D();
+  const T = T3, X = S.space, t = performance.now() / 1000, gal = spGal();
+  if (!SP3 || SP3.W !== W) buildSpace3();
+  const V = SP3, cam3 = V.cam; cam3.aspect = CW / CH; cam3.updateProjectionMatrix();
+  V.gal.visible = gal; V.sys.visible = !gal; V.sun.intensity = gal ? 0 : 2.2; V.head.intensity = gal ? 0 : .7;
+  if (gal) {
+    // owners' rings, every second; where you are
+    V.ownT -= dt; if (V.ownT <= 0) { V.ownT = 1; W.G.st.forEach((s, i) => { const o = starOwner(X, s), r = V.stars[i].ring; r.visible = o.length > 0 && !!X.vis[s.n] || o.includes(0); if (r.visible) r.material.color.setHex(o.includes(0) ? EMP_COL[0] : EMP_COL[o[0]] || 0xffffff); V.stars[i].m.material.opacity = X.vis[s.n] ? 1 : .55; }); }
+    V.core.material.opacity = X.united ? .9 + .1 * Math.sin(t * 3) : .45; V.core.scale.setScalar(X.united ? 34 + 4 * Math.sin(t * 2) : 26);
+    const [gx, gy] = spShipGal(); V.me.position.set(gx / 10, 1.5, gy / 10); V.me.rotation.y = -(X.travel ? spTravelA() : t * .5);
+    for (const [i, st] of V.stars.entries()) if (i === SPV.star) st.m.scale.setScalar((5 + W.G.st[i].k) * (1.3 + .2 * Math.sin(t * 5))); else st.m.scale.setScalar(5 + W.G.st[i].k);
+    if (V.routeKey !== String(SPV.star) + X.at + (X.travel ? "t" : "")) { V.routeKey = String(SPV.star) + X.at + (X.travel ? "t" : ""); const path = X.travel ? X.travel.path : SPV.star != null && SPV.star !== X.at ? spRoute(W, X.at, SPV.star) : null;
+      V.route.visible = !!path; if (path) { V.route.geometry.dispose(); V.route.geometry = new T.BufferGeometry().setFromPoints(path.map(n => { const s = spStar(W, n); return new T.Vector3(s.x / 10, .3, s.y / 10); })); V.route.computeLineDistances(); } }
+    if (SPV.fol && (X.travel || !SPV.map)) { cam.x += (gx / 10 - cam.x) * Math.min(1, dt * 4); cam.y += (gy / 10 - cam.y) * Math.min(1, dt * 4); }
+    const D = (CH > CW ? 300 : 220) / (cam.z || 1); cam3.position.set(cam.x, D * Math.sin(1.05), cam.y + D * Math.cos(1.05)); cam3.lookAt(cam.x, 0, cam.y);
+  } else {
+    const sy = W.sys; if (V.sysN !== sy.n) { buildSystem3(); SPV.sel = null; cam.x = W.ship.x * .55; cam.y = W.ship.y * .55; }
+    const sh = W.ship;
+    for (const P of V.pl) { const [x, y] = plXY(X, P.p); P.m.position.set(x, 0, y); P.m.rotation.y = t * .1 + P.p.k; P.sel.position.set(x, -.2, y); P.sel.visible = SPV.sel === P.p.k; P.sel.rotation.z = t;
+      const o = spOwner(X, P.key); P.ring.visible = o >= 0; P.town.visible = o >= 0; if (o >= 0) P.ring.material.color.setHex(EMP_COL[o] || 0xffffff);
+      const tk = JSON.stringify(spTA(X, spStar(W, sy.n), P.p)) + spLife(X, spStar(W, sy.n), P.p); if (tk !== P.tex) { P.tex = tk; P.m.material.map.dispose(); P.m.material.map = planetTex(T, P.p, X, spStar(W, sy.n)); P.m.material.needsUpdate = true; } }
+    // your ship
+    const key = JSON.stringify(X.d); if (V.shipKey !== key) { V.shipKey = key; if (V.mine) { V.sys.remove(V.mine); V.mine.geometry.dispose(); V.mine.material.dispose(); } V.mine = vehMesh(X.d, EMP_COL[0]); V.mine.scale.setScalar(3.4); V.sys.add(V.mine); }
+    V.mine.position.set(sh.x, 1 + Math.sin(t * 2) * .3, sh.y); V.mine.rotation.y = -sh.a;
+    // other ships
+    const live = new Set(); for (const e of sy.ships) { let m = V.ships.get(e.id); if (!m) { m = spShipMesh(e); m.scale.setScalar(1.5); V.sys.add(m); V.ships.set(e.id, m); } live.add(e.id); m.position.set(e.x, 1, e.y); const a = Math.atan2((e.ly == null ? e.y : e.y - e.ly), (e.lx == null ? e.x : e.x - e.lx)); if (e.lx != null && Math.hypot(e.x - e.lx, e.y - e.ly) > .01) m.rotation.y = -a; e.lx = e.x; e.ly = e.y; if (e.own === WARDEN) m.rotation.y += dt * .3; }
+    for (const [id, m] of V.ships) if (!live.has(id)) { V.sys.remove(m); m.geometry.dispose(); m.material.dispose(); V.ships.delete(id); }
+    // lasers and missiles
+    for (const L of V.fx) { V.sys.remove(L); L.geometry.dispose(); L.material.dispose(); } V.fx = [];
+    for (const f of sy.fx) { const g = new T.BufferGeometry().setFromPoints([new T.Vector3(f.x0, 1, f.y0), new T.Vector3(f.x1, 1, f.y1)]), L = new T.Line(g, new T.LineBasicMaterial({ color: f.ty === "msl" ? 0xffe060 : f.own === 0 ? 0x7cf2c8 : f.own === -1 ? 0x9affd8 : 0xff5a5a, transparent: true, opacity: 1 - f.t / .3 })); V.sys.add(L); V.fx.push(L); }
+    for (const b of V.booms) { b.t += dt; b.m.scale.setScalar(1 + b.t * (b.big ? 30 : 12)); b.m.material.opacity = Math.max(0, 1 - b.t * 1.6); } V.booms = V.booms.filter(b => { if (b.t < .65) return true; V.sys.remove(b.m); b.m.geometry.dispose(); b.m.material.dispose(); return false; });
+    if (!cam.free) { cam.x += (sh.x * .55 - cam.x) * Math.min(1, dt * 3); cam.y += (sh.y * .55 - cam.y) * Math.min(1, dt * 3); } // between your ship and the sun
+    const D = (CH > CW ? 340 : 220) / (cam.z || 1); cam3.position.set(cam.x, D * Math.sin(.95), cam.y + D * Math.cos(.95)); cam3.lookAt(cam.x, 0, cam.y);
+    V.head.position.set(cam.x - 40, 120, cam.y + 80); V.head.target.position.set(cam.x, 0, cam.y);
+  }
+  G3.R.render(V.scene, cam3);
+  { const a = spP(cam.x * (gal ? 10 : 1), cam.y * (gal ? 10 : 1)), b = spP((cam.x + 1) * (gal ? 10 : 1), cam.y * (gal ? 10 : 1)), e = spP(cam.x * (gal ? 10 : 1), (cam.y + 1) * (gal ? 10 : 1)); cam.s = Math.max(.05, b[0] - a[0]); PANK = Math.max(.2, (e[1] - a[1]) / cam.s); }
+  spOverlay(t, gal);
+}
+/* Screen position of a point: galaxy (light years) on the map, system units otherwise. */
+function spP(x, y, up) { const v = (G3.v || (G3.v = new T3.Vector3())).set(spGal() ? x / 10 : x, up || 0, spGal() ? y / 10 : y).project(SP3.cam); return [(v.x + 1) / 2 * CW, (1 - v.y) / 2 * CH, v.z < 1]; }
+function spGround(sx, sy) { const T = T3, r = SP3.ray || (SP3.ray = new T.Raycaster()); r.setFromCamera(new T.Vector2(sx / CW * 2 - 1, -(sy / CH * 2 - 1)), SP3.cam); const o = r.ray.origin, d = r.ray.direction; if (Math.abs(d.y) < 1e-4) return null; const k = -o.y / d.y; return [o.x + d.x * k, o.z + d.z * k]; }
+function spShipGal() { const X = S.space; if (!X.travel || X.travel.charge > 0) { const s = spStar(W, X.at); return [s.x, s.y]; } const tr = X.travel, a = spStar(W, tr.path[tr.i]), b = spStar(W, tr.path[tr.i + 1]); return [a.x + (b.x - a.x) * tr.t, a.y + (b.y - a.y) * tr.t]; }
+function spTravelA() { const tr = S.space.travel; if (!tr || tr.charge > 0 || !tr.path[tr.i + 1] && tr.path[tr.i + 1] !== -1) return 0; const a = spStar(W, tr.path[tr.i]), b = spStar(W, tr.path[tr.i + 1]); return Math.atan2(b.y - a.y, b.x - a.x); }
+function spOverlay(t, gal) {
+  const X = S.space; ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, CW, CH); ctx.textAlign = "center"; ctx.shadowColor = "rgba(0,0,0,.9)"; ctx.shadowBlur = 4;
+  if (gal) {
+    const zoomed = (cam.z || 1) > 1.3;
+    for (const s of W.G.st) { const [X0, Y0, ok] = spP(s.x, s.y); if (!ok || X0 < -40 || X0 > CW + 40 || Y0 < -20 || Y0 > CH + 20) continue; const o = starOwner(X, s), mine = o.includes(0);
+      if (zoomed || mine || s.n === SPV.star || s.n === X.at || o.length && X.vis[s.n]) { ctx.font = `800 ${s.n === SPV.star ? 13 : 11}px Figtree, sans-serif`; ctx.fillStyle = mine ? "#7CF2C8" : o.length && X.vis[s.n] ? empCol(o[0]) : X.vis[s.n] ? "rgba(230,240,255,.85)" : "rgba(180,190,220,.55)"; ctx.fillText(s.name, X0, Y0 + 16); }
+      let mk = ""; for (let k = 1; k <= 6; k++) { const m = X.emp[k].mis; if (m && m.star === s.n) mk += "❗"; } if (X.pir.some(r => r.at === s.n)) mk += "☠️"; if (X.fleets.some(f => f.to === s.n)) mk += "⚔️"; if (X.bands[s.n] && X.vis[s.n]) mk += "🏴‍☠️";
+      if (mk) { ctx.font = "13px sans-serif"; ctx.fillText(mk, X0, Y0 - 9); } }
+    for (const f of X.fleets) { if (f.t >= f.dur) continue; const s = W.G.st[f.to], k = f.t / f.dur, [X0, Y0, ok] = spP(f.x0 + (s.x - f.x0) * k, f.y0 + (s.y - f.y0) * k); if (!ok) continue; ctx.fillStyle = empCol(f.own); ctx.font = "13px sans-serif"; ctx.fillText("⚔️", X0, Y0); }
+    { const [X0, Y0, ok] = spP(0, 0); if (ok) { ctx.font = "800 13px Figtree, sans-serif"; ctx.fillStyle = X.united ? "#FFC0F0" : "rgba(255,192,240,.6)"; ctx.fillText(X.united ? "✦ The Core is open" : "The Core (sealed)", X0, Y0 + 26); } }
+    if (X.travel) { ctx.font = "800 15px Figtree, sans-serif"; ctx.fillStyle = "#E8FFF9"; const to = spStar(W, X.travel.path[X.travel.path.length - 1]); ctx.fillText(X.travel.charge > 0 ? "Charging the jump drive…" : `Jumping to ${to.name}…`, CW / 2, CH * .2); }
+  } else {
+    const sy = W.sys, s = spStar(W, sy.n);
+    for (const p of s.pl) { const [x, y] = plXY(X, p), [X0, Y0, ok] = spP(x, y, p.r + 2); if (!ok) continue; const o = spOwner(X, pKey(s.n, p.k)); ctx.font = "800 12px Figtree, sans-serif"; ctx.fillStyle = o >= 0 ? empCol(o) : "rgba(230,240,255,.9)"; ctx.fillText(p.name + (o === 0 ? " ★" : ""), X0, Y0 - 6);
+      if (sy.pdef[pKey(s.n, p.k)] != null && o > 0) { const c = X.col[pKey(s.n, p.k)], mx = 70 + c.lvl * 70; ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(X0 - 25, Y0 - 2, 50, 4); ctx.fillStyle = "#FFB454"; ctx.fillRect(X0 - 25, Y0 - 2, 50 * clamp(sy.pdef[pKey(s.n, p.k)] / mx, 0, 1), 4); } }
+    for (const e of sy.ships) { const [X0, Y0, ok] = spP(e.x, e.y, 3); if (!ok) continue; const w = e.own === WARDEN ? 90 : 34; ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(X0 - w / 2, Y0 - 8, w, 4); ctx.fillStyle = hostile(X, e) ? "#FF6B6B" : e.own === -1 ? "#9AFFD8" : empCol(e.own); ctx.fillRect(X0 - w / 2, Y0 - 8, w * clamp(e.hp / e.max, 0, 1), 4); if (W.ship.tg === e.id) { ctx.strokeStyle = "#FFE08A"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X0, Y0 + 8, 16, 0, TAU); ctx.stroke(); } }
+    ctx.font = "800 14px Figtree, sans-serif"; ctx.fillStyle = "#E8FFF9"; ctx.fillText(sy.n === -1 ? "✦ The Core" : `${s.name} · ${STAR_K[s.k].n.toLowerCase()}`, CW / 2, 92);
+    if (X.travel && X.travel.charge > 0) { ctx.fillStyle = "#FFE08A"; ctx.fillText(`Charging the jump drive… ${X.travel.charge.toFixed(1)}`, CW / 2, 112); }
+  }
+  ctx.shadowBlur = 0;
+}
+/* No WebGL: a flat map and system, so the stage still plays. */
+function drawSpace2D() {
+  const X = S.space, gal = spGal(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = "#03050c"; ctx.fillRect(0, 0, CW, CH);
+  const sc = gal ? Math.min(CW, CH) / 2200 * (cam.z || 1) : Math.min(CW, CH) / 360 * (cam.z || 1), ox = CW / 2, oy = CH / 2;
+  if (gal) { const [gx, gy] = spShipGal(); if (SPV.fol) { cam.x = gx / 10; cam.y = gy / 10; } }
+  else if (!cam.free) { cam.x = W.ship.x; cam.y = W.ship.y; }
+  const cx = gal ? cam.x * 10 : cam.x, cy = gal ? cam.y * 10 : cam.y; SPV.p2 = (x, y) => [ox + (x - cx) * sc, oy + (y - cy) * sc]; cam.s = gal ? sc * 10 : sc; PANK = 1;
+  if (gal) { for (const s of W.G.st) { const [a, b] = SPV.p2(s.x, s.y), o = starOwner(X, s); ctx.fillStyle = "#" + STAR_K[s.k].c.toString(16).padStart(6, "0"); ctx.beginPath(); ctx.arc(a, b, 3 + s.k, 0, TAU); ctx.fill(); if (o.length && (X.vis[s.n] || o.includes(0))) { ctx.strokeStyle = empCol(o.includes(0) ? 0 : o[0]); ctx.beginPath(); ctx.arc(a, b, 9, 0, TAU); ctx.stroke(); } }
+    const [a, b] = SPV.p2(...spShipGal()); ctx.fillStyle = "#7CF2C8"; ctx.fillRect(a - 3, b - 3, 6, 6); }
+  else { const s = spStar(W, W.sys.n); { const [a, b] = SPV.p2(0, 0); ctx.fillStyle = "#FFE08A"; ctx.beginPath(); ctx.arc(a, b, 8 * sc, 0, TAU); ctx.fill(); }
+    for (const p of s.pl) { const [x, y] = plXY(X, p), [a, b] = SPV.p2(x, y); ctx.fillStyle = "#" + PTYPES[p.ty].c.toString(16).padStart(6, "0"); ctx.beginPath(); ctx.arc(a, b, p.r * sc, 0, TAU); ctx.fill(); }
+    for (const e of W.sys.ships) { const [a, b] = SPV.p2(e.x, e.y); ctx.fillStyle = hostile(X, e) ? "#FF6B6B" : "#9AFFD8"; ctx.fillRect(a - 3, b - 3, 6, 6); }
+    const [a, b] = SPV.p2(W.ship.x, W.ship.y); ctx.fillStyle = "#7CF2C8"; ctx.beginPath(); ctx.arc(a, b, 5, 0, TAU); ctx.fill(); }
+}
+const spPt = (x, y, up) => SPV.p2 && (G3FAIL || !SP3) ? [...SPV.p2(x, y), true] : spP(x, y, up);
+function spaceTap(sx, sy) {
+  const X = S.space, two = G3FAIL || !SP3;
+  if (spGal()) { let b = null, bd = 34; for (const s of W.G.st) { const [a, c, ok] = spPt(s.x, s.y); const d = Math.hypot(a - sx, c - sy); if (ok && d < bd) { bd = d; b = s.n; } }
+    const [a, c] = spPt(0, 0); if (Math.hypot(a - sx, c - sy) < Math.max(28, bd)) b = -1;
+    SPV.star = b; LUI_KEY = ""; renderSpaceUI(true); return; }
+  const sy2 = W.sys, s = spStar(W, sy2.n);
+  for (const e of sy2.ships) { if (!hostile(X, e)) continue; const [a, c, ok] = spPt(e.x, e.y, 1); if (ok && Math.hypot(a - sx, c - sy) < (e.own === WARDEN ? 60 : 30)) { W.ship.tg = e.id; W.ship.atk = null; SPV.sel = null; cam.free = false; toast("Attacking!"); LUI_KEY = ""; return; } }
+  let best = null, bd = 1e9; for (const p of s.pl) { const [x, y] = plXY(X, p), [a, c, ok] = spPt(x, y), [a2] = spPt(x + p.r, y), r = Math.abs(a2 - a) + 22, d = Math.hypot(a - sx, c - sy); if (ok && d < r && d < bd) { bd = d; best = p; } }
+  if (best) { SPV.sel = best.k; spGoPlanet(W, best.k); cam.free = false; LUI_KEY = ""; renderSpaceUI(true); return; }
+  const g = two ? [(sx - CW / 2) / cam.s + cam.x, (sy - CH / 2) / cam.s + cam.y] : spGround(sx, sy); if (!g) return;
+  SPV.sel = null; spGo(W, g[0], g[1]); cam.free = false; LUI_KEY = ""; renderSpaceUI(true);
+}
+/* ---- the buttons along the bottom and the card above them ---- */
+function spFoes() { const X = S.space; return W.sys ? W.sys.ships.filter(e => hostile(X, e)) : []; }
+function renderSpaceUI(force) {
+  const X = S.space, gal = spGal(), foes = spFoes().length, sel = SPV.sel != null && W.sys ? spStar(W, W.sys.n).pl[SPV.sel] : null, near = sel && spNear(W, sel.k);
+  $("lCall").style.display = "none";
+  const key = [gal, SPV.star, SPV.sel, !!near, !!X.travel && X.travel.path.join(), foes > 0, Math.floor(X.cr / 10), Math.floor(X.en / 5), X.relic, Object.keys(X.goals).length, sel ? JSON.stringify([X.pown[pKey(W.sys.n, sel.k)], X.col[pKey(W.sys.n, sel.k)], X.scan[pKey(W.sys.n, sel.k)], X.shaped[pKey(W.sys.n, sel.k)], X.life[pKey(W.sys.n, sel.k)], X.dug[pKey(W.sys.n, sel.k)], X.zoo.length]) : "", Object.values(X.goods).map(Math.floor).join()].join("|");
+  if (key === LUI_KEY && !force) return; LUI_KEY = key;
+  const card = $("lCard"), bar = $("lBar"); let h = "", acts = {};
+  if (gal && SPV.star != null) { const n = SPV.star, s = spStar(W, n);
+    if (n === -1) h = `<b>✦ The Core</b><span>${X.united ? "The heart of the galaxy. Something has guarded it since before the stars had names." : "Sealed. When every empire is your ally (or gone), the way in opens. You'll need a warp drive to make the last jump."}</span>`;
+    else { const o = starOwner(X, s), known = X.vis[n]; h = `<b>${esc(s.name)}</b><span>${STAR_K[s.k].n} · ${known ? s.pl.length + " planet" + (s.pl.length > 1 ? "s" : "") : "not explored"}${o.length && (known || o.includes(0)) ? " · " + o.map(k => `<span style="color:${empCol(k)}">${esc(empName(k))}</span>`).join(", ") : ""}</span>`;
+      for (let k = 1; k <= 6; k++) { const m = X.emp[k].mis; if (m && m.star === n) h += `<span>❗ Mission for ${esc(empName(k))}: ${esc(spMisText(W, k))}</span>`; }
+      if (X.pir.some(r => r.at === n)) h += `<span style="color:#FF8A8A">☠️ Pirates are raiding here!</span>`; if (X.fleets.some(f => f.to === n)) h += `<span style="color:#FF8A8A">⚔️ An enemy fleet is ${X.fleets.some(f => f.to === n && f.t >= f.dur) ? "attacking here" : "on its way"}!</span>`; }
+    if (n !== X.at || X.travel) { const path = spRoute(W, X.at, n); if (path && !X.travel) { const len = path.slice(1).reduce((a, q, i) => { const A = spStar(W, path[i]), B = spStar(W, q); return a + Math.hypot(A.x - B.x, A.y - B.y); }, 0); h += `<span>${path.length - 1} jump${path.length > 2 ? "s" : ""}, about ${Math.ceil(len / (60 * spSpeedF(W.vs)) + (path.length - 1) * .3)} s</span><div class="row"><button class="btn small primary" id="spGo">🚀 Fly here</button></div>`; acts.spGo = () => { const e = spFly(W, n); if (e) toast(e); else { SPV.fol = true; snd("dash"); } LUI_KEY = ""; }; }
+      else if (!X.travel) h += `<span style="color:#FFB454">${esc(n === -1 && !X.united ? "Sealed until the galaxy is united." : "Out of reach: you need a longer jump range (fuel tanks, a warp drive).")}</span>`; }
+    else if (W.sys) { h += `<div class="row"><button class="btn small primary" id="spLook">🪐 You're here: look around</button></div>`; acts.spLook = () => { SPV.map = false; LUI_KEY = ""; }; }
+  } else if (!gal && sel) h = spPlanetCard(sel, near, acts);
+  else if (!gal && foes) h = `<b style="color:#FF8A8A">⚠️ ${foes} enem${foes > 1 ? "ies" : "y"}!</b><span>Your lasers fire on their own at anything close. Tap an enemy to go after it${W.vs.msl ? ", fire 🚀 missiles" : ""}, 🔧 repair, or jump away from the map.</span>`;
+  card.hidden = !h; card.innerHTML = h; for (const id in acts) { const b = document.getElementById(id); if (b) b.onclick = acts[id]; }
+  let bb = `<button class="lb" data-c="map">${gal && W.sys ? "🪐<small>System</small>" : "🌌<small>Map</small>"}</button>`;
+  if (!gal && foes) { if (W.vs.msl) bb += `<button class="lb mv" data-m="missile">🚀<small>Missile ⚡35</small></button>`; bb += `<button class="lb mv" data-m="repair">🔧<small>Repair ⚡45</small></button><button class="lb" data-c="emp">🛸<small>Empires</small></button>`; }
+  else bb += `<button class="lb" data-c="ship">🛠️<small>Ship</small></button><button class="lb" data-c="emp">🛸<small>Empires</small></button><button class="lb" data-c="worlds">🌍<small>Worlds</small></button><button class="lb" data-c="goals">🎯<small>${Object.keys(X.goals).length}/${SPACE_GOALS.length}</small></button>`;
+  bar.innerHTML = bb;
+  bar.querySelectorAll("[data-c]").forEach(b => b.onclick = () => ({ map: () => { if (!W.sys) return; SPV.map = !SPV.map; SPV.fol = true; if (SPV.map) { const [gx, gy] = spShipGal(); cam.x = gx / 10; cam.y = gy / 10; } else { cam.x = W.ship.x; cam.y = W.ship.y; } cam.free = false; LUI_KEY = ""; renderSpaceUI(true); },
+    ship: spShipOpen, emp: spEmpDlg, worlds: spWorldsDlg, goals: spGoalsDlg })[b.dataset.c]());
+  bar.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { const e = spAbil(W, b.dataset.m); if (e) toast(e); else snd(b.dataset.m === "missile" ? "zap" : "grow"); });
+}
+function spPlanetCard(p, near, acts) {
+  const X = S.space, s = spStar(W, W.sys.n), key = pKey(s.n, p.k), own = spOwner(X, key), sc = X.scan[key] || own === 0, [T, A] = spTA(X, s, p), L = spLife(X, s, p), c = X.col[key], vs = W.vs, E = own > 0 ? X.emp[own] : null;
+  let h = `<b style="color:${own >= 0 ? empCol(own) : "inherit"}">${esc(p.name)}</b><span>${PTYPES[p.ty].n}${own >= 0 ? ` · ${own === 0 ? "your colony" : esc(empName(own)) + "' world"}${c ? " (size " + c.lvl + (c.tur ? ", " + c.tur + " gun" + (c.tur > 1 ? "s" : "") : "") + ")" : ""}` : ""}</span>`;
+  h += sc ? `<span>🌡️ ${TEMPS[T]} · 💨 ${AIRS[A]} · 🌿 ${LIFES[L]}${p.res ? ` · ${GOODS[p.res].ic} ${GOODS[p.res].n.toLowerCase()}` : ""}${p.ruin ? (X.dug[key] ? " · ruins (dug)" : " · 🏺 ancient ruins") : ""}</span>` : `<span>${vs.scan ? "Not scanned yet." : "You'd need a scanner to learn more."}</span>`;
+  if (E && E.war) { h += `<span style="color:#FF8A8A">At war. Break its defences to take it.</span>`; }
+  if (!near && !(E && E.war)) return h + `<span>Flying over…</span>`;
+  const btn = [], add = (a, label, cls) => { btn.push(`<button class="btn small${cls ? " " + cls : ""}" id="pa_${a}">${label}</button>`); acts["pa_" + a] = () => { const e = spAct(W, p.k, a); if (e) toast(e); else snd("eat"); LUI_KEY = ""; renderSpaceUI(true); }; };
+  if (vs.scan && !X.scan[key]) add("scan", "📡 Scan");
+  if (sc && p.ruin && !X.dug[key] && own <= 0) add("dig", "🏺 Dig");
+  if (vs.beam && L >= 2 && own <= 0 && !X.zoo.some(z => z.k === key)) add("beam", "🛸 Beam up a creature ⚡25");
+  if (vs.shape && own <= 0 && p.ty !== "gas" && (T !== 2 || A !== 2)) add("shape", "🌍 Shape ⚡40 🪙20");
+  if (vs.seed && own === 0 && L < 3) add("seed", `🌱 Seed life (${(L + 1) * 2} kinds)`);
+  if (own < 0 && p.ty !== "gas") add("colony", `🏠 Colony 🪙${spColCost(X)}`, "primary");
+  if (own === 0 && c.lvl < 3) add("up", `⬆️ Grow 🪙${150 * c.lvl}`);
+  if (own === 0 && (c.tur || 0) < 3) add("tur", "🔫 Gun 🪙80");
+  if (E && !E.war) { add("sell", "🪙 Sell goods"); btn.push(`<button class="btn small" id="pa_talk">🛸 Talk</button>`); acts.pa_talk = () => spEmpDlg(own); }
+  if (E && E.war) add("atk", "⚔️ Attack", "bad");
+  return h + (btn.length ? `<div class="nbtns">${btn.join("")}</div>` : "");
+}
+/* ---- panels ---- */
+function spShipOpen() { const X = S.space, here = W.sys && W.sys.n >= 0 && spStar(W, W.sys.n).pl.some(p => spOwner(X, pKey(W.sys.n, p.k)) === 0); if (!here) toast("You can look, but you can only refit at one of your own worlds."); openVB({ mode: "ship", i: -1, d: X.d, back: () => { paused = false; LUI_KEY = ""; } }); }
+function spRelTxt(E) { return E.gone ? "gone" : E.war ? "⚔️ at war" : E.ally ? "🤝 allies" : E.rel >= 30 ? "friendly" : E.rel <= -30 ? "hostile" : "wary"; }
+function spEmpDlg(only) {
+  paused = true; const X = S.space, acts = { ok: closeSD }; let h = "";
+  for (let k = 1; k <= 6; k++) { if (only && only !== k) continue; const E = X.emp[k], G = W.G.emp[k], T = EMP_TRAITS.find(x => x.id === G.trait), d = (a, f) => { acts[a + k] = () => { const e = f(); if (e) toast(e); else snd("eat"); spEmpDlg(only); }; };
+    if (!E.met) { h += `<div class="ncard" style="border-color:var(--line)"><b>? Not met yet</b><span>Their stars are out there somewhere. Explore to find them.</span></div>`; continue; }
+    h += `<div class="ncard" style="border-color:${empCol(k)}"><div style="display:flex;gap:8px;align-items:center"><canvas id="ep${k}" width="64" height="48" style="width:64px;height:48px;flex:none"></canvas><div><b style="color:${empCol(k)}">${esc(G.name)}</b><br><span>${T.ic} ${T.n} · ${Object.values(X.pown).filter(o => o === k).length} worlds · ${spRelTxt(E)}</span></div></div>`;
+    if (!E.gone) { h += `<span>They like ${T.likes}.</span><div class="nrel"><i style="width:${(E.rel + 100) / 2}%;background:${E.rel >= 0 ? "#7CF2C8" : "#FF6B6B"}"></i></div>`;
+      if (E.mis) h += `<span>❗ Mission: ${esc(spMisText(W, k))} (🪙${E.mis.rew}, ${Math.max(0, Math.ceil((E.mis.until - X.t) / 60))} min left)</span>`;
+      h += `<div class="nbtns">`;
+      if (!E.war) { if (E.mis && (E.mis.ty === "goods" || E.mis.ty === "zoo")) { d("h", () => spDiplo(W, k, "hand")); h += `<button class="btn small primary" data-a="h${k}">✅ Hand over</button>`; }
+        d("g", () => spDiplo(W, k, "gift")); h += `<button class="btn small" data-a="g${k}">🎁 Gift 🪙80</button>`;
+        if (X.relic) { d("r", () => spDiplo(W, k, "relic")); h += `<button class="btn small" data-a="r${k}">🏺 Give a relic</button>`; }
+        if (!E.ally) { d("a", () => spDiplo(W, k, "ally")); h += `<button class="btn small" data-a="a${k}">🤝 Alliance</button>`; d("w", () => spDiplo(W, k, "war")); h += `<button class="btn small bad" data-a="w${k}">⚔️ War</button>`; } }
+      else { d("p", () => spDiplo(W, k, "peace")); h += `<button class="btn small" data-a="p${k}">🕊️ Make peace</button>`; }
+      h += `</div>`; }
+    h += `</div>`; }
+  dialog(`<h2>Empires</h2><p style="font-size:.85rem">To unite the galaxy, make every empire your ally (at 60 on the bar), or take all its worlds. Missions win the most friendship; gifts only go so far. Settling next to them, or beaming up their creatures, makes them cross.</p>${h}<div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeSD);
+  for (let k = 1; k <= 6; k++) { const el = document.getElementById("ep" + k); if (el) preview(el, W.G.emp[k].d, 64, 48); }
+}
+function spWorldsDlg() {
+  paused = true; const X = S.space, acts = { ok: closeSD, zoo: spZooDlg }, mine = Object.keys(X.pown).filter(k => X.pown[k] === 0);
+  const rows = mine.map(key => { const [sn, pk] = key.split(":").map(Number), s = W.G.st[sn], p = s.pl[pk], c = X.col[key], L = spLife(X, s, p), [T, A] = spTA(X, s, p), danger = X.pir.some(r => r.at === sn) || X.fleets.some(f => f.to === sn && f.t >= f.dur);
+    acts["w_" + key] = () => { if (sn === X.at && W.sys) { SPV.map = false; closeSD(); return; } const e = spFly(W, sn); if (e) toast(e); else toast(`Off to ${s.name}.`); closeSD(); };
+    return `<button class="btn small cbtn" data-a="w_${key}"><b>${c.home ? "★ " : ""}${esc(p.name)}${danger ? " ⚠️" : ""}</b><span>size ${c.lvl} · 🌿 ${LIFES[L]}${p.res ? " · " + GOODS[p.res].ic : ""}${c.tur ? " · 🔫" + c.tur : ""}</span><em>${T === 2 && A === 2 ? "just right" : TEMPS[T] + ", " + AIRS[A]} · defence ${fl0(c.def)}/${colDefMax(c)}</em></button>`; }).join("");
+  dialog(`<h2>Your worlds</h2><p style="font-size:.85rem">Colonies earn 🪙 and dig up goods (${Object.keys(GOODS).map(g => GOODS[g].ic + " " + fl0(X.goods[g])).join(" · ")}) to sell to the empires. Pirates and enemy fleets wear down a world's defence while you're away: guns help, and so does flying there to fight. Tap a world to fly to it.</p><div class="cgrid">${rows}</div>
+    <div class="row"><button class="btn" data-a="zoo">🦎 Collection (${X.zoo.length})</button><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeSD);
+}
+function spZooDlg() {
+  const X = S.space; dialog(`<h2>Your collection</h2><p style="font-size:.85rem">Creatures beamed up from living worlds. Artistic empires love to see them, and a 🌱 life seeder plants them on your own worlds to bring them to life.</p><div class="zoo">${X.zoo.map((z, i) => `<canvas id="zc${i}" width="80" height="60" style="width:80px;height:60px"></canvas>`).join("") || "<p>Nothing yet. Fit an 🛸 abduction beam (it unlocks when you've scanned five planets) and visit a world with animals.</p>"}</div><div class="row"><button class="btn primary" data-a="ok">Back</button></div>`, { ok: spWorldsDlg }, spWorldsDlg);
+  X.zoo.forEach((z, i) => { const el = document.getElementById("zc" + i); if (el) preview(el, randomDesign(rng(z.sd), ["plant", "meat", "both"][z.sd % 3], 2 + z.sd % 2), 80, 60); });
+}
+function spGoalsDlg() {
+  paused = true; const X = S.space;
+  dialog(`<h2>Goals</h2><p>${SPACE_GOALS.map(g => (X.goals[g.id] ? "✅ " : "○ ") + g.n + ` <span style="color:var(--muted)">(🪙${g.g}${g.un ? ", unlocks " + VPD[g.un].ic + " " + VPD[g.un].n.toLowerCase() : ""})</span>`).join("<br>")}</p><div class="row"><button class="btn primary" data-a="ok">OK</button></div>`, { ok: closeSD }, closeSD);
+}
+function closeSD() { closeDlg(); paused = false; LUI_KEY = ""; }
+function spLabel() { const X = S.space; return `⚡${fl0(X.en)} ${Object.keys(GOODS).map(g => GOODS[g].ic + fl0(X.goods[g])).join(" ")} 🏺${X.relic}${X.sh > 1 ? " 🔵" + fl0(X.sh) : ""}`; }
+function spaceEvent(e) {
+  const X = S.space, nm = k => esc(empName(k)), pn = key => { const [a, b] = key.split(":").map(Number); return W.G.st[a].pl[b].name; };
+  if (e.t === "sScan") { snd("relic"); LUI_KEY = ""; }
+  else if (e.t === "sRelic") { snd("relic"); toast("🏺 You dug up a relic! Devout empires treasure them."); }
+  else if (e.t === "sBeam") { snd("grow"); toast(`🛸 Beamed up a creature: ${X.zoo.length} in your collection.`); }
+  else if (e.t === "sShape") { snd("grow"); toast(`🌍 ${pn(e.key)} is changing: ${TEMPS[X.shaped[e.key][0]]}, ${AIRS[X.shaped[e.key][1]]}.`); }
+  else if (e.t === "sSeed") { snd("grow"); toast(`🌱 Life spreads across ${pn(e.key)}.`); }
+  else if (e.t === "sColony") { snd("grow"); toast(`🏠 A new colony on ${pn(e.key)}!`); }
+  else if (e.t === "sSell") toast(`🪙 Sold ${e.n} goods to the ${nm(e.k)}.`);
+  else if (e.t === "sMet") { snd("relic"); toast(`🛸 You've met the ${nm(e.k)}! Tap 🛸 Empires to talk.`); }
+  else if (e.t === "sMis") { snd("grow"); toast(`✅ Mission done for the ${nm(e.k)}: +🪙${e.rew}, and they like you more.`); }
+  else if (e.t === "sAlly") { snd("grow"); toast(`🤝 The ${nm(e.k)} are your allies!`); }
+  else if (e.t === "sAllyEnd") toast(`💔 The ${nm(e.k)} have broken off your alliance.`);
+  else if (e.t === "sWar") { snd("hurt"); toast(e.by ? `⚔️ The ${nm(e.k)} have declared war on you!` : `⚔️ You're at war with the ${nm(e.k)}.`); }
+  else if (e.t === "sPeace") toast(`🕊️ Peace with the ${nm(e.k)}.`);
+  else if (e.t === "sTake") { snd("grow"); toast(`🎉 ${pn(e.key)} is yours!`); }
+  else if (e.t === "sGone") { snd("grow"); toast(`The ${nm(e.k)} have no worlds left.`); }
+  else if (e.t === "sLost") { snd("hurt"); toast(`😢 The ${nm(e.k)} took ${pn(e.key)}.`); }
+  else if (e.t === "sRaided") { snd("hurt"); toast(`☠️ Pirates looted ${pn(e.key)}: it shrank.`); }
+  else if (e.t === "sRaid") { snd("hurt"); toast(`☠️ Pirates are raiding ${W.G.st[e.at].name}! Fly there to fight them off.`); }
+  else if (e.t === "sHeld") toast(`🛡️ ${W.G.st[e.at].name} held off the attack.`);
+  else if (e.t === "sFleetOut") toast(`⚔️ A fleet of the ${nm(e.k)} is heading for ${W.G.st[e.at].name}.`);
+  else if (e.t === "sFleetHere") toast(`⚔️ The ${nm(e.k)} fleet has reached ${W.G.st[e.at].name}!`);
+  else if (e.t === "sFleet") { snd("grow"); toast(`You beat the ${nm(e.k)} fleet!`); }
+  else if (e.t === "sPirates") { snd("grow"); toast("🏴‍☠️ Pirates beaten! +🪙"); }
+  else if (e.t === "sBoom") { snd("kill"); cam.shake = e.big ? 16 : 4; if (SP3 && T3) { const m = new T3.Mesh(new T3.SphereGeometry(1, 12, 8), new T3.MeshBasicMaterial({ color: 0xffb040, transparent: true })); m.position.set(e.x, 1, e.y); SP3.sys.add(m); SP3.booms.push({ m, t: 0, big: e.big }); } }
+  else if (e.t === "sGoal") { snd("relic"); const g = SPACE_GOALS.find(q => q.id === e.id); toast(`Goal done: ${g.n}! +🪙${e.g}${g.un ? ` · New part: ${VPD[g.un].ic} ${VPD[g.un].n}` : ""}`); LUI_KEY = ""; }
+  else if (e.t === "sJump") { SPV.map = true; SPV.fol = true; SPV.sel = null; snd("dash"); LUI_KEY = ""; }
+  else if (e.t === "sArrive") { SPV.map = false; SPV.star = null; cam.free = false; cam.x = W.ship.x; cam.y = W.ship.y; LUI_KEY = ""; saveSlot(); }
+  else if (e.t === "sUnited") { snd("grow"); setTimeout(() => { paused = true; dialog(`<h2>The galaxy is united!</h2><p>Every empire is your ally, or gone. Far in, at the galaxy's heart, the Core has opened. Fit a 🌌 warp drive and make the jump. Your allies will fly with you.</p><div class="row"><button class="btn primary" data-a="ok">Onwards</button></div>`, { ok: closeSD }, closeSD); }, 600); }
+  else if (e.t === "sCore") { snd("hurt"); toast("✦ Something vast wakes at the Core: the Warden!"); }
+  else if (e.t === "sWarden") { saveSlot(); setTimeout(spaceWonDlg, 1200); }
+  else if (e.t === "die") { spDied(); }
+  else return false; return true;
+}
+function spDied() {
+  saveSlot(); const X = S.space;
+  if (S.mode === "hard") { S.dead = { at: Date.now(), tier: 0 }; saveSlot(); setTimeout(() => dialog(`<h2>Your ship was destroyed</h2><p>${esc(S.name)} were lost among the stars. In hardcore there's only one life.</p><div class="row"><button class="btn primary" data-a="ok">Back to the menu</button></div>`, { ok: quitToMenu }, quitToMenu), 700); return; }
+  setTimeout(() => dialog(`<h2>Your ship was destroyed!</h2><p>A new ship is built at your home world, the same design. Rebuilding it cost ${fl0(X.cr * .15)} 🪙.</p><div class="row"><button class="btn primary" data-a="ok">Fly again</button></div>`, { ok: () => { spRespawn(W); W.dead = false; closeSD(); saveSlot(); } }, () => { spRespawn(W); W.dead = false; closeSD(); }), 700);
+}
+/* After the launch: the new world, and a few words. */
+function spaceIntro() {
+  W = newWorld(S); parts = []; fx = []; cam.z = 1; cam.free = false; LUI_KEY = ""; SPV.map = false; SPV.sel = null; SPV.star = null; cam.x = W.ship.x; cam.y = W.ship.y; saveSlot();
+  dialog(`<h2>🚀 To the stars!</h2><p>The Sky Ship rises from ${esc(S.civ.towns.find(tw => tw.cap && tw.own === 0) ? S.civ.towns.find(tw => tw.cap && tw.own === 0).name : "your capital")} and leaves the islands behind. Your home world is now one small light among many.</p>
+    <p>Explore, scan planets, settle new worlds and meet the six empires. Win them over (or win their worlds), and the way to the heart of the galaxy will open.</p><div class="row"><button class="btn primary" data-a="ok">Begin</button></div>`, { ok: closeSD }, closeSD);
+}
+/* The end: your species' whole story. */
+function spaceWonDlg() {
+  paused = true; const X = S.space, C = S.civ || {}, h = C.how || {}, nat = (o, k) => o && o[k] ? o[k].n : null;
+  const lines = [[1, "Cell", NATURES[S.nature] ? `a ${NATURES[S.nature].n.toLowerCase()} in the pond` : "a speck in the pond"], [2, "Sea", S.seaNature ? `a ${S.seaNature} of the deep` : "a swimmer of the deep"], [3, "Land", S.landNature ? `a ${S.landNature} creature that walked ashore` : "walked ashore"],
+    [4, "Tribe", S.tribeNature ? `a ${S.tribeNature} tribe` : "a tribe round the fire"], [5, "Civilisation", `united the islands (by force ${h.war || 0}, by faith ${h.faith || 0}, by the arts ${h.arts || 0})`], [6, "Space", `${X.how.ally} allies, ${X.how.war} worlds taken, ${Object.values(X.pown).filter(o => o === 0).length} world${Object.values(X.pown).filter(o => o === 0).length === 1 ? "" : "s"} of your own, ${X.zoo.length} creature${X.zoo.length === 1 ? "" : "s"} collected`]];
+  dialog(`<h2>✦ The heart of the galaxy</h2><p>The Warden falls silent, and the Core opens. Inside is a seed of light, the same spark that once drifted in a warm pond. ${esc(S.name)} have come all the way from it to here.</p>
+    <div class="story">${lines.map(([n, st, t]) => `<div><b>${n}. ${st}</b><span>${esc(t)}</span></div>`).join("")}</div>
+    <div class="stats"><div>Time played<b>${fmtTime(S.time)}</b></div><div>Ships beaten<b>${X.kills}</b></div></div>
+    <p>Your story is complete. The galaxy is yours to keep exploring.</p><div class="row"><button class="btn primary" data-a="ok">Keep playing</button></div>`, { ok: closeSD }, closeSD);
 }
 /* tapping, dragging to look around, pinching to zoom */
 const LPT = { pts: new Map(), pan: false, sx: 0, sy: 0, cx: 0, cy: 0, pinch: 0, z0: 1 };
@@ -4858,6 +5822,7 @@ function landUp(e) {
   if (!LPT.pts.size) { if (!LPT.pan && !paused && !IMP && !W.over) landTap(e.clientX, e.clientY); LPT.pan = false; }
 }
 function landTap(sx, sy) {
+  if (W.space) return spaceTap(sx, sy);
   if (W.civ) { const [wx0, wy0] = g3on() ? ground3(sx, sy) : [(sx - CW / 2) / cam.s + cam.x, (sy - CH / 2) / (cam.s * TILT) + cam.y]; return civTap(sx, sy, wx0, wy0); }
   const P = W.player, s = cam.s, on3 = g3on(), toS = on3 ? (x, y) => P3(x, y, 0) : (x, y) => [(x - cam.x) * s + CW / 2, (y - cam.y) * s * TILT + CH / 2], [wx, wy] = on3 ? ground3(sx, sy) : [(sx - CW / 2) / s + cam.x, (sy - CH / 2) / (s * TILT) + cam.y], sr = sightR(W);
   let best = null, bd = 1e9; // creatures are picked where they're drawn (standing up), not where their feet are
@@ -4880,8 +5845,9 @@ function landTap(sx, sy) {
 let LUI_KEY = "";
 function threatened() { const P = W.player; return W.cr.find(q => q.kind === "npc" && !q.asleep && q.ai.tg && q.ai.tg.team && Math.hypot(q.x - P.x, q.y - P.y) < LT * 6); }
 function renderLandUI(force) {
-  const box = $("lui"); if (!W || !W.land || view !== "play") { box.hidden = true; return; }
+  const box = $("lui"); if (!W || !(W.land || W.space) || view !== "play") { box.hidden = true; return; }
   box.hidden = !!IMP; if (IMP) return;
+  if (W.space) return renderSpaceUI(force);
   if (W.civ) return renderCivUI(force);
   if (W.tribe) return renderTribeUI(force);
   const P = W.player, c = cur(S);
@@ -5332,13 +6298,16 @@ function frame(ts) {
       stepWorld(W, dt, inp); handleEvents(); hints();
       saveT -= dt; if (saveT <= 0) { saveT = 15; saveSlot(); }
     }
-    draw(paused ? 0 : dt); hud(); if (W.land) renderLandUI();
-    if (G3) G3.R.domElement.style.display = W.land && g3on() ? "" : "none";
+    draw(paused ? 0 : dt); hud(); if (W.land || W.space) renderLandUI();
+    if (G3) G3.R.domElement.style.display = (W.land && g3on()) || (W.space && SP3 && SP3.W === W) ? "" : "none";
+    if (VB) vbFrame();
   } else if (view === "edit") drawEditor(ts / 1000);
 }
 window.SG_BACK = () => {
+  if (VB && $("dlg").hidden) { closeVB(); return true; }
   if (!$("dlg").hidden) { if (dlgBack) dlgBack(); else closeDlg(); return true; }
   if (view === "play" && IMP) { cancelImpress(); return true; }
+  if (view === "play" && W && W.space && (SPV.sel != null || SPV.star != null)) { SPV.sel = null; SPV.star = null; LUI_KEY = ""; return true; }
   if (view === "play" && W && W.tribe && PLACE) { PLACE = null; renderLandUI(true); return true; }
   if (view === "play" && W && W.land && (ENC || CALL)) { ENC = null; CALL = false; landLeave(W); renderLandUI(true); return true; }
   if (view === "edit") { leaveEditor(); return true; }
