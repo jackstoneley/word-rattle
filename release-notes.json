@@ -576,6 +576,16 @@
         "Guards walk the rounds of your fires, watch fires and totems, and go after raiders and anything attacking your people anywhere in your land, instead of standing still.",
         "Tap 📣 to take your guards on a raid: they follow you and fight any enemy tribe's people near you, in their land too. Tap 📣 again to send them home."
       ]
+    },
+    {
+      "id": 51,
+      "type": "fixes",
+      "headline": "Life: the map you've explored is kept",
+      "details": [
+        "On land and in the tribe stage, the parts of the island you've explored are now saved, so they stay uncovered when you close and reopen the game, and when your tribe starts.",
+        "At night the land you've explored stays faintly lit by the moon instead of going as dark as land you haven't seen.",
+        "Games saved before this update start with the map dark one last time; from then on it's remembered."
+      ]
     }
   ]
 }
