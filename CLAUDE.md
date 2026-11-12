@@ -315,7 +315,7 @@ fills in after a 9 s warning, more often the more floor a keeper has. Page: `ope
 ### Life (`games/life`)
 
 An evolve-a-creature game (in the genre of the evolution sims, with its own names and art), built a stage at a time:
-`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell**, **sea**, **land** and **tribe** stages exist. `S.stage` is "cell", "sea", "land" or "tribe"; `cur(S)` is that stage's state
+`STAGES` lists Cell, Sea, Land, Tribe, Civilisation, Space; the **cell**, **sea**, **land**, **tribe** and (part 1 of) **civ** stages exist. `S.stage` is "cell", "sea", "land", "tribe" or "civ"; `cur(S)` is that stage's state
 (`S.cell` / `S.sea` / `S.land`; the tribe stage keeps `S.land` as `cur` and has its own `S.tribe`) and `TS(S)` its sizes (`TIERS` / `SEA_TIERS` / `LAND_TIERS`, land has one: the brain bar). Rules sit between `/*CORE-START*/` and `/*CORE-END*/`.
 A creature is a design `{s: [segment radii, head first], p: [{id, s: segment, a: angle (0 = front), m: mirrored}], h, l, h2,
 pat, edge}`; `geom` places the parts, `stats` turns them into speed, bite, health, sight and so on, `designValue` is its DNA
@@ -405,6 +405,17 @@ settled ends the stage (`S.tribeNature`). New camps (`BUILDS` "camp", `FOUND_D` 
 builders as a founding party and join `W.fires` after the rival camps. Upkeep every minute (`upkeep`: fires burn wood, totems and watch
 fires take stone; short stores damage buildings) and stores above `storeCap` waste away. `MATS`, `BUILDS`, `TOOLS`, `JOBS` are saved by id: append only. `tools/life-check.js`
 plays the tribe stage with a bot after the land (about 25 min; fails if not done in 120 or under 15); `--tribe` runs it alone.
+**Civilisation** (`S.civ`, code after the tribe in CORE: `newCiv`, `civStep`; page: `civ3`, `civOverlay`, `civTap`, the town / settlers /
+towns / goals panels). Real time, as the tribe. Its own map (`makeArchipelago` from `hash(seed, 2000, CIV_V)`, `W.isle` per tile): five
+`ISLES` (home, three rival nations, one empty), town sites `W.sites` (`ISLE_SITES`), ore `W.ores` and glowstone `W.glows`, all from
+their own random streams, so the map never moves. `W.land` and `W.civ` are both set (it reuses the 3D land engine; the player is an
+invisible anchor and the camera roams). Towns `S.civ.towns` `{id, site, own (0 you, 1-3 the nations), name, pop, b: [{k, done, prog}], cap}`
+share one store `S.civ.res` (food, wood, stone, ore, glow, gold; capped by `capR`). `CB` buildings (saved by id: append only): one built
+at a time per town, workplaces limited by `civSlots` (houses and walls don't count, houses max 8), output by `civFit` (what's round the
+town: `civNear`) and mood (`civMood`). Settlers (`civSettle`, `S.civ.wagons`) found towns on free sites of the same island. `CIV_GOALS`
+pay gold. Fog is saved in `S.civ.seen`. Planned next: rival nations and the three ways to win them (force, persuasion, trade), the sea
+and boats, a vehicle builder whose designs decide how well vehicles do, the Sky Ship finale. `tools/life-check.js` runs a simple
+civilisation player for 30 minutes (fails under 60 people or 6 goals).
 
 ### Adding a new game
 

@@ -258,5 +258,24 @@ for (const [diet, seed, S] of grown) {
   if (verbose) console.log("land", diet, seed, "done", lmin, "min; friends", fr, "hunted", gone, "epics", JSON.stringify(L.epics), "deaths", dead, "evolves", L.evolves, "dna", Math.round(L.dna), "lean", L.lean.toFixed(2), "nature", S.landNature);
   if (verbose) console.log("sea", diet, seed, "sizes at", sizeAt.join(", "), "min; done", min, "min; deaths", c.deaths, "kills", c.kills, "goals", Object.keys(c.goals).join(" "), "lean", c.lean.toFixed(2), "young", c.young, "dna left", Math.round(c.dna));
 }
+// the civilisation stage (first part: towns and the economy): a simple player keeps food up, grows towns and fills the island
+const civOut = [];
+{ const V2 = new Function(core[1] + ";return {newSave, newWorld, stepWorld, testStart, civBuild, civCan, civSettle, civFree, civHas, civCap, CIV_GOALS};")();
+  for (const seed of [3, 42]) {
+    let S = V2.newSave({ name: "Bot", diet: "plant", seed }); S = V2.testStart(S, "civ0"); const W = V2.newWorld(S, seed), V = S.civ, mine = () => V.towns.filter(t => t.own === 0);
+    const want = tw => { if (V.res.food < 60 || V2.civHas(tw, "farm") < Math.ceil(tw.pop / 7)) return "farm"; if (tw.pop >= V2.civCap(tw) - 1) return "house";
+      for (const k of ["mill", "quarry", "mine", "market", "glow", "temple", "barracks", "wall", "dock"]) if (!V2.civHas(tw, k) && !V2.civCan(V, tw, k) && !tw.b.some(b => b.k === k)) return k; };
+    let pop10 = 0;
+    for (let s = 0; s < 30 * 60; s++) {
+      V2.stepWorld(W, .5, {}); V2.stepWorld(W, .5, {}); W.ev.length = 0;
+      if (s === 600) pop10 = mine().reduce((a, t) => a + t.pop, 0);
+      if (s % 5) continue;
+      for (const tw of mine()) { if (tw.b.some(b => !b.done)) continue; const k = want(tw); if (k && !V2.civCan(V, tw, k)) V2.civBuild(W, tw, k); else for (const k2 of ["farm", "house", "mill", "quarry"]) if (!V2.civCan(V, tw, k2)) { V2.civBuild(W, tw, k2); break; }
+        const free = V2.civFree(W, 0); if (free.length && tw.pop >= 10 && V.res.food > 50) V2.civSettle(W, tw, free[0].n); }
+    }
+    const pop = mine().reduce((a, t) => a + t.pop, 0), goals = Object.keys(V.goals).length;
+    if (pop < 60 || goals < 6) { bad++; console.error(`life: the civilisation bot (seed ${seed}) only reached ${pop} people and ${goals} goals in 30 min`); }
+    civOut.push(`${pop} people in ${mine().length} towns after 30 min (${pop10} at 10), ${goals} of ${V2.CIV_GOALS.length} goals`);
+  } }
 if (bad) process.exit(1);
-console.log("life: cell stage finished by bots: " + out.join(", ") + "; sea stage: " + seaOut.join(", ") + "; land stage: " + landOut.join(", ") + "; tribe stage: " + tribeOut.join(", "));
+console.log("life: cell stage finished by bots: " + out.join(", ") + "; sea stage: " + seaOut.join(", ") + "; land stage: " + landOut.join(", ") + "; tribe stage: " + tribeOut.join(", ") + "; civilisation: " + civOut.join(", "));

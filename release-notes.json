@@ -586,6 +586,20 @@
         "At night the land you've explored stays faintly lit by the moon instead of going as dark as land you haven't seen.",
         "Games saved before this update start with the map dark one last time; from then on it's remembered."
       ]
+    },
+    {
+      "id": 52,
+      "type": "features",
+      "headline": "Life: the Civilisation stage, part 1",
+      "details": [
+        "Finish the Tribe stage and tap Found a nation: your tribe becomes a nation on a group of five islands. Yours, three for rival nations, and one empty island with plenty of glowstone.",
+        "Your capital and towns grow on their own. Tap a town to choose what it builds: houses, farms, lumber mills, quarries, mines, glowstone works, markets, temples, barracks, walls and docks.",
+        "Every town eats from one store, so keep enough farms. Farms do best on open grass, mills by forest, quarries by hills. Mines need ore nearby, glowstone works need glowstone.",
+        "Tap the Free land posts to send settlers by wagon and found new towns.",
+        "Ten goals to reach for, each worth gold.",
+        "Coming next: the three rival nations and winning them over by force, persuasion or trade. Then boats, your own vehicle designs, and the Sky Ship.",
+        "To try it straight away, start a new life and pick Civilisation stage under Start at."
+      ]
     }
   ]
 }

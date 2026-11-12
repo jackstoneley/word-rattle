@@ -171,6 +171,9 @@ h1 span{color:var(--accent)}
 .bodyp label{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:800;color:var(--muted)}
 .bodyp label input{flex:1}
 .jobs{display:flex;flex-direction:column;gap:6px}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:46vh;overflow:auto;margin:6px 0}
+.cbtn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:7px 9px!important;white-space:normal;height:auto}
+.cbtn span{font-size:.75rem;opacity:.9}.cbtn em{font-size:.68rem;font-style:normal;color:var(--muted);line-height:1.2}.cbtn.off{opacity:.55}
 .jrow{display:grid;grid-template-columns:1fr 40px 34px 40px;align-items:center;gap:6px;background:var(--bg);border-radius:12px;padding:6px 8px;font-weight:700;font-size:.92rem}
 .jrow b{text-align:center;font-size:1.1rem}
 .lb.off{opacity:.5}
@@ -254,8 +257,8 @@ const TAU = Math.PI * 2;
 const TIERS = [{ n: "Speck", g: 50 }, { n: "Mote", g: 85 }, { n: "Droplet", g: 120 }, { n: "Bloom", g: 160 }, { n: "Titan", g: 200 }];
 const KT = t => Math.pow(1.7, t);
 const SEA_TIERS = [{ n: "Fry", g: 95 }, { n: "Finling", g: 140 }, { n: "Glider", g: 185 }, { n: "Roamer", g: 230 }, { n: "Leviathan", g: 265 }];
-function cur(S) { return (S.stage === "land" || S.stage === "tribe") && S.land ? S.land : S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
-function TS(S) { return S && (S.stage === "land" || S.stage === "tribe") ? LAND_TIERS : S && S.stage === "sea" ? SEA_TIERS : TIERS; }
+function cur(S) { return (S.stage === "land" || S.stage === "tribe" || S.stage === "civ") && S.land ? S.land : S.stage === "sea" && S.sea ? S.sea : S.cell; } // the stage being played
+function TS(S) { return S && (S.stage === "land" || S.stage === "tribe" || S.stage === "civ") ? LAND_TIERS : S && S.stage === "sea" ? SEA_TIERS : TIERS; }
 /* The sea: a bounded world, surface (and the shore) at y = 0, bands of depth going down. Each band has its own food
    size (it), plant and meat density, and share of hunters. Creatures belong to the band that suits their size. */
 const SEA = { W: 6000, D: 10000, bands: [
@@ -411,10 +414,11 @@ const STARTS = [["s0", "Cell stage, from the start", ""], ["s2", "Cell stage, Dr
   ["grown", "End of the cell stage", "A fully grown Titan: meet your mate to finish"], ["sea0", "Sea stage, from the start", "Fresh out of the pond"],
   ["sea2", "Sea stage, Glider size", "Size 3 of 5"], ["seaend", "End of the sea stage", "Fully grown, with lungs and leg fins: swim up to the shore"],
   ["land0", "Land stage, from the start", "Just out of the sea"], ["land50", "Land stage, halfway", "Brain half full"], ["land95", "End of the land stage", "One more friend or hunt fills the brain"],
-  ["tribe0", "Tribe stage, from the start", "Your first camp, with four neighbouring tribes"]];
+  ["tribe0", "Tribe stage, from the start", "Your first camp, with four neighbouring tribes"], ["civ0", "Civilisation stage, from the start", "Your capital and two towns on your own island"]];
 function testStart(S, start) {
   if (!start || start === "s0") return S;
   S.test = true; const all = PARTS.map(p => p.id);
+  if (start.startsWith("civ")) { testStart(S, "tribe0"); S.tribeNature = "shrewd"; goToCiv(S); return S; }
   if (start.startsWith("tribe")) { testStart(S, "land0"); S.landNature = "mixed"; goToTribe(S); return S; }
   if (start.startsWith("land")) {
     S.cell.tier = TIERS.length - 1; S.nature = "forager"; goToSea(S); S.sea.tier = 4; S.seaNature = "forager"; goToLand(S);
@@ -459,6 +463,8 @@ function migrate(S) {
     const N4 = tribeStart(S); for (const k in N4) if (S.tribe[k] === undefined) S.tribe[k] = N4[k];
     for (const k in N4.res) if (S.tribe.res[k] === undefined) S.tribe.res[k] = 0; for (const k in N4.jobs) if (S.tribe.jobs[k] === undefined) S.tribe.jobs[k] = 0;
   } else if (S.stage === "tribe") S.stage = S.land ? "land" : "cell";
+  if (S.civ && S.tribe) { const N5 = civStart(S); for (const k in N5) if (S.civ[k] === undefined) S.civ[k] = N5[k]; for (const k in N5.res) if (S.civ.res[k] === undefined) S.civ.res[k] = 0; }
+  else if (S.stage === "civ") S.stage = S.tribe ? "tribe" : "land";
   return S;
 }
 function natureOf(c) { const t = c.ate.plant + c.ate.meat || 1, m = c.ate.meat / t; return m > .66 ? "hunter" : m < .34 ? "grazer" : "forager"; }
@@ -558,6 +564,7 @@ function addAlly(W) {
 }
 function viewR(W) { return W.player.st.view * W.player.k; }
 function newWorld(S, rs) {
+  if (S.stage === "civ") return newCiv(S, rs);
   if (S.stage === "tribe") return newTribe(S, rs);
   if (S.stage === "land") return newLand(S, rs);
   const W = { S, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], pods: [], mate: null,
@@ -1635,6 +1642,7 @@ function stepLand(W, dt) {
   if (W.over || W.freeze) return;
   W.t += dt; const S = W.S, c = cur(S), P = W.player; S.time += dt; c.lt = (c.lt || 0) + dt;
   c.day = (c.day + dt / DAY) % 1; W.night = c.day > .7;
+  if (W.civ) { civStep(W, dt); return; }
   if (!W.tribe) quakeStep(W, dt); stampStep(W, dt);
   W.leadT -= dt; if (W.leadT <= 0) { W.leadT = 1; W.lead = {}; for (const q of W.cr) if (q.kind === "npc" && q.lsp != null && !W.lead[q.lsp]) W.lead[q.lsp] = q; }
   const L = allC(W), px = L.map(q => q.x), py = L.map(q => q.y);
@@ -2305,6 +2313,169 @@ function tribeStep(W, dt) {
     if (W.t - W.alarmT2 > 40 && W.cr.some(u => u.kind === "rival" && u.raid && u.rph !== "gather" && W.own[tileI(u.x, u.y)] === 1)) { W.alarmT2 = W.t; W.ev.push({ t: "alarm" }); }
   }
 }
+/* ===================== the Civilisation stage =====================
+   The tribe becomes a nation on a group of five islands, a map of its own made from the seed (makeArchipelago, ISLES):
+   yours, three for rival nations (towns made now, brought to life in a later update) and one empty island. Towns
+   (S.civ.towns) grow on their own and share one store (S.civ.res); you choose what each builds (CB, saved by id: append
+   only), one building at a time per town. Glowstone (W.glows) is rare: a works next to it digs it, markets sell it. */
+const CIV_V = 1;
+const ISLES = [[.55, .64, .16], [.22, .38, .115], [.78, .38, .115], [.5, .18, .1], [.25, .72, .085]]; // [x, y, size]: home, three nations, the empty island
+const ISLE_SITES = [4, 3, 3, 3, 3], ISLE_GLOW = [2, 1, 1, 1, 3], ISLE_ORE = [2, 1, 1, 1, 1];
+const CB = [
+  { id: "house", ic: "🏠", n: "Houses", c: { wood: 20 }, work: 16, max: 8, d: "Room for five more people (up to eight lots of houses a town)." },
+  { id: "farm", ic: "🌾", n: "Farm", c: { wood: 15 }, work: 18, make: { food: .75 }, d: "Grows food. Best with open grass round the town." },
+  { id: "mill", ic: "🪓", n: "Lumber mill", c: { wood: 10, stone: 5 }, work: 20, make: { wood: .55 }, d: "Cuts wood. Best with forest round the town." },
+  { id: "quarry", ic: "⛏️", n: "Quarry", c: { wood: 20 }, work: 22, make: { stone: .4 }, d: "Digs stone. Best with hills or rocks round the town." },
+  { id: "mine", ic: "⚒️", n: "Mine", c: { wood: 25, stone: 15 }, work: 28, make: { ore: .22 }, need: "ore", d: "Digs ore. Only next to ore (the rusty rocks)." },
+  { id: "glow", ic: "💎", n: "Glowstone works", c: { wood: 30, stone: 30, ore: 10 }, work: 36, make: { glow: .1 }, need: "glow", d: "Only next to glowstone (the purple crystals). It sells for lots of gold, and will power the best machines." },
+  { id: "market", ic: "🏪", n: "Market", c: { wood: 30, stone: 10 }, work: 28, make: { gold: .3 }, d: "Earns gold, and sells spare glowstone for much more." },
+  { id: "temple", ic: "🛕", n: "Temple", c: { wood: 20, stone: 30 }, work: 34, max: 1, d: "Keeps the town happy, so it works harder. Later it sends out festival wagons." },
+  { id: "barracks", ic: "🛡️", n: "Barracks", c: { wood: 30, stone: 20, ore: 5 }, work: 34, max: 1, d: "Trains the town's guards. Later it builds war machines." },
+  { id: "wall", ic: "🧱", n: "Walls", c: { stone: 40 }, work: 38, max: 1, d: "Makes the town much harder to take once rival nations arrive." },
+  { id: "dock", ic: "⚓", n: "Dock", c: { wood: 40, stone: 10 }, work: 32, max: 1, need: "coast", d: "Only by the sea. Boats come in a later update." }];
+const CBD = {}; CB.forEach(b => { CBD[b.id] = b; });
+const CIV_GOALS = [{ id: "towns3", n: "Have three towns", g: 40 }, { id: "pop60", n: "Grow to 60 people", g: 60 }, { id: "ore", n: "Dig your first ore", g: 30 },
+  { id: "glow", n: "Dig glowstone", g: 60 }, { id: "market", n: "Open a market", g: 30 }, { id: "temple", n: "Build a temple", g: 30 }, { id: "barracks", n: "Build barracks", g: 30 },
+  { id: "gold", n: "Save up 300 gold", g: 50 }, { id: "wall", n: "Wall a town", g: 40 }, { id: "fill", n: "Settle every town site on your island", g: 80 }];
+const SETTLE = { pop: 3, food: 30, wood: 30, min: 9 };
+function civStart(S) { return { v: CIV_V, t: 0, res: { food: 80, wood: 70, stone: 30, ore: 0, glow: 0, gold: 20 }, towns: null, goals: {}, wagons: [], seen: "", done: false }; }
+function goToCiv(S) { if (S.tribe) S.tribe.done = true; S.civ = S.civ || civStart(S); S.stage = "civ"; return S; }
+function makeArchipelago(R) {
+  const N = LN, m = new Uint8Array(N * N), hg = new Float32Array(N * N), isle = new Int8Array(N * N).fill(-1), n1 = mkNoise(R, 7), n2 = mkNoise(R, 17), n3 = mkNoise(R, 9), n4 = mkNoise(R, 5), n5 = mkNoise(R, 29), n6 = mkNoise(R, 12);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = x / N, v = y / N, i = y * N + x; let h = -1, best = -1;
+    ISLES.forEach(([cx, cy, r], k) => { const d = Math.hypot(u - cx, v - cy) / (r * 2) * (.85 + n4(u, v) * .35), hk = n1(u, v) * .5 + n2(u, v) * .25 + n5(u, v) * .08 + (1 - Math.pow(Math.min(d * 2, 1.4), 1.7)) * .9 - .55; if (hk > h) { h = hk; best = k; } });
+    if (Math.hypot(u - .5, v - .5) > .44) h = Math.min(h, -.05);
+    hg[i] = h; const mo = n3(u, v); let t;
+    if (h < 0) t = T_SEA; else if (h < .055) t = T_SAND;
+    else if (h > .7) t = n5(u, v) > .45 ? T_SNOW : T_ROCK;
+    else if (h > .55) t = n2(u, v) > .7 ? T_ROCK : T_HILL;
+    else if (n6(u, v) > .82 && h > .12 && h < .4) t = T_LAKE;
+    else if (mo > .68 && h < .3) t = T_SWAMP; else if (mo > .58) t = h < .35 ? T_JUNGLE : T_FOREST; else if (mo > .45) t = T_FOREST; else if (mo < .27) t = T_SCRUB; else t = T_GRASS;
+    m[i] = t; if (t !== T_SEA) isle[i] = best;
+  }
+  return { m, hg, isle };
+}
+function civName(R) { const p = a => a[Math.floor(R() * a.length)], n = p(LSYL) + p(LSYL); return n[0].toUpperCase() + n.slice(1) + p(["ton", "by", "holm", "mere", "dale", "wick", "ford", "stead"]); }
+function newCiv(S, rs) {
+  const C = S.civ, R0 = rng(hash(S.seed, 2001, CIV_V));
+  const W = { S, land: true, civ: true, t: 0, seed: S.seed, R: rng(hash(S.seed, rs == null ? Date.now() & 0xffffff : rs)), items: [], cr: [], clouds: [], ev: [], pods: [], shots: [], mate: null,
+    nid: 1, nextRelic: 1e9, mateCool: 0, sp: {}, over: null, inNest: true, foe: null, foeT: -99, trail: [], trailT: 0, respT: 1e9, freeze: false, night: false,
+    trees: [], bushes: [], rocks: [], marks: [], lsp: [], epics: [], seenT: 0, seenNew: [], leadT: 0, lead: {}, civT: 0 };
+  const A = makeArchipelago(rng(hash(S.seed, 2000, CIV_V))); W.map = A.m; W.hgt = A.hg; W.isle = A.isle;
+  W.reach = new Uint8Array(LN * LN); for (let i = 0; i < LN * LN; i++) W.reach[i] = A.isle[i] >= 0 && TSPD[W.map[i]] > 0 ? 1 : 0;
+  // town sites, ore and glowstone, from their own random stream
+  const RS = rng(hash(S.seed, 2002, CIV_V)), ok = i => [T_GRASS, T_FOREST, T_SCRUB, T_JUNGLE].includes(W.map[i]) && !nearT(W, i, [T_SEA, T_LAKE, T_ROCK, T_SNOW], 1);
+  W.sites = []; W.ores = []; W.glows = [];
+  ISLES.forEach(([cx, cy], k) => {
+    const want = ISLE_SITES[k], mine = [];
+    for (let tries = 0; tries < 6000 && mine.length < want; tries++) { const i = Math.floor(RS() * LN * LN); if (A.isle[i] !== k || !ok(i)) continue; const [x, y] = tileXY(i); if (W.sites.concat(mine).some(s => Math.hypot(s.x - x, s.y - y) < LT * 9)) continue; mine.push({ x, y, isle: k, name: civName(RS) }); }
+    mine.sort((a, b) => Math.hypot(a.x / LT / LN - cx, a.y / LT / LN - cy) - Math.hypot(b.x / LT / LN - cx, b.y / LT / LN - cy)); // the most central first
+    for (const s of mine) { s.n = W.sites.length; W.sites.push(s); }
+    for (const [list, n, tiles] of [[W.ores, ISLE_ORE[k], [T_HILL, T_ROCK, T_SCRUB]], [W.glows, ISLE_GLOW[k], [T_HILL, T_SCRUB, T_GRASS, T_FOREST]]]) {
+      let got = 0; for (let tries = 0; tries < 6000 && got < n; tries++) { const i = Math.floor(RS() * LN * LN); if (A.isle[i] !== k || !tiles.includes(W.map[i]) || !(TSPD[W.map[i]] > 0)) continue; const [x, y] = tileXY(i);
+        if (W.sites.some(s => Math.hypot(s.x - x, s.y - y) < LT * 2.5) || W.ores.concat(W.glows).some(o => Math.hypot(o.x - x, o.y - y) < LT * 5)) continue;
+        if (!mine.some(s => Math.hypot(s.x - x, s.y - y) < LT * 6) && got === 0 && tries < 3000) continue; // the first one near a town site, so it can be reached
+        list.push({ x, y, isle: k }); got++; }
+    }
+  });
+  // what grows where (thinner than the land stage: you see it from further away)
+  const clear = (x, y) => W.sites.every(s => Math.hypot(s.x - x, s.y - y) > LT * 3.2) && W.ores.concat(W.glows).every(o => Math.hypot(o.x - x, o.y - y) > LT * 1.2);
+  for (let i = 0; i < LN * LN; i++) {
+    const t = W.map[i]; if (A.isle[i] < 0) continue; const [x, y] = tileXY(i), j = () => (R0() - .5) * LT * .8, r = R0(); if (!clear(x, y)) continue;
+    const tree = (type, size, fruit) => W.trees.push({ kind: "tree", type, x: x + j(), y: y + j(), r: size * (.8 + R0() * .45), fruit: fruit && R0() < fruit, food: 3, max: 3, t: 0 });
+    if (t === T_FOREST) { if (r < .26) tree("oak", 38, .1); else if (r < .3) W.bushes.push(bush(x + j(), y + j(), R0)); }
+    else if (t === T_JUNGLE) { if (r < .3) tree("jungle", 46, .2); }
+    else if (t === T_GRASS) { if (r < .03) tree("oak", 36, .4); else if (r < .06) W.bushes.push(bush(x + j(), y + j(), R0)); else if (r < .07) W.rocks.push({ x: x + j(), y: y + j(), r: 10 + R0() * 10 }); }
+    else if (t === T_HILL) { if (r < .1) tree("pine", 30, 0); else if (r < .26) W.rocks.push({ x: x + j(), y: y + j(), r: 12 + R0() * 18 }); }
+    else if (t === T_ROCK) { if (r < .2) W.rocks.push({ x: x + j(), y: y + j(), r: 18 + R0() * 22, big: 1 }); }
+    else if (t === T_SNOW) { if (r < .06) tree("pine", 28, 0); }
+    else if (t === T_SAND) { if (r < .03) tree("palm", 34, .5); }
+    else if (t === T_SWAMP) { if (r < .07) tree("willow", 38, 0); }
+    else if (t === T_SCRUB) { if (r < .05) tree("cactus", 22, .2); else if (r < .09) W.rocks.push({ x: x + j(), y: y + j(), r: 8 + R0() * 10 }); }
+  }
+  for (const tr of W.trees) if (!tr.fruit) tr.food = 0;
+  // the towns: your capital where the tribe's main camp was, a town for each tribe you settled, and the three nations' towns
+  if (!C.towns) {
+    C.towns = []; const isl = k => W.sites.filter(s => s.isle === k), settled = S.tribe && S.tribe.rv ? S.tribe.rv.filter(r => r.state).length : 1;
+    civTown(C, isl(0)[0], 0, 14, ["house", "house", "farm", "farm", "mill", "quarry"]); C.towns[0].cap = 1;
+    for (let k = 1; k <= Math.min(2, settled); k++) civTown(C, isl(0)[k], 0, 6, ["house", "farm"]);
+    for (let k = 1; k <= 3; k++) isl(k).forEach((s, n) => civTown(C, s, k, n ? 7 : 12, n ? ["house", "farm"] : ["house", "house", "farm", "farm", "mill", "market"]));
+  }
+  for (const tw of C.towns) { tw.near = civNear(W, W.sites[tw.site]); tw.rev = 1; }
+  const cap = C.towns.find(tw => tw.cap && tw.own === 0) || C.towns.find(tw => tw.own === 0) || C.towns[0], cs = W.sites[cap.site];
+  W.home = { kind: "home", x: cs.x, y: cs.y };
+  placePlayer(W, cs.x, cs.y + LT * 2, -Math.PI / 2);
+  W.seen = unpackBits(C.seen, LN * LN);
+  if (!C.seen) for (let i = 0; i < LN * LN; i++) { const x = i % LN, y = (i / LN) | 0; if (A.isle[i] === 0 || nearIsle(A, x, y, 0, 3)) W.seen[i] = 1; } // you know your own island and its shores
+  return W;
+}
+function nearIsle(A, x, y, k, r) { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < LN && ny < LN && A.isle[ny * LN + nx] === k) return true; } return false; }
+function civTown(C, site, own, pop, builds) { const tw = { id: C.towns.length, site: site.n, own, name: site.name, pop, b: builds.map(k => ({ k, done: true, prog: 0 })), gT: 0 }; C.towns.push(tw); return tw; }
+/* What's round a town: open grass, forest, rocks and hills, sea, ore, glowstone. */
+function civNear(W, s) {
+  const n = { grass: 0, forest: 0, rock: 0, coast: 0, ore: 0, glow: 0 }, tx = Math.floor(s.x / LT), ty = Math.floor(s.y / LT);
+  for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) { const x = tx + dx, y = ty + dy; if (x < 0 || y < 0 || x >= LN || y >= LN || dx * dx + dy * dy > 25) continue; const t = W.map[y * LN + x];
+    if (t === T_GRASS || t === T_SCRUB) n.grass++; else if (t === T_FOREST || t === T_JUNGLE) n.forest++; else if (t === T_HILL || t === T_ROCK) n.rock++; else if (t === T_SEA && dx * dx + dy * dy <= 16) n.coast++; }
+  n.ore = W.ores.some(o => Math.hypot(o.x - s.x, o.y - s.y) < LT * 6.5) ? 1 : 0; n.glow = W.glows.some(o => Math.hypot(o.x - s.x, o.y - s.y) < LT * 6.5) ? 1 : 0; n.coast = n.coast ? 1 : 0;
+  return n;
+}
+const civHas = (tw, k) => tw.b.filter(b => b.k === k && b.done).length;
+function civCap(tw) { return 4 + civHas(tw, "house") * 5 + (tw.cap ? 6 : 0); }
+function civSlots(tw) { return Math.min(10, 3 + Math.floor(tw.pop / 6)); } // room for workplaces (houses and walls don't count)
+const civUsed = tw => tw.b.filter(b => b.k !== "house" && b.k !== "wall").length;
+function civMood(C, tw) { return clamp(55 + civHas(tw, "temple") * 25 - Math.max(0, tw.pop - civCap(tw)) * 5 - (C.res.food <= 0 ? 30 : 0) - Math.max(0, civUsed(tw) - 6) * 2, 0, 100); }
+/* How well a building does here: farms want grass, mills forest, quarries rock. */
+function civFit(tw, k) { const n = tw.near; return k === "farm" ? clamp(.35 + n.grass / 40, .35, 1.2) : k === "mill" ? clamp(.3 + n.forest / 30, .3, 1.2) : k === "quarry" ? clamp(.4 + n.rock / 20, .4, 1.2) : k === "mine" ? n.ore : k === "glow" ? n.glow : 1; }
+/* Why a town can't build something, or "" if it can. */
+function civCan(C, tw, k) {
+  const B = CBD[k]; if (!B || tw.own !== 0) return "Not yours";
+  if (B.need && !tw.near[B.need]) return B.need === "ore" ? "No ore near this town" : B.need === "glow" ? "No glowstone near this town" : "Not by the sea";
+  if (B.max && tw.b.filter(b => b.k === k).length >= B.max) return "Already built";
+  if (k !== "house" && k !== "wall" && civUsed(tw) >= civSlots(tw)) return "No room: the town needs more people";
+  for (const r in B.c) if ((C.res[r] || 0) < B.c[r]) return "Not enough " + r;
+  return "";
+}
+function civBuild(W, tw, k) { const C = W.S.civ, why = civCan(C, tw, k); if (why) return why; for (const r in CBD[k].c) C.res[r] -= CBD[k].c[r]; tw.b.push({ k, done: false, prog: 0 }); tw.rev++; return ""; }
+function civFree(W, isle) { const C = W.S.civ; return W.sites.filter(s => (isle == null || s.isle === isle) && !C.towns.some(tw => tw.site === s.n) && !C.wagons.some(g => g.to === s.n)); }
+/* Settlers: a wagon of people and supplies sets off to found a town on a free site on the same island. */
+function civSettle(W, tw, n) {
+  const C = W.S.civ, s = W.sites[n], from = W.sites[tw.site];
+  if (tw.own !== 0) return "Not yours"; if (s.isle !== from.isle) return "Too far: that needs boats (coming in a later update)";
+  if (!civFree(W, s.isle).includes(s)) return "Taken"; if (tw.pop < SETTLE.min) return `The town needs ${SETTLE.min} people first`;
+  if (C.res.food < SETTLE.food || C.res.wood < SETTLE.wood) return `Settlers need ${SETTLE.food} food and ${SETTLE.wood} wood`;
+  const path = findPath(W, from.x, from.y + LT, s.x, s.y + LT); if (!path) return "No way there over land";
+  const pts = [[from.x, from.y + LT], ...path]; let len = 0; for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
+  C.res.food -= SETTLE.food; C.res.wood -= SETTLE.wood; tw.pop -= SETTLE.pop; tw.rev++;
+  C.wagons.push({ from: tw.site, to: n, t: 0, dur: Math.max(8, len / 45), pts: pts.map(p => p.map(Math.round)) }); return "";
+}
+function civStep(W, dt) {
+  const C = W.S.civ; C.t += dt; W.civT += dt; if (W.civT < .5) return; const st = W.civT; W.civT = 0;
+  let eat = 0;
+  for (const tw of C.towns) {
+    if (tw.own !== 0) continue; // the nations come to life in a later update
+    const site = tw.b.find(b => !b.done); // builders put up one thing at a time
+    if (site) { site.prog += st * (1 + tw.pop / 25); if (site.prog >= CBD[site.k].work) { site.done = true; tw.rev++; W.ev.push({ t: "cbuilt", k: site.k, n: tw.name }); } }
+    const prod = tw.b.filter(b => b.done && CBD[b.k].make), eff = prod.length ? Math.min(1, tw.pop / (prod.length * 3)) : 1, mood = civMood(C, tw), mm = mood < 30 ? .5 : mood > 70 ? 1.15 : 1;
+    for (const b of prod) { const f = civFit(tw, b.k); for (const r in CBD[b.k].make) C.res[r] = (C.res[r] || 0) + CBD[b.k].make[r] * eff * mm * f * st; }
+    for (let k = civHas(tw, "market"); k > 0; k--) if (C.res.glow >= .05 * st) { C.res.glow -= .05 * st; C.res.gold += .3 * st; } // the market sells spare glowstone
+    eat += tw.pop * .022 * st;
+    tw.gT += st; const cap = civCap(tw);
+    if (C.res.food > 8 && tw.pop < cap && tw.gT > Math.max(5, 13 - tw.pop * .1)) { tw.pop++; tw.gT = 0; tw.rev++; }
+    else if (C.res.food <= 0 && tw.gT > 10 && tw.pop > 2) { tw.pop--; tw.gT = 0; tw.rev++; W.ev.push({ t: "starve", n: tw.name }); }
+  }
+  C.res.food = Math.max(0, C.res.food - eat);
+  const capR = 150 + C.towns.filter(tw => tw.own === 0).length * 60; for (const r of ["food", "wood", "stone", "ore"]) if (C.res[r] > capR) C.res[r] = capR; // stores only hold so much
+  for (let k = C.wagons.length - 1; k >= 0; k--) { const g = C.wagons[k]; g.t += st; if (g.t >= g.dur) { C.wagons.splice(k, 1); const s = W.sites[g.to]; const tw = civTown(C, s, 0, SETTLE.pop, []); tw.near = civNear(W, s); tw.rev = 1; W.ev.push({ t: "cfound", n: s.name }); } }
+  civGoals(W);
+}
+function civGoals(W) {
+  const C = W.S.civ, mine = C.towns.filter(tw => tw.own === 0), any = k => mine.some(tw => civHas(tw, k)), done = id => { if (C.goals[id]) return; C.goals[id] = 1; const g = CIV_GOALS.find(x => x.id === id); C.res.gold += g.g; W.ev.push({ t: "cgoal", n: g.n, g: g.g }); };
+  if (mine.length >= 3) done("towns3"); if (mine.reduce((a, tw) => a + tw.pop, 0) >= 60) done("pop60"); if (any("mine") && C.res.ore >= 1) done("ore");
+  if (any("glow")) done("glow"); if (any("market")) done("market"); if (any("temple")) done("temple"); if (any("barracks")) done("barracks");
+  if (C.res.gold >= 300) done("gold"); if (any("wall")) done("wall"); if (!civFree(W, 0).length && !C.wagons.length) done("fill");
+}
+const civPop = C => C.towns.filter(tw => tw.own === 0).reduce((a, tw) => a + tw.pop, 0);
 /*CORE-END*/
 
 /* ================================ page ================================ */
@@ -2622,7 +2793,7 @@ function partIcon(cv, id, d) {
 /* ---------- menu ---------- */
 function slotKey(i) { return "lf.slot." + i; }
 function loadSlot(i) { const s = store.get(slotKey(i), null); return s && s.cell ? migrate(s) : null; }
-function saveSlot() { if (!S || slot < 0) return; if (W && W.sea && W.player && S.sea) { S.sea.x = Math.round(W.player.x); S.sea.y = Math.round(W.player.y); } if (W && W.land && W.seen && S.land) S.land.seen = packBits(W.seen); // what you've explored
+function saveSlot() { if (!S || slot < 0) return; if (W && W.sea && W.player && S.sea) { S.sea.x = Math.round(W.player.x); S.sea.y = Math.round(W.player.y); } if (W && W.civ && W.seen && S.civ) S.civ.seen = packBits(W.seen); else if (W && W.land && W.seen && S.land) S.land.seen = packBits(W.seen); // what you've explored
   if (W && W.land && W.player && S.land) { S.land.x = Math.round(W.player.x); S.land.y = Math.round(W.player.y); } S.at = Date.now(); store.set(slotKey(slot), S); store.set("lf.last", slot); }
 function fmtTime(s) { const m = Math.round(s / 60); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; }
 function preview(cv, d, w, h) {
@@ -2640,14 +2811,14 @@ function renderMenu() {
     const nm = document.createElement("b"); nm.textContent = s.name; const chip = document.createElement("span"); chip.className = "chip" + (s.mode === "hard" ? " hc" : ""); chip.textContent = s.mode === "hard" ? "☠ Hardcore" : "Normal"; nm.append(chip);
     if (s.test) { const tc = document.createElement("span"); tc.className = "chip"; tc.textContent = "Test start"; nm.append(tc); }
     const sm = document.createElement("span"); sm.className = "sm";
-    const sea = s.stage === "sea", land = s.stage === "land", tribe = s.stage === "tribe", cs = cur(s), TT = TS(s), stg = tribe ? "Tribe" : land ? "Land" : sea ? "Sea" : "Cell", tm = fmtTime(s.time);
-    sm.textContent = tribe ? (s.dead ? `Died out in the tribe stage · ${tm}` : s.tribe.done ? `Tribe stage complete · ${tm}` : `Tribe stage · 👥 ${popAll(s.tribe)} · ${s.tribe.rv ? s.tribe.rv.filter(r => r.state).length : 0} of ${s.tribe.rv ? s.tribe.rv.length : 4} neighbours settled · ${tm}`) : land ? (s.dead ? `Died out in the land stage · ${tm}` : cs.done ? `Land stage complete: a clever species · ${tm}` : `Land stage · brain ${Math.floor(cs.grow)} of 100 · ${tm}`)
+    const sea = s.stage === "sea", land = s.stage === "land", tribe = s.stage === "tribe", civ = s.stage === "civ", cs = cur(s), TT = TS(s), stg = tribe ? "Tribe" : land ? "Land" : sea ? "Sea" : "Cell", tm = fmtTime(s.time);
+    sm.textContent = civ ? `Civilisation stage · 👥 ${civPop(s.civ)} in ${s.civ.towns ? s.civ.towns.filter(tw => tw.own === 0).length : 1} towns · ${fmtTime(s.time)}` : tribe ? (s.dead ? `Died out in the tribe stage · ${tm}` : s.tribe.done ? `Tribe stage complete · ${tm}` : `Tribe stage · 👥 ${popAll(s.tribe)} · ${s.tribe.rv ? s.tribe.rv.filter(r => r.state).length : 0} of ${s.tribe.rv ? s.tribe.rv.length : 4} neighbours settled · ${tm}`) : land ? (s.dead ? `Died out in the land stage · ${tm}` : cs.done ? `Land stage complete: a clever species · ${tm}` : `Land stage · brain ${Math.floor(cs.grow)} of 100 · ${tm}`)
       : s.dead ? `Died out in the ${stg.toLowerCase()} stage at ${TT[cs.tier].n} size · ${tm}` : sea && cs.done ? `Sea stage complete: ready for land · ${tm}`
       : !sea && cs.done ? `Cell stage complete · ${NATURES[s.nature] ? NATURES[s.nature].n : ""} · ready for the sea · ${tm}` : `${stg} stage · ${TT[cs.tier].n} (size ${cs.tier + 1} of 5) · ${tm}`;
     const row = document.createElement("div"); row.className = "row";
     if (!s.dead) {
-      const toSea = !sea && !land && !tribe && cs.done, toLand = sea && cs.done, toTribe = land && cs.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : toLand ? "Onto the land ▶" : toTribe ? "Start a tribe ▶" : "Play";
-      p.onclick = () => { if (toSea) { goToSea(s); store.set(slotKey(i), s); } if (toLand) { goToLand(s); store.set(slotKey(i), s); } if (toTribe) { goToTribe(s); store.set(slotKey(i), s); } startSlot(i); }; row.append(p);
+      const toSea = !sea && !land && !tribe && !civ && cs.done, toLand = sea && cs.done, toTribe = land && cs.done, toCiv = tribe && s.tribe.done, p = document.createElement("button"); p.className = "btn small primary"; p.textContent = toSea ? "Into the sea ▶" : toLand ? "Onto the land ▶" : toTribe ? "Start a tribe ▶" : toCiv ? "Found a nation ▶" : "Play";
+      p.onclick = () => { if (toSea) { goToSea(s); store.set(slotKey(i), s); } if (toLand) { goToLand(s); store.set(slotKey(i), s); } if (toTribe) { goToTribe(s); store.set(slotKey(i), s); } if (toCiv) { goToCiv(s); store.set(slotKey(i), s); } startSlot(i); }; row.append(p);
     }
     const del = document.createElement("button"); del.className = "btn small bad"; del.textContent = s.dead ? "Clear" : "Delete";
     del.onclick = () => dialog(`<h2>${s.dead ? "Clear" : "Delete"} ${esc(s.name)}?</h2><p>${s.dead ? "This clears the fossil from this slot." : "This species and all its progress will be gone for good."}</p><div class="row"><button class="btn" data-a="no">Keep</button><button class="btn bad" data-a="yes">${s.dead ? "Clear" : "Delete"}</button></div>`, { yes: () => { store.del(slotKey(i)); closeDlg(); renderMenu(); }, no: closeDlg });
@@ -2704,16 +2875,19 @@ function startSlot(i) { PLACE = null;
   const s = loadSlot(i); if (!s || s.dead) return;
   S = s; slot = i; W = newWorld(S); paused = false; parts = []; fx = []; saveT = 15; abilKeys = ""; ENC = null; IMP = null; CALL = false; cam.z = 1; cam.free = false; LUI_KEY = ""; $("imp").hidden = true;
   cam.x = W.player.x; cam.y = W.player.y; cam.s = Math.min(CW, CH) * .62 / viewR(W);
+  if (W.civ) { cam.x = W.home.x; cam.y = W.home.y; cam.free = true; }
+  $("lCall").style.display = "";
   show("play"); resize(); store.set("lf.last", i); hintT = 1; updateAbil();
 }
 function quitToMenu() { saveSlot(); W = null; S = null; slot = -1; closeDlg(); show("menu"); renderMenu(); }
 function pause() {
   if (!W || W.over) return; paused = true; saveSlot();
-  const c = cur(S), Tt = S.tribe, gl = W.tribe ? `<div class="lbl">Your tribe</div><p>👥 ${popAll(Tt)} of ${room(Tt)} · 🍖 ${fl0(Tt.res.food)} · 🪵 ${fl0(Tt.res.wood)} · 🪨 ${fl0(Tt.res.stone)}<br>Upkeep a minute: 🪵 ${upkeep(W).wood} 🪨 ${upkeep(W).stone} · stores hold ${storeCap(Tt)} of each<br>Tools: ${TOOLS.filter(t => Tt.tools[t.id]).map(t => t.ic + " " + t.n).join(", ") || "none yet"}</p>
+  const c = cur(S), Tt = S.tribe, Cv = S.civ, gl = W.civ ? `<div class="lbl">Your nation</div><p>👥 ${civPop(Cv)} people in ${Cv.towns.filter(tw => tw.own === 0).length} towns<br>${civLabel().split(" · ").slice(1).join(" · ")}</p><div class="lbl">Goals</div><p>${CIV_GOALS.map(g => (Cv.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><p style="font-size:.85rem;color:var(--muted)">This is the first part of the Civilisation stage. Rival nations, the sea, your own vehicles and the Sky Ship arrive in the next updates.</p>`
+    : W.tribe ? `<div class="lbl">Your tribe</div><p>👥 ${popAll(Tt)} of ${room(Tt)} · 🍖 ${fl0(Tt.res.food)} · 🪵 ${fl0(Tt.res.wood)} · 🪨 ${fl0(Tt.res.stone)}<br>Upkeep a minute: 🪵 ${upkeep(W).wood} 🪨 ${upkeep(W).stone} · stores hold ${storeCap(Tt)} of each<br>Tools: ${TOOLS.filter(t => Tt.tools[t.id]).map(t => t.ic + " " + t.n).join(", ") || "none yet"}</p>
       <div class="lbl">Neighbours</div><p>${Tt.rv.map(r => `<span style="color:${rvCol(r)}">●</span> ${esc(r.name)}: ${r.state === "joined" ? "joined you 💚" : r.state === "broken" ? "gave in to you" : r.kind === "open" ? `friendship ${fl0(r.mood)}/100${isAlly(r) ? " 🤝 ally" : ""}` : `spirit ${fl0(r.spirit)}/100`}`).join("<br>")}</p><p>💡 ${esc(tribeAdvice())}</p>` : W.sea ? `<div class="lbl">Sea goals</div><p>${SEA_GOALS.map(g => (c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p>`
     : W.land ? `<div class="lbl">Goals</div><p>${LAND_GOALS.map(g => (c.goals && c.goals[g.id] ? "✅ " : "○ ") + g.n).join("<br>")}</p><div class="lbl">Species on the island</div><p>${W.lsp.filter(L => (c.met || {})[L.i] || lspStatus(c, L.i)).map(L => { const st = lspStatus(c, L.i); return (st === "friend" ? "💚 " : st === "gone" ? "✖ " : "○ ") + esc(L.name) + ` (${LIFE[L.life]})` + (st ? "" : ` · won over ${c.friends[L.i] || 0}/${FRIEND_NEED}, hunted ${c.hunted[L.i] || 0}/${HUNT_NEED}`); }).join("<br>")}${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length ? `<br>? ${W.lsp.filter(L => !(c.met || {})[L.i] && !lspStatus(c, L.i)).length} species not met yet` : ""}<br>${W.epics.map(E => (c.epics[E.j] === "friend" ? "💚 " : c.epics[E.j] === "gone" ? "✖ " : "○ ") + esc(E.name) + " (giant)").join("<br>")}</p>
       <div class="lbl">Places found</div><p>${W.marks.filter(m => c.found[m.id]).map(m => "✦ " + m.name).join("<br>") || "None yet."}${W.marks.length - Object.keys(c.found).length ? `<br>${W.marks.length - Object.keys(c.found).length} more to discover` : ""}</p>` : "";
-  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${W.tribe ? "tribe stage" : TS(S)[c.tier].n + " size"} · ${W.tribe ? "" : W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : W.land ? `🧠 ${Math.floor(c.grow)}/100 · ` : ""}${fmtTime(S.time)} played</p>${gl}
+  dialog(`<h2>Paused</h2><p>${esc(S.name)} · ${W.civ ? "civilisation stage" : W.tribe ? "tribe stage" : TS(S)[c.tier].n + " size"} · ${W.tribe || W.civ ? "" : W.sea ? SEA.bands[bandAt(W.player.y)].n + " · " : W.land ? `🧠 ${Math.floor(c.grow)}/100 · ` : ""}${fmtTime(S.time)} played</p>${gl}
     <div class="row"><button class="btn primary" data-a="go">Carry on</button></div>
     <div class="row"><button class="btn" data-a="snd">Sound: ${opts.sound ? "on" : "off"}</button><button class="btn" data-a="help">How to play</button></div>
     <div class="row"><button class="btn" data-a="quit">Save and leave</button></div>`, {
@@ -2750,7 +2924,7 @@ function helpDlg() {
     <div class="row"><button class="btn primary" data-a="ok">Got it</button></div>`, { ok: () => { if (W && !W.over && view === "play") pause(); else closeDlg(); } }, () => { if (W && view === "play") pause(); else closeDlg(); });
 }
 $("pauseBtn").onclick = pause;
-$("lHome").onclick = () => { if (W && W.land) { ENC = null; landGoTo(W, W.home); cam.free = false; renderLandUI(true); } };
+$("lHome").onclick = () => { if (W && W.civ) { cam.x = W.home.x; cam.y = W.home.y; cam.free = true; return; } if (W && W.land) { ENC = null; landGoTo(W, W.home); cam.free = false; renderLandUI(true); } };
 $("lCall").onclick = () => { if (W && W.tribe) return tribeCall(); CALL = !CALL; if (CALL) toast("Now tap a creature to send your pack after it (or tap yourself to call them back)."); renderLandUI(true); };
 $("lZin").onclick = () => { cam.z = clamp((cam.z || 1) * 1.25, .5, 2.5); }; $("lZout").onclick = () => { cam.z = clamp((cam.z || 1) * .8, .5, 2.5); };
 
@@ -2790,6 +2964,12 @@ function hint(n, text, secs) { if (S.hints & (1 << n) || hintOn >= 0) return; $(
 function hints() {
   if (hintOn >= 0 && performance.now() > hintEnd && !(hintOn === 0 && moved < 30)) { hintOn = -1; $("hint").hidden = true; }
   if (!W) return; const P = W.player;
+  if (W.civ) {
+    if (W.t > 1) hint(23, "Your tribe is a nation now! Tap a town to choose what it builds. Drag to look around, pinch (or ＋ －) to zoom.", 10);
+    if (W.t > 40) hint(24, "Every town eats from one store, so keep building farms. Houses let towns grow; bigger towns have room for more buildings.", 10);
+    if (W.t > 90) hint(25, "Tap the 'Free land' posts to send settlers and found more towns.", 9);
+    return;
+  }
   if (W.tribe) {
     const T = S.tribe;
     if (W.t > 1) hint(16, "You're the Chief now! Your villagers work by themselves: tap 👥 Jobs to choose who does what.", 9);
@@ -2828,6 +3008,7 @@ function handleEvents() {
   const P = W.player;
   for (const e of W.ev) {
     if (W.tribe && tribeEvent(e)) continue;
+    if (W.civ && civEvent(e)) continue;
     if (e.t === "eat") { snd(e.ty === "plant" ? "eat" : "meat"); for (let i = 0; i < 4; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 40 * P.k, vy: (Math.random() - .5) * 40 * P.k, life: .5, col: `hsl(${e.hue} 90% 70%)`, r: 1.5 * P.k }); }
     else if (e.t === "hurt") { snd("hurt"); cam.shake = Math.min(12, cam.shake + 4 + e.f * 30); $("vig").style.opacity = Math.min(1, .3 + e.f * 3); }
     else if (e.t === "kill") { snd("kill"); for (let i = 0; i < 14; i++) parts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90 * e.k, vy: (Math.random() - .5) * 90 * e.k, life: .8, col: `hsl(${e.h} 70% 60%)`, r: 2.4 * e.k }); }
@@ -3054,16 +3235,16 @@ function drawMap() {
 }
 function hud() {
   const P = W.player, c = cur(S), T = TS(S)[c.tier];
-  $("hpFill").style.width = Math.max(0, P.hp / P.max * 100) + "%";
-  $("grFill").style.width = (W.tribe ? tribeProgress(S.tribe) * 100 : c.done ? 100 : c.grow / T.g * 100) + "%";
-  $("grBar").classList.toggle("ready", !W.tribe && (!!c.ready || (W.land && c.grow >= 90)));
-  const lbl = W.tribe ? tribeLabel() : W.land ? `${S.name} · 🧠 ${Math.floor(c.grow)}/100 · 💚 ${W.lsp.filter(L => lspStatus(c, L.i) === "friend").length} · ✖ ${W.lsp.filter(L => lspStatus(c, L.i) === "gone").length} · ${W.night ? "☾ night" : "☀ day"}`
+  $("hpFill").style.width = Math.max(0, P.hp / P.max * 100) + "%"; $("hpFill").parentNode.style.visibility = W.civ ? "hidden" : "";
+  $("grFill").style.width = (W.civ ? Object.keys(S.civ.goals).length / CIV_GOALS.length * 100 : W.tribe ? tribeProgress(S.tribe) * 100 : c.done ? 100 : c.grow / T.g * 100) + "%";
+  $("grBar").classList.toggle("ready", !W.tribe && !W.civ && (!!c.ready || (W.land && c.grow >= 90)));
+  const lbl = W.civ ? civLabel() : W.tribe ? tribeLabel() : W.land ? `${S.name} · 🧠 ${Math.floor(c.grow)}/100 · 💚 ${W.lsp.filter(L => lspStatus(c, L.i) === "friend").length} · ✖ ${W.lsp.filter(L => lspStatus(c, L.i) === "gone").length} · ${W.night ? "☾ night" : "☀ day"}`
     : W.sea ? (c.done ? `${S.name} · on land!` : c.ashore ? `${T.n} · swim up to the shore ⬆` : c.ready ? `${T.n} · fully grown: back to your nest ⌂` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5) · ${SEA.bands[bandAt(P.y)].n}`)
     : c.done ? `${S.name} · cell stage complete` : c.ready ? `${T.n} · fully grown: find your mate ❤` : `${S.name} · ${T.n} (size ${c.tier + 1} of 5)`;
-  $("dietBar").hidden = !(W.sea || W.land) || !!W.tribe; if (W.sea || W.land) $("dietMark").style.left = ((c.lean + 1) / 2 * 100) + "%";
+  $("dietBar").hidden = !(W.sea || W.land) || !!W.tribe || !!W.civ; if (W.sea || W.land) $("dietMark").style.left = ((c.lean + 1) / 2 * 100) + "%";
   if ($("grLabel").textContent !== lbl) $("grLabel").textContent = lbl;
-  const ic = W.tribe ? "👥" : "🧬"; if ($("dnaIc").textContent !== ic) $("dnaIc").textContent = ic;
-  const dn = W.tribe ? `${popAll(S.tribe)}/${room(S.tribe)}` : String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
+  const ic = W.tribe || W.civ ? "👥" : "🧬"; if ($("dnaIc").textContent !== ic) $("dnaIc").textContent = ic;
+  const dn = W.civ ? String(civPop(S.civ)) : W.tribe ? `${popAll(S.tribe)}/${room(S.tribe)}` : String(Math.floor(c.dna)); if ($("dnaN").textContent !== dn) $("dnaN").textContent = dn;
   $("abil").querySelectorAll(".ab").forEach(b => { const k = b.dataset.ab, cd = { dash: 3.5, poison: 7, zap: 8, ink: 8 }[k]; b.style.setProperty("--cd", Math.max(0, (P.ab[k] || 0) / cd)); });
   const v = $("vig"); if (+v.style.opacity > 0) v.style.opacity = Math.max(0, +v.style.opacity - .03);
   if (toastT && performance.now() > toastT) { $("toast").hidden = true; toastT = 0; }
@@ -3723,7 +3904,7 @@ function build3D() {
     const floor = new T.Mesh(new T.CircleGeometry(r, 16), mat(0xb8955e)); floor.rotation.x = -Math.PI / 2; floor.position.y = .05; g.add(floor);
     for (let i = 0; i < eggs; i++) { const e = new T.Mesh(new T.SphereGeometry(.22 * LK, 10, 8), new T.MeshLambertMaterial({ color: 0xfff5dc })); e.scale.y = 1.3; e.position.set(Math.cos(i * 2.1) * r * .4, .3, Math.sin(i * 2.1) * r * .4); e.castShadow = true; g.add(e); }
     g.traverse(o => { o.receiveShadow = true; if (o !== g) o.castShadow = true; }); g.position.set(x / LT, h, y / LT); g.visible = false; world.add(g); later(tileOf(x, y), () => { g.visible = true; }); return g; };
-  if (!W.tribe) nest(W.home.x, W.home.y, 1.15, 4, 0x8c5f32);
+  if (!W.tribe && !W.civ) nest(W.home.x, W.home.y, 1.15, 4, 0x8c5f32);
   for (const L of W.lsp) if (L.life === "home" && !L.tribe) G3.nests.push({ L, g: nest(L.x, L.y, 1.2, 2, 0x7a5530) });
   // the landmarks
   for (const mk of W.marks) { const g = mark3(mk, mat); if (!g) continue; g.position.set(mk.x / LT, h3(mk.x, mk.y), mk.y / LT); g.visible = false; g.traverse(o => { if (o.isMesh) { o.castShadow = !o.userData.noShadow; o.receiveShadow = true; } }); world.add(g); later(tileOf(mk.x, mk.y), () => { g.visible = true; }); }
@@ -4022,7 +4203,7 @@ function draw3D(dt) {
   // the camera looks down at an angle and follows you; +/- and pinching zoom it (further back for the tribe, closer in on land)
   const tx = cam.x / LT, tz = cam.y / LT, th = hAt3(tx, tz); cam.h = cam.h == null || !isFinite(cam.h) ? th : cam.h + (th - cam.h) * Math.min(1, dt * 4);
   { const q = c.quake, want = q && !q.made && (q.phase === "erupt" || (q.phase === "warn" && q.t > 20)) ? 1.45 : 1; cam.qz = (cam.qz || 1) + (want - (cam.qz || 1)) * Math.min(1, dt * .8); }
-  const D = (CH > CW ? 19 : 15) * (W.tribe ? 1.75 : .8 * cam.qz) / (cam.z || 1), pitch = .86, shk = cam.shake; cam.shake = Math.max(0, shk - dt * 30);
+  const D = (CH > CW ? 19 : 15) * (W.civ ? 3.4 : W.tribe ? 1.75 : .8 * cam.qz) / (cam.z || 1), pitch = .86, shk = cam.shake; cam.shake = Math.max(0, shk - dt * 30);
   cam3.position.set(tx + (Math.random() - .5) * shk * .02, cam.h + D * Math.sin(pitch), tz + D * Math.cos(pitch) + (Math.random() - .5) * shk * .02); cam3.lookAt(tx, cam.h + .5, tz);
   // light through the day: warm by day, orange in the evening, dark blue at night with a glow round you
   const n = nightLevel(), dd = c.day, eve = dd > .6 && dd < .76 ? Math.max(0, 1 - Math.abs(dd - .68) / .08) : 0;
@@ -4035,6 +4216,7 @@ function draw3D(dt) {
   G3.sea.position.y = -.05 + Math.sin(t * .8) * .03;
   for (const f of G3.anim) f(t);
   if (W.tribe) tribe3(t, dt);
+  if (W.civ) civ3(t, dt);
   // fruit on the plants near you
   G3.foodT = (G3.foodT || 0) - dt; if (G3.foodT <= 0) { G3.foodT = .4; const Z0 = new T.Matrix4().makeScale(0, 0, 0);
     for (const F of G3.food) { if (Math.abs(F.o.x - P.x) > LT * 40 || Math.abs(F.o.y - P.y) > LT * 40) continue; const want = W.seen[F.i] ? Math.min(6, Math.round(F.o.food / (F.o.max || 3) * 6)) : 0; if (want === F.shown) continue;
@@ -4042,7 +4224,7 @@ function draw3D(dt) {
     for (const N2 of G3.nests) N2.g.children.forEach((o, i) => { if (i > 1) o.visible = lspStatus(c, N2.L.i) !== "gone" && !(c.nests || {})[N2.L.i]; }); }
   // the creatures you can see
   const live = new Set();
-  for (const q of [...W.cr, P]) { if (!q.g || q.dead) continue; if (!(q === P || q.kind === "ally" || (q.kind !== "vill" && Math.hypot(q.x - P.x, q.y - P.y) < sr * 1.1) || (W.tribe && tribeVis(q)))) continue;
+  for (const q of [...W.cr, P]) { if (!q.g || q.dead || (W.civ && q === P)) continue; if (!(q === P || q.kind === "ally" || (q.kind !== "vill" && Math.hypot(q.x - P.x, q.y - P.y) < sr * 1.1) || (W.tribe && tribeVis(q)))) continue;
     let I = G3.cr.get(q); if (I && q === P && (G3.pk = (G3.pk || 0) - dt) <= 0) { G3.pk = .5; if (tpl3(q).key !== I.key) { dropC3(I); I = null; } }
     if (!I) { I = inst3(q); G3.cr.set(q, I); } live.add(q); anim3(I, t, dt); }
   for (const [q, I] of G3.cr) if (!live.has(q)) { dropC3(I); G3.cr.delete(q); }
@@ -4063,7 +4245,7 @@ function draw3D(dt) {
       G3.dest.position.copy(pts[pts.length - 1]); }
     G3.dest.scale.setScalar(1 + .15 * Math.sin(t * 6)); }
   { const I = G3.cr.get(P), pr = G3.R.getPixelRatio(), v = G3.v.set(P.x / LT, h3(P.x, P.y) + (I ? I.tp.bodyY * P.k / LT : .5), P.y / LT).project(cam3);
-    G3.cut.uCutP.value.set((v.x + 1) / 2 * CW * pr, (v.y + 1) / 2 * CH * pr); G3.cut.uCutZ.value = (v.z + 1) / 2 - .0005; G3.cut.uCutR.value = Math.max(70, (I ? I.tp.R : 20) * P.k * cam.s * 2.6) * pr; }
+    if (W.civ) G3.cut.uCutR.value = 0; else G3.cut.uCutP.value.set((v.x + 1) / 2 * CW * pr, (v.y + 1) / 2 * CH * pr); G3.cut.uCutZ.value = (v.z + 1) / 2 - .0005; G3.cut.uCutR.value = Math.max(70, (I ? I.tp.R : 20) * P.k * cam.s * 2.6) * pr; }
   G3.R.render(G3.scene, cam3);
   // how far a finger drag moves the view, for looking around
   { const a = P3(cam.x, cam.y, 0), b = P3(cam.x + LT, cam.y, 0), e = P3(cam.x, cam.y + LT, 0); cam.s = Math.max(.1, (b[0] - a[0]) / LT); PANK = Math.max(.2, (e[1] - a[1]) / LT / cam.s); }
@@ -4117,6 +4299,7 @@ function overlay3D(dt, t, night, sr) {
         ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.fillStyle = "#7CF2A0"; ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-10, -12); ctx.lineTo(-4, 0); ctx.lineTo(-10, 12); ctx.closePath(); ctx.fill(); ctx.restore();
         ctx.fillStyle = "#E8FFF0"; ctx.font = "800 13px Figtree, sans-serif"; ctx.textAlign = "center"; ctx.fillText(q.phase === "warn" ? "Get ready: safe ground" : "Run! Safe ground", tx, ey + 30); } } }
   if (W.tribe) tribeOverlay(t);
+  if (W.civ) civOverlay(t);
   // the corner map: only what you've explored
   const M = landMini(), mw = 90, mx0 = CW - mw - 12, my0 = $("pauseBtn").getBoundingClientRect().bottom + 14;
   ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(M.mini, mx0, my0, mw, mw); if (W.tribe) ctx.drawImage(ownMini(), mx0, my0, mw, mw); ctx.globalAlpha = .96; ctx.drawImage(M.fog, mx0, my0, mw, mw); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = true;
@@ -4128,6 +4311,7 @@ function overlay3D(dt, t, night, sr) {
       if (r > 0) { ctx.fillStyle = q.phase === "erupt" ? "rgba(255,90,30,.45)" : "rgba(40,30,25,.45)"; ctx.beginPath(); ctx.arc(a, b, r, 0, TAU); ctx.fill(); }
       if (q.phase !== "after") { const [g, h] = mm(Q.safe[0], Q.safe[1]); ctx.fillStyle = "#7CF2A0"; ctx.beginPath(); ctx.arc(g, h, 4 + Math.sin(t * 6), 0, TAU); ctx.fill(); ctx.font = "10px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🌋", a, b); } } }
   if (W.tribe) tribeMini(mx0, my0, mw, t);
+  if (W.civ) civMini(mx0, my0, mw);
   else { const [a, b] = mm(W.home.x, W.home.y); ctx.fillStyle = "#FFB7D5"; ctx.beginPath(); ctx.arc(a, b, 3, 0, TAU); ctx.fill(); }
   { const [a, b] = mm(P.x, P.y); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(a, b, 3, 0, TAU); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.stroke(); }
   if (cam.free) { const [a, b] = mm(cam.x, cam.y); ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.strokeRect(a - 6, b - 8, 12, 16); }
@@ -4135,6 +4319,168 @@ function overlay3D(dt, t, night, sr) {
 }
 function drawLoading3() { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = "#0c1430"; ctx.fillRect(0, 0, CW, CH); ctx.fillStyle = "#cfe0ff"; ctx.font = "800 16px Figtree, sans-serif"; ctx.textAlign = "center"; ctx.fillText("Loading the island…", CW / 2, CH / 2); }
 
+/* ---------- the Civilisation stage on screen ----------
+   civ3 draws the towns (one merged model each, rebuilt when the town changes), settlers' wagons, glowstone and ore;
+   civOverlay puts names and building progress on top; civTap opens a town's panel. The camera roams freely. */
+const CIV_COL = [0x7cf2c8, 0xff6b6b, 0xffc04a, 0xb48cff]; // you, then the three nations
+const RES_IC = { food: "🍖", wood: "🪵", stone: "🪨", ore: "🔩", glow: "💎", gold: "🪙" };
+const costTxt = c => Object.keys(c).map(r => RES_IC[r] + c[r]).join(" ");
+function civEvent(e) {
+  if (e.t === "cbuilt") { snd("grow"); toast(`${e.n}: ${CBD[e.k].ic} ${CBD[e.k].n} built.`); }
+  else if (e.t === "cfound") { snd("grow"); toast(`🎉 A new town: ${e.n}!`); }
+  else if (e.t === "starve") toast(`${e.n} is starving! Build more farms.`);
+  else if (e.t === "cgoal") { snd("relic"); toast(`Goal done: ${e.n}! +${e.g} ${RES_IC.gold}`); LUI_KEY = ""; }
+  else return false; return true;
+}
+function civLabel() { const C = S.civ, R = C.res; return `${S.name} · ${RES_IC.food} ${fl0(R.food)} ${RES_IC.wood} ${fl0(R.wood)} ${RES_IC.stone} ${fl0(R.stone)} ${RES_IC.ore} ${fl0(R.ore)} ${RES_IC.glow} ${fl0(R.glow)} ${RES_IC.gold} ${fl0(R.gold)}`; }
+function civTownModel(tw) {
+  const T = T3, s = W.sites[tw.site], L = [], V = (x, y, z) => new T.Vector3(x, y, z), cx = s.x / LT, cz = s.y / LT, h0 = hAt3(cx, cz);
+  const at = (dx, dz, dy) => V(dx, hAt3(cx + dx, cz + dz) - h0 + (dy || 0), dz), C = (c) => new T.Color(c);
+  const box = (p, sx, sy, sz, c, ry) => L.push([new T.BoxGeometry(sx, sy, sz), new T.Matrix4().compose(p.clone().add(V(0, sy / 2, 0)), new T.Quaternion().setFromEuler(new T.Euler(0, ry || 0, 0)), V(1, 1, 1)), C(c)]);
+  const roof = (p, r, hgt, c, ry, seg) => L.push([new T.ConeGeometry(r, hgt, seg || 4), new T.Matrix4().compose(p.clone().add(V(0, hgt / 2, 0)), new T.Quaternion().setFromEuler(new T.Euler(0, (ry || 0) + Math.PI / 4, 0)), V(1, 1, 1)), C(c)]);
+  const cyl = (p, r1, r2, hgt, c, n) => L.push([new T.CylinderGeometry(r1, r2, hgt, n || 8), new T.Matrix4().makeTranslation(p.x, p.y + hgt / 2, p.z), C(c)]);
+  const mine = tw.own === 0, team = CIV_COL[tw.own] || 0xffffff;
+  // the square, the hall and the flag
+  L.push([new T.CylinderGeometry(1.25, 1.35, .08, 20), new T.Matrix4().makeTranslation(0, at(0, 0).y + .02, 0), C(0xcdb98a)]);
+  const big = tw.cap ? 1.25 : 1; box(at(0, 0), .9 * big, .55 * big, .8 * big, 0xeadfc8); roof(at(0, 0, .55 * big), .75 * big, .5 * big, team);
+  cyl(at(.55, .4), .03, .03, 1.5, 0x3a2a1a, 5); L.push([new T.BoxGeometry(.45, .28, .03), new T.Matrix4().makeTranslation(.78, at(.55, .4).y + 1.32, .4), C(team)]);
+  // the buildings, round the square
+  tw.b.forEach((b, k) => {
+    const far = b.k === "farm", a = k * 2.39996 + tw.site, r = (far ? 3.1 : 1.95) + (k % 3) * .45, p = at(Math.cos(a) * r, Math.sin(a) * r), ry = -a;
+    if (!b.done) { for (const [dx, dz] of [[-.3, -.3], [.3, -.3], [-.3, .3], [.3, .3]]) cyl(p.clone().add(V(dx, 0, dz)), .03, .03, .7, 0x8a6a3e, 4); box(p, .7, .06, .7, 0xb08850); return; }
+    switch (b.k) {
+      case "house": for (const [dx, dz] of [[-.22, 0], [.24, .12]]) { const q = p.clone().add(V(dx, 0, dz)); box(q, .38, .3, .34, 0xf2e6cf, ry); roof(q.clone().add(V(0, .3, 0)), .33, .28, 0xb5523b, ry); } break;
+      case "farm": for (let row = -2; row <= 2; row++) L.push([new T.BoxGeometry(1.3, .06, .16), new T.Matrix4().compose(p.clone().add(V(Math.sin(a) * row * .22, .03, -Math.cos(a) * row * .22)), new T.Quaternion().setFromEuler(new T.Euler(0, ry, 0)), V(1, 1, 1)), C(row % 2 ? 0xd8b84a : 0x7fae3a)]);
+        box(p.clone().add(V(Math.cos(a) * .8, 0, Math.sin(a) * .8)), .32, .3, .28, 0xa0412e, ry); break;
+      case "mill": box(p, .55, .35, .4, 0x9a6a3e, ry); L.push([new T.TorusGeometry(.28, .05, 6, 14), new T.Matrix4().compose(p.clone().add(V(0, .45, .25)), new T.Quaternion(), V(1, 1, 1)), C(0x6b4a2e)]);
+        for (let n = 0; n < 3; n++) L.push([new T.CylinderGeometry(.06, .06, .5, 6), new T.Matrix4().compose(p.clone().add(V(-.45, .06 + n * .1, -.1 + (n % 2) * .1)), new T.Quaternion().setFromEuler(new T.Euler(Math.PI / 2, 0, 0)), V(1, 1, 1)), C(0x7a5530)]); break;
+      case "quarry": cyl(p, .5, .4, .06, 0x7a746c, 10); for (let n = 0; n < 4; n++) box(p.clone().add(V((n % 2 - .5) * .35, .06, (Math.floor(n / 2) - .5) * .3)), .2, .16, .2, 0xb4ada4); break;
+      case "mine": L.push([new T.TorusGeometry(.26, .08, 6, 10, Math.PI), new T.Matrix4().compose(p, new T.Quaternion().setFromEuler(new T.Euler(0, ry, 0)), V(1, 1, 1)), C(0x5a4632)]); box(p.clone().add(V(0, 0, 0)), .4, .02, .4, 0x2a2018); box(p.clone().add(V(.45, 0, 0)), .22, .14, .16, 0x8a4a2a); break;
+      case "glow": box(p, .5, .3, .4, 0x6a5a8a, ry); roof(p.clone().add(V(0, .3, 0)), .38, .25, 0x4a3a6a, ry); break;
+      case "market": for (let n = 0; n < 3; n++) { const q = p.clone().add(V((n - 1) * .36, 0, (n % 2) * .2)); cyl(q, .02, .02, .3, 0x6b4a2e, 4); roof(q.clone().add(V(0, .3, 0)), .2, .2, [0xe85d5d, 0xf2c94c, 0x5db0e8][n], 0, 6); } break;
+      case "temple": box(p, .8, .14, .8, 0xd8cfb8); box(p.clone().add(V(0, .14, 0)), .6, .14, .6, 0xe2d8c2); box(p.clone().add(V(0, .28, 0)), .4, .2, .4, 0xece4d0); roof(p.clone().add(V(0, .48, 0)), .22, .2, 0xffd23d); break;
+      case "barracks": box(p, .9, .28, .4, 0x8a7a64, ry); roof(p.clone().add(V(0, .28, 0)), .55, .2, 0x5a4a3a, ry); cyl(p.clone().add(V(.5, 0, .3)), .02, .02, .7, 0x3a2a1a, 4); box(p.clone().add(V(.6, .55, .3)), .2, .12, .02, 0xd84a4a); break;
+      case "wall": for (let n = 0; n < 20; n++) { const w = n / 20 * TAU; L.push([new T.BoxGeometry(.95, .3, .14), new T.Matrix4().compose(at(Math.cos(w) * 3.7, Math.sin(w) * 3.7, .12), new T.Quaternion().setFromEuler(new T.Euler(0, -w + Math.PI / 2, 0)), V(1, 1, 1)), C(0xa8a094)]); } break;
+      case "dock": { let bx = 0, bz = 0, bd = 1e9; for (let w = 0; w < 16; w++) { const ang = w / 16 * TAU; for (let rr = 2; rr < 6; rr += .5) if (tileAt(W, (cx + Math.cos(ang) * rr) * LT, (cz + Math.sin(ang) * rr) * LT) === T_SEA) { if (rr < bd) { bd = rr; bx = Math.cos(ang); bz = Math.sin(ang); } break; } }
+        for (let n = 0; n < 5; n++) L.push([new T.BoxGeometry(.3, .05, .5), new T.Matrix4().makeTranslation(bx * (bd - .6 + n * .45), Math.max(-.1, at(bx * (bd - .6 + n * .45), bz * (bd - .6 + n * .45)).y) + .12, bz * (bd - .6 + n * .45)), C(0x8a6a3e)]); break; }
+    }
+  });
+  const g = new T.Group(), mesh = new T.Mesh(merge3(L), new T.MeshLambertMaterial({ vertexColors: true, flatShading: true })); mesh.castShadow = mesh.receiveShadow = true; g.add(mesh);
+  if (tw.b.some(b => b.k === "glow" && b.done)) { const cr = new T.Mesh(new T.OctahedronGeometry(.18, 0), new T.MeshBasicMaterial({ color: 0xd9a8ff })); const k = tw.b.findIndex(b => b.k === "glow" && b.done), a = k * 2.39996 + tw.site, r = 1.95 + (k % 3) * .45; cr.position.copy(at(Math.cos(a) * r, Math.sin(a) * r, .8)); cr.userData.spin = 1; g.add(cr); }
+  g.position.set(cx, h0, cz); g.scale.set(1.45, 1.45, 1.45); return g; // drawn a little larger than life, so towns read from far off
+}
+function civ3(t, dt) {
+  const T = T3, C = S.civ;
+  if (!G3.cv || G3.cv.W !== W) {
+    if (G3.cv) G3.scene.remove(G3.cv.g);
+    const g = new T.Group(), gm = new T.MeshStandardMaterial({ color: 0xc89cff, emissive: 0x8040d0, emissiveIntensity: .8, roughness: .2, flatShading: true }), om = new T.MeshLambertMaterial({ color: 0x8a5a3a, flatShading: true }), spots = [];
+    for (const o of W.glows) { const s = new T.Group(); for (let k = 0; k < 5; k++) { const c = new T.Mesh(new T.ConeGeometry(.16 + (k % 2) * .08, .7 + (k * 37 % 5) * .15, 5), gm); c.position.set(Math.cos(k * 1.3) * .35, .35, Math.sin(k * 1.3) * .35); c.rotation.set((k % 3 - 1) * .3, 0, (k % 2 - .5) * .4); s.add(c); } s.position.set(o.x / LT, h3(o.x, o.y), o.y / LT); s.userData.o = o; g.add(s); spots.push(s); }
+    for (const o of W.ores) { const s = new T.Group(); for (let k = 0; k < 4; k++) { const c = new T.Mesh(new T.DodecahedronGeometry(.22 + (k % 2) * .1, 0), om); c.position.set(Math.cos(k * 1.7) * .3, .15, Math.sin(k * 1.7) * .3); s.add(c); } s.position.set(o.x / LT, h3(o.x, o.y), o.y / LT); s.userData.o = o; g.add(s); spots.push(s); }
+    const posts = []; for (const s of W.sites) { const p = new T.Group(); const pole = new T.Mesh(new T.CylinderGeometry(.03, .03, .9, 5), om); pole.position.y = .45; const fl = new T.Mesh(new T.BoxGeometry(.4, .22, .02), new T.MeshLambertMaterial({ color: 0xf2ead8 })); fl.position.set(.2, .78, 0); p.add(pole, fl); p.position.set(s.x / LT, h3(s.x, s.y), s.y / LT); p.userData.s = s; g.add(p); posts.push(p); }
+    G3.scene.add(g); G3.cv = { W, g, towns: new Map(), spots, posts, gm, wag: new Map() };
+  }
+  const V = G3.cv;
+  for (const s of V.spots) s.visible = !!W.seen[tileI(s.userData.o.x, s.userData.o.y)];
+  V.gm.emissiveIntensity = .6 + .3 * Math.sin(t * 2.5);
+  for (const p of V.posts) { const s = p.userData.s; p.visible = !!W.seen[tileI(s.x, s.y)] && !C.towns.some(tw => tw.site === s.n); }
+  for (const tw of C.towns) {
+    const s = W.sites[tw.site], seen = !!W.seen[tileI(s.x, s.y)]; let e = V.towns.get(tw);
+    if (e && e.rev !== tw.rev) { V.g.remove(e.g); e.g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); e = null; }
+    if (!e) { e = { g: civTownModel(tw), rev: tw.rev }; V.g.add(e.g); V.towns.set(tw, e); }
+    e.g.visible = seen; e.g.traverse(o => { if (o.userData.spin) o.rotation.y = t * 1.5; });
+  }
+  // settlers on the road
+  const live = new Set();
+  for (const wg of C.wagons) {
+    let m = V.wag.get(wg); if (!m) { const L = [[new T.BoxGeometry(.5, .22, .3), new T.Matrix4().makeTranslation(0, .3, 0), new T.Color(0x9a6a3e)], [new T.CylinderGeometry(.3, .3, .5, 10, 1, false, 0, Math.PI), new T.Matrix4().compose(new T.Vector3(0, .42, 0), new T.Quaternion().setFromEuler(new T.Euler(0, 0, Math.PI / 2)), new T.Vector3(1, 1, 1)), new T.Color(0xf2ead8)]];
+      for (const [dx, dz] of [[-.18, .17], [.18, .17], [-.18, -.17], [.18, -.17]]) L.push([new T.CylinderGeometry(.1, .1, .04, 10), new T.Matrix4().compose(new T.Vector3(dx, .1, dz), new T.Quaternion().setFromEuler(new T.Euler(Math.PI / 2, 0, 0)), new T.Vector3(1, 1, 1)), new T.Color(0x5a3a1e)]);
+      m = new T.Mesh(merge3(L), new T.MeshLambertMaterial({ vertexColors: true, flatShading: true })); m.castShadow = true; V.g.add(m); V.wag.set(wg, m); }
+    live.add(wg); const [x, y, a] = civAlong(wg); m.position.set(x / LT, h3(x, y), y / LT); m.scale.setScalar(1.8); m.rotation.y = -a + Math.sin(t * 8) * .03;
+  }
+  for (const [wg, m] of V.wag) if (!live.has(wg)) { V.g.remove(m); m.geometry.dispose(); m.material.dispose(); V.wag.delete(wg); }
+}
+/* Where a wagon is along its road, and which way it faces. */
+function civAlong(wg) {
+  const P = wg.pts; let tot = 0; const seg = []; for (let k = 1; k < P.length; k++) { const l = Math.hypot(P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1]); seg.push(l); tot += l; }
+  let d = tot * clamp(wg.t / wg.dur, 0, 1); for (let k = 1; k < P.length; k++) { if (d <= seg[k - 1] || k === P.length - 1) { const f = seg[k - 1] ? Math.min(1, d / seg[k - 1]) : 1, a = P[k - 1], b = P[k]; return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, Math.atan2(b[1] - a[1], b[0] - a[0])]; } d -= seg[k - 1]; }
+  return [P[0][0], P[0][1], 0];
+}
+function civOverlay(t) {
+  const C = S.civ, lbl = (x, y, up, txt, col, size) => { const [X, Y, ok] = P3(x, y, up); if (!ok || X < -80 || X > CW + 80 || Y < -30 || Y > CH + 30) return null; ctx.fillStyle = col; ctx.font = `800 ${size}px Figtree, sans-serif`; ctx.textAlign = "center"; ctx.fillText(txt, X, Y); return [X, Y]; };
+  ctx.shadowColor = "rgba(0,0,0,.85)"; ctx.shadowBlur = 4;
+  for (const tw of C.towns) {
+    const s = W.sites[tw.site]; if (!W.seen[tileI(s.x, s.y)]) continue; const col = "#" + (CIV_COL[tw.own] || 0xffffff).toString(16).padStart(6, "0");
+    const p = lbl(s.x, s.y, 95, `${tw.cap ? "★ " : ""}${tw.name} · 👥 ${tw.pop}`, col, 14);
+    const b = tw.b.find(x => !x.done); if (p && b) { lbl(s.x, s.y, 95, "", col, 1); ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(p[0] - 32, p[1] + 5, 64, 5); ctx.fillStyle = "#FFE08A"; ctx.fillRect(p[0] - 32, p[1] + 5, 64 * clamp(b.prog / CBD[b.k].work, 0, 1), 5); lbl(s.x, s.y, 95, "", col, 1); ctx.font = "12px sans-serif"; ctx.fillText(CBD[b.k].ic, p[0] - 42, p[1] + 11); }
+  }
+  for (const s of W.sites) if (W.seen[tileI(s.x, s.y)] && !C.towns.some(tw => tw.site === s.n)) lbl(s.x, s.y, 50, C.wagons.some(g => g.to === s.n) ? "Settlers on the way…" : "Free land", "rgba(255,245,220,.9)", 12);
+  ctx.shadowBlur = 0;
+}
+function civMini(mx0, my0, mw) {
+  const C = S.civ, mm = (x, y) => [mx0 + x / (LN * LT) * mw, my0 + y / (LN * LT) * mw];
+  for (const tw of C.towns) { const s = W.sites[tw.site]; if (!W.seen[tileI(s.x, s.y)]) continue; const [a, b] = mm(s.x, s.y); ctx.fillStyle = "#" + (CIV_COL[tw.own] || 0xffffff).toString(16).padStart(6, "0"); ctx.beginPath(); ctx.arc(a, b, tw.cap ? 3.5 : 2.6, 0, TAU); ctx.fill(); }
+  for (const o of W.glows) if (W.seen[tileI(o.x, o.y)]) { const [a, b] = mm(o.x, o.y); ctx.fillStyle = "#D9A8FF"; ctx.fillRect(a - 1.5, b - 1.5, 3, 3); }
+  if (cam.free) { const [a, b] = mm(cam.x, cam.y); ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.strokeRect(a - 8, b - 10, 16, 20); }
+}
+function renderCivUI(force) {
+  const C = S.civ, key = [C.towns.filter(tw => tw.own === 0).length, Object.keys(C.goals).length].join("|");
+  $("lCall").style.display = "none";
+  if (key === LUI_KEY && !force) return; LUI_KEY = key;
+  $("lCard").hidden = true;
+  $("lBar").innerHTML = `<button class="lb" data-c="towns">🏛️<small>Towns</small></button><button class="lb" data-c="goals">🎯<small>Goals ${Object.keys(C.goals).length}/${CIV_GOALS.length}</small></button>`;
+  $("lBar").querySelectorAll("[data-c]").forEach(b => b.onclick = () => b.dataset.c === "towns" ? civTownsDlg() : civGoalsDlg());
+}
+function civTap(sx, sy, wx, wy) {
+  const C = S.civ; let best = null, bd = LT * 3.2;
+  for (const tw of C.towns) { const s = W.sites[tw.site]; if (!W.seen[tileI(s.x, s.y)]) continue; const d = Math.hypot(s.x - wx, s.y - wy); if (d < bd) { bd = d; best = tw; } }
+  if (!best) for (const tw of C.towns) { const s = W.sites[tw.site]; if (!W.seen[tileI(s.x, s.y)]) continue; const [X, Y] = P3(s.x, s.y, 40), d = Math.hypot(X - sx, Y - sy); if (d < 60 && d < bd) { bd = d; best = tw; } }
+  if (best) return civTownDlg(best);
+  for (const s of W.sites) if (W.seen[tileI(s.x, s.y)] && !C.towns.some(tw => tw.site === s.n) && Math.hypot(s.x - wx, s.y - wy) < LT * 2.5) return civSiteDlg(s);
+  for (const o of W.glows) if (W.seen[tileI(o.x, o.y)] && Math.hypot(o.x - wx, o.y - wy) < LT * 1.5) return toast("💎 Glowstone! A town close by can build a Glowstone works here.");
+  for (const o of W.ores) if (W.seen[tileI(o.x, o.y)] && Math.hypot(o.x - wx, o.y - wy) < LT * 1.5) return toast("🔩 Ore in the rocks. A town close by can build a Mine here.");
+}
+function civTownDlg(tw) {
+  paused = true; const C = S.civ;
+  if (tw.own !== 0) { dialog(`<h2>${esc(tw.name)}</h2><p>A town of another nation. 👥 ${tw.pop}. Rival nations come to life in a later update.</p><div class="row"><button class="btn primary" data-a="ok">OK</button></div>`, { ok: closeTD }, closeTD); return; }
+  const cnt = {}; for (const b of tw.b) if (b.done) cnt[b.k] = (cnt[b.k] || 0) + 1;
+  const site = tw.b.find(b => !b.done), mood = civMood(C, tw), n = tw.near;
+  const has = Object.keys(cnt).map(k => `${CBD[k].ic} ${CBD[k].n}${cnt[k] > 1 ? " ×" + cnt[k] : ""}`).join(" · ") || "Nothing yet";
+  const around = [n.grass > 20 ? "🌾 good farmland" : "", n.forest > 15 ? "🌲 forest" : "", n.rock > 8 ? "⛰️ hills" : "", n.coast ? "🌊 the sea" : "", n.ore ? "🔩 ore" : "", n.glow ? "💎 glowstone" : ""].filter(Boolean).join(", ") || "not much";
+  const acts = { ok: closeTD }, rows = CB.map(B => { const why = civCan(C, tw, B.id); acts["b_" + B.id] = () => { const e = civBuild(W, tw, B.id); if (e) toast(e); else snd("eat"); civTownDlg(tw); };
+    return `<button class="btn small cbtn${why ? " off" : ""}" data-a="b_${B.id}" title="${esc(B.d)}"><b>${B.ic} ${B.n}</b><span>${costTxt(B.c)}</span>${why && why !== "Not yours" ? `<em>${esc(why)}</em>` : `<em>${esc(B.d)}</em>`}</button>`; }).join("");
+  const free = civFree(W, W.sites[tw.site].isle);
+  if (free.length) acts.settle = () => civSettleDlg(tw);
+  dialog(`<h2>${tw.cap ? "★ " : ""}${esc(tw.name)}</h2><p>👥 ${tw.pop} of ${civCap(tw)} · ${mood >= 70 ? "😊 happy" : mood >= 30 ? "🙂 content" : "😠 unhappy: working at half speed"} · workplaces ${civUsed(tw)} of ${civSlots(tw)}</p>
+    <p style="font-size:.85rem">${has}${site ? `<br>🔨 Building: ${CBD[site.k].ic} ${CBD[site.k].n} (${fl0(site.prog / CBD[site.k].work * 100)}%)` : ""}<br>Round the town: ${around}.</p>
+    <div class="cgrid">${rows}</div>
+    <div class="row">${free.length ? `<button class="btn" data-a="settle">🛻 Send settlers</button>` : ""}<button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+}
+function civSettleDlg(tw) {
+  const free = civFree(W, W.sites[tw.site].isle), acts = { back: () => civTownDlg(tw) }, from = W.sites[tw.site];
+  free.forEach(s => { acts["s_" + s.n] = () => { const e = civSettle(W, tw, s.n); if (e) { toast(e); return; } toast(`Settlers set off for ${s.name}.`); closeTD(); }; });
+  dialog(`<h2>Send settlers</h2><p>${SETTLE.pop} people leave ${esc(tw.name)} with 🍖 ${SETTLE.food} and 🪵 ${SETTLE.wood} to found a new town. ${tw.pop < SETTLE.min ? `(The town needs ${SETTLE.min} people first.)` : ""}</p>
+    <div class="cgrid">${free.map(s => `<button class="btn small cbtn" data-a="s_${s.n}"><b>${esc(s.name)}</b><span>${Math.round(Math.hypot(s.x - from.x, s.y - from.y) / LT)} tiles away</span></button>`).join("")}</div>
+    <div class="row"><button class="btn" data-a="back">Back</button></div>`, acts, () => civTownDlg(tw));
+}
+function civSiteDlg(s) {
+  paused = true; const C = S.civ, from = C.towns.filter(tw => tw.own === 0 && W.sites[tw.site].isle === s.isle).sort((a, b) => b.pop - a.pop)[0];
+  const acts = { ok: closeTD }; if (from) acts.go = () => { const e = civSettle(W, from, s.n); if (e) toast(e); else toast(`Settlers set off from ${from.name}.`); closeTD(); };
+  dialog(`<h2>${esc(s.name)}</h2><p>Free land for a new town. ${from ? `Send settlers from ${esc(from.name)}: ${SETTLE.pop} people, 🍖 ${SETTLE.food} and 🪵 ${SETTLE.wood}.` : "It's on another island: you'll need boats (coming in a later update)."}</p>
+    <div class="row">${from ? `<button class="btn" data-a="go">🛻 Send settlers</button>` : ""}<button class="btn primary" data-a="ok">OK</button></div>`, acts, closeTD);
+}
+function civTownsDlg() {
+  paused = true; const C = S.civ, mine = C.towns.filter(tw => tw.own === 0), acts = { ok: closeTD };
+  mine.forEach(tw => { acts["t_" + tw.id] = () => { const s = W.sites[tw.site]; cam.x = s.x; cam.y = s.y; cam.free = true; civTownDlg(tw); }; });
+  dialog(`<h2>Your towns</h2><div class="cgrid">${mine.map(tw => { const b = tw.b.find(x => !x.done); return `<button class="btn small cbtn" data-a="t_${tw.id}"><b>${tw.cap ? "★ " : ""}${esc(tw.name)}</b><span>👥 ${tw.pop} of ${civCap(tw)}${b ? ` · 🔨 ${CBD[b.k].ic}` : ""}</span></button>`; }).join("")}</div>
+    <p style="font-size:.85rem">${C.wagons.length ? `🛻 ${C.wagons.length} wagon${C.wagons.length > 1 ? "s" : ""} of settlers on the road. ` : ""}Everyone eats from one store: keep enough farms. Stores hold up to ${150 + mine.length * 60} of each thing.</p>
+    <div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeTD);
+}
+function civGoalsDlg() {
+  paused = true; const C = S.civ;
+  dialog(`<h2>Goals</h2><p>${CIV_GOALS.map(g => (C.goals[g.id] ? "✅ " : "○ ") + g.n + ` <span style="color:var(--muted)">(${RES_IC.gold} ${g.g})</span>`).join("<br>")}</p>
+    <p style="font-size:.85rem;color:var(--muted)">Coming in the next updates: the three rival nations, conquest, persuasion and trade, boats and the sea, your own vehicle designs, and the Sky Ship.</p>
+    <div class="row"><button class="btn primary" data-a="ok">OK</button></div>`, { ok: closeTD }, closeTD);
+}
 /* tapping, dragging to look around, pinching to zoom */
 const LPT = { pts: new Map(), pan: false, sx: 0, sy: 0, cx: 0, cy: 0, pinch: 0, z0: 1 };
 function landDown(e) {
@@ -4154,6 +4500,7 @@ function landUp(e) {
   if (!LPT.pts.size) { if (!LPT.pan && !paused && !IMP && !W.over) landTap(e.clientX, e.clientY); LPT.pan = false; }
 }
 function landTap(sx, sy) {
+  if (W.civ) { const [wx0, wy0] = g3on() ? ground3(sx, sy) : [(sx - CW / 2) / cam.s + cam.x, (sy - CH / 2) / (cam.s * TILT) + cam.y]; return civTap(sx, sy, wx0, wy0); }
   const P = W.player, s = cam.s, on3 = g3on(), toS = on3 ? (x, y) => P3(x, y, 0) : (x, y) => [(x - cam.x) * s + CW / 2, (y - cam.y) * s * TILT + CH / 2], [wx, wy] = on3 ? ground3(sx, sy) : [(sx - CW / 2) / s + cam.x, (sy - CH / 2) / (s * TILT) + cam.y], sr = sightR(W);
   let best = null, bd = 1e9; // creatures are picked where they're drawn (standing up), not where their feet are
   if (on3) for (const q of [...W.cr, P]) { const I3 = G3.cr.get(q); if (!I3 || !I3.grp.visible) continue; // the whole standing shape, from its feet to the top of its back
@@ -4177,6 +4524,7 @@ function threatened() { const P = W.player; return W.cr.find(q => q.kind === "np
 function renderLandUI(force) {
   const box = $("lui"); if (!W || !W.land || view !== "play") { box.hidden = true; return; }
   box.hidden = !!IMP; if (IMP) return;
+  if (W.civ) return renderCivUI(force);
   if (W.tribe) return renderTribeUI(force);
   const P = W.player, c = cur(S);
   if (ENC && (ENC.T.dead || !W.cr.includes(ENC.T))) ENC = null;
@@ -4520,8 +4868,8 @@ function tribeDone() {
   paused = true; const T = S.tribe, N = TRIBE_NATURES[S.tribeNature] || TRIBE_NATURES.shrewd;
   dialog(`<h2>A tribe of many camps!</h2><p>${esc(S.name)} have grown from one camp fire into a tribe of ${W.fires.filter(F => F.o === 1).length} settlements.</p>
     <div class="stats"><div>Nature<b>${N[0]}</b></div><div>Time<b>${fmtTime(S.time)}</b></div><div>People<b>${popAll(T)}</b></div><div>Tools<b>${Object.keys(T.tools).length} of ${TOOLS.length}</b></div></div>
-    <p>${N[1]}</p><p>The Civilisation stage is coming in a later update. Your tribe is saved and will carry on from here. Until then, you can keep playing.</p>
-    <div class="row"><button class="btn" data-a="menu">Menu</button><button class="btn primary" data-a="go">Keep playing</button></div>`, { menu: quitToMenu, go: resume }, resume);
+    <p>${N[1]}</p><p>Your camps become towns, and your tribe a nation. Next: the Civilisation stage.</p>
+    <div class="row"><button class="btn" data-a="go">Keep playing</button><button class="btn primary" data-a="civ">Found a nation ▶</button></div>`, { go: resume, civ: () => { goToCiv(S); saveSlot(); const i = slot; closeDlg(); startSlot(i); } }, resume);
 }
 /* ---- the camp in 3D ---- */
 function terr3() {
