@@ -665,6 +665,17 @@
     {
       "id": 58,
       "type": "features",
+      "headline": "Life: fly over planets, and new-look enemies",
+      "details": [
+        "🔭 Fly over: from a planet's card, swoop down low over its surface. You'll see its animals roaming: tap one to beam it up for your collection.",
+        "📡 Sweep the ground as you fly over to find hidden riches, then tap them to harvest goods. Harvested patches grow back after a while.",
+        "Space wars are now fought by your war fleet, out of sight. Build warships (copies of your own ship, so a better design makes a stronger fleet), and enemy worlds fall one by one if your fleet is stronger.",
+        "Every alien empire and the pirates now fly ships of their own design, and the rival nations in the Civilisation stage travel in their own carts and ships."
+      ]
+    },
+    {
+      "id": 59,
+      "type": "features",
       "headline": "Lee Lee's Kitchen: weekdays, weather, bookings, kids and a bar",
       "details": [
         "Every day now has a weekday and weather. Weekends are busiest, sunny days sell cold drinks and salads, rainy and cold days sell hot drinks, soups and pies.",

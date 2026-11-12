@@ -2607,9 +2607,9 @@ function civSend(W, o, kind, to, vi) {
     if (!src) return why || noSrc;
     const c = Object.assign({}, V.s.c); delete c.cr; for (const r in U.c) c[r] = (c[r] || 0) + (r === "gold" && kind === "army" && hasPol(C, "draft") ? U.c[r] * .7 : U.c[r]);
     for (const r in c) if ((C.res[r] || 0) < c[r]) return `Not enough ${r} (with the vehicle: ${Object.keys(c).map(k => k + " " + Math.round(c[k])).join(", ")})`; for (const r in c) C.res[r] -= c[r];
-  } else { src = civSource(W, o, kind, tx, ty, isle); if (!src) return noSrc; const n = C.nat[o], cost = kind === "army" ? 70 : 35; if (n.gold < cost) return "No gold"; n.gold -= cost; }
+  } else { src = civSource(W, o, kind, tx, ty, isle); if (!src) return noSrc; const n = C.nat[o], cost = kind === "army" ? 70 : 35; if (n.gold < cost) return "No gold"; n.gold -= cost; const d = natDesign(W, o, kind, W.sites[src.site].isle !== isle); V = { d }; }
   const s = W.sites[src.site], d = Math.hypot(tx - s.x, ty - s.y), f = o === 0 ? vJob(V.s, kind) : natVF(C), sp = o === 0 ? vSpeedF(V.s) : 1;
-  C.units.push({ id: C.nid++, own: o, k: kind, from: src.id, to, x0: s.x, y0: s.y, x1: tx, y1: ty, t: 0, dur: Math.max(6, d / (U.sp * sp)), str: kind === "army" ? civArmyStr(C, o) * f : 0, st: "go", sie: 0, f, tough: o === 0 ? vTough(V.s) : 1, dv: o === 0 ? { k: V.d.k, len: V.d.len, p: V.d.p } : null }); return "";
+  C.units.push({ id: C.nid++, own: o, k: kind, from: src.id, to, x0: s.x, y0: s.y, x1: tx, y1: ty, t: 0, dur: Math.max(6, d / (U.sp * sp)), str: kind === "army" ? civArmyStr(C, o) * f : 0, st: "go", sie: 0, f, tough: o === 0 ? vTough(V.s) : 1, dv: { k: V.d.k, len: V.d.len, p: V.d.p } }); return "";
 }
 function unitXY(u) { const f = clamp(u.t / u.dur, 0, 1); return [u.x0 + (u.x1 - u.x0) * f, u.y0 + (u.y1 - u.y0) * f]; }
 /* Influence: faith from missionaries, culture from troupes; the town's own temples and theatres push back. */
@@ -2842,6 +2842,14 @@ function vBest(W, kind, cross) {
   C.vd.forEach((d, i) => { if (vFits(W, 0, d, cross)) return; const s = vStats(d), sc = (kind === "settle" ? 1 + s.cargo / 20 : vJob(s, kind)) * (.6 + vSpeedF(s) * .4) / (kind === "army" ? vTough(s) : 1); if (sc > bs) { bs = sc; b = i; } });
   return b;
 }
+/* The nations' own vehicles: built for the job (cannons for armies, bells for missionaries, stages for troupes) with their own look. */
+function natDesign(W, o, kind, cross) {
+  const R = rng(hash(W.S.seed, 2005, o * 8 + ["army", "miss", "fest", "settle"].indexOf(kind) * 2 + (cross ? 1 : 0))), k = cross ? "ship" : "cart", len = 2 + Math.floor(R() * 2), p = [], tr = W.S.civ.nat[o].trait;
+  const job = kind === "army" ? ["cannon", "s"] : kind === "miss" ? [R() < .5 ? "bell" : "shrine", "t"] : ["stage", "t"], deco = tr === "war" ? ["armour", "s"] : tr === "faith" ? ["bell", "t"] : ["banner", "t"];
+  p.push({ id: job[0], c: len - 1, s: job[1] }); // the job's part first, so it always gets its slot
+  for (let c = 0; c < len; c++) { if (k === "cart") p.push({ id: R() < .4 ? "iwheel" : "wheel", c, s: "b" }); else if (c === 0 || R() < .5) p.push({ id: "sail", c, s: "t" }); else p.push({ id: "oars", c, s: "s" }); } if (R() < .7) p.push({ id: deco[0], c: 0, s: deco[1] }); if (k === "ship" && R() < .5) p.push({ id: "keel", c: 1, s: "b" });
+  return vClean({ n: "", k, len, p });
+}
 const natVF = C => 1 + Math.min(.6, C.t / 3000); // the nations' own engineers improve with time
 /* The Sky Ship: once the Sky Port stands, a starship design (paid for in gold) carries your people to the stars. */
 function civLaunch(W, d) {
@@ -2916,9 +2924,35 @@ function makeGalaxy(seed) {
     const h = st[homes[k]], near = st.filter(s => !homes.includes(s.n) && D(s, st[home]) > 320 && !s.pl.some((p, j) => pown[s.n + ":" + j])).sort((a, b) => D(a, h) - D(b, h)).slice(0, 3 + Math.floor(R() * 2));
     for (const s of near) { if (D(s, h) > 420) continue; const j = s.pl.map((p, j2) => j2).filter(j2 => s.pl[j2].ty !== "gas").sort((a, b) => spFit(s.pl[a]) - spFit(s.pl[b]))[0]; if (j == null) continue; pown[s.n + ":" + j] = k; lvl[s.n + ":" + j] = 1 + Math.floor(R() * 2); }
   }
-  return GALAXY[seed] = { st, home, homes, emp, pown, lvl };
+  for (let k = 1; k <= 6; k++) { const R2 = rng(hash(seed, 3200, k)); emp[k].ships = [1, 2, 3].map(sz => foeDesign(R2, emp[k].trait, sz)); emp[k].hull = [0x6a7a9a, 0xb8a888, 0x8a9aa8, 0xd8d0c0, 0x5a6a5a, 0xa890b0][Math.floor(R2() * 6)]; }
+  const pir = (R2 => [1, 2, 3].map(sz => foeDesign(R2, "pirate", sz)))(rng(hash(seed, 3300, 1)));
+  return GALAXY[seed] = { st, home, homes, emp, pown, lvl, pir };
 }
 const spColCost = X => 100 + 50 * Math.max(0, Object.values(X.pown).filter(o => o === 0).length - 1);
+/* Other people's starships: a design from a size (1 scout, 2 fighter, 3 cruiser) and a nature, so every empire's ships look and fight differently. */
+function foeDesign(R, tr, sz) {
+  const len = clamp(sz + 1 + Math.floor(R() * 2), 2, 6), p = [], pick = a => a[Math.floor(R() * a.length)];
+  const top = { war: ["laser", "missile", "laser"], pirate: ["laser", "missile", "scanner"], trade: ["shield", "scanner", "laser"], faith: ["shield", "shield", "laser"], arts: ["laser", "scanner", "shield"], wise: ["scanner", "shield", "warp"] }[tr] || ["laser"];
+  const side = { war: ["plate", "laser", "plate"], pirate: ["laser", "plate", "tank"], trade: ["pod", "tank", "plate"], faith: ["plate", "plate", "tank"], arts: ["laser", "pod", "tank"], wise: ["tank", "laser", "pod"] }[tr] || ["plate"];
+  for (let c = 0; c < len; c++) { if (R() < .75) p.push({ id: pick(top), c, s: "t" }); if (R() < .8) p.push({ id: pick(side), c, s: "s" }); p.push({ id: c === len - 1 || R() < .4 ? "thrust" : pick(["pod", "reactor", "thrust"]), c, s: "b" }); }
+  return vClean({ n: "", k: "space", len, p });
+}
+const spPow = vs => vs.dmg * 1.2 + vs.hp / 6 + vs.shield / 4 + vs.msl * 20 + 10; // how much a ship of this design counts for in a war
+const empPow = (W, k) => spPow(vStats(W.G.emp[k].ships[2])) * (1 + Math.min(1, W.S.space.t / 5400) * .6) * (W.G.emp[k].trait === "war" ? 1.25 : 1);
+const warshipCost = d => Math.round(spCost(d) * .5 + 40);
+/* What lives on a world (life 2: two kinds of animal, 3: three), and the hidden riches the fly-over finds. From the planet's own seed. */
+function spSpecies(p, L) {
+  const n = L >= 3 ? 3 : L >= 2 ? 2 : 0, out = [];
+  for (let i = 0; i < n; i++) { const R = rng(hash(p.sd, 61, i)), diet = i === 0 ? "plant" : i === 1 ? (R() < .5 ? "meat" : "both") : "plant", L2 = { diet, tier: 1 + Math.floor(R() * 3), neck: diet === "plant" && R() < .3 ? 1 : 0, horn: R() < .25 ? 1 : 0, wing: R() < .15 ? 1 : 0, life: ["herd", "pack", "solo"][i % 3],
+      bio: [{ garden: T_FOREST, ocean: T_SWAMP, desert: T_SAND, ice: T_SNOW, rock: T_SCRUB, lava: T_HILL }[p.ty] || T_GRASS] };
+    const d = shapeUp(landDesign(R, L2), rng(hash(p.sd, 62, i)), L2); out.push({ i, d, diet, name: speciesName(R, diet), n: 3 + Math.floor(R() * 4) }); }
+  return out;
+}
+function spDeps(p) {
+  const R = rng(hash(p.sd, 63)), n = p.ty === "gas" ? 3 : 4 + Math.floor(R() * 3), out = [];
+  for (let i = 0; i < n; i++) out.push({ i, u: R() * TAU, v: (R() - .5) * 1.6, g: p.ty === "gas" ? "plasma" : p.res && R() < .6 ? p.res : Object.keys(GOODS)[Math.floor(R() * 3)], n: 8 + Math.floor(R() * 10) });
+  return out;
+}
 const spFit = (p, sh) => { const [T, A] = sh || [p.T, p.A]; return Math.abs(T - 2) + Math.abs(A - 2); }; // 0 is just right for life
 const pKey = (s, p) => s + ":" + p;
 function spStar(W, n) { return n === -1 ? { n: -1, x: 0, y: 0, name: "The Core", k: 3, pl: [], core: 1 } : W.G.st[n]; }
@@ -2928,7 +2962,7 @@ function spOwner(X, key) { const o = X.pown[key]; return o == null ? -1 : o; }
 function starOwner(X, s) { const o = new Set(); s.pl.forEach(p => { const w = spOwner(X, pKey(s.n, p.k)); if (w >= 0) o.add(w); }); return [...o]; }
 function spaceStart(S, d, cr) {
   return { v: SPACE_V, t: 0, cr: Math.round(cr), goods: { crystal: 0, bloom: 0, plasma: 0 }, relic: 0, d, at: null, travel: null, hp: null, en: 60, sh: 0,
-    pown: null, col: {}, shaped: {}, life: {}, scan: {}, dug: {}, vis: {}, zoo: [], goals: {}, emp: null, pir: [], fleets: [], bands: {}, kills: 0, deaths: 0, how: { ally: 0, war: 0 }, core: 0, done: false, united: false, pirT: 420 };
+    pown: null, col: {}, shaped: {}, life: {}, scan: {}, dug: {}, vis: {}, zoo: [], goals: {}, emp: null, pir: [], fleets: [], bands: {}, kills: 0, deaths: 0, how: { ally: 0, war: 0 }, core: 0, done: false, united: false, pirT: 420, dep: {}, wf: 0 };
 }
 function goToSpace(S, d, cr) { if (S.civ) S.civ.done = true; S.space = S.space || spaceStart(S, d, cr); S.stage = "space"; return S; }
 function colDefMax(c) { return 60 + c.lvl * 40 + (c.tur || 0) * 60; }
@@ -2950,14 +2984,12 @@ function newSpace(S, rs) {
 function spEnter(W, n, quiet) {
   const X = W.S.space, s = spStar(W, n), sy = W.sys = { n, t: 0, ships: [], fx: [], pdef: {} };
   X.at = n; const first = !X.vis[n]; X.vis[n] = 1; W.ship.x = -125; W.ship.y = 10; W.ship.tx = -80; W.ship.ty = 10; W.ship.fp = null; W.ship.tg = null; W.ship.atk = null;
-  if (n === -1) { spawn(W, WARDEN, 1800, { t: "core" }, 1); for (let k = 1; k <= 6; k++) if (X.emp[k].ally && !X.emp[k].gone) { const e = spawn(W, -1, 160, { t: "esc" }, 1)[0]; e.x = -140; e.y = (k - 3.5) * 12; } W.ev.push({ t: "sCore" }); return; }
+  if (n === -1) { spawn(W, WARDEN, 1800, { t: "core" }, 1); for (let k = 1; k <= 6; k++) if (X.emp[k].ally && !X.emp[k].gone) { const e = spawn(W, -1, 160, { t: "esc" }, 1)[0]; e.x = -140; e.y = (k - 3.5) * 12; e.ek = k; } W.ev.push({ t: "sCore" }); return; }
   for (const k of starOwner(X, s)) if (k > 0 && !X.emp[k].met) { X.emp[k].met = true; W.ev.push({ t: "sMet", k }); }
   if (first) { for (let k = 1; k <= 6; k++) { const E = X.emp[k]; if (E.met && !E.gone && W.G.emp[k].trait === "wise") spRel(W, k, 1.5); } }
   for (const r of X.pir) if (r.at === n) spawn(W, PIRATE, r.str, { t: "pir", r }, 0);
-  for (const f of X.fleets) if (f.to === n && f.t >= f.dur) spawn(W, f.own, f.str, { t: "fleet", f }, 0);
   if (X.bands[n]) spawn(W, PIRATE, X.bands[n].str, { t: "band", n }, 0);
   else if (!quiet && !starOwner(X, s).length && X.t > 300 && W.R() < .15) { X.bands[n] = { str: 70 + Math.min(250, X.t / 25) }; spawn(W, PIRATE, X.bands[n].str, { t: "band", n }, 0); }
-  for (const p of s.pl) { const o = spOwner(X, pKey(n, p.k)); if (o > 0 && X.emp[o].war) spawn(W, o, 60 + X.t / 40, { t: "guard", k: o }, 0); }
   // a mission to visit this star counts once you're here
   for (let k = 1; k <= 6; k++) { const E = X.emp[k]; if (E.mis && E.mis.ty === "visit" && E.mis.star === n) spMisDone(W, k); }
 }
@@ -2965,6 +2997,7 @@ function spawn(W, own, str, src, big) {
   const X = W.S.space, out = [], each = big ? str : 55 + X.t / 30, n = big ? 1 : Math.max(1, Math.round(str / each));
   for (let i = 0; i < n; i++) { const hp = str / n, a = W.R() * TAU, r = big ? 60 : 70 + W.R() * 40;
     const e = { id: W.nid++, own, x: Math.cos(a) * r, y: Math.sin(a) * r, hp, max: hp, dmg: own === WARDEN ? 10 : own === -1 ? 7 : 3 + hp / 35, rng: own === WARDEN ? 55 : 36, cd: W.R(), spd: own === WARDEN ? 10 : 22, src, a };
+    if (own === PIRATE) { e.sz = hp > 110 ? 2 : hp > 70 ? 1 : 0; e.spd = [26, 22, 17][e.sz]; e.dmg *= [.8, 1, 1.3][e.sz]; } else if (own === -1) e.sz = 1 + (W.nid % 2);
     W.sys.ships.push(e); out.push(e); }
   return out;
 }
@@ -2997,12 +3030,12 @@ function spNear(W, k) { const X = W.S.space, s = spStar(W, W.sys.n), p = s.pl[k]
 function spAct(W, k, act) {
   const X = W.S.space, s = spStar(W, W.sys.n), p = s.pl[k], vs = W.vs; if (!p) return "No planet";
   const key = pKey(s.n, p.k), own = spOwner(X, key), [T, A] = spTA(X, s, p), E = own > 0 ? X.emp[own] : null, c = X.col[key];
-  if (act === "atk") { if (!E || !E.war) return "You're not at war with them"; W.ship.atk = key; W.ship.tg = null; return ""; }
-  if (!spNear(W, k)) return "Fly closer first";
+  if (act === "atk") { if (!E || !E.war) return "You're not at war with them"; E.front = key; E.sg = 0; return ""; } // your fleet's next target in that war
+  if (!spNear(W, k) && !(W.fly && W.fly.k === k)) return "Fly closer first";
   if (act === "scan") { if (!vs.scan) return "You need a scanner"; if (X.scan[key]) return "Already scanned"; X.scan[key] = 1; X.cr += 5; W.ev.push({ t: "sScan", key }); return ""; }
   if (act === "dig") { if (!X.scan[key] || !p.ruin) return "Nothing to dig"; if (X.dug[key]) return "Already dug"; if (own > 0) return "Not on someone else's world"; X.dug[key] = 1; X.relic++; X.cr += 20; W.ev.push({ t: "sRelic" }); return ""; }
-  if (act === "beam") { if (!vs.beam) return "You need an abduction beam"; if (spLife(X, s, p) < 2) return "No animals here"; if (X.zoo.some(z => z.k === key)) return "You've got one of these"; if (X.en < 25) return "Not enough energy";
-    X.en -= 25; X.zoo.push({ k: key, sd: p.sd }); X.cr += 10; if (E) spRel(W, own, -6); for (let j = 1; j <= 6; j++) if (X.emp[j].met && !X.emp[j].gone && W.G.emp[j].trait === "arts") spRel(W, j, 3); W.ev.push({ t: "sBeam" }); return ""; }
+  if (act === "beam") { const i = W.beamI || 0, sp = spSpecies(p, spLife(X, s, p))[i]; if (!vs.beam) return "You need an abduction beam"; if (!sp) return "No animals here"; if (X.zoo.some(z => z.k === key + "#" + i || (i === 0 && z.k === key))) return "You've got one of these"; if (X.en < 25) return "Not enough energy";
+    X.en -= 25; X.zoo.push({ k: key + "#" + i, sd: p.sd, i }); X.cr += 10; if (E) spRel(W, own, -6); for (let j = 1; j <= 6; j++) if (X.emp[j].met && !X.emp[j].gone && W.G.emp[j].trait === "arts") spRel(W, j, 3); W.ev.push({ t: "sBeam" }); return ""; }
   if (act === "shape") { if (!vs.shape) return "You need a world shaper"; if (p.ty === "gas") return "You can't shape a gas giant"; if (E) return "It's theirs"; if (T === 2 && A === 2) return "It's just right already";
     if (X.en < 40 || X.cr < 20) return "Shaping needs ⚡40 and 🪙20"; X.en -= 40; X.cr -= 20; const nt = Math.abs(T - 2) >= Math.abs(A - 2) ? [T + Math.sign(2 - T), A] : [T, A + Math.sign(2 - A)]; X.shaped[key] = nt; W.ev.push({ t: "sShape", key }); return ""; }
   if (act === "seed") { if (!vs.seed) return "You need a life seeder"; if (own !== 0) return "Only on your own worlds"; if (T !== 2 || A !== 2) return "It needs to be mild with good air first"; const L = spLife(X, s, p); if (L >= 3) return "It's full of life";
@@ -3056,9 +3089,10 @@ function spTarget(W, rg) {
 function spHit(W, tg, dmg) {
   const X = W.S.space, sy = W.sys;
   if (tg.planet) { const key = tg.planet, o = spOwner(X, key), c = X.col[key]; if (o <= 0) return; const mx = 70 + c.lvl * 70; if (sy.pdef[key] == null) sy.pdef[key] = mx; sy.pdef[key] -= dmg;
-    if (sy.pdef[key] <= 0) { X.pown[key] = 0; c.lvl = Math.max(1, c.lvl - 1); c.tur = 0; c.def = colDefMax(c); W.ship.atk = null; X.how.war++; spRel(W, o, -15); W.ev.push({ t: "sTake", key, k: o }); spGone(W, o); } return; }
+    if (sy.pdef[key] <= 0) spCapture(W, key); return; }
   tg.hp -= dmg; tg.hurt = sy.t;
 }
+function spCapture(W, key) { const X = W.S.space, o = spOwner(X, key), c = X.col[key]; X.pown[key] = 0; c.lvl = Math.max(1, c.lvl - 1); c.tur = 0; c.def = colDefMax(c); X.how.war++; spRel(W, o, -15); W.ev.push({ t: "sTake", key, k: o }); spGone(W, o); }
 function spGone(W, k) { const X = W.S.space; if (Object.values(X.pown).includes(k)) return; const E = X.emp[k]; E.gone = true; E.war = false; E.ally = false; E.mis = null; X.fleets = X.fleets.filter(f => f.own !== k); W.ev.push({ t: "sGone", k }); spUnite(W); }
 /* A fight's end: what the beaten ships were doing. */
 function spWon(W, src) {
@@ -3079,9 +3113,45 @@ function spSaveShip(W, d) {
   const cost = Math.max(0, spCost(d) - spCost(X.d)); if (X.cr < cost) return `That costs 🪙${cost}`;
   X.cr -= cost; const f = X.hp / W.vs.hp; X.d = d; W.vs = vStats(d); X.hp = Math.max(1, W.vs.hp * Math.max(f, .5)); return "";
 }
+/* The fly-over: a low pass over a planet you're next to. A sweep (scanner) finds hidden riches near where you're passing; harvesting
+   fills your hold; animals can be beamed up one kind at a time (W.beamI). X.dep[key] = {f: found bits, h: {deposit: time harvested}}. */
+function spFlyover(W, k) { if (!spNear(W, k)) return "Fly closer first"; W.fly = { k, t: 0, u: 0 }; W.ship.fp = k; return ""; }
+function spLeaveFly(W) { W.fly = null; }
+const DEP_BACK = 600; // a harvested patch grows back after ten minutes
+function spDepState(X, key) { return X.dep[key] || (X.dep[key] = { f: 0, h: {} }); }
+function spSweep(W) {
+  const X = W.S.space, F = W.fly; if (!F) return "Not flying over"; if (!W.vs.scan) return "You need a scanner"; if (X.en < 15) return "Not enough energy";
+  const s = spStar(W, W.sys.n), p = s.pl[F.k], key = pKey(s.n, p.k), D = spDepState(X, key); X.en -= 15; let got = 0;
+  for (const d of spDeps(p)) if (!(D.f & (1 << d.i)) && Math.abs(wrapA(d.u - F.u)) < 1.3) { D.f |= 1 << d.i; got++; }
+  X.sweeps = (X.sweeps || 0) + 1; W.ev.push({ t: "sSweep", n: got }); return "";
+}
+function spHarvest(W, i) {
+  const X = W.S.space, F = W.fly; if (!F) return "Not flying over"; const s = spStar(W, W.sys.n), p = s.pl[F.k], key = pKey(s.n, p.k), D = spDepState(X, key), d = spDeps(p)[i], own = spOwner(X, key);
+  if (!d || !(D.f & (1 << i))) return "Sweep for it first"; if (X.t - (D.h[i] || -1e9) < DEP_BACK) return `Already harvested: it grows back in ${Math.ceil((DEP_BACK - (X.t - D.h[i])) / 60)} min`;
+  const room = 10 + W.vs.cargo; const n = Math.min(d.n, room); X.goods[d.g] = Math.min(200, X.goods[d.g] + n); D.h[i] = X.t; X.harv = (X.harv || 0) + 1;
+  if (own > 0 && !X.emp[own].ally) spRel(W, own, -4); W.ev.push({ t: "sHarvest", g: d.g, n }); return "";
+}
+/* Your war fleet: copies of your own ship, so a better design makes a stronger fleet. Wars play out on their own from the numbers. */
+function spBuildWarship(W) { const X = W.S.space, c = warshipCost(X.d); if (X.wf >= 30) return "Thirty warships at most"; if (X.cr < c) return `A warship costs 🪙${c}`; X.cr -= c; X.wf++; return ""; }
+function spWarTick(W, st) {
+  const X = W.S.space, G = W.G, wars = X.emp.filter(E => E && E.war && !E.gone).length, my = spPow(W.vs);
+  for (let k = 1; k <= 6; k++) {
+    const E = X.emp[k]; if (E.gone) continue; const keys = Object.keys(X.pown).filter(q => X.pown[q] === k), cap = 4 + keys.length * 1.5;
+    if (E.fl == null) E.fl = cap * .6; E.fl = Math.min(cap, E.fl + (.004 + keys.length * .0015) * st);
+    if (!E.war) { E.sg = 0; continue; }
+    if (!E.front || X.pown[E.front] !== k) { const mine = Object.keys(X.pown).filter(q => X.pown[q] === 0).map(q => G.st[+q.split(":")[0]]); let b = null, bd = 1e18;
+      for (const q of keys) { const s = G.st[+q.split(":")[0]], d = Math.min(...mine.map(m => Math.hypot(m.x - s.x, m.y - s.y))); if (d < bd) { bd = d; b = q; } } E.front = b; E.sg = 0; }
+    if (!E.front) continue;
+    const P = X.wf / wars * my, Q = E.fl * empPow(W, k), c = X.col[E.front], def = 60 + c.lvl * 50 + (c.tur || 0) * 30;
+    if (P > 0) { const tot = P + Q + 1; X.wf = Math.max(0, X.wf - X.wf / wars * .01 * Q / tot * st); E.fl = Math.max(0, E.fl - E.fl * .012 * P / tot * st); }
+    E.sg = clamp((E.sg || 0) + (P > Q ? Math.min(1.2, (P - Q) / def * .35) * st : -1 * st), 0, 100);
+    if (E.sg >= 100) { const key = E.front; E.front = null; E.sg = 0; spCapture(W, key); }
+  }
+}
 function spRespawn(W) { const X = W.S.space; X.deaths++; X.cr = Math.floor(X.cr * .85); X.travel = null; X.hp = W.vs.hp; X.en = W.vs.energy; spEnter(W, W.G.home, true); }
 function stepSpace(W, dt) {
   const S = W.S, X = S.space, vs = W.vs; if (W.over) return; S.time += dt; W.t += dt; X.t += dt;
+  if (W.fly) { W.fly.t += dt; W.fly.u += dt * .06; if (X.travel || !W.sys) W.fly = null; }
   if (X.travel) { const tr = X.travel;
     if (tr.charge > 0) { tr.charge -= dt; if (W.sys) systemStep(W, dt); if (tr.charge <= 0) { W.sys = null; W.ev.push({ t: "sJump" }); } }
     else { const a = spStar(W, tr.path[tr.i]), b = spStar(W, tr.path[tr.i + 1]), L = Math.hypot(a.x - b.x, a.y - b.y); tr.t += dt * 60 * spSpeedF(vs) / Math.max(1, L);
@@ -3116,9 +3186,6 @@ function systemStep(W, dt) {
   }
   // the Warden calls drones
   const wd = sy.ships.find(e => e.own === WARDEN); if (wd) { wd.dr = (wd.dr || 0) + dt; if (wd.dr > 15) { wd.dr = 0; for (let i = 0; i < 2; i++) { const e = spawn(W, PIRATE, 70, { t: "drone" }, 1)[0]; e.x = wd.x; e.y = wd.y; } } }
-  // enemy worlds' guns
-  for (const p of spStar(W, sy.n).pl) { const key = pKey(sy.n, p.k), o = spOwner(X, key); if (o <= 0 || !X.emp[o].war) continue; const [x, y] = plXY(X, p); sy.pt = sy.pt || {}; sy.pt[key] = (sy.pt[key] || 0) - dt;
-    if (sy.pt[key] <= 0 && Math.hypot(x - sh.x, y - sh.y) < 40 + p.r) { sy.pt[key] = 1.3; hurt(3 + X.col[key].lvl * 2 + (X.col[key].tur || 0) * 2); sy.fx.push({ ty: "las", x0: x, y0: y, x1: sh.x, y1: sh.y, t: 0, own: o }); } }
   // the beaten
   for (const e of sy.ships) if (e.hp <= 0 && !e.dead) { e.dead = true; if (hostile(X, e)) { X.kills++; W.ev.push({ t: "sBoom", x: e.x, y: e.y, big: e.own === WARDEN }); } }
   const gone = sy.ships.filter(e => e.dead); sy.ships = sy.ships.filter(e => !e.dead);
@@ -3128,15 +3195,18 @@ function systemStep(W, dt) {
 /* Twice a second: colonies, the empires, pirates and fleets, goals. */
 function spTick(W, st) {
   const X = W.S.space, G = W.G, here = W.sys ? W.sys.n : null;
+  const nCol = Object.values(X.pown).filter(o => o === 0).length, thin = Math.sqrt(6 / Math.max(6, nCol)); // a sprawling empire is harder to run: income per world falls off past six
   for (const key in X.pown) { if (X.pown[key] !== 0) continue; const c = X.col[key], [sn, pk] = key.split(":").map(Number), s = G.st[sn], p = s.pl[pk], L = spLife(X, s, p);
-    X.cr += (.025 + .025 * c.lvl) * (1 + L * .2) * st + (c.home ? .12 * st : 0); if (p.res) X.goods[p.res] = Math.min(150, X.goods[p.res] + .009 * c.lvl * st); c.def = Math.min(colDefMax(c), c.def + 2 * st); }
+    X.cr += ((.025 + .025 * c.lvl) * (1 + L * .2) * thin + (c.home ? .12 : 0)) * st; if (p.res) X.goods[p.res] = Math.min(150, X.goods[p.res] + .009 * c.lvl * st); c.def = Math.min(colDefMax(c), c.def + 2 * st); }
   // raids and fleets wear down your worlds while you're away
   const siege = (o, at, sw) => { for (const key in X.pown) { if (X.pown[key] !== 0 || +key.split(":")[0] !== at) continue; const c = X.col[key]; c.def -= sw.str * .05 * st; sw.str -= (2 + 4 * (c.tur || 0) + c.lvl * 1.5) * st;
+      if (o !== PIRATE && X.wf > 0) { sw.str -= X.wf * spPow(W.vs) * .03 * st; X.wf = Math.max(0, X.wf - .004 * st * Math.min(3, sw.str / 100)); } // your war fleet meets them
       if (c.def <= 0) { if (o === PIRATE) { c.lvl--; c.def = colDefMax(c); W.ev.push({ t: "sRaided", key }); if (c.lvl <= 0 && !c.home) { delete X.col[key]; delete X.pown[key]; } else c.lvl = Math.max(1, c.lvl); }
         else { X.pown[key] = o; c.lvl = Math.max(1, c.lvl - 1); c.def = colDefMax(c); W.ev.push({ t: "sLost", key, k: o }); } return true; } return sw.str <= 0 ? "held" : false; } return "none"; };
   for (const r of [...X.pir]) { if (here === r.at) continue; r.t += st; const res = siege(PIRATE, r.at, r); if (res) { X.pir = X.pir.filter(q => q !== r); if (res === "held") W.ev.push({ t: "sHeld", at: r.at }); } }
-  for (const f of [...X.fleets]) { if (f.t < f.dur) { f.t += st; if (f.t >= f.dur) { W.ev.push({ t: "sFleetHere", k: f.own, at: f.to }); if (here === f.to) spawn(W, f.own, f.str, { t: "fleet", f }, 0); } continue; }
-    if (here === f.to) continue; const res = siege(f.own, f.to, f); if (res) { X.fleets = X.fleets.filter(q => q !== f); if (res === "held") W.ev.push({ t: "sHeld", at: f.to }); } }
+  for (const f of [...X.fleets]) { if (f.t < f.dur) { f.t += st; if (f.t >= f.dur) { W.ev.push({ t: "sFleetHere", k: f.own, at: f.to }); } continue; }
+    const res = siege(f.own, f.to, f); if (res) { X.fleets = X.fleets.filter(q => q !== f); if (res === "held") W.ev.push({ t: "sHeld", at: f.to }); } }
+  spWarTick(W, st);
   // pirates turn up at your worlds now and then
   X.pirT -= st; if (X.pirT <= 0) { X.pirT = 300 + W.R() * 160; const mine = [...new Set(Object.keys(X.pown).filter(k => X.pown[k] === 0 && (!X.col[k].home || X.t > 1500)).map(k => +k.split(":")[0]))];
     if (mine.length && !X.done) { const at = mine[Math.floor(W.R() * mine.length)]; X.pir.push({ at, str: 70 + Math.min(330, X.t / 14), t: 0 }); W.ev.push({ t: "sRaid", at }); if (here === at) spawn(W, PIRATE, X.pir[X.pir.length - 1].str, { t: "pir", r: X.pir[X.pir.length - 1] }, 0); } }
@@ -3602,8 +3672,9 @@ function helpDlg() {
   if (W && W.space) return dialog(`<h2>How to play: Space</h2>
     <p><b>Flying:</b> in a star system, tap anywhere to fly there and tap a planet to fly to it; its card shows what you can do. Drag to look around, pinch (or ＋ －) to zoom.</p>
     <p><b>🌌 The map:</b> tap a star, then 🚀 Fly here. Each jump is limited by your ship's range: fuel tanks and warp drives reach further.</p>
-    <p><b>Planets:</b> 📡 scan them. Mild worlds with good air can take a 🏠 colony; a 🌍 world shaper warms, cools, thickens or thins the air a step at a time. Colonies earn 🪙 and dig up goods (💠 🌺 🔥) to sell to the empires. 🛸 Beam up creatures from living worlds for your collection, and 🌱 seed them on your own worlds.</p>
-    <p><b>🛸 Empires:</b> six of them. Do their missions to win their friendship: at 60 on the bar they'll be your allies. Or go to war and take their worlds: fly there and ⚔️ attack. Some like trade, some relics 🏺, some new creatures.</p>
+    <p><b>Planets:</b> 📡 scan them. Mild worlds with good air can take a 🏠 colony; a 🌍 world shaper warms, cools, thickens or thins the air a step at a time. Colonies earn 🪙 and dig up goods (💠 🌺 🔥) to sell to the empires.</p>
+    <p><b>🔭 Fly over:</b> from a planet's card, swoop down low. Tap animals to 🛸 beam them up for your collection (🌱 seed them on your own worlds later), and 📡 sweep the ground to find hidden riches, then tap them to harvest. Harvested patches grow back.</p>
+    <p><b>🛸 Empires:</b> six of them. Do their missions to win their friendship: at 60 on the bar they'll be your allies. Or go to war: wars are fought by your war fleet, out of sight. Build warships (copies of your own ship, so a better design makes a stronger fleet); if your fleet is stronger, their worlds fall one by one. Some like trade, some relics 🏺, some new creatures.</p>
     <p><b>🛠️ Your ship:</b> refit it at any of your own worlds. Goals 🎯 unlock new parts. Lasers fire on their own; 🚀 missiles and 🔧 repairs use energy ⚡.</p>
     <p><b>Danger:</b> pirates ☠️ and enemy fleets ⚔️ attack your worlds. Guns 🔫 help them hold out, but flying there to fight is best.</p>
     <p><b>The end:</b> unite the galaxy (every empire an ally, or gone), fit a warp drive, and fly to the Core at its centre.</p>
@@ -3688,6 +3759,7 @@ function hints() {
     if (W.t > 30) hint(41, "📡 Scan planets to learn what they're like. Mild worlds with good air can take a 🏠 colony, which earns 🪙 and goods.", 10);
     if (W.t > 90 && Object.values(S.space.emp).some(E => E && E.met)) hint(42, "You've met an empire. Tap 🛸 Empires: missions win their friendship. At 60 they'll be your allies.", 10);
     if (W.t > 160) hint(43, "Reaching goals 🎯 unlocks new ship parts. Refit your ship with 🛠️ Ship at any of your own worlds.", 10);
+    if (W.fly) hint(45, "Flying low! Tap an animal to beam it up for your collection. 📡 Sweep to find hidden riches as you pass, then tap them to harvest.", 11);
     if (spFoes().length) hint(44, "Enemies! Your lasers fire by themselves at anything close. Tap an enemy to chase it, and 🔧 repair if you get hurt.", 9);
     return;
   }
@@ -5360,7 +5432,7 @@ function civGoalsDlg() {
 }
 /* ---------- vehicles on screen: a 3D model from a design (vehMesh), and the builder (openVB) ----------
    A model is one merged, vertex-coloured mesh. Section 0 is the front (+x); side parts are mirrored on both sides (±z). */
-function vehMesh(d, team) {
+function vehMesh(d, team, hull) {
   const T = T3, L = [], V = (x, y, z) => new T.Vector3(x, y, z), C = c => new T.Color(c), tc = C(team == null ? 0x7cf2c8 : team), n = d.len, cx = c => (n - 1) / 2 - c;
   const put = (g, p, c, rot, sc) => L.push([g, new T.Matrix4().compose(p, new T.Quaternion().setFromEuler(new T.Euler(...(rot || [0, 0, 0]))), V(...(sc || [1, 1, 1]))), c instanceof T.Color ? c : C(c)]);
   const box = (x, y, z, sx, sy, sz, c, rot) => put(new T.BoxGeometry(sx, sy, sz), V(x, y, z), c, rot);
@@ -5370,12 +5442,12 @@ function vehMesh(d, team) {
   const k = d.k, sp = k === "space", air = k === "air", top = sp ? .45 : air ? .2 : .32, bot = sp ? -.45 : air ? -.18 : -.22, side = sp ? .48 : .44;
   // the hull
   for (let c = 0; c < n; c++) { const x = cx(c);
-    if (sp) { cyl(x, 0, 0, .46, .46, 1, c % 2 ? 0xc8d0dc : 0xb0bac8, [0, 0, Math.PI / 2], 14); box(x, 0, .44, .98, .08, .06, tc); box(x, 0, -.44, .98, .08, .06, tc); }
+    if (sp) { cyl(x, 0, 0, .46, .46, 1, hull != null ? C(hull).multiplyScalar(c % 2 ? 1 : .82) : c % 2 ? 0xc8d0dc : 0xb0bac8, [0, 0, Math.PI / 2], 14); box(x, 0, .44, .98, .08, .06, tc); box(x, 0, -.44, .98, .08, .06, tc); }
     else if (k === "ship") { box(x, 0, 0, 1, .42, .86, c % 2 ? 0x8a5a32 : 0x7a4e2a); box(x, .22, 0, 1, .04, .8, 0xc8a070); }
     else if (air) { box(x, 0, 0, 1, .32, .6, c % 2 ? 0x9a6a3e : 0x8a5c34); }
     else { box(x, 0, 0, 1, .4, .8, c % 2 ? 0xa0703e : 0x93653a); box(x, .21, 0, .9, .03, .7, 0x6b4a2e); } }
   const fx = cx(0) + .5;
-  if (sp) cone(fx + .45, 0, 0, .46, .9, 0xe8eef6, [0, 0, -Math.PI / 2], 14);
+  if (sp) cone(fx + .45, 0, 0, .46, .9, hull != null ? C(hull).multiplyScalar(1.15) : 0xe8eef6, [0, 0, -Math.PI / 2], 14);
   else if (k === "ship") { cone(fx + .4, 0, 0, .45, .8, 0x7a4e2a, [0, 0, -Math.PI / 2], 4); box(cx(n - 1) - .55, .1, 0, .1, .6, .86, 0x6b4426); }
   else if (!air) box(fx + .1, -.05, 0, .2, .3, .5, 0x6b4a2e);
   if (air) for (let c = 0; c < n; c++) cyl(cx(c), .55, 0, .015, .015, .8, 0x3a2a1a, null, 4);
@@ -5511,8 +5583,9 @@ const empName = k => k === 0 ? "You" : k === PIRATE ? "Pirates" : W.G.emp[k].nam
 const spGal = () => SPV.map || !W.sys;
 function glowTex(T) { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.25, "rgba(255,255,255,.8)"); r.addColorStop(.6, "rgba(255,255,255,.18)"); r.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = r; g.fillRect(0, 0, 64, 64); const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t; }
 /* A painted surface for a planet, from its own seed: oceans, land, ice caps, lava cracks, gas bands. */
-function planetTex(T, p, X, s) {
+function planetTex(T, p, X, s, big) {
   const c = document.createElement("canvas"); c.width = 128; c.height = 64; const g = c.getContext("2d"), R = rng(p.sd), [Tm, A] = spTA(X, s, p), L = spLife(X, s, p);
+  if (big) { c.width = 1024; c.height = 512; g.scale(8, 8); }
   const base = { rock: ["#8a7a6a", "#6a5a4c"], ice: ["#dfefff", "#a8c8e8"], lava: ["#3a1a12", "#ff6a2a"], ocean: ["#2a6ad0", "#3a9a5a"], desert: ["#d8b070", "#b08848"], garden: ["#3a8ad8", "#5ab04a"], gas: ["#c8a0e0", "#9a70c0"] }[p.ty];
   let [c1, c2] = base; if (p.ty !== "gas" && Tm === 2 && A === 2 && p.ty !== "garden" && p.ty !== "ocean") { c1 = "#3a8ad8"; c2 = L ? "#5ab04a" : "#9a8a6a"; } // a shaped world turns blue and green
   g.fillStyle = c1; g.fillRect(0, 0, 128, 64);
@@ -5521,6 +5594,9 @@ function planetTex(T, p, X, s) {
     if (L >= 2) { g.fillStyle = "rgba(40,120,40,.6)"; for (let i = 0; i < 18; i++) { g.beginPath(); g.arc(R() * 128, 10 + R() * 44, 2 + R() * 5, 0, TAU); g.fill(); } }
     if (Tm <= 1) { g.fillStyle = "rgba(240,248,255,.9)"; g.fillRect(0, 0, 128, 8 - Tm * 3); g.fillRect(0, 56 + Tm * 3, 128, 8); }
     if (A >= 3) { g.fillStyle = "rgba(255,255,255,.25)"; for (let i = 0; i < 20; i++) g.fillRect(R() * 128, R() * 64, 20 + R() * 30, 2); } }
+  if (big) { g.setTransform(1, 0, 0, 1, 0, 0); const R2 = rng(p.sd + 9); // close up: fine grain, rocks, and (on living worlds) woods
+    for (let i = 0; i < 14000; i++) { const x = R2() * 1024, y = R2() * 512, l = R2(); g.fillStyle = `rgba(${l < .5 ? "0,0,0" : "255,255,255"},${.03 + R2() * .04})`; g.beginPath(); g.arc(x, y, .6 + R2() * 1.4, 0, TAU); g.fill(); }
+    if (L >= 1 && p.ty !== "gas") for (let i = 0; i < 700; i++) { const x = R2() * 1024, y = 60 + R2() * 392; const d = g.getImageData(x | 0, y | 0, 1, 1).data; if (d[2] > d[1] + 20) continue; g.fillStyle = `rgba(${20 + R2() * 30},${70 + R2() * 50},${25 + R2() * 20},.75)`; g.beginPath(); g.arc(x, y, 2 + R2() * 4, 0, TAU); g.fill(); } }
   const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t;
 }
 function buildSpace3() {
@@ -5563,10 +5639,10 @@ function buildSystem3() {
 }
 function spShipMesh(e) {
   const T = T3, L = [], C = c => new T.Color(c), put = (g, x, y, z, c, rot, sc) => L.push([g, new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromEuler(new T.Euler(...(rot || [0, 0, 0]))), new T.Vector3(...(sc || [1, 1, 1]))), C(c)]);
-  if (e.own === WARDEN) { put(new T.IcosahedronGeometry(5, 1), 0, 0, 0, 0x4a1a5a); for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; put(new T.ConeGeometry(.9, 4, 6), Math.cos(a) * 6, (i % 3 - 1) * 2, Math.sin(a) * 6, 0xff4fd8, [Math.PI / 2, 0, -a + Math.PI / 2]); } put(new T.SphereGeometry(2, 16, 12), 3.5, 1, 0, 0xffe0ff); }
-  else if (e.own === PIRATE) { put(new T.ConeGeometry(1.1, 3.2, 5), 0, 0, 0, 0x5a1e1e, [0, 0, -Math.PI / 2]); put(new T.BoxGeometry(1.4, .2, 3.2), -.6, 0, 0, 0x2a2a2e); put(new T.SphereGeometry(.35, 8, 6), 1.2, .3, 0, 0xff4040); }
-  else { const c = EMP_COL[e.own === -1 ? 0 : e.own] || 0xffffff; put(new T.OctahedronGeometry(1.3, 0), 0, 0, 0, c, null, [1.6, .6, 1]); put(new T.BoxGeometry(.4, .15, 3), -.4, 0, 0, 0xd8dee8); put(new T.SphereGeometry(.3, 8, 6), 1.6, 0, 0, 0xffffff); }
-  return new T.Mesh(merge3(L), new T.MeshLambertMaterial({ vertexColors: true, flatShading: true, emissive: 0x111111 }));
+  if (e.own === WARDEN) { put(new T.IcosahedronGeometry(5, 1), 0, 0, 0, 0x4a1a5a); for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; put(new T.ConeGeometry(.9, 4, 6), Math.cos(a) * 6, (i % 3 - 1) * 2, Math.sin(a) * 6, 0xff4fd8, [Math.PI / 2, 0, -a + Math.PI / 2]); } put(new T.SphereGeometry(2, 16, 12), 3.5, 1, 0, 0xffe0ff); return new T.Mesh(merge3(L), new T.MeshLambertMaterial({ vertexColors: true, flatShading: true, emissive: 0x111111 })); }
+  // everyone else flies their own designs: pirates in dark, scrappy hulls; allies in their empire's colours
+  if (e.own === PIRATE) { const m = vehMesh(W.G.pir[e.sz || 0], 0xff3a3a, [0x3a2a2a, 0x4a3020, 0x2a2a34][(e.id || 0) % 3]); m.scale.setScalar(.75 + (e.sz || 0) * .15); return m; }
+  const k = e.ek || (e.own > 0 && e.own < 9 ? e.own : 1), m = vehMesh(W.G.emp[k].ships[Math.min(2, e.sz || 1)], EMP_COL[k], W.G.emp[k].hull); m.scale.setScalar(.9); return m;
 }
 function drawSpace(dt) {
   if (!G3FAIL && !T3) { load3D(); return drawLoading3(); }
@@ -5574,6 +5650,8 @@ function drawSpace(dt) {
   const T = T3, X = S.space, t = performance.now() / 1000, gal = spGal();
   if (!SP3 || SP3.W !== W) buildSpace3();
   const V = SP3, cam3 = V.cam; cam3.aspect = CW / CH; cam3.updateProjectionMatrix();
+  if (W.fly && W.sys && !gal) return drawFly(dt, t);
+  if (V.fly) dropFly3();
   V.gal.visible = gal; V.sys.visible = !gal; V.sun.intensity = gal ? 0 : 2.2; V.head.intensity = gal ? 0 : .7;
   if (gal) {
     // owners' rings, every second; where you are
@@ -5620,7 +5698,7 @@ function spOverlay(t, gal) {
     const zoomed = (cam.z || 1) > 1.3;
     for (const s of W.G.st) { const [X0, Y0, ok] = spP(s.x, s.y); if (!ok || X0 < -40 || X0 > CW + 40 || Y0 < -20 || Y0 > CH + 20) continue; const o = starOwner(X, s), mine = o.includes(0);
       if (zoomed || mine || s.n === SPV.star || s.n === X.at || o.length && X.vis[s.n]) { ctx.font = `800 ${s.n === SPV.star ? 13 : 11}px Figtree, sans-serif`; ctx.fillStyle = mine ? "#7CF2C8" : o.length && X.vis[s.n] ? empCol(o[0]) : X.vis[s.n] ? "rgba(230,240,255,.85)" : "rgba(180,190,220,.55)"; ctx.fillText(s.name, X0, Y0 + 16); }
-      let mk = ""; for (let k = 1; k <= 6; k++) { const m = X.emp[k].mis; if (m && m.star === s.n) mk += "❗"; } if (X.pir.some(r => r.at === s.n)) mk += "☠️"; if (X.fleets.some(f => f.to === s.n)) mk += "⚔️"; if (X.bands[s.n] && X.vis[s.n]) mk += "🏴‍☠️";
+      let mk = ""; for (let k = 1; k <= 6; k++) { const m = X.emp[k].mis; if (m && m.star === s.n) mk += "❗"; } if (X.pir.some(r => r.at === s.n)) mk += "☠️"; if (X.fleets.some(f => f.to === s.n) || X.emp.some(E => E && E.war && E.front && +E.front.split(":")[0] === s.n)) mk += "⚔️"; if (X.bands[s.n] && X.vis[s.n]) mk += "🏴‍☠️";
       if (mk) { ctx.font = "13px sans-serif"; ctx.fillText(mk, X0, Y0 - 9); } }
     for (const f of X.fleets) { if (f.t >= f.dur) continue; const s = W.G.st[f.to], k = f.t / f.dur, [X0, Y0, ok] = spP(f.x0 + (s.x - f.x0) * k, f.y0 + (s.y - f.y0) * k); if (!ok) continue; ctx.fillStyle = empCol(f.own); ctx.font = "13px sans-serif"; ctx.fillText("⚔️", X0, Y0); }
     { const [X0, Y0, ok] = spP(0, 0); if (ok) { ctx.font = "800 13px Figtree, sans-serif"; ctx.fillStyle = X.united ? "#FFC0F0" : "rgba(255,192,240,.6)"; ctx.fillText(X.united ? "✦ The Core is open" : "The Core (sealed)", X0, Y0 + 26); } }
@@ -5652,6 +5730,7 @@ function drawSpace2D() {
 const spPt = (x, y, up) => SPV.p2 && (G3FAIL || !SP3) ? [...SPV.p2(x, y), true] : spP(x, y, up);
 function spaceTap(sx, sy) {
   const X = S.space, two = G3FAIL || !SP3;
+  if (W.fly) return flyTap(sx, sy);
   if (spGal()) { let b = null, bd = 34; for (const s of W.G.st) { const [a, c, ok] = spPt(s.x, s.y); const d = Math.hypot(a - sx, c - sy); if (ok && d < bd) { bd = d; b = s.n; } }
     const [a, c] = spPt(0, 0); if (Math.hypot(a - sx, c - sy) < Math.max(28, bd)) b = -1;
     SPV.star = b; LUI_KEY = ""; renderSpaceUI(true); return; }
@@ -5667,6 +5746,9 @@ function spFoes() { const X = S.space; return W.sys ? W.sys.ships.filter(e => ho
 function renderSpaceUI(force) {
   const X = S.space, gal = spGal(), foes = spFoes().length, sel = SPV.sel != null && W.sys ? spStar(W, W.sys.n).pl[SPV.sel] : null, near = sel && spNear(W, sel.k);
   $("lCall").style.display = "none";
+  if (W.fly && W.sys) { const k2 = ["fly", W.fly.k, Math.floor(X.en / 5), X.zoo.length, JSON.stringify(X.dep[pKey(W.sys.n, W.fly.k)] || 0), Object.values(X.goods).map(Math.floor).join()].join("|"); if (k2 === LUI_KEY && !force) return; LUI_KEY = k2;
+    $("lCard").hidden = false; $("lCard").innerHTML = flyUI(); $("lBar").innerHTML = `<button class="lb" data-f="sweep">📡<small>Sweep ⚡15</small></button><button class="lb" data-f="up">⬆️<small>Climb away</small></button>`;
+    $("lBar").querySelectorAll("[data-f]").forEach(b => b.onclick = () => { if (b.dataset.f === "up") { spLeaveFly(W); LUI_KEY = ""; return; } const e = spSweep(W); if (e) toast(e); else { snd("zap"); if (SP3 && SP3.fly) SP3.fly.ringT = 0; } }); return; }
   const key = [gal, SPV.star, SPV.sel, !!near, !!X.travel && X.travel.path.join(), foes > 0, Math.floor(X.cr / 10), Math.floor(X.en / 5), X.relic, Object.keys(X.goals).length, sel ? JSON.stringify([X.pown[pKey(W.sys.n, sel.k)], X.col[pKey(W.sys.n, sel.k)], X.scan[pKey(W.sys.n, sel.k)], X.shaped[pKey(W.sys.n, sel.k)], X.life[pKey(W.sys.n, sel.k)], X.dug[pKey(W.sys.n, sel.k)], X.zoo.length]) : "", Object.values(X.goods).map(Math.floor).join()].join("|");
   if (key === LUI_KEY && !force) return; LUI_KEY = key;
   const card = $("lCard"), bar = $("lBar"); let h = "", acts = {};
@@ -5693,19 +5775,20 @@ function spPlanetCard(p, near, acts) {
   const X = S.space, s = spStar(W, W.sys.n), key = pKey(s.n, p.k), own = spOwner(X, key), sc = X.scan[key] || own === 0, [T, A] = spTA(X, s, p), L = spLife(X, s, p), c = X.col[key], vs = W.vs, E = own > 0 ? X.emp[own] : null;
   let h = `<b style="color:${own >= 0 ? empCol(own) : "inherit"}">${esc(p.name)}</b><span>${PTYPES[p.ty].n}${own >= 0 ? ` · ${own === 0 ? "your colony" : esc(empName(own)) + "' world"}${c ? " (size " + c.lvl + (c.tur ? ", " + c.tur + " gun" + (c.tur > 1 ? "s" : "") : "") + ")" : ""}` : ""}</span>`;
   h += sc ? `<span>🌡️ ${TEMPS[T]} · 💨 ${AIRS[A]} · 🌿 ${LIFES[L]}${p.res ? ` · ${GOODS[p.res].ic} ${GOODS[p.res].n.toLowerCase()}` : ""}${p.ruin ? (X.dug[key] ? " · ruins (dug)" : " · 🏺 ancient ruins") : ""}</span>` : `<span>${vs.scan ? "Not scanned yet." : "You'd need a scanner to learn more."}</span>`;
-  if (E && E.war) { h += `<span style="color:#FF8A8A">At war. Break its defences to take it.</span>`; }
-  if (!near && !(E && E.war)) return h + `<span>Flying over…</span>`;
+  if (E && E.war) h += `<span style="color:#FF8A8A">At war.${E.front === key ? ` Your fleet is attacking it: ${fl0(E.sg || 0)}%.` : ""}</span>`;
+  if (sc && L >= 2) h += `<span>🦎 Animals live here: fly over to see them.</span>`;
+  if (!near && !(E && E.war)) return h + `<span>On the way…</span>`;
   const btn = [], add = (a, label, cls) => { btn.push(`<button class="btn small${cls ? " " + cls : ""}" id="pa_${a}">${label}</button>`); acts["pa_" + a] = () => { const e = spAct(W, p.k, a); if (e) toast(e); else snd("eat"); LUI_KEY = ""; renderSpaceUI(true); }; };
   if (vs.scan && !X.scan[key]) add("scan", "📡 Scan");
   if (sc && p.ruin && !X.dug[key] && own <= 0) add("dig", "🏺 Dig");
-  if (vs.beam && L >= 2 && own <= 0 && !X.zoo.some(z => z.k === key)) add("beam", "🛸 Beam up a creature ⚡25");
+  btn.push(`<button class="btn small primary" id="pa_fly">🔭 Fly over</button>`); acts.pa_fly = () => { const e = spFlyover(W, p.k); if (e) toast(e); else { snd("dash"); cam.z = 1; } LUI_KEY = ""; renderSpaceUI(true); };
   if (vs.shape && own <= 0 && p.ty !== "gas" && (T !== 2 || A !== 2)) add("shape", "🌍 Shape ⚡40 🪙20");
   if (vs.seed && own === 0 && L < 3) add("seed", `🌱 Seed life (${(L + 1) * 2} kinds)`);
   if (own < 0 && p.ty !== "gas") add("colony", `🏠 Colony 🪙${spColCost(X)}`, "primary");
   if (own === 0 && c.lvl < 3) add("up", `⬆️ Grow 🪙${150 * c.lvl}`);
   if (own === 0 && (c.tur || 0) < 3) add("tur", "🔫 Gun 🪙80");
   if (E && !E.war) { add("sell", "🪙 Sell goods"); btn.push(`<button class="btn small" id="pa_talk">🛸 Talk</button>`); acts.pa_talk = () => spEmpDlg(own); }
-  if (E && E.war) add("atk", "⚔️ Attack", "bad");
+  if (E && E.war) add("atk", E.front === key ? "⚔️ Your fleet's target" : "⚔️ Make this the war target", "bad");
   return h + (btn.length ? `<div class="nbtns">${btn.join("")}</div>` : "");
 }
 /* ---- panels ---- */
@@ -5717,6 +5800,9 @@ function spEmpDlg(only) {
     if (!E.met) { h += `<div class="ncard" style="border-color:var(--line)"><b>? Not met yet</b><span>Their stars are out there somewhere. Explore to find them.</span></div>`; continue; }
     h += `<div class="ncard" style="border-color:${empCol(k)}"><div style="display:flex;gap:8px;align-items:center"><canvas id="ep${k}" width="64" height="48" style="width:64px;height:48px;flex:none"></canvas><div><b style="color:${empCol(k)}">${esc(G.name)}</b><br><span>${T.ic} ${T.n} · ${Object.values(X.pown).filter(o => o === k).length} worlds · ${spRelTxt(E)}</span></div></div>`;
     if (!E.gone) { h += `<span>They like ${T.likes}.</span><div class="nrel"><i style="width:${(E.rel + 100) / 2}%;background:${E.rel >= 0 ? "#7CF2C8" : "#FF6B6B"}"></i></div>`;
+      if (E.war) { const my = X.wf * spPow(W.vs), th = (E.fl || 0) * empPow(W, k), fk = E.front && E.front.split(":").map(Number);
+        h += `<span style="color:#FF8A8A">⚔️ War: your fleet ${fl0(X.wf)} warships (strength ${fl0(my)}) against theirs ${fl0(E.fl || 0)} (strength ${fl0(th)}).</span>${fk ? `<span>Attacking ${esc(W.G.st[fk[0]].pl[fk[1]].name)}: ${fl0(E.sg || 0)}%${my > th ? "" : " (your fleet is too weak to make headway)"}</span><div class="nrel"><i style="width:${E.sg || 0}%;background:#FFB454"></i></div>` : ""}`;
+        d("ws", () => spBuildWarship(W)); h += `<div class="nbtns"><button class="btn small" data-a="ws${k}">🚀 Build a warship 🪙${warshipCost(X.d)}</button></div>`; }
       if (E.mis) h += `<span>❗ Mission: ${esc(spMisText(W, k))} (🪙${E.mis.rew}, ${Math.max(0, Math.ceil((E.mis.until - X.t) / 60))} min left)</span>`;
       h += `<div class="nbtns">`;
       if (!E.war) { if (E.mis && (E.mis.ty === "goods" || E.mis.ty === "zoo")) { d("h", () => spDiplo(W, k, "hand")); h += `<button class="btn small primary" data-a="h${k}">✅ Hand over</button>`; }
@@ -5726,7 +5812,7 @@ function spEmpDlg(only) {
       else { d("p", () => spDiplo(W, k, "peace")); h += `<button class="btn small" data-a="p${k}">🕊️ Make peace</button>`; }
       h += `</div>`; }
     h += `</div>`; }
-  dialog(`<h2>Empires</h2><p style="font-size:.85rem">To unite the galaxy, make every empire your ally (at 60 on the bar), or take all its worlds. Missions win the most friendship; gifts only go so far. Settling next to them, or beaming up their creatures, makes them cross.</p>${h}<div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeSD);
+  dialog(`<h2>Empires</h2><p style="font-size:.85rem">To unite the galaxy, make every empire your ally (at 60 on the bar), or take all its worlds. Missions win the most friendship; gifts only go so far. Settling next to them, or beaming up their creatures, makes them cross.</p><p style="font-size:.85rem">Wars are fought by fleets, out of sight: your warships are copies of your own ship, so a better design makes a stronger fleet. The stronger fleet wins, worlds fall one by one, and you can pick the target from a world's card.</p>${h}<div class="row"><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeSD);
   for (let k = 1; k <= 6; k++) { const el = document.getElementById("ep" + k); if (el) preview(el, W.G.emp[k].d, 64, 48); }
 }
 function spWorldsDlg() {
@@ -5735,11 +5821,12 @@ function spWorldsDlg() {
     acts["w_" + key] = () => { if (sn === X.at && W.sys) { SPV.map = false; closeSD(); return; } const e = spFly(W, sn); if (e) toast(e); else toast(`Off to ${s.name}.`); closeSD(); };
     return `<button class="btn small cbtn" data-a="w_${key}"><b>${c.home ? "★ " : ""}${esc(p.name)}${danger ? " ⚠️" : ""}</b><span>size ${c.lvl} · 🌿 ${LIFES[L]}${p.res ? " · " + GOODS[p.res].ic : ""}${c.tur ? " · 🔫" + c.tur : ""}</span><em>${T === 2 && A === 2 ? "just right" : TEMPS[T] + ", " + AIRS[A]} · defence ${fl0(c.def)}/${colDefMax(c)}</em></button>`; }).join("");
   dialog(`<h2>Your worlds</h2><p style="font-size:.85rem">Colonies earn 🪙 and dig up goods (${Object.keys(GOODS).map(g => GOODS[g].ic + " " + fl0(X.goods[g])).join(" · ")}) to sell to the empires. Pirates and enemy fleets wear down a world's defence while you're away: guns help, and so does flying there to fight. Tap a world to fly to it.</p><div class="cgrid">${rows}</div>
-    <div class="row"><button class="btn" data-a="zoo">🦎 Collection (${X.zoo.length})</button><button class="btn primary" data-a="ok">Done</button></div>`, acts, closeSD);
+    <p style="font-size:.85rem">⚔️ War fleet: ${fl0(X.wf)} warships, strength ${fl0(X.wf * spPow(W.vs))}. They guard your worlds against enemy fleets, and fight your wars.</p>
+    <div class="row"><button class="btn" data-a="ws">🚀 Build a warship 🪙${warshipCost(X.d)}</button><button class="btn" data-a="zoo">🦎 Collection (${X.zoo.length})</button><button class="btn primary" data-a="ok">Done</button></div>`, Object.assign(acts, { ws: () => { const e = spBuildWarship(W); if (e) toast(e); else snd("eat"); spWorldsDlg(); } }), closeSD);
 }
 function spZooDlg() {
   const X = S.space; dialog(`<h2>Your collection</h2><p style="font-size:.85rem">Creatures beamed up from living worlds. Artistic empires love to see them, and a 🌱 life seeder plants them on your own worlds to bring them to life.</p><div class="zoo">${X.zoo.map((z, i) => `<canvas id="zc${i}" width="80" height="60" style="width:80px;height:60px"></canvas>`).join("") || "<p>Nothing yet. Fit an 🛸 abduction beam (it unlocks when you've scanned five planets) and visit a world with animals.</p>"}</div><div class="row"><button class="btn primary" data-a="ok">Back</button></div>`, { ok: spWorldsDlg }, spWorldsDlg);
-  X.zoo.forEach((z, i) => { const el = document.getElementById("zc" + i); if (el) preview(el, randomDesign(rng(z.sd), ["plant", "meat", "both"][z.sd % 3], 2 + z.sd % 2), 80, 60); });
+  X.zoo.forEach((z, i) => { const el = document.getElementById("zc" + i); if (!el) return; const sp = spSpecies({ sd: z.sd, ty: "garden" }, 3)[z.i || 0]; preview(el, sp.d, 80, 60); el.title = sp.name; });
 }
 function spGoalsDlg() {
   paused = true; const X = S.space;
@@ -5750,6 +5837,8 @@ function spLabel() { const X = S.space; return `⚡${fl0(X.en)} ${Object.keys(GO
 function spaceEvent(e) {
   const X = S.space, nm = k => esc(empName(k)), pn = key => { const [a, b] = key.split(":").map(Number); return W.G.st[a].pl[b].name; };
   if (e.t === "sScan") { snd("relic"); LUI_KEY = ""; }
+  else if (e.t === "sSweep") toast(e.n ? `📡 Found ${e.n} patch${e.n > 1 ? "es" : ""} of riches below!` : "📡 Nothing new here. Keep flying over and sweep again.");
+  else if (e.t === "sHarvest") toast(`Harvested ${e.n} ${GOODS[e.g].ic} ${GOODS[e.g].n.toLowerCase()}.`);
   else if (e.t === "sRelic") { snd("relic"); toast("🏺 You dug up a relic! Devout empires treasure them."); }
   else if (e.t === "sBeam") { snd("grow"); toast(`🛸 Beamed up a creature: ${X.zoo.length} in your collection.`); }
   else if (e.t === "sShape") { snd("grow"); toast(`🌍 ${pn(e.key)} is changing: ${TEMPS[X.shaped[e.key][0]]}, ${AIRS[X.shaped[e.key][1]]}.`); }
@@ -5802,6 +5891,84 @@ function spaceWonDlg() {
     <div class="story">${lines.map(([n, st, t]) => `<div><b>${n}. ${st}</b><span>${esc(t)}</span></div>`).join("")}</div>
     <div class="stats"><div>Time played<b>${fmtTime(S.time)}</b></div><div>Ships beaten<b>${X.kills}</b></div></div>
     <p>Your story is complete. The galaxy is yours to keep exploring.</p><div class="row"><button class="btn primary" data-a="ok">Keep playing</button></div>`, { ok: closeSD }, closeSD);
+}
+/* ---- the fly-over: a low pass over one planet. A big globe turns under the ship; herds of its animals roam the
+   ground (tap one to beam it up) and swept-up riches glow where they were found (tap to harvest). ---- */
+const GOOD_COL = { crystal: 0x6ae0ff, bloom: 0xff7ac8, plasma: 0xffa040 };
+const FLY_R = 50;
+/* A standing animal from a design: the body plus legs, tails and jaws at rest (the land's animated parts, held still). */
+function creatureMesh(d, meat) {
+  const T = T3, tp = makeTpl(d, geom(d), meat), mat = new T.MeshStandardMaterial({ vertexColors: true, roughness: .6 }), g = new T.Group(), Y = new T.Vector3(0, 1, 0);
+  g.add(new T.Mesh(tp.geo, mat));
+  for (const l of tp.legs) { const H = l.hip.clone(), F = l.foot.clone(), u = F.clone().sub(H), dd = Math.min(u.length(), (l.L1 + l.L2) * .995); u.normalize();
+    const b = l.out.clone().addScaledVector(Y, .4); b.addScaledVector(u, -b.dot(u)).normalize(); const a = (l.L1 * l.L1 - l.L2 * l.L2 + dd * dd) / (2 * dd), hh = Math.sqrt(Math.max(0, l.L1 * l.L1 - a * a)), K = H.clone().addScaledVector(u, a).addScaledVector(b, hh), E = H.clone().addScaledVector(u, dd);
+    const up = new T.Mesh(l.gU, mat); up.position.copy(H); up.quaternion.setFromUnitVectors(Y, K.clone().sub(H).normalize()); const lo = new T.Mesh(l.gL, mat); lo.position.copy(K); lo.quaternion.setFromUnitVectors(Y, E.sub(K).normalize()); g.add(up, lo); }
+  for (const c of tp.chains) { const p = c.base.clone(); for (let k = 0; k < c.n; k++) { p.x += c.dir.x * c.gap; p.z += c.dir.z * c.gap; p.y += c.dir.y * c.gap; const m = new T.Mesh(c.geo, mat); m.position.copy(p); m.scale.setScalar(c.r0 * (1 - k / (c.n + 1)) + .6); g.add(m); } }
+  for (const j of tp.jaws) { const h = new T.Group(); h.scale.setScalar(j.sz || 1); h.position.copy(j.pos); h.rotation.y = -j.a; h.add(new T.Mesh(j.geo, mat)); g.add(h); }
+  g.userData.R = tp.R || 20; g.userData.dispose = () => { tp.dispose(); mat.dispose(); }; return g;
+}
+const sphPt = (u, v, r) => new T3.Vector3(Math.cos(v) * Math.cos(u) * r, Math.sin(v) * r, Math.cos(v) * Math.sin(u) * r);
+function buildFly3() {
+  const T = T3, X = S.space, V = SP3, F = W.fly, s = spStar(W, W.sys.n), p = s.pl[F.k], key = pKey(s.n, p.k);
+  dropFly3(); const grp = new T.Group(), globe = new T.Group(); grp.add(globe);
+  const tex = planetTex(T, p, X, s, true); tex.anisotropy = 8;
+  globe.add(new T.Mesh(new T.SphereGeometry(FLY_R, 96, 64), new T.MeshStandardMaterial({ map: tex, roughness: .95 })));
+  const air = new T.Sprite(new T.SpriteMaterial({ map: V.glow, color: p.ty === "gas" ? 0xd8b8ff : 0x9ad0ff, transparent: true, opacity: .35, blending: T.AdditiveBlending, depthWrite: false })); air.scale.set(FLY_R * 2.6, FLY_R * 2.6, 1); grp.add(air);
+  const light = new T.DirectionalLight(0xfff2d8, 2.2); light.position.set(-60, 90, 60); grp.add(light, new T.AmbientLight(0x8090b0, .6));
+  // herds: each kind lives round its own patch of ground
+  const herds = [];
+  for (const sp of spSpecies(p, spLife(X, s, p))) { const R = rng(hash(p.sd, 64, sp.i)), m0 = creatureMesh(sp.d, sp.diet === "meat"), sc = 1.1 / m0.userData.R;
+    for (let hn = 0; hn < 3; hn++) { const hu = sp.i * 2.1 + hn * 2.09 + R() * .6, hv = .62 + (R() - .5) * .3; // three herds of each kind, spread round the world near your flight path
+      for (let j = 0; j < sp.n; j++) { const m = j || hn ? m0.clone() : m0; m.scale.setScalar(sc * (.85 + R() * .3)); globe.add(m); herds.push({ sp, m, u: hu + (R() - .5) * .3, v: hv + (R() - .5) * .25, ph: R() * TAU, j }); } } }
+  // riches: found ones glow, harvested ones go dark until they grow back
+  const deps = spDeps(p).map(d => { const g = new T.Group(); for (let k = 0; k < 5; k++) { const c = new T.Mesh(new T.OctahedronGeometry(.35 + (k % 2) * .2, 0), new T.MeshBasicMaterial({ color: GOOD_COL[d.g] })); c.position.set((k % 3 - 1) * .4, .3 + (k % 2) * .25, (Math.floor(k / 3) - .5) * .5); c.rotation.set(k, k * 2, 0); g.add(c); }
+    const n = sphPt(d.u, d.v, FLY_R); g.position.copy(n); g.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), n.clone().normalize()); g.visible = false; globe.add(g); return { d, g }; });
+  const ring = new T.Mesh(new T.RingGeometry(.9, 1, 64), new T.MeshBasicMaterial({ color: 0x7cf2c8, transparent: true, opacity: 0, side: T.DoubleSide, depthWrite: false })); grp.add(ring);
+  const beam = new T.Mesh(new T.CylinderGeometry(.3, 2.2, 1, 16, 1, true), new T.MeshBasicMaterial({ color: 0x9affc8, transparent: true, opacity: 0, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending })); grp.add(beam);
+  const ship = vehMesh(X.d, EMP_COL[0]); ship.scale.setScalar(1); grp.add(ship);
+  V.scene.add(grp); V.fly = { key, k: F.k, grp, globe, herds, deps, ring, beam, ship, tex, ringT: 9, beamT: 9 };
+}
+function dropFly3() { const V = SP3; if (!V || !V.fly) return; V.scene.remove(V.fly.grp); const done = new Set(); V.fly.grp.traverse(o => { if (o.geometry && !done.has(o.geometry)) { done.add(o.geometry); if (!o.geometry.userData.keep) o.geometry.dispose(); } if (o.material && !done.has(o.material)) { done.add(o.material); if (o.material.map && o.material.map !== V.glow) o.material.map.dispose(); o.material.dispose(); } }); V.fly = null; }
+function drawFly(dt, t) {
+  const T = T3, X = S.space, V = SP3, F = W.fly, cam3 = V.cam; if (!V.fly || V.fly.k !== F.k || V.fly.key !== pKey(W.sys.n, F.k)) buildFly3();
+  const L = V.fly, D = spDepState(X, L.key);
+  V.gal.visible = false; V.sys.visible = false; V.sun.intensity = 0; V.head.intensity = 0; L.grp.visible = true;
+  L.globe.rotation.y = F.u - Math.PI / 2; // the point under the ship turns towards you as you fly
+  for (const h of L.herds) { if (h.gone) continue; const wob = Math.sin(t * .2 + h.ph) * .06, u = h.u + wob, v = h.v + Math.cos(t * .17 + h.ph) * .04, n = sphPt(u, v, FLY_R).normalize();
+    h.m.position.copy(n.clone().multiplyScalar(FLY_R + .05 + Math.abs(Math.sin(t * 6 + h.ph)) * .05)); h.m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), n); h.m.rotateY(h.ph + Math.cos(t * .2 + h.ph) * .6);
+    if (h.lift != null) { h.lift += dt; h.m.position.addScaledVector(n, h.lift * 6); h.m.scale.multiplyScalar(.97); if (h.lift > 1.2) { h.gone = true; h.m.visible = false; } } }
+  for (const { d, g } of L.deps) { const found = !!(D.f & (1 << d.i)), ready = X.t - (D.h[d.i] || -1e9) >= DEP_BACK; g.visible = found; g.children.forEach((c, k) => { c.material.color.setHex(ready ? GOOD_COL[d.g] : 0x445060); c.rotation.y = t * (ready ? 1.5 : 0) + k; }); g.scale.setScalar(ready ? 1 + .12 * Math.sin(t * 4 + d.i) : .8); }
+  L.ringT += dt; L.ring.material.opacity = Math.max(0, .7 - L.ringT * .5); const rr = 4 + L.ringT * 40; L.ring.scale.setScalar(rr); L.ring.position.copy(sphPt(Math.PI / 2, .55, FLY_R + 1)); L.ring.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), L.ring.position.clone().normalize());
+  // the ship hovers ahead of the camera, over the front of the globe
+  { const n = new T.Vector3(0, Math.sin(.5), Math.cos(.5)), fw = new T.Vector3(0, Math.cos(.5), -Math.sin(.5)); L.ship.position.copy(n).multiplyScalar(FLY_R + 12).addScaledVector(fw, -7).add(new T.Vector3(-4.5, 0, 0)); L.ship.position.addScaledVector(n, Math.sin(t * 2) * .25); L.ship.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(fw, n, fw.clone().cross(n))); }
+  L.beamT += dt; L.beam.material.opacity = L.beamT < .8 ? .5 * (1 - L.beamT / .8) : 0;
+  if (L.beamTo && L.beamT < .8) { const a = L.ship.position, b = L.beamTo.clone().applyMatrix4(L.globe.matrixWorld), mid = a.clone().add(b).multiplyScalar(.5), len = a.distanceTo(b); L.beam.position.copy(mid); L.beam.scale.set(1, len, 1); L.beam.quaternion.setFromUnitVectors(new T.Vector3(0, -1, 0), b.clone().sub(a).normalize()); }
+  { const z = 1 / (cam.z || 1), v0 = .5, n = new T.Vector3(0, Math.sin(v0), Math.cos(v0)), fw = new T.Vector3(0, Math.cos(v0), -Math.sin(v0)), G = n.clone().multiplyScalar(FLY_R); // behind and above the ship, looking ahead over the curve of the world
+    cam3.position.copy(G).addScaledVector(n, 30 * z).addScaledVector(fw, -20 * z); cam3.lookAt(G.clone().addScaledVector(fw, 7)); }
+  G3.R.render(V.scene, cam3);
+  // labels
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, CW, CH); ctx.textAlign = "center"; ctx.shadowColor = "rgba(0,0,0,.9)"; ctx.shadowBlur = 4;
+  const proj = o => { const v = o.getWorldPosition(new T.Vector3()).project(cam3); return [(v.x + 1) / 2 * CW, (1 - v.y) / 2 * CH, v.z < 1 && v.z > -1]; }, seen = new Set();
+  const facing = o => o.getWorldPosition(new T.Vector3()).normalize().dot(new T.Vector3(0, .5, .87)) > .2;
+  for (const h of L.herds) { if (h.gone || seen.has(h.sp.i) || !facing(h.m)) continue; const [x, y, ok] = proj(h.m); if (!ok || x < 0 || x > CW || y < 0 || y > CH) continue; seen.add(h.sp.i); const have = X.zoo.some(z => z.k === L.key + "#" + h.sp.i || (h.sp.i === 0 && z.k === L.key));
+    ctx.font = "800 12px Figtree, sans-serif"; ctx.fillStyle = have ? "rgba(200,255,230,.8)" : "#FFE08A"; ctx.fillText(h.sp.name + (have ? " ✓" : " · tap to beam up"), x, y - 26); }
+  for (const { d, g } of L.deps) { if (!g.visible || !facing(g)) continue; const [x, y, ok] = proj(g); if (!ok) continue; const ready = X.t - (D.h[d.i] || -1e9) >= DEP_BACK; ctx.font = "800 12px Figtree, sans-serif"; ctx.fillStyle = ready ? "#E8FFF9" : "rgba(180,190,200,.7)"; ctx.fillText(ready ? `${GOODS[d.g].ic} ${d.n} · tap to harvest` : `${GOODS[d.g].ic} grows back in ${Math.ceil((DEP_BACK - (X.t - D.h[d.i])) / 60)} min`, x, y - 16); }
+  ctx.font = "800 14px Figtree, sans-serif"; ctx.fillStyle = "#E8FFF9"; ctx.fillText(`Flying low over ${spStar(W, W.sys.n).pl[F.k].name}`, CW / 2, 92); ctx.shadowBlur = 0;
+}
+function flyTap(sx, sy) {
+  const T = T3, X = S.space, L = SP3 && SP3.fly; if (!L) return; const cam3 = SP3.cam, proj = o => { const v = o.getWorldPosition(new T.Vector3()).project(cam3); return [(v.x + 1) / 2 * CW, (1 - v.y) / 2 * CH, v.z < 1]; }, facing = o => o.getWorldPosition(new T.Vector3()).normalize().dot(new T.Vector3(0, .5, .87)) > .2;
+  let best = null, bd = 42;
+  for (const { d, g } of L.deps) { if (!g.visible || !facing(g)) continue; const [x, y, ok] = proj(g), dd = Math.hypot(x - sx, y - sy); if (ok && dd < bd) { bd = dd; best = { dep: d }; } }
+  for (const h of L.herds) { if (h.gone || h.lift != null || !facing(h.m)) continue; const [x, y, ok] = proj(h.m), dd = Math.hypot(x - sx, y - sy); if (ok && dd < bd) { bd = dd; best = { h }; } }
+  if (!best) return;
+  if (best.dep) { const e = spHarvest(W, best.dep.i); if (e) toast(e); else snd("eat"); LUI_KEY = ""; return; }
+  W.beamI = best.h.sp.i; const e = spAct(W, W.fly.k, "beam"); if (e) { toast(e); return; }
+  best.h.lift = 0; L.beamTo = best.h.m.position.clone(); L.beamT = 0; snd("grow"); LUI_KEY = "";
+}
+function flyUI(acts) {
+  const X = S.space, p = spStar(W, W.sys.n).pl[W.fly.k], sp = spSpecies(p, spLife(X, spStar(W, W.sys.n), p)), key = pKey(W.sys.n, p.k), D = spDepState(X, key), deps = spDeps(p), found = deps.filter(d => D.f & (1 << d.i)).length;
+  return `<b>${esc(p.name)}</b><span>${sp.length ? `🦎 ${sp.length} kinds of animal here (${sp.filter(q => X.zoo.some(z => z.k === key + "#" + q.i || (q.i === 0 && z.k === key))).length} in your collection). Tap one to beam it up (⚡25)${W.vs.beam ? "" : ": you need an 🛸 abduction beam"}.` : "No animals live here."}</span>
+    <span>📡 Sweep the ground as you pass (⚡15) to find hidden riches (${found} of ${deps.length} found), then tap them to harvest. Your hold takes ${10 + W.vs.cargo} at a time.</span>`;
 }
 /* tapping, dragging to look around, pinching to zoom */
 const LPT = { pts: new Map(), pan: false, sx: 0, sy: 0, cx: 0, cy: 0, pinch: 0, z0: 1 };
@@ -6307,6 +6474,7 @@ window.SG_BACK = () => {
   if (VB && $("dlg").hidden) { closeVB(); return true; }
   if (!$("dlg").hidden) { if (dlgBack) dlgBack(); else closeDlg(); return true; }
   if (view === "play" && IMP) { cancelImpress(); return true; }
+  if (view === "play" && W && W.space && W.fly) { spLeaveFly(W); LUI_KEY = ""; return true; }
   if (view === "play" && W && W.space && (SPV.sel != null || SPV.star != null)) { SPV.sel = null; SPV.star = null; LUI_KEY = ""; return true; }
   if (view === "play" && W && W.tribe && PLACE) { PLACE = null; renderLandUI(true); return true; }
   if (view === "play" && W && W.land && (ENC || CALL)) { ENC = null; CALL = false; landLeave(W); renderLandUI(true); return true; }
