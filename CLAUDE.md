@@ -192,6 +192,9 @@ should pass at 0 s; most at 1 s, the rest via the easier retry, `EASY`, offered 
 Free play has `S.diff` (index into `DIFFS`: patience, crowd, burn, tips, rep), two seeded daily goals (`dailyGoals`, cash
 and rep rewards), rush warnings, a service streak (`G.streak` raises tips), end-of-day advice (`dayTips`, stored as
 `S.last.advice`), WebAudio cues (`snd`, `opts.sound`), and campaign chapter certificates (+£75 start cash each).
+Layout: `S.stations[i]` is the station in kitchen spot i (`slotPos(i)`) and may be `null` (an empty spot; use `kit()` for the
+list without gaps); `S.tpos[j]` is table j's position in `TABLE_POS` (old saves get `0..n-1` in `migrate`). The office's
+Rearrange map (`layout()`) swaps them. Drink recipes have no `plate` step (`plated(r)`), so they use no plate.
 
 ### Gravity Well (`games/gravity-well`)
 

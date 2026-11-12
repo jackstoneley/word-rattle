@@ -652,6 +652,15 @@
         "No-go zones: tap Dig, then No-go, and paint where your diggers must keep out. They won't dig, claim or walk there.",
         "Rivals lose far fewer creatures to wild beasts now, so they are tougher than before. Gentle lords keep a slightly smaller army to make up for it."
       ]
+    },
+    {
+      "id": 57,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: rearrange your place, and drinks without plates",
+      "details": [
+        "New in the office (Upgrades → Layout → Rearrange): move equipment and tables around so Lee Lee walks less. Tap one, then tap where it should go. It's free.",
+        "Drinks (tea, coffee, pints, wine, cocktails, fizz) go straight to the table without a plate, and don't leave dirty plates behind."
+      ]
     }
   ]
 }
