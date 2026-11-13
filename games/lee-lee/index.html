@@ -595,7 +595,7 @@ function dayCrowd(save, day) {
   if (hasPk(s, "garden")) c *= d.w === 0 ? 1.12 : d.w === 4 ? 1.22 : d.w === 3 || d.w === 5 ? .97 : 1;
   if (hasPk(s, "river") && (d.w === 0 || d.w === 4)) c *= 1.06;
   if (hasPk(s, "leaky") && (d.w === 2 || d.w === 5)) c *= .94;
-  if (d.match) c *= 1 + STADIUMS[d.mi].b * d.mk;
+  if (d.match) c *= planMul(planOf(save, d));
   for (const o of d.ev) c *= 1 + (o.E[save.venue] - 1) * o.k;
   if (d.rw) c *= .8;
   return Math.max(.6, Math.min(1.9, c));
@@ -604,11 +604,13 @@ function prefW(info, r) {
   if (!info) return 1;
   const R = RECIPES[r], W = WEATHER[info.w];
   let w = R.t === "c" ? W.cold : R.t === "w" ? W.warm : 1;
-  if (info.match && (r === "lager" || r === "chips" || r === "burger")) w *= r === "lager" ? 2.6 : 1.6;
   return w * areaPref(info, r);
 }
 const OCCASIONS = [{ n: "Birthday party", e: "🎂" }, { n: "Engagement drinks", e: "💍" }, { n: "Office party", e: "🏢" }, { n: "Graduation", e: "🎓" },
-  { n: "Family get-together", e: "👪", kids: 2 }, { n: "Kids' birthday", e: "🧸", kids: 3, v: "cafe" }, { n: "Hen do", e: "👰", v: "pub" }];
+  { n: "Family get-together", e: "👪", kids: 2 }, { n: "Kids' birthday", e: "🧸", kids: 3, v: "cafe" }, { n: "Hen do", e: "👰", v: "pub" },
+  // match-day group bookings (m: the sport), only asked for around a home game near a pub
+  { n: "Supporters' club", e: "⚽", v: "pub", m: "football" }, { n: "Rugby club social", e: "🏉", v: "pub", m: "rugby" },
+  { n: "Cricket club dinner", e: "🏏", v: "pub", m: "cricket" }, { n: "Day at the races", e: "🏇", v: "pub", m: "race" }];
 const BAR = [{ n: "Bar & standing area", c: 1200, st: 1, spots: 2 }, { n: "Bigger standing area", c: 2500, st: 2, spots: 3 }];
 const BAR_SPOTS = [[6.4, 12.95], [8.15, 12.95], [4.6, 12.95]];
 const plated = r => RECIPES[r].s[RECIPES[r].s.length - 1] === "plate"; // drinks go out without a plate
@@ -879,16 +881,60 @@ function seasonEvents(save, day) {
 }
 function evPull(E, s) { if (!E.r) return 1; const d = Math.hypot(s.x - E.x, s.y - E.y); return Math.max(0, Math.min(1, 1.15 - d / E.r)); }
 function eventsOn(save, day) { const s = siteOf(save); return seasonEvents(save, day).filter(o => day >= o.from && day <= o.to).map(o => ({ E: o.E, k: evPull(o.E, s) })); }
-function stadiumPull(st, s, venue) { const d = Math.hypot(s.x - st.x, s.y - st.y), k = Math.max(0, 1 - d / 3); return Math.pow(k, 1.5) * (venue === "pub" ? 1 : .55); }
+function stadiumPull(st, s) { const d = Math.hypot(s.x - st.x, s.y - st.y), k = Math.max(0, 1 - d / 3); return Math.pow(k, 1.5); }
+/* Match days, as they really go. matchPlan(stadium, weekday, venue, k) (k = how close, 0-1) says who comes and when:
+   reg multiplies the usual customers (shoppers, families and couples steer clear of the crowds and closed roads), waves are
+   fans arriving around a time (u = share of opening hours: café 9-3, pub 5-midnight; sh = groups as a share of a normal day),
+   quiet halves the usual customers while an evening game is on, fan says what fan groups are like, food what they order.
+   Football is at 3pm on Saturdays and 7:45pm on Tuesdays, rugby at 3pm, cricket all day (Thursday is a T20 night),
+   racing in the afternoon. Null: no difference worth showing (a café is shut by an evening kick-off). */
+const MATCH_FOOD = {
+  cafe: { football: ["english", "eggs", "toast", "toastie", "tea", "latte", "soup", "wrap"], rugby: ["english", "eggs", "pancakes", "soup", "latte", "tea", "toastie"],
+    cricket: ["tea", "sponge", "hightea", "salad", "icecream", "wrap", "quiche", "muffin"], race: ["latte", "croissant", "english", "sponge", "muffin"] },
+  pub: { football: ["lager", "chips", "burger", "pie"], rugby: ["lager", "pie", "bangers", "roast", "steak", "chips"],
+    cricket: ["lager", "wine", "ploughmans", "chips", "fishchips"], race: ["fizz", "wine", "cocktail", "steak", "lager"] }
+};
+function matchPlan(st, wd, venue, k) {
+  const W = (u, sd, sh, tag) => ({ u, sd, sh: sh * k, tag }), food = MATCH_FOOD[venue][st.what];
+  if (venue === "cafe") {
+    if (st.what === "football") return wd === 1 ? null : { kick: "3pm", reg: 1 - .35 * k, waves: [W(.55, .12, .45, "pre")], food, fan: { size: [1, 3], rowdy: 0, drink: 0 },
+      say: "Your usual shoppers and families stay away from the crowds and closed roads, but fans grab a fry-up, a toastie or a hot drink on the way to the ground (busiest about 11:30 to 2)." };
+    if (st.what === "rugby") return { kick: "3pm", reg: 1 - .25 * k, waves: [W(.55, .12, .3, "pre")], food, fan: { size: [2, 4], rowdy: 0, drink: 0, kids: .3 },
+      say: "Regulars avoid the traffic, but rugby fans (some with their families) stop for a hearty breakfast or a hot drink before kick-off (busiest about 11:30 to 2)." };
+    if (st.what === "cricket") return wd === 3 ? null : { kick: "11am", reg: 1, waves: [W(.45, .3, .25, "all")], food, fan: { size: [1, 3], rowdy: 0, drink: 0 },
+      say: "A day of county cricket: spectators wander over for tea, cake, sandwiches and ice cream, especially at lunch and tea breaks." };
+    return { kick: "2pm", reg: 1 - .1 * k, waves: [W(.4, .1, .12, "pre")], food, fan: { size: [2, 4], rowdy: 0, drink: 0 },
+      say: "Race day: the roads are busy, and a few racegoers stop for coffee and pastries on the way." };
+  }
+  if (st.what === "football") return wd === 1
+    ? { kick: "7:45pm", reg: 1 - .3 * k, quiet: [.4, .68], waves: [W(.13, .07, .6, "pre"), W(.73, .05, .35, "post")], food, fan: { size: [2, 5], rowdy: .3, drink: .7 },
+      say: "Fans come for a quick pint and something to eat before the 7:45 kick-off (about 5:30 to 7:30). It goes quiet while the game's on, then they're back after 9:45. Couples out for dinner stay away." }
+    : { kick: "3pm", reg: 1 - .2 * k, waves: [W(.1, .08, .95, "post")], food, fan: { size: [2, 5], rowdy: .35, drink: .65 },
+      say: "Kick-off was at 3, so fans pour in when the final whistle goes (busiest 5 to 7pm): lots of beer, chips and burgers, and it gets loud. Couples and families give it a miss." };
+  if (st.what === "rugby") return { kick: "3pm", reg: 1 - .15 * k, waves: [W(.12, .09, .75, "post")], food, fan: { size: [2, 4], rowdy: .08, drink: .4 },
+    say: "Rugby fans come in after the game (busiest 5 to 7:30): a friendly crowd after pints, pies and proper dinners." };
+  if (st.what === "cricket") return wd === 3
+    ? { kick: "6:30pm", reg: 1, quiet: [.25, .7], waves: [W(.06, .05, .45, "pre"), W(.74, .05, .45, "post")], food, fan: { size: [2, 5], rowdy: .2, drink: .7 },
+      say: "T20 night: fans have a pint before the 6:30 start, then come back for a lively drink when it finishes around 10." }
+    : { kick: "11am", reg: 1, waves: [W(.22, .1, .4, "post")], food, fan: { size: [1, 3], rowdy: .03, drink: .4 },
+      say: "After stumps at 6:30, cricket fans drift in for a pint or a glass of wine and a ploughman's." };
+  return { kick: "2pm", reg: 1, waves: [W(.12, .1, .8, "post")], food, fan: { size: [3, 6], rowdy: .15, drink: .5 },
+    say: "Racegoers come back dressed up, celebrating or drowning their sorrows: fizz, wine, cocktails and steak." };
+}
+const planMul = P => P ? P.reg + P.waves.reduce((a, w) => a + w.sh, 0) : 1;
+const planOf = (save, info) => info && info.match ? matchPlan(STADIUMS[info.mi], info.wd, save.venue, info.mk) : null;
+
 function matchOn(save, day) {
   const s = siteOf(save), c = calOf(day), wd = (day - 1) % 7, wk = Math.floor((day - 1) / 7);
   let best = null;
   STADIUMS.forEach((st, i) => {
     if (!st.sea.includes(c.se)) return;
-    const k = stadiumPull(st, s, save.venue); if (k < .04) return;
+    const k = stadiumPull(st, s); if (k < .04) return;
     const r = seeded(seedOf(save) * 5 + wk * 37 + i * 101); if (r() > st.home) return;
     if (st.days[Math.floor(r() * st.days.length)] !== wd) return;
-    if (!best || k * st.b > best.k * STADIUMS[best.i].b) best = { i, k };
+    const P = matchPlan(st, wd, save.venue, k); if (!P) return;
+    const e = Math.abs(planMul(P) - 1) + .01;
+    if (!best || e > best.e) best = { i, k, e };
   });
   return best;
 }
@@ -1380,14 +1426,30 @@ function startDay() {
   if (LV != null) { G.len = LEVELS[LV].len; G.arr = levelArrivals(LV); }
   const n = LV != null ? 0 : Math.max(3, Math.round(expectedGroups(S) * rnd(.9, 1.1)));
   const big = Math.max(...S.tables), critic = LV == null && (S.camp || []).some(c => c.id === "critic");
+  // match days: fans come in waves round the game (G.mplan), the usual customers thin out
+  const P = G.mplan = LV == null ? planOf(S, info) : null, fanSh = P ? P.waves.reduce((a, w) => a + w.sh, 0) : 0, fanP = P ? fanSh / planMul(P) : 0;
+  const gauss = () => (rnd(-1, 1) + rnd(-1, 1) + rnd(-1, 1)) / 1.5;
   for (let i = 0; i < n; i++) {
     let u;
-    if (Math.random() < .3) u = rnd(0, 1); else { const [mu, sd] = pickOne(V.peaks); u = mu + sd * (rnd(-1, 1) + rnd(-1, 1) + rnd(-1, 1)) / 1.5; }
+    if (P && Math.random() < fanP) {
+      let x = Math.random() * fanSh, w = P.waves[0]; for (const v of P.waves) { w = v; if ((x -= v.sh) <= 0) break; }
+      u = clamp(w.u + w.sd * gauss(), .01, .9);
+      const F = P.fan, kids = F.kids && big >= 3 && Math.random() < F.kids;
+      const a = { t: u * G.len, size: kids ? Math.min(big, 3 + (Math.random() < .5 ? 1 : 0)) : Math.min(big, F.size[0] + Math.floor(Math.random() * (F.size[1] - F.size[0] + 1))), fan: STADIUMS[info.mi].what, late: S.venue === "pub" && u > .6 };
+      if (kids) a.kids = a.size - 2;
+      a.rowdy = !kids && a.size <= 4 && Math.random() < F.rowdy;
+      if (S.bar && a.size <= 3 && Math.random() < F.drink) a.drinker = true;
+      G.arr.push(a); continue;
+    }
+    for (let tries = 0; tries < 2; tries++) {
+      if (Math.random() < .3) u = rnd(0, 1); else { const [mu, sd] = pickOne(V.peaks); u = mu + sd * gauss(); }
+      if (!(P && P.quiet && u > P.quiet[0] && u < P.quiet[1] && Math.random() < .6)) break; // most regulars don't come in while the game is on
+    }
     u = clamp(u, .01, .9);
     let size = Math.random() < .42 ? 1 : Math.random() < .7 ? 2 : Math.random() < .6 ? 3 : 4;
     size = Math.min(size, big);
     const late = S.venue === "pub" && u > .6;
-    const a = { t: u * G.len, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep) + (info.match ? .08 : 0), late };
+    const a = { t: u * G.len, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep), late };
     if (big >= 3 && !late && Math.random() < .1 + (info.wd >= 5 ? .15 : 0) + (S.venue === "cafe" && info.w === 0 ? .05 : 0) + (info.wd >= 5 && hasPk(siteOf(S), "parking") ? .05 : 0) + (info.ev.some(o => o.E.kids) ? .1 : 0)) { a.size = big >= 4 && Math.random() < .5 ? 4 : 3; a.kids = a.size - 2; a.rowdy = false; }
     else if (S.bar && late && a.size <= 3 && Math.random() < .25) a.drinker = true;
     G.arr.push(a);
@@ -1401,7 +1463,7 @@ function startDay() {
   if (LV == null) for (const b of (S.bookings || []).filter(b => b.ok && b.day === S.day)) {
     const t = G.tables.filter(t => !t.bar && !t.res && t.seats >= b.size).sort((p, q) => p.seats - q.seats)[0];
     if (t) t.res = b;
-    G.arr.push({ t: clamp(b.at, .05, .8) * G.len, size: b.size, party: b, kids: b.kids || 0 });
+    G.arr.push({ t: clamp(b.at, .05, .8) * G.len, size: b.size, party: b, kids: b.kids || 0, fan: OCCASIONS[b.occ].m || null });
   }
   G.arr.sort((a, b) => a.t - b.t);
   if (critic) { const a = G.arr[Math.floor(G.arr.length * .4)]; if (a) { a.critic = 1; a.size = 1; a.rowdy = false; } }
@@ -1418,6 +1480,12 @@ function startDay() {
   G.goals = LV == null ? dailyGoals() : [];
   if (LV == null && S.duel && S.duel.day === S.day) G.goals.push({ k: "duel", n: S.duel.need, cash: 0, rep: 0 });
   G.rush = LV == null ? V.peaks.map(([mu], i) => ({ t: Math.max(4, (mu - .09) * G.len), say: RUSH[S.venue][i] })) : [];
+  if (G.mplan) {
+    const M = STADIUMS[G.info.mi];
+    for (const w of G.mplan.waves) if (w.tag !== "all") G.rush.push({ t: Math.max(4, (w.u - .08) * G.len), say: w.tag === "pre" ? (S.venue === "pub" ? `Fans want a pint before the ${M.what === "cricket" ? "start" : "kick-off"}! ${M.e}` : `Fans on their way to the ${M.what === "race" ? "races" : "game"}! ${M.e}`)
+      : M.what === "race" ? "The racing's over: racegoers heading your way! 🏇" : M.what === "cricket" ? `Stumps! Cricket fans heading your way ${M.e}` : `Final whistle! Fans heading your way ${M.e}` });
+    G.rush.sort((a, b) => a.t - b.t);
+  }
   $("pName").textContent = LV != null ? LEVELS[LV].n + (EASY ? " (easier)" : "") : S.name;
   show("play"); resize();
   toastMsg(S.venue === "pub" ? "Doors open! The first customers are on their way." : "Doors open! Kettle's on.", 2.4);
@@ -1451,7 +1519,7 @@ function briefing() {
   const I = G.info, M = I.match ? STADIUMS[I.mi] : null;
   dialog(`<div class="small muted" style="text-align:center">${esc(S.name)} · ${D.e} ${D.n}</div><h3>${WEEKDAYS[I.wd]} · Day ${S.day}</h3>
     <div class="small muted" style="text-align:center">${calText(S.day)}</div>
-    <p class="small" style="text-align:center"><b>${WEATHER[I.w].e} ${WEATHER[I.w].n}</b>: people will want ${WEATHER[I.w].say}.${M ? ` <b>${M.e} ${matchText(M)}!</b>${S.venue === "pub" ? " Lots of beer and chips." : " Fans stop by before the game."}` : ""}</p>
+    <p class="small" style="text-align:center"><b>${WEATHER[I.w].e} ${WEATHER[I.w].n}</b>: people will want ${WEATHER[I.w].say}.${M ? ` <b>${M.e} ${matchText(M)}, ${G.mplan.kick}.</b> ${G.mplan.say}` : ""}</p>
     ${I.ev.map(o => `<p class="news small">${o.E.e} <b>${o.E.n}</b>: ${esc(o.E.say)} ${o.k > .6 ? "It's right on your doorstep." : o.k > .25 ? "Some of the crowds come your way." : "A few people come your way."}</p>`).join("")}
     ${I.rw ? `<p class="small" style="text-align:center">🚧 Roadworks outside this week: a bit quieter.</p>` : ""}
     ${S.duel && S.duel.day === S.day ? `<p class="news small">🥊 <b>Taste-off day</b> against ${esc((allRivals(S).find(x => x.id === S.duel.id) || {}).n || "a rival")}. Keep ${S.duel.need}% of customers happy!</p>` : ""}
@@ -1528,6 +1596,7 @@ function chooseOrder(g, taken, kind) {
     if (g.critic) w *= 1 + R.p / 5;
     if (R.kid && kind !== "kid") w *= .25;
     w *= prefW(G.info, r);
+    if (g.fan && G.mplan) w *= G.mplan.food.includes(r) ? 3 : .4; // fans order match-day food; everyone else orders as usual
     opts.push([r, w]);
   }
   if (!opts.length) return null;
@@ -1567,7 +1636,7 @@ function serve(g, tk, dish) {
 
 /* ---------- customers ---------- */
 function spawnGroup(a) {
-  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, kids: a.kids || 0, drinker: !!a.drinker, party: a.party || null, rounds: 0, spilt: false, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
+  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, kids: a.kids || 0, drinker: !!a.drinker, fan: a.fan || null, party: a.party || null, rounds: 0, spilt: false, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
     claim: null, calmClaim: null, shout: 0, rt: rnd(6, 12), calmed: 0, people: [] };
   for (let i = 0; i < a.size; i++) g.people.push({ x: DOOR[0] + (i - (a.size - 1) / 2) * .4, y: DOOR[1], look: randomLook(), tx: 0, ty: 0, kid: i >= a.size - (a.kids || 0) });
   if (g.party) fx(4.5, 13, `${OCCASIONS[g.party.occ].e} The ${OCCASIONS[g.party.occ].n.toLowerCase()} has arrived!`, "#E8664A");
@@ -2467,9 +2536,18 @@ function dayTips(g) {
 function newBookingRequest() {
   S.bookings = (S.bookings || []).filter(b => b.day > S.day || (b.day === S.day && b.ok));
   const xmas = [1, 2, 3].some(k => eventsOn(S, S.day + k).some(o => o.E.party));
-  if (S.bookings.filter(b => !b.ok).length >= 2 || Math.random() > .3 + .08 * starsOf(S.rep) + (xmas ? .3 : 0)) return null;
+  if (S.bookings.filter(b => !b.ok).length >= 2) return null;
+  // a home game in the next few days: supporters' clubs and race-day parties book a pub near the ground
+  if (S.venue === "pub") for (let k = 1; k <= 3; k++) {
+    const day = S.day + k, d = dayInfo(S, day), MP = planOf(S, d);
+    if (!MP || d.mk < .15 || S.bookings.some(b => b.day === day) || Math.random() > .2 + .5 * d.mk) continue;
+    const occ = OCCASIONS.findIndex(o => o.m === STADIUMS[d.mi].what), w = MP.waves.reduce((a, x) => x.sh > a.sh ? x : a), size = Math.random() < .5 ? 5 : 6;
+    const b = { id: 1e6 + S.day * 10 + k, day, at: Math.round(clamp(w.u, .05, .8) * 100) / 100, size, occ, kids: 0, dep: Math.round(size * (6 + 2 * starsOf(S.rep))), ok: false };
+    S.bookings.push(b); return b;
+  }
+  if (Math.random() > .3 + .08 * starsOf(S.rep) + (xmas ? .3 : 0)) return null;
   const day = S.day + 1 + Math.floor(Math.random() * 3); if (S.bookings.some(b => b.day === day)) return null;
-  const occ = pickOne(OCCASIONS.filter(o => !o.v || o.v === S.venue)), size = Math.random() < .5 ? 5 : 6;
+  const occ = pickOne(OCCASIONS.filter(o => (!o.v || o.v === S.venue) && !o.m)), size = Math.random() < .5 ? 5 : 6;
   const b = { id: S.day * 10 + Math.floor(Math.random() * 10), day, at: Math.round(rnd(.2, .6) * 100) / 100, size, occ: OCCASIONS.indexOf(occ), kids: occ.kids || 0, dep: Math.round(size * (6 + 2 * starsOf(S.rep))), ok: false };
   S.bookings.push(b); return b;
 }
@@ -2612,10 +2690,11 @@ function spend(c) { S.cash = Math.round((S.cash - c) * 100) / 100; }
 function suggested() {
   const groups = expectedGroups(S) * (S.venue === "pub" && S.bar ? 1 + .3 * S.bar : 1), items = groups * 1.75 * (1.12 + .07 * starsOf(S.rep));
   const menu = onMenuS().filter(r => r && RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t))), info = dayInfo(S, S.day);
+  const MP = planOf(S, info), fs = MP ? MP.waves.reduce((a, w) => a + w.sh, 0) / planMul(MP) : 0, mS = r => MP ? Math.max(.2, 1 + fs * (MP.food.includes(r) ? 2 : -.6)) : 1;
   const out = {};
   if (!menu.length) return out;
-  const wsum = menu.reduce((a, r) => a + (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1) * prefW(info, r) * (RECIPES[r].kid ? .4 : 1), 0);
-  for (const r of menu) { const w = (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1) * prefW(info, r) * (RECIPES[r].kid ? .4 : 1) / wsum; for (const [k, q] of Object.entries(RECIPES[r].i)) out[k] = (out[k] || 0) + items * w * q * 1.15; }
+  const wsum = menu.reduce((a, r) => a + (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1) * prefW(info, r) * mS(r) * (RECIPES[r].kid ? .4 : 1), 0);
+  for (const r of menu) { const w = (RECIPES[r].d ? (S.venue === "pub" ? 1.6 : .8) : 1) * (S.disc && S.disc.r === r ? 1 + S.disc.pct * 6 : 1) * prefW(info, r) * mS(r) * (RECIPES[r].kid ? .4 : 1) / wsum; for (const [k, q] of Object.entries(RECIPES[r].i)) out[k] = (out[k] || 0) + items * w * q * 1.15; }
   for (const k in out) out[k] = Math.ceil(out[k]);
   return out;
 }
@@ -2698,7 +2777,7 @@ function forecastCard() {
     cells += `<div class="fc${k === 0 ? " on" : ""}"><b>${WEEKDAYS[d.wd].slice(0, 3)}</b><span class="big">${WEATHER[d.w].e}</span><span>${d.match ? STADIUMS[d.mi].e : d.ev.length ? d.ev[0].E.e : bk ? OCCASIONS[bk.occ].e : d.rw ? "🚧" : "&nbsp;"}</span><i style="height:${Math.round(clamp(c, .6, 1.9) * 22)}px"></i><small>${busy(c)}</small></div>`;
   }
   return `<div class="card"><div class="row spread"><h2>Tomorrow: ${WEEKDAYS[d0.wd]}</h2><span class="small muted">Day ${S.day}</span></div>
-    <p class="small"><b>${W.e} ${W.n}</b>${d0.match ? ` · <b>${STADIUMS[d0.mi].e} ${matchText(STADIUMS[d0.mi])}</b>` : ""}${d0.ev.map(o => ` · <b>${o.E.e} ${o.E.n}</b>`).join("")}${d0.rw ? " · 🚧 roadworks" : ""} · ${busy(dayCrowd(S, S.day))}. People will want ${W.say}${d0.match && S.venue === "pub" ? ", and lots of beer" : ""}.${likes.length ? ` Selling well: ${likes.join(" ")}` : ""}</p>
+    <p class="small"><b>${W.e} ${W.n}</b>${d0.match ? ` · <b>${STADIUMS[d0.mi].e} ${matchText(STADIUMS[d0.mi])}</b>` : ""}${d0.ev.map(o => ` · <b>${o.E.e} ${o.E.n}</b>`).join("")}${d0.rw ? " · 🚧 roadworks" : ""} · ${busy(dayCrowd(S, S.day))}. People will want ${W.say}.${d0.match ? " " + planOf(S, d0).say : ""}${likes.length ? ` Selling well: ${likes.join(" ")}` : ""}</p>
     <div class="fcs">${cells}</div>
     <p class="small muted">${calText(S.day)}. Plan stock, specials, staff and adverts for the days ahead. Events and seasons: City tab.</p></div>`;
 }
@@ -2964,7 +3043,13 @@ function weekChart(save) {
   return `<div class="wk">${w.map((v, d) => `<div><i style="height:${Math.round(v / mx * 30)}px"></i>${WEEKDAYS[d].slice(0, 2)}</div>`).join("")}</div>`;
 }
 function avgGroups(save) { let t = 0; for (let k = 0; k < 7; k++) t += expectedGroups(Object.assign({}, save, { day: save.day + k })); return t / 7; }
-function nearStadiums(s, venue) { return STADIUMS.map(st => ({ st, k: stadiumPull(st, s, venue) })).filter(x => x.k > .08).sort((a, b) => b.k - a.k); }
+function nearStadiums(s, venue) { return STADIUMS.map(st => ({ st, k: stadiumPull(st, s) })).filter(x => x.k > .08 && matchPlan(x.st, x.st.days[0], venue, x.k)).sort((a, b) => b.k - a.k); }
+function stadiumNote(x, s, venue) {
+  const st = x.st, P = matchPlan(st, st.days[0], venue, x.k), m = planMul(P), d = Math.hypot(s.x - st.x, s.y - st.y).toFixed(1), when = st.sea.length < 3 ? ` (${st.sea.map(i => SEASONS[i].n.toLowerCase()).join(" and ")})` : " (not in summer)";
+  const what = st.what === "race" ? "race days" : "home games";
+  const eff = venue === "pub" ? `${what} fill the place with fans, about ${pct(m - 1)} busier` : m > 1.03 ? `${what} bring fans in, a little busier overall` : m < .97 ? `on ${what} your regulars stay away, a little quieter overall` : `on ${what} fans take the place of your usual customers`;
+  return `${st.e} <b>${st.n}</b> is ${d} km away: ${eff}${when}.`;
+}
 
 /* the City tab in the office */
 function tabCity() {
@@ -2974,7 +3059,7 @@ function tabCity() {
     ${S.dep ? `<div><span>Deposit (comes back when you leave)</span><b>${money(S.dep)}</b></div>` : ""}</div>
     ${perkList(s, S.venue)}${areaBars(m)}
     <div><span class="small"><b>A usual week here</b></span>${weekChart(S)}</div>
-    ${nearStadiums(s, S.venue).map(x => `<p class="small">${x.st.e} <b>${x.st.n}</b> is ${Math.hypot(s.x - x.st.x, s.y - x.st.y).toFixed(1)} km away: home ${x.st.what === "race" ? "race days" : "games"} make it ${x.k * x.st.b > .15 ? "much " : ""}busier${x.st.sea.length < 3 ? ` (${x.st.sea.map(i => SEASONS[i].n.toLowerCase()).join(" and ")} only)` : " (not in summer)"}.</p>`).join("")}
+    ${nearStadiums(s, S.venue).map(x => `<p class="small">${stadiumNote(x, s, S.venue)}</p>`).join("")}
     <button class="btn pri" data-act="map">🗺️ Open the map of Leicester</button>
     <p class="small muted">Rents, who lives and works where, stadiums and events. Moving keeps your recipes, staff and equipment, as long as they fit.</p></div>`;
   h += compCard() + placesCard();
@@ -3264,7 +3349,7 @@ function renderSheet0() {
     const st = sel.o;
     el.innerHTML = head(`${st.e} ${esc(st.n)}`, st.club ? `Home of ${esc(st.club)} (${st.what})` : "Horse racing") +
       `<p class="small">Home ${st.what === "race" ? "race days" : "games"} come round ${st.home >= .5 ? "most weeks" : "some weeks"}, mostly ${[...new Set(st.days)].map(d => WEEKDAYS[d] + "s").join(" or ")}, in ${st.sea.map(i => SEASONS[i].n.toLowerCase()).join(", ")}.
-      ${sv.venue === "pub" ? "Pubs" : "Cafés"} within about 3 km (the green ring) get busier on the day, the closer the busier.</p>`;
+      Places within about 3 km (the green ring) feel it, the closer the more. ${esc(matchPlan(st, st.days[0], sv.venue, 1).say)}</p>`;
     return;
   }
   if (sel.k === "ev") {
@@ -3301,7 +3386,7 @@ function renderSheet0() {
     <div><span>Takings, rough guess</span><b>${money(Math.round(take / 5) * 5)} a day</b></div></div>
     ${perkList(s, venue)}${areaBars(siteMix(s))}
     <div><span class="small"><b>A usual week</b></span>${weekChart(tmp)}</div>
-    ${nearStadiums(s, venue).slice(0, 2).map(x => `<p class="small">${x.st.e} ${x.st.n} is ${Math.hypot(s.x - x.st.x, s.y - x.st.y).toFixed(1)} km away: ${x.k * x.st.b > .15 ? "big" : x.k * x.st.b > .06 ? "busy" : "slightly busier"} ${x.st.what === "race" ? "race days" : "match days"}.</p>`).join("")}
+    ${nearStadiums(s, venue).slice(0, 2).map(x => `<p class="small">${stadiumNote(x, s, venue)}</p>`).join("")}
     ${act}`;
 }
 $("cSheet").onclick = e => {

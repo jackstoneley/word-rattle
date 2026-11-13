@@ -705,6 +705,18 @@
         "A new Money setting for each game: Peaceful (cheaper rent, you can't go bust), Normal (stay overdrawn for a week and you're moved to a cheap place) or Hard (stay overdrawn for five days and the business goes bust).",
         "Saved games carry on where they were, now placed somewhere in Leicester."
       ]
+    },
+    {
+      "id": 61,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: proper match days",
+      "details": [
+        "Match days now work like the real thing. Football is at 3pm on Saturdays and 7:45pm on Tuesdays, rugby at 3pm, cricket runs all day (with T20 nights on Thursdays), and racing is in the afternoon.",
+        "Pubs near the ground fill up with fans when the final whistle goes, or before and after an evening game (it goes quiet while the game's on). Fans drink more, eat match-day food and get louder. Couples and families stay away.",
+        "Cafés near the ground lose some of their usual shoppers and families to the crowds and closed roads, but fans pop in for a fry-up, a toastie or a hot drink on the way to the game. Cricket days bring tea-and-cake spectators.",
+        "Pubs near a ground now get group bookings for home games: supporters' clubs, rugby club socials, cricket club dinners and race-day parties.",
+        "Warnings pop up as the fans arrive, the forecast and morning briefing say who's coming and when, and automatic stock buys in the food fans order."
+      ]
     }
   ]
 }
