@@ -223,7 +223,7 @@ season start near a place with share > .45). `compInfo(save)` gives `near` (`riv
 Taste-offs: `S.duel {id, day, need}` adds a `duel` goal to the next day; a win takes 45 hp, adds rep and `S.buzz` (a day number).
 **More places**: `S.places` (max `MAX_PLACES` = 2 more, needing `PLACE_ST` stars), each `{id, site, venue, name, rep, mgr, decor, pl,
 dep, fit, opened, hist, last}`, simulated each night by `runPlace` through `placeSave` (a stand-in save, so the same demand code runs).
-`placeValue` / `closeValue` when sold or closed; `swapMain` swaps the main place with one (`fitTo` resizes the kitchen).
+`placeValue` / `closeValue` when sold or closed; `swapMain` swaps the main place with one (`fitTo` resizes the kitchen). Each place has a player-made design `P.design {tables, tpos, bi, walls, off, team}` (`pDesign` fills one in for old saves; `placeDesign` is its window, `layout(P)` its Rearrange, `fitDesign` trims it to its premises); `runPlace` uses it: capacity `placeCrew` (manager + team), menu fit, noise by `roomsOf`, and each build-in's money in `P.last.extra`. `swapMain` swaps the two buildings' tables, build-ins and walls.
 **Build-ins and walls** (free play): `BUILDINS` (keyed by id, append only; café: softplay, nook, meet, hatch; pub: sports, fruit, pool, func)
 in `S.bi {id: {p, lv, n}}`. Ones with `cell` take one of the 9 dining spots (`TABLE_POS`) shared with tables (`cellCap` = tables + 1, max 9;
 `biCells`, `freeSpot`); ones with `seats` become tables with `sp` that only groups with the same `g.sp` use (nook workers, pool players,

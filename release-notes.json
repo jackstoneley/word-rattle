@@ -729,6 +729,18 @@
         "Pub build-ins: a sports TV corner that shows the big televised games, so fans come even if you're nowhere near the ground (a big screen with every sports channel costs more each day), fruit machines for steady money, a pool table, and a function room for booked parties.",
         "Busy days need help: on match days, events and sunny weekends more people turn up than Lee Lee can serve alone. The forecast warns you (👥), and the Team tab lets you book agency staff for just that day."
       ]
+    },
+    {
+      "id": 63,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: design every place you run",
+      "details": [
+        "The places your managers run are now yours to design, just like Lee Lee's own. Open one in the City tab and tap Design.",
+        "Each place shows who comes there (office workers, students, families, visitors, match-day fans…) so you can fit it out for them.",
+        "Choose its tables, build-ins (soft play, reading corner, meeting room, takeaway window, sports TV, fruit machines, pool table, function room), walls and doors, which dishes the manager cooks, and how many staff work there.",
+        "It all counts every night: build-ins earn their own money, walls keep noise away from diners, a menu that suits the area sells more, and too few staff means people walk out.",
+        "Swapping where Lee Lee works keeps each building's own tables, build-ins and walls."
+      ]
     }
   ]
 }

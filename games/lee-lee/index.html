@@ -1075,34 +1075,63 @@ function areaPref(info, r) {
 const MAX_PLACES = 2, PLACE_ST = [2, 3]; // stars Lee Lee needs for a second and a third place
 const MGR_FIRST = ["Alex", "Bea", "Chris", "Deepa", "Eddie", "Fern", "Gus", "Harpreet", "Imogen", "Jas", "Kev", "Lola", "Mo", "Nadia", "Ollie", "Pam", "Quinn", "Ravi", "Sian", "Tariq"];
 const autoMenu = (venue, rep) => Object.keys(RECIPES).filter(r => RECIPES[r].v === venue && RECIPES[r].st <= starsOf(rep));
+/* Each managed place's fit-out, chosen by the player (P.design): tables and where they stand (tpos), build-ins (bi), walls, dishes
+   left off the menu (off), and how many staff work under the manager (team). Places from before get every table as a four. */
+const placeMaxT = s => Math.min(9, PREMISES[s.t].tables + (hasPk(s, "seats") ? 1 : 0));
+function pDesign(P) {
+  if (!P.design) { const s = SITE[P.site], n = placeMaxT(s); P.design = { tables: Array(n).fill(4), tpos: Array.from({ length: n }, (_, i) => i), bi: {}, walls: {}, off: [], team: Math.max(1, Math.round(PREMISES[s.t].staff / 2)) }; }
+  return P.design;
+}
 function placeSave(save, P) {
-  const s = SITE[P.site];
-  return { venue: P.venue, site: P.site, prem: s.t, created: save.created, day: save.day, rep: P.rep, tables: Array(Math.min(9, PREMISES[s.t].tables + (hasPk(s, "seats") ? 1 : 0))).fill(4),
-    disc: null, camp: save.camp || [], diff: save.diff, biz: save.biz, owned: autoMenu(P.venue, P.rep), off: [], decor: P.decor || 0, pl: P.pl != null ? P.pl : 1,
-    buzz: P.buzz || 0, rv: save.rv, chains: save.chains, places: [] };
+  const s = SITE[P.site], d = pDesign(P);
+  return { venue: P.venue, site: P.site, prem: s.t, created: save.created, day: save.day, rep: P.rep, tables: d.tables.length ? d.tables : [2],
+    disc: null, camp: save.camp || [], diff: save.diff, biz: save.biz, owned: autoMenu(P.venue, P.rep), off: d.off || [], decor: P.decor || 0, pl: P.pl != null ? P.pl : 1,
+    buzz: P.buzz || 0, rv: save.rv, chains: save.chains, places: [], bi: d.bi, walls: d.walls };
 }
 function makeMgrs(r) {
   const k = Math.floor(r() * MGR_FIRST.length);
   return [1, 2, 3].map(lvl => ({ name: MGR_FIRST[(k + lvl * 7) % MGR_FIRST.length], lvl, wage: 26 + 14 * lvl + Math.round(r() * 6) }));
 }
 const mgrTrain = M => M.lvl < 5 ? 350 * M.lvl : null;
+// how many groups a day the manager and their team can look after
+const placeCrew = (P, d) => 4 + 1.5 * P.mgr.lvl + 2.6 * (d.team || 0);
 function runPlace(save, P, r) {
-  const sv = placeSave(save, P), s = SITE[P.site], lv = P.mgr.lvl;
-  const groups = expectedGroups(sv) * (.88 + .24 * r()), people = groups * 2, served = people * (.74 + .045 * lv), happy = served * (.6 + .07 * lv);
-  const menu = sv.owned, avg = menu.reduce((a, x) => a + RECIPES[x].p, 0) / Math.max(1, menu.length);
-  const rev = served * 1.55 * avg * sitePrice(sv), tips = rev * .08 * siteTip(sv);
-  const staff = Math.max(1, Math.round(PREMISES[s.t].staff / 2)), wages = P.mgr.wage + staff * 22, rent = siteRent(s, P.venue, save.biz), stock = rev * .3;
+  const d = pDesign(P), sv = placeSave(save, P), s = SITE[P.site], lv = P.mgr.lvl, info = dayInfo(sv, save.day), m = siteMix(s), pub = P.venue === "pub";
+  const menu = menuOf(sv).filter(x => RECIPES[x].st <= starsOf(P.rep)), drinks = menu.some(x => RECIPES[x].d), food = menu.some(x => !RECIPES[x].d);
+  // the menu: too short, or no drinks or no food, and some people go elsewhere; dishes that suit the area and the day sell more
+  const fit = Math.min(1, .5 + .1 * menu.length) * (drinks ? 1 : .8) * (food ? 1 : .75);
+  const groups = expectedGroups(sv) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), crew = placeCrew(P, d);
+  const servedG = Math.min(groups, crew) * (.86 + .025 * lv) * fit, people = groups * 2, served = servedG * 2;
+  // noise: tables in the same room as the sports TV on game days, or the soft play
+  const rooms = roomsOf(d.walls || {}), cells = biCells(sv), share = id => { const p = Object.keys(cells).find(q => cells[q] === id); if (p == null || !d.tpos.length) return 0; return d.tpos.filter(t => rooms[t] === rooms[p]).length / d.tpos.length; };
+  const noise = 1 - (hasBi(sv, "sports") && (info.tv || (info.match && pub)) ? .14 * share("sports") : 0) - (hasBi(sv, "softplay") ? .06 * share("softplay") : 0);
+  const happy = served * (.6 + .07 * lv) * noise;
+  const wsum = menu.reduce((a, x) => a + prefW(info, x), 0) || 1, avg = menu.reduce((a, x) => a + RECIPES[x].p * prefW(info, x), 0) / wsum || 5;
+  const pr = sitePrice(sv), rev = served * 1.55 * avg * pr, tips = rev * .08 * siteTip(sv);
+  // build-ins, worked out for the day
+  const ex = {}, add = (k, v) => { ex[k] = Math.round(((ex[k] || 0) + v) * 100) / 100; };
+  if (hasBi(sv, "softplay")) add("soft", served * .12 * 2.5);
+  if (hasBi(sv, "nook")) { const k = Math.min(8, Math.round(groups * .16 * (1 + 1.5 * m.com + 1.5 * m.stu) * (info.wd >= 5 ? .6 : 1))); add("nook", k * 2 + k * 2.4 * 3.4 * pr * .7); }
+  if (hasBi(sv, "meet") && enclosed(d.walls || {}, d.bi.meet.p) && info.wd < 5 && r() < .2 + .6 * m.com) add("meet", 25 + 50 * m.com + 15 + 5 * 9 * pr * .7);
+  if (hasBi(sv, "hatch")) add("hatch", siteFoot(s, "cafe") * (18 + 22 * m.com + 10 * m.stu) * localPrice(s) * (info.w === 2 || info.w === 5 ? .75 : 1) * .65 * (.9 + .2 * r()));
+  if (hasBi(sv, "sports")) add("tv", -BI.sports.lv[Math.min(1, (d.bi.sports.lv || 1) - 1)].fee);
+  if (hasBi(sv, "fruit")) add("fruit", (d.bi.fruit.n || 1) * served * .45 * .85);
+  if (hasBi(sv, "pool")) { const k = Math.min(6, Math.round(groups * .12 + 1)); add("pool", k * 6 + k * 6 * 4.5 * pr * .7); }
+  if (hasBi(sv, "func") && enclosed(d.walls || {}, d.bi.func.p) && r() < .3) add("func", 6 * (6 + 2 * starsOf(P.rep)) + 40 + 6 * 12 * pr * .7);
+  const extra = Object.values(ex).reduce((a, v) => a + v, 0);
+  const wages = P.mgr.wage + (d.team || 0) * 22, rent = siteRent(s, P.venue, save.biz), stock = rev * .3;
   const repD = Math.round(happy * .9 - (people - served) * 2.2 + (happy / Math.max(1, served) - .7) * 20);
   P.rep = Math.max(0, P.rep + repD);
-  const net = Math.round((rev + tips - wages - rent - stock) * 100) / 100;
-  P.last = { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages, rent, stock: Math.round(stock), net, repD };
+  const net = Math.round((rev + tips + extra - wages - rent - stock) * 100) / 100;
+  P.last = { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages, rent, stock: Math.round(stock), net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0 };
   P.hist = (P.hist || []).concat([{ d: save.day, net: Math.round(net) }]).slice(-28);
   return net;
 }
 // what a buyer pays: the deposit back, half the fit-out, and goodwill from recent profits and reputation
 function placeValue(P) {
   const h = (P.hist || []).slice(-14), avg = h.length ? h.reduce((a, x) => a + x.net, 0) / h.length : 0;
-  return Math.round((P.dep || 0) + (P.fit || 0) * .5 + Math.max(0, avg) * 20 + P.rep);
+  const fitted = Object.keys(pDesign(P).bi).reduce((a, id) => a + (BI[id] ? BI[id].c * ((pDesign(P).bi[id].n) || 1) : 0), 0);
+  return Math.round((P.dep || 0) + (P.fit || 0) * .5 + fitted * .4 + Math.max(0, avg) * 20 + P.rep);
 }
 const closeValue = P => Math.round((P.dep || 0) + (P.fit || 0) * .15);
 /* Rivals feel it when you're better than them: each night every one near your places loses trade (hp) by how much your
@@ -1616,7 +1645,7 @@ function dailyGoals() {
 function kit() { return S.stations.filter(Boolean); }
 // money from build-ins (soft play entry, desk fees, pool, fruit machines), shown at the end of the day
 function addExtra(k, v, t) { G.extra[k] = Math.round(((G.extra[k] || 0) + v) * 100) / 100; if (t && v >= 1) fx(t.x, t.y - 1.3, `+${money(Math.round(v * 10) / 10)} ${EXTRA_N[k].e}`, "#7A5FC2"); }
-const EXTRA_N = { soft: { n: "Soft play", e: "🧸" }, nook: { n: "Desk fees", e: "📚" }, pool: { n: "Pool table", e: "🎱" }, fruit: { n: "Fruit machines", e: "🎰" }, hatch: { n: "Takeaway window", e: "🥤" }, tv: { n: "Sports channels", e: "📺" } };
+const EXTRA_N = { meet: { n: "Meeting room", e: "🤝" }, func: { n: "Function room", e: "🎉" }, soft: { n: "Soft play", e: "🧸" }, nook: { n: "Desk fees", e: "📚" }, pool: { n: "Pool table", e: "🎱" }, fruit: { n: "Fruit machines", e: "🎰" }, hatch: { n: "Takeaway window", e: "🥤" }, tv: { n: "Sports channels", e: "📺" } };
 // a dish's price here: town-centre customers pay more (campaign days use the plain price)
 function lp(r) { return LV != null || !S ? RECIPES[r].p : Math.round(RECIPES[r].p * sitePrice(S) * 10) / 10; }
 function canMakeS(r) { return RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t)); }
@@ -3252,61 +3281,65 @@ $("mwrap").onclick = e => {
   if (a === "camp") { const C = CAMPAIGNS.find(x => x.id === b.dataset.id); if (C && canAfford(C.c)) { spend(C.c); S.camp.push({ id: C.id, days: C.days }); } }
   saveGame(); renderManage();
 };
-let laySel = null, layMsg = "";
-function layout() {
-  const prem = PREMISES[S.prem], u = Math.max(26, Math.min(34, Math.floor((Math.min(380, innerWidth - 32) - 40) / 9))), Hm = 12.9, kitHas = i => S.stations[i];
-  const posTable = p => S.tpos.indexOf(p);
+let laySel = null, layMsg = "", layP = null;
+// Rearrange: the main place (kitchen too), or a managed place's dining room (P)
+function layout(P) {
+  layP = P || null;
+  const T = P ? pDesign(P) : S, prem = PREMISES[P ? SITE[P.site].t : S.prem], u = Math.max(26, Math.min(34, Math.floor((Math.min(380, innerWidth - 32) - 40) / 9))), Hm = 12.9, kitHas = i => S.stations[i];
+  const posTable = p => T.tpos.indexOf(p);
   const sel = (k, i) => laySel && laySel.k === k && laySel.i === i ? " sel" : "";
   let m = `<div class="lay" style="width:${9 * u}px;height:${Hm * u}px">`;
   m += `<div class="lay-kit" style="height:${4.4 * u}px"></div>`;
+  if (!P) {
   m += `<div class="lay-ctr" style="left:0;width:${3.92 * u}px;top:${3.75 * u}px;height:${.7 * u}px"></div><div class="lay-ctr" style="left:${5.08 * u}px;width:${3.92 * u}px;top:${3.75 * u}px;height:${.7 * u}px"></div>`;
   m += `<div class="lay-lab" style="left:${.1 * u}px;top:${3.8 * u}px">🗑 🍽</div><div class="lay-lab" style="left:${3.95 * u}px;top:${3.85 * u}px;width:${1.1 * u}px;text-align:center">gap</div>`;
   for (let i = 0; i < prem.slots; i++) {
     const p = slotPos(i), t = kitHas(i);
     m += `<button class="lay-st${t ? "" : " empty"}${sel("st", i)}" data-lay="st" data-i="${i}" style="left:${(p.x - .45) * u}px;top:${(p.y - .45) * u}px;width:${.9 * u}px;height:${.9 * u}px;${t ? `background:${STATIONS[t].col}` : ""}">${t ? (STATIONS[t].e || "🟫") : ""}</button>`;
   }
-  const cells = biCells(S);
+  } else m += `<div class="lay-lab" style="left:${3 * u}px;top:${2 * u}px;width:${3 * u}px;text-align:center">kitchen (the manager's)</div>`;
+  const cells = biCells(T);
   TABLE_POS.forEach(([x, y], p) => {
     const j = posTable(p), b = cells[p];
-    m += `<button class="lay-tb${j < 0 && !b ? " empty" : ""}${b ? " bi" : ""}${sel("tb", p)}" data-lay="tb" data-i="${p}" style="left:${(x - .7) * u}px;top:${(y - .55) * u}px;width:${1.4 * u}px;height:${1.1 * u}px">${b ? `${BI[b].e}<small>${esc(BI[b].n.split(" ")[0])}</small>` : j < 0 ? "" : `${j + 1}<small>${S.tables[j]} seats</small>`}</button>`;
+    m += `<button class="lay-tb${j < 0 && !b ? " empty" : ""}${b ? " bi" : ""}${sel("tb", p)}" data-lay="tb" data-i="${p}" style="left:${(x - .7) * u}px;top:${(y - .55) * u}px;width:${1.4 * u}px;height:${1.1 * u}px">${b ? `${BI[b].e}<small>${esc(BI[b].n.split(" ")[0])}</small>` : j < 0 ? "" : `${j + 1}<small>${T.tables[j]} seats</small>`}</button>`;
   });
   // walls: tap the gap between two spots (wall, then wall with a door, then nothing)
   for (const L of LINKS) {
     if (L.e[0] === "t") continue;
-    const v = (S.walls || {})[L.e] || 0, vert = L.e[0] === "v", w = vert ? .34 : 1.7, h = vert ? 1.7 : .34;
+    const v = (T.walls || {})[L.e] || 0, vert = L.e[0] === "v", w = vert ? .34 : 1.7, h = vert ? 1.7 : .34;
     m += `<button class="lay-wall w${v}" data-lay="wall" data-e="${L.e}" style="left:${(L.x - w / 2) * u}px;top:${(L.y - h / 2) * u}px;width:${w * u}px;height:${h * u}px" aria-label="Wall">${v === 2 ? "🚪" : ""}</button>`;
   }
   m += `<div class="lay-lab" style="left:${3.6 * u}px;top:${12.3 * u}px;width:${1.8 * u}px;text-align:center">🚪 door</div></div>`;
-  const what = layMsg || (!laySel ? "Tap equipment, a table or a build-in, then where it should go. Tap the dashed gaps between spots to put up a wall (£" + WALL_C + "), then a door (£" + DOOR_C + "), then take it down." : laySel.k === "st" ? `Moving the ${STATIONS[S.stations[laySel.i]].n.toLowerCase()}: tap another space (swaps if it's taken).` : `Moving ${cells[laySel.i] ? "the " + BI[cells[laySel.i]].n.toLowerCase() : "table " + (posTable(laySel.i) + 1)}: tap another spot (swaps if it's taken).`);
+  const what = layMsg || (!laySel ? (P ? "Tap a table or a build-in" : "Tap equipment, a table") + " then where it should go. Tap the dashed gaps between spots to put up a wall (£" + WALL_C + "), then a door (£" + DOOR_C + "), then take it down." : laySel.k === "st" ? `Moving the ${STATIONS[S.stations[laySel.i]].n.toLowerCase()}: tap another space (swaps if it's taken).` : `Moving ${cells[laySel.i] ? "the " + BI[cells[laySel.i]].n.toLowerCase() : "table " + (posTable(laySel.i) + 1)}: tap another spot (swaps if it's taken).`);
   layMsg = "";
-  dialog(`<h3>Rearrange</h3><p class="small muted" style="text-align:center">${what}</p>${m}
-    <p class="small muted">Tip: keep each dish's stations next to each other, and the busiest ones near the middle gap in the counter and the plates. Walls keep noise from a TV or soft play away from other tables, and meeting and function rooms need walls all round with a door.</p>
-    <div class="acts"><button class="btn pri" data-a="done">Done</button></div>`, () => { laySel = null; renderManage(); });
+  dialog(`<h3>${P ? esc(P.name) + ": layout" : "Rearrange"}</h3><p class="small muted" style="text-align:center">${what}</p>${m}
+    ${P ? "" : `<p class="small muted">Tip: keep each dish's stations next to each other, and the busiest ones near the middle gap in the counter and the plates. Walls keep noise from a TV or soft play away from other tables, and meeting and function rooms need walls all round with a door.</p>`}
+    <div class="acts"><button class="btn pri" data-a="done">Done</button></div>`, () => { laySel = null; if (P) placeDesign(P); else renderManage(); });
 }
 $("ovc").addEventListener("click", e => {
   const b = e.target.closest("[data-lay]"); if (!b || view !== "manage") return;
-  const k = b.dataset.lay, i = +b.dataset.i;
+  const k = b.dataset.lay, i = +b.dataset.i, T = layP ? pDesign(layP) : S;
   if (k === "st") {
     if (laySel && laySel.k === "st") {
       if (laySel.i !== i) { const a = S.stations[laySel.i] || null; S.stations[laySel.i] = S.stations[i] || null; S.stations[i] = a; while (S.stations.length && !S.stations[S.stations.length - 1]) S.stations.pop(); saveGame(); }
       laySel = null;
     } else laySel = S.stations[i] ? { k, i } : null;
   } else if (k === "wall") {
-    const e = b.dataset.e, now = (S.walls || {})[e] || 0, next = (now + 1) % 3, cost = next === 1 ? WALL_C : next === 2 ? DOOR_C : 0;
-    const w = Object.assign({}, S.walls || {}); if (next) w[e] = next; else delete w[e];
+    const e = b.dataset.e, now = (T.walls || {})[e] || 0, next = (now + 1) % 3, cost = next === 1 ? WALL_C : next === 2 ? DOOR_C : 0;
+    const w = Object.assign({}, T.walls || {}); if (next) w[e] = next; else delete w[e];
     if (!wallsOk(w)) layMsg = "⚠️ That would shut a spot off. Every spot needs a way in: add a door somewhere.";
     else if (!canAfford(cost)) layMsg = `⚠️ That costs ${money(cost)}.`;
-    else { spend(cost); S.walls = w; saveGame(); }
+    else { spend(cost); T.walls = w; saveGame(); }
   } else {
     // spots hold a table or a build-in; swapping moves whatever is there
-    const occ = p => { const j = S.tpos.indexOf(p); if (j >= 0) return { t: j }; const id = biCells(S)[p]; return id ? { b: id } : null; };
-    const put = (o, p) => { if (o && o.t != null) S.tpos[o.t] = p; else if (o) S.bi[o.b].p = p; };
+    const occ = p => { const j = T.tpos.indexOf(p); if (j >= 0) return { t: j }; const id = biCells(T)[p]; return id ? { b: id } : null; };
+    const put = (o, p) => { if (o && o.t != null) T.tpos[o.t] = p; else if (o) T.bi[o.b].p = p; };
     if (laySel && laySel.k === "tb") {
       if (laySel.i !== i) { const A = occ(laySel.i), B = occ(i); put(A, i); put(B, laySel.i); saveGame(); }
       laySel = null;
     } else laySel = occ(i) ? { k, i } : null;
   }
-  layout();
+  layout(layP);
 });
 function toastOffice(m) { dialog(`<h3>${esc(m)}</h3><div class="acts"><button class="btn pri" data-a="ok">Great</button></div>`); }
 
@@ -3363,6 +3396,7 @@ function tabCity() {
     <div class="lines small"><div><span>Rent</span><b>${money(rent * 7)} a week</b></div><div><span>Prices here</span><b>${pct(sitePrice(S))} of usual</b></div>
     ${S.dep ? `<div><span>Deposit (comes back when you leave)</span><b>${money(S.dep)}</b></div>` : ""}</div>
     ${perkList(s, S.venue)}${areaBars(m)}
+    <div class="news small"><b>Who comes here</b><br>${clienteleTips(s, S.venue).map(esc).join("<br>")}</div>
     <div><span class="small"><b>A usual week here</b></span>${weekChart(S)}</div>
     ${nearStadiums(s, S.venue).map(x => `<p class="small">${stadiumNote(x, s, S.venue)}</p>`).join("")}
     <button class="btn pri" data-act="map">🗺️ Open the map of Leicester</button>
@@ -3712,10 +3746,10 @@ function moveTo(sv, s, forced) {
   return fitTo(sv);
 }
 // make the main place's tables, kitchen and team fit its (new) premises; what doesn't fit is sold or leaves
-function fitTo(sv) {
+function fitTo(sv, keep) {
   const P = PREMISES[sv.prem], maxT = siteTables(sv), out = [];
-  // a new building: walls stay behind; build-ins come along if there's room for them
-  sv.walls = {}; sv.bi = sv.bi || {};
+  // a new building: walls stay behind; build-ins come along if there's room for them (keep: swapping into a place already fitted out)
+  if (!keep) sv.walls = {}; sv.bi = sv.bi || {};
   while (sv.tables.length > maxT) { sv.tables.pop(); sv.tpos.pop(); sv.cash += 50; out.push("a table"); }
   // the kitchen keeps one of everything the menu needs (and a fridge, worktop and somewhere to wash up) first, then the dearest things
   const have = sv.stations.map((t, i) => ({ t, i })).filter(x => x.t);
@@ -3732,7 +3766,7 @@ function fitTo(sv) {
   while (sv.staff.length > P.staff) { const x = sv.staff.pop(); out.push(`${x.name} (had to leave)`); }
   const cells = Object.entries(biCells(sv));
   while (cells.length && sv.tables.length + cells.length > cellCap(sv)) { const [, id] = cells.pop(); delete sv.bi[id]; sv.cash += Math.round(BI[id].c / 2); out.push(BI[id].n.toLowerCase()); }
-  sv.tpos = sv.tables.map((_, i) => i); cells.forEach(([, id], k) => { sv.bi[id].p = sv.tables.length + k; });
+  if (!keep) { sv.tpos = sv.tables.map((_, i) => i); cells.forEach(([, id], k) => { sv.bi[id].p = sv.tables.length + k; }); }
   sv.cash = Math.round(sv.cash * 100) / 100;
   return out;
 }
@@ -3804,7 +3838,10 @@ function placeDlg(P) {
     ${L ? `<div class="lines small"><div><span>Yesterday: customers</span><b>${L.served} served of ${L.people}</b></div><div><span>Takings</span><b>${money(L.rev)}</b></div>
       <div><span>Rent, wages, stock</span><b>−${money(Math.round(L.rent + L.wages + L.stock))}</b></div><div class="tot"><span>Profit</span><b class="${L.net >= 0 ? "pos" : "neg"}">${money(Math.round(L.net))}</b></div>
       <div><span>Last 7 days</span><b class="${week >= 0 ? "pos" : "neg"}">${money(week)}</b></div><div><span>Reputation</span><b class="${L.repD >= 0 ? "pos" : "neg"}">${L.repD >= 0 ? "+" : ""}${L.repD}</b></div></div>` : `<p class="small" style="text-align:center">Opens tomorrow.</p>`}
-    <p class="small">Wins about <b>${Math.round(ci.share * 100)}%</b> of local customers (competition: ${compWord(ci.C)}). The manager cooks every ${P.venue === "pub" ? "pub" : "café"} dish this place's reputation allows.</p>
+    <p class="small">Wins about <b>${Math.round(ci.share * 100)}%</b> of local customers (competition: ${compWord(ci.C)}). The menu, tables, build-ins and staff are yours to choose in Design.</p>
+    ${L && L.short ? `<p class="small neg">About ${L.short} groups more than ${esc(P.mgr.name)}'s team could look after: add staff in Design.</p>` : ""}
+    ${L && L.extra && Object.keys(L.extra).length ? `<p class="small">${Object.entries(L.extra).map(([k, v]) => `${EXTRA_N[k].e} ${EXTRA_N[k].n} ${v >= 0 ? "+" : "−"}${money(Math.abs(Math.round(v)))}`).join(" · ")}</p>` : ""}
+    <button class="btn pri" data-a="design">🛠️ Design: tables, build-ins, walls, menu and staff</button>
     <div class="item"><div class="ic">🧑‍💼</div><div class="grow"><b>${esc(P.mgr.name)}, level ${P.mgr.lvl}</b><span>${money(P.mgr.wage)} a day. Better managers serve more people and keep them happier.</span></div>
       ${tc ? `<button class="btn sm pri" data-a="train" ${canAfford(tc) ? "" : "disabled"}>Train ${money(tc)}</button>` : ""}</div>
     <div class="item"><div class="ic">🪴</div><div class="grow"><b>${d ? esc(d.n) : "Fully decorated"}</b><span>Decor ${P.decor || 0} of ${DECOR.length}: more people choose it over rivals.</span></div>
@@ -3814,6 +3851,7 @@ function placeDlg(P) {
       <button class="btn" data-a="sell">Sell the business · ${money(val)}</button><button class="btn" data-a="close" style="color:var(--bad)">Close it down · ${money(cv)}</button>
       <button class="btn pri" data-a="">Done</button></div>`, a => {
     if (!a) { renderManage(); return; }
+    if (a === "design") { placeDesign(P); return; }
     if (a === "train" && tc && canAfford(tc)) { spend(tc); P.mgr.lvl++; P.mgr.wage += 10; }
     if (a === "decor" && d && canAfford(dc)) { spend(dc); P.decor = (P.decor || 0) + 1; }
     if (a.startsWith("pl")) P.pl = +a.slice(2);
@@ -3830,12 +3868,84 @@ function placeDlg(P) {
     saveGame(); renderManage(); placeDlg(P);
   });
 }
+/* ---------- designing a managed place for the customers it can expect ---------- */
+function clienteleTips(s, venue) {
+  const m = siteMix(s), out = [], cafe = venue === "cafe";
+  if (m.com > .45) out.push(cafe ? "💼 Office workers: quick lunches, coffee and cake on weekdays. A meeting room, a reading & work corner or a takeaway window would do well." : "💼 After-work drinkers on weekdays: beer, wine and quick food.");
+  if (m.stu > .35) out.push(cafe ? "🎓 Students: cheap dishes sell best, and they'll sit for hours in a reading & work corner." : "🎓 Students: cheap pints and chips, a pool table and the big games on TV.");
+  if (m.pop > .65 && m.com < .45) out.push(cafe ? "👪 Families live round here: a soft play and kids' dishes bring them in, above all at weekends." : "👪 Locals and families: roasts, kids' meals, and a function room for their parties.");
+  if (m.night > .45 && !cafe) out.push("🌙 A big night-time crowd: cocktails, late rounds and fruit machines.");
+  if (m.tour > .4) out.push("📸 Visitors: cakes, afternoon tea and proper dinners. They tip well.");
+  if (m.spice > .5) out.push("🍛 Curry is a favourite round here.");
+  const st = nearStadiums(s, venue)[0];
+  if (st) out.push(cafe ? `${st.st.e} Near ${st.st.n}: fans want breakfasts and hot drinks before games, but regulars stay away.` : `${st.st.e} Near ${st.st.n}: match-day crowds. A sports TV corner pays off, and wall it off from diners.`);
+  if (!out.length) out.push("🏘️ A quiet area: keep it simple and good value.");
+  out.push(`💷 People here pay up to ${PRICE[priceTol(s)].n} prices.`);
+  return out;
+}
+function placeSpots(d) { return d.tables.length + Object.keys(biCells({ bi: d.bi })).length; }
+function placeFree(d) { const used = new Set(d.tpos.concat(Object.keys(biCells({ bi: d.bi })).map(Number))); let p = 0; while (used.has(p) && p < 8) p++; return p; }
+// keep a design inside its premises (after a swap or on a smaller site): extra tables and build-ins are sold
+function fitDesign(P) {
+  const d = pDesign(P), s = SITE[P.site], maxT = placeMaxT(s), cap = Math.min(9, maxT + 1);
+  while (d.tables.length > maxT) { d.tables.pop(); d.tpos.pop(); S.cash += 50; }
+  const cells = Object.entries(biCells({ bi: d.bi }));
+  while (cells.length && d.tables.length + cells.length > cap) { const [, id] = cells.pop(); S.cash += Math.round(BI[id].c / 2); delete d.bi[id]; }
+  for (const id in d.bi) if (BI[id] && BI[id].v !== P.venue) { S.cash += Math.round(BI[id].c / 2); delete d.bi[id]; }
+  d.team = Math.min(d.team || 0, PREMISES[s.t].staff);
+}
+function placeDesign(P) {
+  const d = pDesign(P), s = SITE[P.site], st = starsOf(P.rep), maxT = placeMaxT(s), cap = Math.min(9, maxT + 1), used = placeSpots(d);
+  const sv = placeSave(S, P), g = expectedGroups(sv), crew = placeCrew(P, d), tc = 100 + 60 * d.tables.length, small = d.tables.indexOf(2), four = d.tables.indexOf(4);
+  const recipes = Object.keys(RECIPES).filter(r => RECIPES[r].v === P.venue), on = r => !d.off.includes(r);
+  let h = `<h3>${esc(P.name)}</h3><p class="small muted" style="text-align:center">${esc(s.n)} · ${P.venue === "pub" ? "Pub" : "Café"} · <span class="stars" style="font-size:.8rem">${starStr(st)}</span> · ${money(Math.round(S.cash))} to spend</p>
+    <div class="news small"><b>Who comes here</b><br>${clienteleTips(s, P.venue).map(esc).join("<br>")}</div>
+    <p class="small">Tomorrow: about <b>${Math.round(g)}</b> groups. ${esc(P.mgr.name)} and the team can look after about <b>${Math.round(crew)}</b>${g > crew * 1.05 ? ` <b class="neg">: too few staff, people will walk out</b>` : ""}.</p>
+    <div class="item"><div class="ic">👥</div><div class="grow"><b>Staff under the manager: ${d.team}</b><span>${money(22)} a day each. Up to ${PREMISES[s.t].staff} here.</span></div>
+      <span class="qty"><button class="btn sm" data-a="t-" ${d.team > 0 ? "" : "disabled"}>−</button><button class="btn sm" data-a="t+" ${d.team < PREMISES[s.t].staff ? "" : "disabled"}>+</button></span></div>
+    <div class="item"><div class="ic">🪑</div><div class="grow"><b>Tables: ${d.tables.length} of ${maxT}</b><span>${d.tables.join(", ")} seats. Spots for tables and build-ins: ${used} of ${cap}.</span>
+      <span class="row" style="gap:4px;margin-top:6px"><button class="btn sm pri" data-a="tadd" ${d.tables.length < maxT && used < cap && canAfford(tc) ? "" : "disabled"}>Add ${money(tc)}</button>
+      <button class="btn sm" data-a="tbig" ${(small >= 0 && canAfford(150)) || (small < 0 && four >= 0 && canAfford(300)) ? "" : "disabled"}>${small >= 0 ? `Seat four ${money(150)}` : `Seat six ${money(300)}`}</button>
+      <button class="btn sm" data-a="tdel" ${d.tables.length > 1 ? "" : "disabled"}>Remove one</button></span></div></div>
+    <button class="btn" data-a="lay">📐 Arrange tables, build-ins, walls and doors</button>
+    <p class="small"><b>Build-ins</b></p>`;
+  for (const B of BUILDINS.filter(B => B.v === P.venue)) {
+    const o = d.bi[B.id], n = B.max ? (o ? o.n || 1 : 0) : o ? 1 : 0, full = B.max ? n >= B.max : !!o;
+    const why = st < B.st ? `Needs ${B.st}★ here.` : B.cell && !full && used >= cap ? "No free spot." : "";
+    h += `<div class="item"><div class="ic">${B.e}</div><div class="grow"><b>${esc(B.n)}${B.max && n ? ` ×${n}` : ""}${n ? ` <span class="pill g">Built</span>` : ""}</b>
+      <span>${esc(B.d)}${o && B.room ? (enclosed(d.walls || {}, o.p) ? ` <b class="pos">Walled in.</b>` : ` <b class="neg">Not walled in yet.</b>`) : ""}${why && !full ? ` <b>${why}</b>` : ""}</span>
+      ${n ? `<span class="row" style="gap:4px;margin-top:6px">${B.lv && (o.lv || 1) < 2 ? `<button class="btn sm pri" data-a="bu:${B.id}" ${canAfford(B.lv[1].c) && st >= B.lv[1].st ? "" : "disabled"}>Big screen ${money(B.lv[1].c)}</button>` : ""}<button class="btn sm" data-a="bs:${B.id}">Sell ${money(Math.round(B.c / 2))}</button></span>` : ""}</div>
+      ${full ? "" : `<button class="btn sm pri" data-a="bb:${B.id}" ${canAfford(B.c) && !why ? "" : "disabled"}>${money(B.c)}</button>`}</div>`;
+  }
+  h += `<p class="small"><b>Menu</b> <span class="muted">(the manager cooks what you pick; more dishes unlock as this place's stars grow)</span></p>
+    <div class="row" style="gap:6px">${recipes.map(r => { const R = RECIPES[r], locked = R.st > st; return `<button class="btn sm ${!locked && on(r) ? "good" : ""}" data-a="m:${r}" ${locked ? "disabled" : ""} title="${esc(R.n)}">${R.e} ${esc(R.n)}${locked ? ` ${R.st}★` : ""}</button>`; }).join("")}</div>
+    <div class="acts"><button class="btn pri" data-a="">Done</button></div>`;
+  dialog(h, a => {
+    if (!a) { saveGame(); placeDlg(P); return; }
+    if (a === "lay") { laySel = null; layout(P); return; }
+    if (a === "t-") d.team = Math.max(0, d.team - 1);
+    if (a === "t+") d.team = Math.min(PREMISES[s.t].staff, d.team + 1);
+    if (a === "tadd" && d.tables.length < maxT && placeSpots(d) < cap && canAfford(tc)) { spend(tc); d.tables.push(2); d.tpos.push(placeFree(d)); }
+    if (a === "tbig") { if (small >= 0 && canAfford(150)) { spend(150); d.tables[small] = 4; } else if (four >= 0 && canAfford(300)) { spend(300); d.tables[four] = 6; } }
+    if (a === "tdel" && d.tables.length > 1) { d.tables.pop(); d.tpos.pop(); S.cash += 50; }
+    if (a.startsWith("bb:")) { const B = BI[a.slice(3)]; if (canAfford(B.c) && st >= B.st) { spend(B.c); if (B.max) d.bi[B.id] = { n: ((d.bi[B.id] || {}).n || 0) + 1 }; else if (!B.cell || placeSpots(d) < cap) d.bi[B.id] = B.cell ? { p: placeFree(d), lv: 1 } : { lv: 1 }; } }
+    if (a.startsWith("bs:")) { const B = BI[a.slice(3)], o = d.bi[B.id]; S.cash += Math.round(B.c / 2); if (B.max && o.n > 1) o.n--; else delete d.bi[B.id]; }
+    if (a.startsWith("bu:")) { const B = BI[a.slice(3)]; if (canAfford(B.lv[1].c)) { spend(B.lv[1].c); d.bi[B.id].lv = 2; } }
+    if (a.startsWith("m:")) { const r = a.slice(2); if (on(r)) { if (recipes.filter(x => on(x) && RECIPES[x].st <= st).length > 1) d.off.push(r); } else d.off = d.off.filter(x => x !== r); }
+    saveGame(); placeDesign(P);
+  });
+}
 // the main place and a managed one change over: Lee Lee takes her kitchen with her (what doesn't fit is sold)
 function swapMain(P) {
-  const old = { site: S.site, dep: S.dep, name: S.name }, ns = SITE[P.site];
+  const old = { site: S.site, dep: S.dep, name: S.name }, ns = SITE[P.site], d = pDesign(P);
+  // each building keeps its own tables, build-ins and walls
+  const mine = { tables: S.tables, tpos: S.tpos, bi: S.bi || {}, walls: S.walls || {} };
+  S.tables = d.tables.slice(); S.tpos = d.tpos.slice(); S.bi = d.bi; S.walls = d.walls;
+  Object.assign(d, mine);
   S.site = ns.id; S.prem = ns.t; S.dep = P.dep || 0; S.name = P.name;
   P.site = old.site; P.dep = old.dep; P.name = old.name;
-  return fitTo(S);
+  fitDesign(P);
+  return fitTo(S, true);
 }
 /* opening a managed place from the map */
 function openPlaceDlg(s, venue) {
@@ -3854,8 +3964,10 @@ function openPlaceDlg(s, venue) {
     const m = mg[+a.slice(1)];
     spend(cost);
     S.places = S.places || [];
-    S.places.push({ id: "p" + (S.pid = (S.pid || 1) + 1), site: s.id, venue, name: nm, rep: Math.round(S.rep * .25), mgr: m, decor: 0, pl: 1, dep, fit, opened: S.day, buzz: 0, hist: [], last: null });
-    saveGame(); CM.sel = null; openManage("city"); toastOffice(`${nm} is opening, with ${m.name} in charge!`);
+    const nT = Math.max(2, Math.ceil(placeMaxT(s) / 2)), NP = { id: "p" + (S.pid = (S.pid || 1) + 1), site: s.id, venue, name: nm, rep: Math.round(S.rep * .25), mgr: m, decor: 0, pl: 1, dep, fit, opened: S.day, buzz: 0, hist: [], last: null,
+      design: { tables: Array(nT).fill(4), tpos: Array.from({ length: nT }, (_, i) => i), bi: {}, walls: {}, off: [], team: 1 } };
+    S.places.push(NP);
+    saveGame(); CM.sel = null; openManage("city"); placeDesign(NP);
   });
 }
 
