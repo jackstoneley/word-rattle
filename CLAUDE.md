@@ -214,6 +214,18 @@ both (`moveTo`: fit-out `siteFit` + deposit of 28 days' rent in `S.dep`, refunde
 `mi mk se year week ev rw mix`. Money difficulty `S.biz` (`BIZ`: Peaceful, Normal, Hard; only easier later): overdrawn nights `S.od`;
 Normal evicts to the cheapest small place, Hard sets `S.bust` (game over). Page: the City tab (`tabCity`), the map screen `#city`
 (`openCity("start" | "browse")`, `drawCity`, heat overlays `heatCanvas`, `renderSheet`), `calendarNews`, `opts.map` (overlay choices).
+**Competition**: `RIVALS` are made once by `makeRivals` from `DISTRICTS` (seed 4242; ids are positions, so editing `DISTRICTS`
+renumbers them: don't). Save state: `S.rv {id: {hp, shut}}` (missing = 100) and `S.chains` (rivals opened by `openChain` at a
+season start near a place with share > .45). `compInfo(save)` gives `near` (`rivalsNear`: strength × kind × distance × hp), `gaps`
+(menu categories `RCATS` nobody strong nearby sells), appeal (`appealOf`: stars, decor, gaps, price level, buzz) and `share`;
+`siteDemand` = size × `siteFoot` × share × `SHARE_K` × a penalty per price level above the area's `priceTol`. Price levels `PRICE`
+(`S.pl`, per place `P.pl`; `sitePrice` = `localPrice` × level). `rivalsTick` (nightly) wears down rivals your places outdo.
+Taste-offs: `S.duel {id, day, need}` adds a `duel` goal to the next day; a win takes 45 hp, adds rep and `S.buzz` (a day number).
+**More places**: `S.places` (max `MAX_PLACES` = 2 more, needing `PLACE_ST` stars), each `{id, site, venue, name, rep, mgr, decor, pl,
+dep, fit, opened, hist, last}`, simulated each night by `runPlace` through `placeSave` (a stand-in save, so the same demand code runs).
+`placeValue` / `closeValue` when sold or closed; `swapMain` swaps the main place with one (`fitTo` resizes the kitchen).
+Balance scripts: compare suburbs and centre with `expectedGroups` on stand-in saves (the centre should lose money before ~5★ and
+earn 2-3× the suburbs once its nearest rivals are beaten).
 
 ### Gravity Well (`games/gravity-well`)
 

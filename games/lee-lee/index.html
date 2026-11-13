@@ -551,10 +551,10 @@ const DIFFS = [
 ];
 const diffOf = save => DIFFS[save && save.diff != null ? save.diff : 1] || DIFFS[1];
 const GOAL_TEXT = { party: () => "Give the booked party a great time", streak: n => `A streak of ${n} happy tables`, served: n => `Serve ${n} customers`, out: n => n ? `No more than ${n} walk out` : "Nobody walks out", burnt: n => n ? `No more than ${n} burnt` : "Nothing burnt",
-  earn: n => `Take £${n} (with tips)`, perfect: n => `${n} perfect pours`, critic: () => "Make the critic happy", mess: n => "No mess left at closing" };
+  earn: n => `Take £${n} (with tips)`, duel: n => `Taste-off: keep ${n}% of customers happy`, perfect: n => `${n} perfect pours`, critic: () => "Make the critic happy", mess: n => "No mess left at closing" };
 function goalMet(kind, n, r) {
   return kind === "served" ? r.served >= n : kind === "out" ? r.angry <= n : kind === "burnt" ? r.burnt <= n : kind === "earn" ? r.rev + r.tips >= n
-    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : kind === "streak" ? r.streak >= n : kind === "party" ? r.party === "happy" : false;
+    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : kind === "streak" ? r.streak >= n : kind === "party" ? r.party === "happy" : kind === "duel" ? r.served >= 6 && r.happyPct >= n : false;
 }
 function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function levelArrivals(i) {
@@ -627,7 +627,7 @@ function newSave(venue, name, site) {
   return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
     owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], tpos: [0, 1, 2], plates: 6,
     decor: 0, shoes: 0, prem: 0, autoStock: true, diff: 1, bookings: [], bar: 0, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
-    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0 };
+    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0, pl: 1, rv: {}, chains: [], places: [], duel: null, buzz: 0, pid: 1 };
 }
 /* ---------- The city (free play only) ----------
    Leicester, drawn by hand from a rough knowledge of the real city (not a survey): roads, river, parks, districts with
@@ -680,8 +680,8 @@ const PARKS = [ // x, y, rx, ry, name
 ];
 // pop: people living there, com: shops and offices, stu: students, night: nightlife, tour: visitors, spice: famous for curry. r: radius (km).
 const DISTRICTS = [
-  { n: "City centre", x: 0, y: .1, r: .75, pop: .25, com: 1, stu: .3, night: .85, tour: .75 },
-  { n: "Cultural Quarter", x: .5, y: .1, r: .4, com: .4, night: .75, tour: .35, stu: .2, lab: 0 },
+  { n: "City centre", x: 0, y: .1, r: .8, pop: .95, com: 1, stu: .3, night: .9, tour: .8 },
+  { n: "Cultural Quarter", x: .5, y: .1, r: .45, pop: .5, com: .5, night: .8, tour: .4, stu: .2, lab: 0 },
   { n: "", x: -.25, y: .3, r: .35, tour: .7 },
   { n: "", x: -.25, y: -.25, r: .4, com: .6 },
   { n: "De Montfort Uni", x: -.55, y: .6, r: .45, stu: 1, pop: .3, night: .2 },
@@ -816,7 +816,8 @@ function siteMix(s) { return MIX[s.id] || (MIX[s.id] = fieldAt(s.x, s.y)); }
 // how many people pass by, before the size of the place: about 0.75 in a quiet suburb up to about 1.45 by the Clock Tower
 function footOf(m, venue) {
   const v = venue === "pub" ? .45 * m.pop + .25 * m.com + .3 * m.stu + .6 * m.night + .3 * m.tour : .5 * m.pop + .55 * m.com + .25 * m.stu + .1 * m.night + .4 * m.tour;
-  return .72 + .62 * Math.min(1.2, v);
+  const u = Math.min(1.4, v) / 1.4;
+  return .55 + .3 * u + .62 * u * u * u;
 }
 function siteFoot(s, venue) {
   let f = footOf(siteMix(s), venue);
@@ -826,7 +827,7 @@ function siteFoot(s, venue) {
 }
 function siteRent(s, venue, biz) {
   const f = siteFoot(s, venue);
-  let r = PREMISES[s.t].rent * Math.pow(f / .95, 1.15);
+  let r = PREMISES[s.t].rent * Math.pow(f / .95, 2);
   if (hasPk(s, "listed")) r *= 1.1; if (hasPk(s, "garden") || hasPk(s, "river")) r *= 1.06; if (hasPk(s, "seats")) r *= 1.08;
   for (const k of s.pk) if (PERKS[k].bad) r *= .88;
   return Math.max(6, Math.round(r * BIZ[biz == null ? 1 : biz].rent));
@@ -912,11 +913,92 @@ function seasonMul(save, se) {
   const m = siteMix(siteOf(save));
   return se === 1 ? (1 + .25 * m.tour) * (1 - .3 * m.stu) : se === 2 ? 1 + .08 * m.stu : se === 3 ? (1 + .1 * m.com) * (save.venue === "pub" ? 1.04 : 1) : 1;
 }
-// local prices: people pay more in town and less where the students are
-function sitePrice(save) { const m = siteMix(siteOf(save)); return Math.round((.95 + .3 * Math.min(1, .6 * m.com + .5 * m.tour + .3 * m.night) - .08 * m.stu) * 100) / 100; }
-const siteDemand = save => PREMISES[save.prem].demand * siteFoot(siteOf(save), save.venue);
+// local prices (people pay more in town, less near students), times the place's price level
+const wealthOf = s => { const m = siteMix(s); return Math.min(1, .6 * m.com + .5 * m.tour + .3 * m.night); };
+function localPrice(s) { return Math.round((.93 + 1.05 * wealthOf(s) - .08 * siteMix(s).stu) * 100) / 100; }
+// the dearest price level an area will happily pay: suburbs normal, busy areas premium, the centre luxury
+const priceTol = s => { const w = wealthOf(s); return w < .25 ? 1 : w < .6 ? 2 : 3; };
+function sitePrice(save) { return localPrice(siteOf(save)) * priceOf(save).p; }
+// customers: the size of the place times the people passing times the share the place wins from its rivals
+const siteDemand = save => PREMISES[save.prem].demand * siteFoot(siteOf(save), save.venue) * compInfo(save).share * SHARE_K * Math.pow(.55, Math.max(0, (save.pl != null ? save.pl : 1) - priceTol(siteOf(save))));
 // tips: visitors and office workers tip more; listed buildings and river views help too
-function siteTip(save) { const s = siteOf(save), m = siteMix(s); return (1 + .15 * m.tour + .08 * m.com) * (hasPk(s, "listed") ? 1.12 : 1) * (hasPk(s, "river") ? 1.06 : 1); }
+function siteTip(save) { const s = siteOf(save), m = siteMix(s); return priceOf(save).tip * (1 + .15 * m.tour + .08 * m.com) * (hasPk(s, "listed") ? 1.12 : 1) * (hasPk(s, "river") ? 1.06 : 1); }
+/* ---------- Competition: other cafés, pubs and curry houses ----------
+   RIVALS are made once from the DISTRICTS (the same for every save; ids by position in the list, so changing DISTRICTS
+   changes them). A save keeps only what has happened to them: rv {id: {hp, shut}} (hp 100 = thriving, 0 = closed) and
+   chains (new rivals that open near places doing well). Customers near a place split between it and its rivals:
+   share = appeal / (appeal + competition). */
+const RCATS = { tea: "hot", latte: "hot", toast: "brk", eggs: "brk", english: "brk", pancakes: "brk", soldiers: "kids", icecream: "kids", fishfingers: "kids", sundae: "kids",
+  salad: "lunch", toastie: "lunch", soup: "lunch", wrap: "lunch", quiche: "lunch", muffin: "cake", croissant: "cake", sponge: "cake", hightea: "cake",
+  lager: "drink", wine: "drink", cocktail: "cock", fizz: "cock", chips: "grub", ploughmans: "grub", burger: "grub", fishchips: "grub", bangers: "grub", pie: "grub",
+  pudding: "pud", roast: "dinner", steak: "dinner", curry: "curry" };
+const CAT_N = { hot: "coffee & tea", brk: "breakfasts", lunch: "lunches", cake: "cakes", kids: "kids' food", drink: "beer & wine", cock: "cocktails", grub: "pub food", pud: "puddings", dinner: "proper dinners", curry: "curry" };
+const PRICE = [
+  { n: "Bargain", e: "🏷️", p: .85, a: 1.35, tip: .8, d: "Cheaper than everyone: pulls customers from rivals, but earns less on each." },
+  { n: "Normal", e: "💷", p: 1, a: 1, tip: 1, d: "The usual prices for the area." },
+  { n: "Premium", e: "✨", p: 1.2, a: .72, tip: 1.1, d: "Dearer: fewer people choose you, but each spends more. Good when you're always full." },
+  { n: "Luxury", e: "💎", p: 1.45, a: .5, tip: 1.2, d: "Much dearer: only worth it where you'd still be packed out, like a famous place in town." }
+];
+const priceOf = save => PRICE[save && save.pl != null ? save.pl : 1] || PRICE[1];
+function makeRivals() {
+  const r = seeded(4242), out = [], used = new Set();
+  const pick = (kind, a, b) => { for (let t = 0; t < 40; t++) { const n = kind(a[Math.floor(r() * a.length)], b[Math.floor(r() * b.length)]); if (!used.has(n)) { used.add(n); return n; } } return "The " + b[0] + " " + out.length; };
+  const CA = ["Little", "Copper", "Golden", "Bluebell", "Corner", "Sunny", "Hazel", "Bramble", "Willow", "Honey", "Maple", "Daisy", "Pepper", "Fig", "Juniper", "Clover", "Ivy", "Saffron Lane", "Mustard", "Paper"],
+    CB = ["Café", "Kitchen", "Bakehouse", "Coffee Co.", "Deli", "Tearoom", "Pantry", "Bean", "Crumb", "Brew"],
+    PA = ["Red", "Black", "White", "Golden", "Old", "Royal", "Green", "Blue", "Crooked", "Silver", "Jolly", "Three", "Rising", "Wandering"],
+    PB = ["Lion", "Swan", "Bull", "Stag", "Fox", "Crown", "Anchor", "Bell", "Plough", "Horse", "Hart", "Barrel", "Oak", "Kettle", "Moon", "Sun", "Feathers", "Goose"],
+    KA = ["Spice", "Saffron", "Masala", "Tandoor", "Jaipur", "Lotus", "Mango", "Royal Bengal", "Chilli", "Cardamom", "Moonlight", "Kashmir"],
+    KB = ["House", "Palace", "Kitchen", "Garden", "Lounge", "Express", "Grill"];
+  const CATS_C = ["hot", "brk", "lunch", "cake", "kids"], CATS_P = ["drink", "grub", "dinner", "cock", "pud"];
+  DISTRICTS.forEach(D => {
+    const n = Math.min(16, Math.round((D.com || 0) * 7 + (D.night || 0) * 5 + (D.tour || 0) * 3 + (D.pop || 0) * 1.3 + (D.spice || 0) * 2));
+    for (let k = 0; k < n; k++) {
+      const a = r() * 6.283, d = Math.sqrt(r()) * D.r * .85, x = Math.round((D.x + Math.cos(a) * d) * 100) / 100, y = Math.round((D.y + Math.sin(a) * d) * 100) / 100;
+      const m = fieldAt(x, y), big = Math.min(1, .5 * m.com + .3 * m.night + .4 * m.tour);
+      const curry = r() < m.spice * .6, pub = !curry && r() < (.3 + .5 * m.night) / (1 + .4 * m.com);
+      const s = Math.max(1, Math.min(5, Math.round(.7 + 3.4 * big + r() * 1.5)));
+      const pool = pub ? CATS_P : CATS_C, c = [];
+      if (curry) c.push("curry", "drink"); else { c.push(pool[0]); while (c.length < 2 + (s > 2 ? 1 : 0)) { const q = pool[Math.floor(r() * pool.length)]; if (!c.includes(q)) c.push(q); } }
+      const name = curry ? pick((p, q) => `${p} ${q}`, KA, KB) : pub ? pick((p, q) => `The ${p} ${q}`, PA, PB) : pick((p, q) => `${p} ${q}`, CA, CB);
+      out.push({ id: "r" + out.length, n: name, k: curry || pub ? "pub" : "cafe", x, y, s, c, e: curry ? "🍛" : pub ? "🍺" : "☕" });
+    }
+  });
+  return out;
+}
+const RIVALS = makeRivals();
+const CHAINS = [["Brewbird", "cafe", ["hot", "cake", "lunch"]], ["Grill Republic", "pub", ["grub", "dinner", "drink"]], ["Daily Crumb", "cafe", ["brk", "lunch", "cake"]],
+  ["The Tap Room Co.", "pub", ["drink", "cock", "grub"]], ["Bean & Bake", "cafe", ["hot", "brk", "cake"]], ["Smokehouse 54", "pub", ["dinner", "grub", "cock"]],
+  ["Pret-a-Lunch", "cafe", ["lunch", "hot", "kids"]], ["Wetherby's", "pub", ["drink", "grub", "kids"]]];
+const allRivals = save => save && save.chains && save.chains.length ? RIVALS.concat(save.chains) : RIVALS;
+const rvHp = (save, R) => { const v = save && save.rv && save.rv[R.id]; return v ? v.hp : 100; };
+// rivals pulling customers away from a spot, weighted by strength, distance, kind and how well they're doing
+function rivalsNear(save, x, y, venue) {
+  const out = [];
+  for (const R of allRivals(save)) {
+    const d2 = (R.x - x) ** 2 + (R.y - y) ** 2; if (d2 > 1.2) continue;
+    const hp = rvHp(save, R); if (hp <= 0) continue;
+    const w = R.s * (R.k === venue ? 1 : .35) * Math.exp(-d2 / .2) * (.4 + .6 * hp / 100);
+    if (w > .02) out.push({ R, w, d: Math.sqrt(d2) });
+  }
+  return out.sort((a, b) => b.w - a.w);
+}
+const compOf = list => list.reduce((a, o) => a + o.w, 0);
+const menuOf = save => (save.owned || []).filter(r => !(save.off || []).includes(r));
+// what you serve that nobody strong nearby does
+function gapsAt(save, near) {
+  const covered = new Set(); for (const o of near) if (o.w > .2) for (const c of o.R.c) covered.add(c);
+  const mine = new Set(menuOf(save).map(r => RCATS[r]).filter(Boolean));
+  return [...mine].filter(c => !covered.has(c));
+}
+function appealOf(save, gaps) {
+  return (1 + .8 * starsF(save.rep || 0)) * (1 + .06 * (save.decor || 0)) * (1 + .12 * Math.min(5, gaps.length)) * priceOf(save).a * ((save.buzz || 0) >= save.day ? 1.3 : 1);
+}
+// the whole picture for a save at its site: appeal, competition, share of the local customers
+function compInfo(save) {
+  const s = siteOf(save), near = rivalsNear(save, s.x, s.y, save.venue), gaps = gapsAt(save, near), A = appealOf(save, gaps), C = compOf(near);
+  return { near, gaps, A, C, share: A / (A + C + .6) };
+}
+const SHARE_K = 2.6;
 const AREA_LIKES = {
   com: ["latte", "toastie", "wrap", "croissant", "muffin", "wine", "burger"],
   tour: ["hightea", "sponge", "english", "fishchips", "roast", "pie", "ploughmans", "fizz"],
@@ -934,6 +1016,78 @@ function areaPref(info, r) {
   if (info.se === 1) w *= R.t === "c" ? 1.15 : R.t === "w" ? .85 : 1;
   for (const o of info.ev || []) if (o.E.like.includes(r)) w *= 1 + 1.2 * o.k;
   return w;
+}
+/* ---------- More places: Lee Lee plays her main place, managers run up to two more ----------
+   save.places [{id, site, venue, name, rep, mgr {name, lvl 1-5, wage}, decor, pl, dep, fit, opened, buzz, hist [{d, net}], last}].
+   Each night runPlace works out a managed place's day from the same footfall, weather, events and rivals as the main one. */
+const MAX_PLACES = 2, PLACE_ST = [2, 3]; // stars Lee Lee needs for a second and a third place
+const MGR_FIRST = ["Alex", "Bea", "Chris", "Deepa", "Eddie", "Fern", "Gus", "Harpreet", "Imogen", "Jas", "Kev", "Lola", "Mo", "Nadia", "Ollie", "Pam", "Quinn", "Ravi", "Sian", "Tariq"];
+const autoMenu = (venue, rep) => Object.keys(RECIPES).filter(r => RECIPES[r].v === venue && RECIPES[r].st <= starsOf(rep));
+function placeSave(save, P) {
+  const s = SITE[P.site];
+  return { venue: P.venue, site: P.site, prem: s.t, created: save.created, day: save.day, rep: P.rep, tables: Array(Math.min(9, PREMISES[s.t].tables + (hasPk(s, "seats") ? 1 : 0))).fill(4),
+    disc: null, camp: save.camp || [], diff: save.diff, biz: save.biz, owned: autoMenu(P.venue, P.rep), off: [], decor: P.decor || 0, pl: P.pl != null ? P.pl : 1,
+    buzz: P.buzz || 0, rv: save.rv, chains: save.chains, places: [] };
+}
+function makeMgrs(r) {
+  const k = Math.floor(r() * MGR_FIRST.length);
+  return [1, 2, 3].map(lvl => ({ name: MGR_FIRST[(k + lvl * 7) % MGR_FIRST.length], lvl, wage: 26 + 14 * lvl + Math.round(r() * 6) }));
+}
+const mgrTrain = M => M.lvl < 5 ? 350 * M.lvl : null;
+function runPlace(save, P, r) {
+  const sv = placeSave(save, P), s = SITE[P.site], lv = P.mgr.lvl;
+  const groups = expectedGroups(sv) * (.88 + .24 * r()), people = groups * 2, served = people * (.74 + .045 * lv), happy = served * (.6 + .07 * lv);
+  const menu = sv.owned, avg = menu.reduce((a, x) => a + RECIPES[x].p, 0) / Math.max(1, menu.length);
+  const rev = served * 1.55 * avg * sitePrice(sv), tips = rev * .08 * siteTip(sv);
+  const staff = Math.max(1, Math.round(PREMISES[s.t].staff / 2)), wages = P.mgr.wage + staff * 22, rent = siteRent(s, P.venue, save.biz), stock = rev * .3;
+  const repD = Math.round(happy * .9 - (people - served) * 2.2 + (happy / Math.max(1, served) - .7) * 20);
+  P.rep = Math.max(0, P.rep + repD);
+  const net = Math.round((rev + tips - wages - rent - stock) * 100) / 100;
+  P.last = { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages, rent, stock: Math.round(stock), net, repD };
+  P.hist = (P.hist || []).concat([{ d: save.day, net: Math.round(net) }]).slice(-28);
+  return net;
+}
+// what a buyer pays: the deposit back, half the fit-out, and goodwill from recent profits and reputation
+function placeValue(P) {
+  const h = (P.hist || []).slice(-14), avg = h.length ? h.reduce((a, x) => a + x.net, 0) / h.length : 0;
+  return Math.round((P.dep || 0) + (P.fit || 0) * .5 + Math.max(0, avg) * 20 + P.rep);
+}
+const closeValue = P => Math.round((P.dep || 0) + (P.fit || 0) * .15);
+/* Rivals feel it when you're better than them: each night every one near your places loses trade (hp) by how much your
+   appeal beats its own, and slowly recovers otherwise. At 0 it closes for good. Returns the names that closed. */
+function rivalsTick(save, mine) {
+  const hit = {}, out = [];
+  for (const m of mine) for (const o of m.near) {
+    const dmg = Math.max(0, Math.min(5, (m.A - 1.5 * o.R.s) * .8)) * Math.exp(-(o.d * o.d) / .2) * (o.R.k === m.venue ? 1 : .4);
+    if (dmg > .05) hit[o.R.id] = (hit[o.R.id] || 0) + dmg;
+  }
+  save.rv = save.rv || {};
+  for (const id in save.rv) if (save.rv[id].hp > 0 && !hit[id]) save.rv[id].hp = Math.min(100, save.rv[id].hp + .5);
+  for (const id in hit) {
+    const v = save.rv[id] || (save.rv[id] = { hp: 100 }); if (v.hp <= 0) continue;
+    v.hp = Math.round((v.hp - hit[id]) * 10) / 10;
+    if (v.hp <= 0) { v.hp = 0; v.shut = save.day; const R = allRivals(save).find(x => x.id === id); if (R) out.push(R); }
+  }
+  for (const id in save.rv) if (save.rv[id].hp >= 100) delete save.rv[id];
+  return out;
+}
+// a chain opens near a place that's doing well (at the start of a season)
+function openChain(save, x, y, venue) {
+  save.chains = save.chains || [];
+  const n = save.chains.length, opts = CHAINS.filter(c => c[1] === venue), C = opts[n % opts.length], r = seeded(seedOf(save) * 17 + n * 131), a = r() * 6.283;
+  const R = { id: "n" + n, n: C[0], k: venue, x: Math.round((x + Math.cos(a) * .28) * 100) / 100, y: Math.round((y + Math.sin(a) * .28) * 100) / 100, s: 3 + (r() < .4 ? 1 : 0), c: C[2].slice(), e: venue === "pub" ? "🍻" : "🥤", chain: 1 };
+  save.chains.push(R); return R;
+}
+/* A taste-off: challenge a rival near the main place. The next day Lee Lee must keep enough customers happy. */
+const duelFee = R => 40 * R.s;
+const duelNeed = R => 50 + 7 * R.s;
+function duelOk(save, R) {
+  const s = siteOf(save);
+  if (rvHp(save, R) <= 0) return "It has closed down.";
+  if (R.k !== save.venue) return save.venue === "pub" ? "Only another pub or restaurant will take on a pub." : "Only another café will take on a café.";
+  if (Math.hypot(R.x - s.x, R.y - s.y) > 1.5) return "Too far from your main place (1.5 km at most).";
+  if (save.duel) return "You already have a taste-off booked.";
+  return "";
 }
 /*CORE-END*/
 
@@ -1262,6 +1416,7 @@ function startDay() {
   }
   paused = false; closeDialog(); closeMini();
   G.goals = LV == null ? dailyGoals() : [];
+  if (LV == null && S.duel && S.duel.day === S.day) G.goals.push({ k: "duel", n: S.duel.need, cash: 0, rep: 0 });
   G.rush = LV == null ? V.peaks.map(([mu], i) => ({ t: Math.max(4, (mu - .09) * G.len), say: RUSH[S.venue][i] })) : [];
   $("pName").textContent = LV != null ? LEVELS[LV].n + (EASY ? " (easier)" : "") : S.name;
   show("play"); resize();
@@ -1299,8 +1454,9 @@ function briefing() {
     <p class="small" style="text-align:center"><b>${WEATHER[I.w].e} ${WEATHER[I.w].n}</b>: people will want ${WEATHER[I.w].say}.${M ? ` <b>${M.e} ${matchText(M)}!</b>${S.venue === "pub" ? " Lots of beer and chips." : " Fans stop by before the game."}` : ""}</p>
     ${I.ev.map(o => `<p class="news small">${o.E.e} <b>${o.E.n}</b>: ${esc(o.E.say)} ${o.k > .6 ? "It's right on your doorstep." : o.k > .25 ? "Some of the crowds come your way." : "A few people come your way."}</p>`).join("")}
     ${I.rw ? `<p class="small" style="text-align:center">🚧 Roadworks outside this week: a bit quieter.</p>` : ""}
+    ${S.duel && S.duel.day === S.day ? `<p class="news small">🥊 <b>Taste-off day</b> against ${esc((allRivals(S).find(x => x.id === S.duel.id) || {}).n || "a rival")}. Keep ${S.duel.need}% of customers happy!</p>` : ""}
     ${(S.bookings || []).filter(b => b.ok && b.day === S.day).map(b => `<p class="news small">${OCCASIONS[b.occ].e} <b>${OCCASIONS[b.occ].n}</b> for ${b.size} at ${clockAt(b.at)}. Their table is reserved.</p>`).join("")}
-    <div class="goals">${G.goals.map(g => `<div><span>☆</span><span>${GOAL_TEXT[g.k](g.n)} <span class="muted small">+${money(g.cash)}</span></span></div>`).join("")}</div>
+    <div class="goals">${G.goals.map(g => `<div><span>☆</span><span>${GOAL_TEXT[g.k](g.n)} ${g.cash ? `<span class="muted small">+${money(g.cash)}</span>` : ""}</span></div>`).join("")}</div>
     <p class="small muted">About ${Math.round(expectedGroups(S))} groups expected. Busiest around ${VENUES[S.venue].peaks.map(([mu]) => clockAt(mu)).join(" and ")}.</p>
     ${tip ? `<p class="news small">💡 ${esc(tip)}</p>` : S.day === 1 ? `<p class="news small">💡 New here? Follow the green arrow: it shows what to do next.</p>` : ""}
     <div class="acts"><button class="btn pri" data-a="open">Open the doors</button></div>`, () => { paused = false; lastT = performance.now(); });
@@ -2319,7 +2475,7 @@ function newBookingRequest() {
 }
 
 /* How the day is going, in the shape goalMet reads. */
-function progress() { return { served: G.served + G.thrown, angry: G.angry, burnt: G.burnt, rev: G.rev, tips: G.tips, perfect: G.perfect, critic: G.critic, messes: G.messes.length, streak: G.bestStreak, party: G.party }; }
+function progress() { return { happyPct: G.people ? Math.round(100 * G.happy / G.people) : 0, served: G.served + G.thrown, angry: G.angry, burnt: G.burnt, rev: G.rev, tips: G.tips, perfect: G.perfect, critic: G.critic, messes: G.messes.length, streak: G.bestStreak, party: G.party }; }
 
 /* ---------- end of the day ---------- */
 function endDay() {
@@ -2341,6 +2497,10 @@ function endDay() {
   const repBefore = S.rep, starsBefore = starsOf(S.rep);
   S.rep = Math.max(0, Math.round(S.rep + G.repD * (G.repD > 0 && hasPk(site, "listed") ? 1.1 : 1)));
   S.cash = Math.round((S.cash + net) * 100) / 100;
+  // the other places, run by their managers
+  const prr = seeded(seedOf(S) * 7 + S.day * 53);
+  let others = 0; for (const P of S.places || []) others += runPlace(S, P, prr);
+  others = Math.round(others * 100) / 100; S.cash = Math.round((S.cash + others) * 100) / 100;
   // stock: what's left, fresh food half goes off
   const spoiled = {};
   for (const k in G.stock) { let v = G.stock[k]; if (INGS[k].f && v > 0) { const lost = Math.floor(v * (hasPk(site, "store") ? .25 : hasPk(site, "tiny") ? .75 : .5)); if (lost) spoiled[k] = lost; v -= lost; } G.stock[k] = v; }
@@ -2358,6 +2518,21 @@ function endDay() {
     if (st.morale < 15) { S.staff.splice(S.staff.indexOf(st), 1); news.push(`${st.name} has quit: they felt underpaid and overworked.`); }
     else if (st.morale < 30) news.push(`${st.name} is unhappy. A pay rise would help.`);
   }
+  // the taste-off
+  const dg = goals.find(g => g.k === "duel");
+  if (dg && S.duel) {
+    const R = allRivals(S).find(x => x.id === S.duel.id);
+    if (R && dg.ok) {
+      S.rv = S.rv || {}; const v = S.rv[R.id] || (S.rv[R.id] = { hp: 100 }); v.hp = Math.max(0, v.hp - 45); if (!v.hp) v.shut = S.day;
+      S.rep += 10 * R.s; S.buzz = S.day + 7;
+      news.unshift(`🥊 You won the taste-off against ${R.n}! +${10 * R.s} reputation and a week of buzz.${v.hp ? ` They've lost a lot of customers (${hpWord(v.hp)}).` : " They've closed down!"}`);
+    } else if (R) { S.rep = Math.max(0, S.rep - 5); news.unshift(`🥊 ${R.n} won the taste-off this time. Keep more customers happy and try again.`); }
+    S.duel = null;
+  } else if (S.duel && S.duel.day < S.day) S.duel = null;
+  // rivals lose trade to places that are better than them
+  const mineC = [Object.assign(compInfo(S), { venue: S.venue })].concat((S.places || []).map(P => Object.assign(compInfo(placeSave(S, P)), { venue: P.venue })));
+  for (const R of rivalsTick(S, mineC)) news.push(`${R.e} ${R.n} has closed down: their customers are looking for somewhere new.`);
+  for (const P of S.places || []) if (P.last && P.last.net < -50) news.push(`🏪 ${P.name} lost ${money(-Math.round(P.last.net))} yesterday. Check it in the City tab.`);
   // campaigns and specials
   S.camp = (S.camp || []).map(c => ({ id: c.id, days: c.days - 1 })).filter(c => c.days > 0);
   const disc = S.disc; S.disc = null;
@@ -2384,13 +2559,18 @@ function endDay() {
     } else news.push(B.fee ? `You're overdrawn. The bank charges ${money(B.fee)} a night until you're back in the black.${B.evict ? ` ${left} more night${left === 1 ? "" : "s"} overdrawn and ${B.bust ? "the business goes bust" : "the landlord ends your lease"}.` : ""}` : "You're overdrawn, but on Peaceful there's no charge.");
   }
   if (repairs) news.push(`Repairs today: ${money(repairs)}${hasPk(site, "listed") && info.wd === 6 ? " (the weekly upkeep of a listed building)" : " (the leaky roof)"}.`);
-  const last = { day: S.day, rev: G.rev, tips: G.tips, wages, rent, fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
+  const last = { others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
     messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G), repairs };
   S.last = last;
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
   S.stats.served += G.served; S.stats.angry += G.angry; S.stats.earned += income; S.stats.best = Math.max(S.stats.best, Math.round(net));
   S.day++;
   for (const n of calendarNews(S.day)) news.push(n);
+  // a new season: a chain may open near a place that's doing well
+  if (calOf(S.day).se !== calOf(S.day - 1).se) {
+    const best = mineC.map((m, i) => ({ m, i })).filter(x => x.m.share > .45).sort((a, b) => b.m.share - a.m.share)[0];
+    if (best) { const at = best.i ? SITE[S.places[best.i - 1].site] : siteOf(S), R = openChain(S, at.x, at.y, best.m.venue); news.push(`${R.e} A big chain, ${R.n}, has opened near ${at.n}. They've seen how well you're doing.`); }
+  }
   const req = newBookingRequest(); if (req) news.push(`📅 New booking request: ${OCCASIONS[req.occ].n.toLowerCase()} for ${req.size} on ${WEEKDAYS[dayInfo(S, req.day).wd]}. See Today.`);
   saveGame();
   const g = G; G = null;
@@ -2406,8 +2586,9 @@ function endDay() {
     ${bonus ? `<div><span>Goal rewards</span><b class="pos">${money(bonus)}</b></div>` : ""}
     <div><span>Rent${wages ? " + wages" : ""}${repairs ? " + repairs" : ""}</span><b>−${money(rent + wages + fee + repairs)}</b></div>
     <div class="tot"><span>Profit</span><b class="${net >= 0 ? "pos" : "neg"}">${money(net)}</b></div>
+    ${(S.places || []).length ? `<div><span>Your other places</span><b class="${others >= 0 ? "pos" : "neg"}">${others >= 0 ? "+" : ""}${money(others)}</b></div>` : ""}
     <div><span>Reputation</span><b class="${last.repD >= 0 ? "pos" : "neg"}">${last.repD >= 0 ? "+" : ""}${last.repD}</b></div></div>
-    ${goals.length ? `<div class="goals">${goals.map(x => `<div><span>${x.ok ? "⭐" : "✖️"}</span><span>${GOAL_TEXT[x.k](x.n)}${x.ok ? ` <b class="pos">+${money(x.cash)}</b>` : ""}</span></div>`).join("")}</div>` : ""}
+    ${goals.length ? `<div class="goals">${goals.map(x => `<div><span>${x.ok ? "⭐" : "✖️"}</span><span>${GOAL_TEXT[x.k](x.n)}${x.ok && x.cash ? ` <b class="pos">+${money(x.cash)}</b>` : ""}</span></div>`).join("")}</div>` : ""}
     ${last.streak >= 3 ? `<p class="small" style="text-align:center">🔥 Best streak: <b>${last.streak}</b> happy tables in a row</p>` : ""}
     <div class="news small"><b>Next time</b><br>${last.advice.map(esc).join("<br>")}</div>
     <div class="acts"><button class="btn pri" data-a="ok">${S.bust ? "Oh no…" : "To the office"}</button></div>`, S.bust ? () => setTimeout(bustDialog, 50) : null);
@@ -2490,7 +2671,7 @@ function tabDay() {
       <p class="small">${L.served} of ${L.people} customers served${L.angry ? `, <b class="neg">${L.angry} walked out</b>` : ""}${L.turned ? `, <b class="neg">${L.turned} found nothing in stock</b>` : ""}${L.burnt ? `, ${L.burnt} burnt` : ""}.</p>
       <details class="small" id="moneyBox"><summary class="muted">Money in and out</summary><div class="lines" style="margin-top:6px">
       <div><span>Takings</span><b>${money(L.rev)}</b></div><div><span>Tips</span><b>${money(L.tips)}</b></div>
-      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
+      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
       ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
     if (L.advice) h += `<div class="news small"><b>💡 Next time</b><br>${L.advice.map(esc).join("<br>")}</div>`;
   } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
@@ -2636,6 +2817,7 @@ function tabUp() {
 }
 $("mwrap").addEventListener("change", e => {
   if (e.target.id === "diffSel") { S.diff = +e.target.value; saveGame(); renderManage(); return; }
+  if (e.target.id === "plSel") { S.pl = +e.target.value; saveGame(); renderManage(); return; }
   if (e.target.id === "bizSel") { S.biz = Math.min(+e.target.value, S.biz != null ? S.biz : 1); saveGame(); renderManage(); return; }
   if (e.target.id === "discR" || e.target.id === "discP") {
     const r = $("discR").value, p = +$("discP").value;
@@ -2647,6 +2829,16 @@ $("mwrap").onclick = e => {
   const a = b.dataset.act, V = VENUES[S.venue];
   if (a === "title") { renderTitle(); show("title"); return; }
   if (a === "map") { openCity("browse"); return; }
+  if (a === "place") { const P = (S.places || []).find(x => x.id === b.dataset.id); if (P) placeDlg(P); return; }
+  if (a === "duel") {
+    const R = allRivals(S).find(x => x.id === b.dataset.id); if (!R || duelOk(S, R) || !canAfford(duelFee(R))) return;
+    dialog(`<h3>Taste-off with ${esc(R.n)}?</h3><p class="muted" style="text-align:center">Entry ${money(duelFee(R))}. Tomorrow, keep at least <b>${duelNeed(R)}%</b> of your customers happy (and serve at least 6).
+      Win and they lose lots of trade, you gain reputation and a week of buzz. Lose and your reputation dips a little.</p>
+      <div class="acts"><button class="btn pri" data-a="yes">Bring it on</button><button class="btn" data-a="">Not now</button></div>`, x => {
+      if (x === "yes" && canAfford(duelFee(R))) { spend(duelFee(R)); S.duel = { id: R.id, day: S.day, need: duelNeed(R) }; saveGame(); renderManage(); }
+    });
+    return;
+  }
   if (a === "rename") {
     dialog(`<h3>Rename</h3><input type="text" id="rnIn" maxlength="28" value="${esc(S.name)}"><div class="acts"><button class="btn pri" data-a="ok">Save</button><button class="btn" data-a="">Cancel</button></div>`, x => {
       const v = $("rnIn").value.trim(); if (x === "ok" && v) { S.name = v; saveGame(); renderManage(); }
@@ -2785,6 +2977,7 @@ function tabCity() {
     ${nearStadiums(s, S.venue).map(x => `<p class="small">${x.st.e} <b>${x.st.n}</b> is ${Math.hypot(s.x - x.st.x, s.y - x.st.y).toFixed(1)} km away: home ${x.st.what === "race" ? "race days" : "games"} make it ${x.k * x.st.b > .15 ? "much " : ""}busier${x.st.sea.length < 3 ? ` (${x.st.sea.map(i => SEASONS[i].n.toLowerCase()).join(" and ")} only)` : " (not in summer)"}.</p>`).join("")}
     <button class="btn pri" data-act="map">🗺️ Open the map of Leicester</button>
     <p class="small muted">Rents, who lives and works where, stadiums and events. Moving keeps your recipes, staff and equipment, as long as they fit.</p></div>`;
+  h += compCard() + placesCard();
   h += `<div class="card"><div class="row spread"><h2>${SEASONS[c.se].e} ${SEASONS[c.se].n}</h2><span class="small muted">week ${c.week} of 3 · year ${c.year}</span></div>
     <p class="small">${SEASONS[c.se].say} Each season lasts three weeks.</p>`;
   for (const o of seasonEventsFrom(S, S.day)) {
@@ -2803,12 +2996,13 @@ function tabCity() {
 /* ---------- the map ---------- */
 const HEATS = [["none", "Roads only", ""], ["pop", "People", "Where people live: steady trade, families at weekends."], ["com", "Shops & offices", "Busy weekdays, quieter weekends. People pay a bit more."],
   ["stu", "Students", "Cheap food and drink sell best. Quiet in summer."], ["night", "Nightlife", "Evening crowds: good for pubs."], ["tour", "Visitors", "Busy weekends and summers, bigger tips."], ["rent", "Rents", "How much places cost to rent."]];
-const HEAT_COL = { pop: [124, 77, 191], com: [52, 112, 201], stu: [38, 150, 86], night: [205, 60, 140], tour: [232, 140, 30], rent: [210, 72, 58] };
-const SHOWS = [["let", "🏷️ To let"], ["stad", "🏟️ Stadiums"], ["land", "📍 Landmarks"], ["ev", "🎉 Events"]];
+HEATS.push(["comp", "Competition", "Rival cafés, pubs and restaurants. Strong ones count more."]);
+const HEAT_COL = { pop: [124, 77, 191], com: [52, 112, 201], stu: [38, 150, 86], night: [205, 60, 140], tour: [232, 140, 30], rent: [210, 72, 58], comp: [30, 110, 130] };
+const SHOWS = [["let", "🏷️ To let"], ["rv", "🍴 Rivals"], ["stad", "🏟️ Stadiums"], ["land", "📍 Landmarks"], ["ev", "🎉 Events"]];
 const FF = '"Figtree",system-ui,sans-serif';
 const TIER_COL = ["#5FAE72", "#3E9DA0", "#4F7FC0", "#7A5FC2"];
 const CM = { mode: "browse", sel: null, z: 40, cx: 0, cy: .4, save: null, ptrs: new Map(), heatC: {}, ng: null, moved: 0, raf: 0 };
-const mapOpts = () => (opts.map = Object.assign({ heat: "none", let: 1, stad: 1, land: 1, ev: 1 }, opts.map || {}));
+const mapOpts = () => (opts.map = Object.assign({ heat: "none", let: 1, rv: 1, stad: 1, land: 1, ev: 1 }, opts.map || {}));
 const ccv = $("ccv"), cctx = ccv.getContext("2d");
 let CW = 300, CH = 300, CDPR = 1;
 function cityResize() {
@@ -2874,7 +3068,8 @@ function heatCanvas(k, venue) {
   const g = cv.getContext("2d"), img = g.createImageData(nx, ny), [R, G2, B] = HEAT_COL[k];
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
     const f = fieldAt(CITY.x0 + (i + .5) * cell, CITY.y0 + (j + .5) * cell);
-    const v = k === "rent" ? clamp((footOf(f, venue) - .78) / .6, 0, 1) : f[k], o = (j * nx + i) * 4;
+    const x = CITY.x0 + (i + .5) * cell, y = CITY.y0 + (j + .5) * cell;
+    const v = k === "rent" ? clamp(Math.sqrt(Math.max(0, footOf(f, venue) - .6) / 1.8), 0, 1) : k === "comp" ? clamp(Math.sqrt(compOf(rivalsNear(null, x, y, venue)) / 40), 0, 1) : f[k], o = (j * nx + i) * 4;
     img.data[o] = R; img.data[o + 1] = G2; img.data[o + 2] = B; img.data[o + 3] = v < .03 ? 0 : Math.round(25 + 200 * v);
   }
   g.putImageData(img, 0, 0);
@@ -2898,9 +3093,9 @@ function pinEmoji(c, e, x, y, r, ring) {
 function mapEvents() { const sv = CM.save; return seasonEventsFrom(sv, sv.day).filter(o => o.E.r); }
 function siteState(s) {
   const sv = CM.save, start = CM.mode === "start";
-  if (!start && sv.site === s.id) return "here";
-  if (!siteFits(s, sv.venue)) return "no";
-  if (start) return s.t === 0 ? "ok" : "no";
+  if (start) return siteFits(s, sv.venue) && s.t === 0 ? "ok" : "no";
+  if (sv.site === s.id) return "here";
+  if ((sv.places || []).some(P => P.site === s.id)) return "mine";
   return PREMISES[s.t].st > starsOf(sv.rep) ? "lock" : "ok";
 }
 function drawCity() {
@@ -2947,12 +3142,19 @@ function drawCity() {
   if (o.land && z > 45) for (const L of LANDMARKS) { pinEmoji(c, L.e, X(L.x), Y(L.y), z > 90 ? 11 : 8.5); if (z > 120) haloText(c, L.n, X(L.x), Y(L.y) + 17, 10, "#5E4E40", 600); }
   if (o.stad) for (const st of STADIUMS) { pinEmoji(c, st.e, X(st.x), Y(st.y), 12.5, CM.sel && CM.sel.o === st ? "#3E9B6B" : "#3E9B6B"); if (z > 60) haloText(c, st.n, X(st.x), Y(st.y) + 20, 10.5, "#2F6E4E", 700); }
   if (o.ev) for (const ev of mapEvents()) pinEmoji(c, ev.E.e, X(ev.E.x), Y(ev.E.y), 13, "#E8664A");
+  if (o.rv) for (const R of allRivals(sv)) {
+    const hp = rvHp(sv, R), x = X(R.x), y = Y(R.y), sel = CM.sel && CM.sel.o === R;
+    if (x < -20 || y < -20 || x > w + 20 || y > h + 20) continue;
+    if (z > 95 || sel) { c.globalAlpha = hp <= 0 ? .35 : 1; pinEmoji(c, hp <= 0 ? "🚫" : R.e, x, y, sel ? 11 : 8, sel ? "#3A2A22" : R.chain ? "#7A5FC2" : "rgba(0,0,0,.25)"); c.globalAlpha = 1; if (z > 160) haloText(c, R.n, x, y + 14, 9.5, "#5E4E40", 600); }
+    else if (hp > 0) { c.fillStyle = R.k === "pub" ? "rgba(122,74,40,.8)" : "rgba(30,110,130,.8)"; c.beginPath(); c.arc(x, y, 2 + R.s * .5, 0, 7); c.fill(); }
+  }
   if (o.let || CM.mode === "start") {
     const sites = SITES.slice().sort((a, b) => (siteState(a) === "here") - (siteState(b) === "here"));
     for (const s of sites) {
       const stt = siteState(s), x = X(s.x), y = Y(s.y), sel = CM.sel && CM.sel.o === s;
       if (stt === "no") { if (CM.mode === "start" && !siteFits(s, venue)) continue; c.fillStyle = "rgba(140,117,99,.45)"; c.beginPath(); c.arc(x, y, 4.5, 0, 7); c.fill(); continue; }
       if (stt === "here") { pinEmoji(c, "👩🏽‍🍳", x, y - 4, 15, "#E8664A"); haloText(c, "You", x, y + 16, 10.5, "#C24B33", 800); continue; }
+      if (stt === "mine") { const P = sv.places.find(q => q.site === s.id); pinEmoji(c, "🏪", x, y - 3, 13, sel ? "#3A2A22" : "#E8664A"); if (z > 45 || sel) haloText(c, P.name, x, y + 15, 10, "#C24B33", 800); continue; }
       const r = sel ? 11 : 9;
       c.fillStyle = TIER_COL[s.t]; c.globalAlpha = stt === "lock" ? .5 : 1;
       c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.lineWidth = sel ? 3.5 : 2; c.strokeStyle = sel ? "#3A2A22" : "#fff"; c.stroke();
@@ -2984,7 +3186,8 @@ function cityHit(px, py) {
   const o = mapOpts(), z = CM.z, X = x => CW / 2 + (x - CM.cx) * z, Y = y => CH / 2 + (y - CM.cy) * z;
   let best = null, bd = 22;
   const test = (k, ob, x, y, r) => { const d = Math.hypot(px - X(x), py - Y(y)); if (d < (r || 22) && d < bd) { bd = d; best = { k, o: ob }; } };
-  if (o.let || CM.mode === "start") for (const s of SITES) if (siteState(s) !== "no" || CM.mode !== "start") test("site", s, s.x, s.y);
+  if (o.let || CM.mode === "start") for (const s of SITES) if (siteState(s) !== "no") test("site", s, s.x, s.y);
+  if (o.rv && CM.mode !== "start") for (const R of allRivals(CM.save)) test("rv", R, R.x, R.y, 14);
   if (o.stad) for (const st of STADIUMS) test("stad", st, st.x, st.y);
   if (o.ev) for (const ev of mapEvents()) test("ev", ev, ev.E.x, ev.E.y);
   if (o.land && z > 45) for (const L of LANDMARKS) test("land", L, L.x, L.y, 16);
@@ -3036,13 +3239,27 @@ window.addEventListener("resize", () => { if (view === "city") { cityResize(); c
 
 /* the card at the bottom of the map */
 function renderSheet() {
+  const el = $("cSheet"), was = el.hidden ? "" : el.dataset.for;
+  renderSheet0();
+  const now = CM.sel ? CM.sel.o.id || CM.sel.o.n || (CM.sel.o.E && CM.sel.o.E.id) : "";
+  if (now !== was) el.scrollTop = 0;
+  el.dataset.for = now;
+}
+function renderSheet0() {
   const el = $("cSheet"), sel = CM.sel;
   if (!sel) { el.hidden = true; return; }
-  if (el.hidden || el.dataset.for !== (sel.o.id || sel.o.n || (sel.o.E && sel.o.E.id))) el.scrollTop = 0;
-  el.hidden = false; el.dataset.for = sel.o.id || sel.o.n || (sel.o.E && sel.o.E.id);
+  el.hidden = false;
   const head = (t, sub) => `<div class="row spread" style="flex-wrap:nowrap;align-items:flex-start"><div class="grow"><h3>${t}</h3>${sub ? `<div class="small muted">${sub}</div>` : ""}</div><button class="x" data-cs="close" aria-label="Close">✕</button></div>`;
   const sv = CM.save;
   if (sel.k === "land") { el.innerHTML = head(`${sel.o.e} ${esc(sel.o.n)}`, "A Leicester landmark"); return; }
+  if (sel.k === "rv") {
+    const R = sel.o, hp = rvHp(sv, R), ms = siteOf(sv), d = Math.hypot(R.x - ms.x, R.y - ms.y), why = duelOk(sv, R);
+    el.innerHTML = head(`${R.e} ${esc(R.n)}`, `${R.k === "pub" ? (R.e === "🍛" ? "Curry house" : "Pub & restaurant") : "Café"}${R.chain ? " (a chain)" : ""} · ${"★".repeat(R.s)}${"☆".repeat(5 - R.s)}`) +
+      `<p class="small">Known for ${R.c.map(c => CAT_N[c]).join(", ")}. Right now it's <b>${hpWord(hp)}</b>. It's ${d.toFixed(1)} km from your main place.</p>
+      <p class="small muted">Rivals lose customers to you when you're better than them (reputation, decor, dishes nobody else does, prices). A taste-off is the quick way to knock a strong one down.</p>
+      ${hp > 0 ? (why ? `<button class="btn" disabled>${esc(why)}</button>` : `<button class="btn pri" data-cs="duel" ${canAfford(duelFee(R)) ? "" : "disabled"}>Challenge to a taste-off · ${money(duelFee(R))}</button><p class="small muted">Tomorrow, keep ${duelNeed(R)}% of your customers happy to win.</p>`) : ""}`;
+    return;
+  }
   if (sel.k === "stad") {
     const st = sel.o;
     el.innerHTML = head(`${st.e} ${esc(st.n)}`, st.club ? `Home of ${esc(st.club)} (${st.what})` : "Horse racing") +
@@ -3061,19 +3278,26 @@ function renderSheet() {
   const tmp = Object.assign({}, sv, { site: s.id, prem: s.t, tables: full(Math.min(9, P.tables + (hasPk(s, "seats") ? 1 : 0))), disc: null, camp: [] });
   const est = avgGroups(tmp), now = start || stt === "here" ? null : avgGroups(Object.assign({}, sv, { tables: full(siteTables(sv)), disc: null, camp: [] }));
   const menu = sv.owned.filter(r => !sv.off.includes(r)), avgP = menu.reduce((a, r) => a + RECIPES[r].p, 0) / Math.max(1, menu.length);
-  const take = est * 1.9 * 1.5 * avgP * sitePrice(tmp);
+  const take = est * 1.9 * 1.5 * avgP * sitePrice(tmp), ci = compInfo(tmp);
   const need = Math.max(0, fit + dep - (sv.dep || 0));
   let act = "";
   if (start) act = stt === "ok" ? `<button class="btn pri" data-cs="start">Open here</button>` : `<button class="btn" disabled>${siteFits(s, venue) ? "Start somewhere small first" : `Not licensed as a ${venue === "pub" ? "pub" : "café"}`}</button>`;
   else if (stt === "here") act = `<button class="btn" disabled>Lee Lee is here</button>`;
-  else if (stt === "no") act = `<button class="btn" disabled>Not licensed as a ${venue === "pub" ? "pub" : "café"}</button>`;
+  else if (stt === "mine") act = `<button class="btn pri" data-cs="place">Manage ${esc(sv.places.find(q => q.site === s.id).name)}</button>`;
   else if (stt === "lock") act = `<button class="btn" disabled>Needs ${P.st}★ (you have ${starsOf(sv.rep)}★)</button>`;
+  else if (!siteFits(s, venue)) act = `<button class="btn" disabled>Not licensed as a ${venue === "pub" ? "pub" : "café"}, so Lee Lee can't move here</button>`;
   else act = `<button class="btn pri" data-cs="move" ${sv.cash >= need ? "" : "disabled"}>Move here · ${money(need)}</button>${sv.cash < need ? `<p class="small neg">You need ${money(need - Math.round(sv.cash))} more.</p>` : ""}`;
+  if (!start && stt === "ok") {
+    const n = (sv.places || []).length, need2 = PLACE_ST[n];
+    act += n >= MAX_PLACES ? `<p class="small muted">You run ${1 + MAX_PLACES} places already: the most for now.</p>` : starsOf(sv.rep) < need2 ? `<p class="small muted">With ${need2}★ you could open this as another place, run by a manager.</p>`
+      : `<button class="btn" data-cs="open">Open another place here · ${money(siteFit(s, s.v === "both" ? venue : s.v) + siteRent(s, s.v === "both" ? venue : s.v, sv.biz) * 28)}</button>`;
+  }
   el.innerHTML = head(esc(s.n), `${esc(s.a)} · ${s.v === "both" ? "Café or pub" : s.v === "pub" ? "Pub" : "Café"} · ${sizeText(s)}`) +
     `<div class="lines small"><div><span>Rent</span><b>${money(rent * 7)} a week</b></div>
     ${start ? `<div><span>To move in</span><b class="pos">Free to start</b></div>` : `<div><span>Fitting out</span><b>${fit ? money(fit) : "nothing"}</b></div><div><span>Deposit (comes back when you leave)</span><b>${money(dep)}</b></div>${sv.dep ? `<div><span>Your old deposit back</span><b class="pos">+${money(sv.dep)}</b></div>` : ""}`}
     <div><span>Customers on a usual day</span><b>about ${Math.round(est)} groups${now != null ? ` <span class="${est >= now ? "pos" : "neg"}">(now ${Math.round(now)})</span>` : ""}</b></div>
-    <div><span>Prices here</span><b>${pct(sitePrice(tmp))} of usual</b></div>
+    <div><span>Competition</span><b>${compWord(ci.C)} (${ci.near.filter(o => o.w > .2).length} rivals close by)</b></div>
+    <div><span>Prices here</span><b>${pct(localPrice(s))} of usual, up to ${PRICE[priceTol(s)].n}</b></div>
     <div><span>Takings, rough guess</span><b>${money(Math.round(take / 5) * 5)} a day</b></div></div>
     ${perkList(s, venue)}${areaBars(siteMix(s))}
     <div><span class="small"><b>A usual week</b></span>${weekChart(tmp)}</div>
@@ -3086,13 +3310,20 @@ $("cSheet").onclick = e => {
   if (a === "close") { CM.sel = null; renderSheet(); drawCity(); return; }
   if (a === "start") { startAt(s); return; }
   if (a === "move") moveDialog(s);
+  if (a === "open") openPlaceDlg(s);
+  if (a === "place") { const P = CM.save.places.find(q => q.site === s.id); if (P) { show("manage"); renderManage("city"); placeDlg(P); } }
+  if (a === "duel") { const R = s; if (duelOk(S, R) || !canAfford(duelFee(R))) return; spend(duelFee(R)); S.duel = { id: R.id, day: S.day, need: duelNeed(R) }; saveGame(); renderCityUI(); toastOffice(`Taste-off with ${R.n} booked for tomorrow!`); }
 };
 // moving premises: pay the fit-out and a new deposit, get the old deposit back; what doesn't fit is sold
 function moveTo(sv, s, forced) {
   const rent = siteRent(s, sv.venue, sv.biz), dep = forced ? 0 : rent * 28, out = [];
   sv.cash = Math.round((sv.cash + (sv.dep || 0) - (forced ? 0 : siteFit(s, sv.venue) + dep)) * 100) / 100;
   sv.dep = dep; sv.site = s.id; sv.prem = s.t; sv.od = 0;
-  const P = PREMISES[s.t], maxT = siteTables(sv);
+  return fitTo(sv);
+}
+// make the main place's tables, kitchen and team fit its (new) premises; what doesn't fit is sold or leaves
+function fitTo(sv) {
+  const P = PREMISES[sv.prem], maxT = siteTables(sv), out = [];
   while (sv.tables.length > maxT) { sv.tables.pop(); sv.tpos.pop(); sv.cash += 50; out.push("a table"); }
   // the kitchen keeps one of everything the menu needs (and a fridge, worktop and somewhere to wash up) first, then the dearest things
   const have = sv.stations.map((t, i) => ({ t, i })).filter(x => x.t);
@@ -3122,6 +3353,114 @@ function moveDialog(s) {
     if (a !== "yes") return;
     moveTo(S, s, false); S.bookings = (S.bookings || []).filter(b => b.size <= Math.max(0, ...S.tables) || !b.ok); saveGame();
     CM.sel = null; openManage("city"); toastOffice(`Welcome to ${s.n}!`);
+  });
+}
+
+/* ---------- competition and more places (office) ---------- */
+const compWord = C => C < 1 ? "low" : C < 4 ? "some" : C < 12 ? "lots" : "fierce";
+const hpWord = hp => hp <= 0 ? "closed down" : hp < 35 ? "struggling badly" : hp < 70 ? "losing customers" : "doing well";
+function rivalRow(R, hp, act) {
+  return `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="stars" style="font-size:.75rem">${"★".repeat(R.s)}</span>${R.chain ? ` <span class="pill">chain</span>` : ""}</b>
+    <span>Known for ${R.c.map(c => CAT_N[c]).join(", ")} · <span class="${hp < 70 ? "pos" : ""}">${hpWord(hp)}</span></span>${hp > 0 && hp < 100 ? `<span class="mor" style="width:110px"><i style="width:${hp}%;background:${hp < 35 ? "var(--bad)" : "var(--gold)"}"></i></span>` : ""}</div>${act || ""}</div>`;
+}
+function duelBtn(R) {
+  const why = duelOk(S, R);
+  return why ? "" : `<button class="btn sm pri" data-act="duel" data-id="${R.id}" ${canAfford(duelFee(R)) ? "" : "disabled"}>Taste-off ${money(duelFee(R))}</button>`;
+}
+function compCard() {
+  const ci = compInfo(S), s = siteOf(S), tol = priceTol(s), pl = S.pl != null ? S.pl : 1, sh = Math.round(ci.share * 100);
+  let h = `<div class="card"><div class="row spread"><h2>Competition</h2><span class="pill ${ci.C < 4 ? "g" : ""}">${compWord(ci.C)}</span></div>
+    <p class="small">Lee Lee wins about <b>${sh}%</b> of the people round here who eat out. The rest go to the ${ci.near.length} ${ci.near.length === 1 ? "rival" : "rivals"} nearby.</p>
+    <div class="meter"><i style="width:${sh}%;background:var(--good)"></i></div>
+    <div class="small"><b>What pulls people in</b><div class="perks" style="margin-top:4px">
+      <div>⭐ Reputation: ${starStr(starsOf(S.rep))}</div>
+      <div>🪴 Decor: ${S.decor} of ${DECOR.length} (Upgrades)</div>
+      <div>🍽️ ${ci.gaps.length ? `Nobody near here does <b>${ci.gaps.map(c => CAT_N[c]).join(", ")}</b>: that brings people to you.` : "Rivals nearby already sell everything on your menu. Learn dishes they don't do (Menu)."}</div>
+      <div>${PRICE[pl].e} Prices: ${PRICE[pl].n}</div>${S.buzz >= S.day ? `<div class="pos">🔥 Buzz from a taste-off win until day ${S.buzz}</div>` : ""}</div></div>
+    <div class="row spread"><span class="small"><b>Price level</b></span><select id="plSel">${PRICE.map((P, i) => `<option value="${i}" ${i === pl ? "selected" : ""}>${P.e} ${P.n} (${pct(P.p)})</option>`).join("")}</select></div>
+    <p class="small muted">${esc(PRICE[pl].d)} People round here will pay up to <b>${PRICE[tol].n}</b>${pl > tol ? `: <span class="neg">at ${PRICE[pl].n} many stay away</span>` : ""}.</p>`;
+  if (S.duel) { const R = allRivals(S).find(x => x.id === S.duel.id); if (R) h += `<p class="news small">🥊 Taste-off with <b>${esc(R.n)}</b> tomorrow: keep ${S.duel.need}% of customers happy.</p>`; }
+  if (ci.near.length) {
+    h += `<details class="small" id="rvBox"><summary class="muted">Rivals nearby, and taste-offs</summary>
+      <p class="small muted" style="margin:6px 0">Rivals lose customers when you're better than them, and close down in the end. To take on a big one, challenge it to a taste-off: the next day, keep enough customers happy and it loses a lot of trade, and you get a reputation boost and a week of buzz.</p>
+      ${ci.near.slice(0, 8).map(o => rivalRow(o.R, rvHp(S, o.R), duelBtn(o.R))).join("")}</details>`;
+  }
+  return h + `</div>`;
+}
+function placesCard() {
+  const list = S.places || [], st = starsOf(S.rep), next = PLACE_ST[list.length];
+  let h = `<div class="card"><div class="row spread"><h2>Your places</h2><span class="small muted">${1 + list.length} of ${1 + MAX_PLACES}</span></div>
+    <div class="item"><div class="ic">👩🏽‍🍳</div><div class="grow"><b>${esc(S.name)}</b><span>${esc(siteOf(S).n)} · Lee Lee works here</span></div></div>`;
+  for (const P of list) {
+    const L = P.last, s = SITE[P.site];
+    h += `<div class="item"><div class="ic">🏪</div><div class="grow"><b>${esc(P.name)} <span class="stars" style="font-size:.75rem">${starStr(starsOf(P.rep))}</span></b>
+      <span>${esc(s.n)} · ${esc(P.mgr.name)} manages${L ? ` · yesterday <b class="${L.net >= 0 ? "pos" : "neg"}">${L.net >= 0 ? "+" : ""}${money(Math.round(L.net))}</b>` : " · opens tomorrow"}</span></div>
+      <button class="btn sm" data-act="place" data-id="${P.id}">Manage</button></div>`;
+  }
+  if (list.length < MAX_PLACES) h += st >= next ? `<p class="small">You can open a ${list.length ? "third" : "second"} place, run by a manager. Find one on the map and tap <b>Open another place here</b>.</p>`
+    : `<p class="small muted">With ${next}★ you can open a ${list.length ? "third" : "second"} place, run by a manager while Lee Lee works here.</p>`;
+  return h + `</div>`;
+}
+/* a managed place's own dialog */
+function placeDlg(P) {
+  const s = SITE[P.site], L = P.last, sv = placeSave(S, P), ci = compInfo(sv), pl = P.pl != null ? P.pl : 1, tc = mgrTrain(P.mgr), d = DECOR[P.decor || 0], dc = d ? Math.round(d.c * (1 + .5 * s.t)) : null;
+  const week = (P.hist || []).slice(-7).reduce((a, x) => a + x.net, 0), val = placeValue(P), cv = closeValue(P);
+  dialog(`<h3>${esc(P.name)}</h3><p class="small muted" style="text-align:center">${esc(s.n)} · ${P.venue === "pub" ? "Pub" : "Café"} · <span class="stars" style="font-size:.8rem">${starStr(starsOf(P.rep))}</span></p>
+    ${L ? `<div class="lines small"><div><span>Yesterday: customers</span><b>${L.served} served of ${L.people}</b></div><div><span>Takings</span><b>${money(L.rev)}</b></div>
+      <div><span>Rent, wages, stock</span><b>−${money(Math.round(L.rent + L.wages + L.stock))}</b></div><div class="tot"><span>Profit</span><b class="${L.net >= 0 ? "pos" : "neg"}">${money(Math.round(L.net))}</b></div>
+      <div><span>Last 7 days</span><b class="${week >= 0 ? "pos" : "neg"}">${money(week)}</b></div><div><span>Reputation</span><b class="${L.repD >= 0 ? "pos" : "neg"}">${L.repD >= 0 ? "+" : ""}${L.repD}</b></div></div>` : `<p class="small" style="text-align:center">Opens tomorrow.</p>`}
+    <p class="small">Wins about <b>${Math.round(ci.share * 100)}%</b> of local customers (competition: ${compWord(ci.C)}). The manager cooks every ${P.venue === "pub" ? "pub" : "café"} dish this place's reputation allows.</p>
+    <div class="item"><div class="ic">🧑‍💼</div><div class="grow"><b>${esc(P.mgr.name)}, level ${P.mgr.lvl}</b><span>${money(P.mgr.wage)} a day. Better managers serve more people and keep them happier.</span></div>
+      ${tc ? `<button class="btn sm pri" data-a="train" ${canAfford(tc) ? "" : "disabled"}>Train ${money(tc)}</button>` : ""}</div>
+    <div class="item"><div class="ic">🪴</div><div class="grow"><b>${d ? esc(d.n) : "Fully decorated"}</b><span>Decor ${P.decor || 0} of ${DECOR.length}: more people choose it over rivals.</span></div>
+      ${d ? `<button class="btn sm pri" data-a="decor" ${canAfford(dc) ? "" : "disabled"}>${money(dc)}</button>` : ""}</div>
+    <div class="row spread"><span class="small"><b>Prices: ${PRICE[pl].n}</b> <span class="muted">(people here pay up to ${PRICE[priceTol(s)].n})</span></span><span class="row" style="gap:4px">${PRICE.map((x, i) => `<button class="btn sm ${i === pl ? "good" : ""}" data-a="pl${i}" title="${x.n}">${x.e}</button>`).join("")}</span></div>
+    <div class="acts">${P.venue === S.venue ? `<button class="btn" data-a="swap">Lee Lee works here instead</button>` : ""}
+      <button class="btn" data-a="sell">Sell the business · ${money(val)}</button><button class="btn" data-a="close" style="color:var(--bad)">Close it down · ${money(cv)}</button>
+      <button class="btn pri" data-a="">Done</button></div>`, a => {
+    if (!a) { renderManage(); return; }
+    if (a === "train" && tc && canAfford(tc)) { spend(tc); P.mgr.lvl++; P.mgr.wage += 10; }
+    if (a === "decor" && d && canAfford(dc)) { spend(dc); P.decor = (P.decor || 0) + 1; }
+    if (a.startsWith("pl")) P.pl = +a.slice(2);
+    if (a === "swap") { swapMain(P); saveGame(); renderManage("city"); toastOffice(`Lee Lee now works at ${SITE[S.site].n}.`); return; }
+    if (a === "sell" || a === "close") {
+      const got = a === "sell" ? val : cv;
+      dialog(`<h3>${a === "sell" ? "Sell" : "Close"} ${esc(P.name)}?</h3><p class="muted" style="text-align:center">${a === "sell" ? "A buyer takes it over as it is" : "Everything is sold off cheaply"}. You get <b>${money(got)}</b>, including the deposit back.</p>
+        <div class="acts"><button class="btn pri" data-a="yes">${a === "sell" ? "Sell" : "Close it"}</button><button class="btn" data-a="">Keep it</button></div>`, x => {
+        if (x === "yes") { S.places = S.places.filter(y => y !== P); S.cash = Math.round((S.cash + got) * 100) / 100; saveGame(); renderManage("city"); toastOffice(`${P.name} ${a === "sell" ? "is sold" : "has closed"}: +${money(got)}`); }
+        else placeDlg(P);
+      });
+      return;
+    }
+    saveGame(); renderManage(); placeDlg(P);
+  });
+}
+// the main place and a managed one change over: Lee Lee takes her kitchen with her (what doesn't fit is sold)
+function swapMain(P) {
+  const old = { site: S.site, dep: S.dep, name: S.name }, ns = SITE[P.site];
+  S.site = ns.id; S.prem = ns.t; S.dep = P.dep || 0; S.name = P.name;
+  P.site = old.site; P.dep = old.dep; P.name = old.name;
+  return fitTo(S);
+}
+/* opening a managed place from the map */
+function openPlaceDlg(s, venue) {
+  if (!venue) {
+    if (s.v === "both") { dialog(`<h3>What kind of place?</h3><div class="acts"><button class="btn" data-a="cafe">🧁 A café</button><button class="btn" data-a="pub">🍺 A pub</button><button class="btn" data-a="">Cancel</button></div>`, a => { if (a) openPlaceDlg(s, a); }); return; }
+    venue = s.v;
+  }
+  const rent = siteRent(s, venue, S.biz), fit = siteFit(s, venue), dep = rent * 28, cost = fit + dep;
+  const mg = makeMgrs(seeded(seedOf(S) * 3 + S.day * 7 + s.id.length * 13 + (S.places || []).length));
+  const nm = `${venue === "pub" ? "Lee Lee's Bar" : "Lee Lee's"}, ${s.a}`;
+  dialog(`<h3>Open ${esc(s.n)}</h3><p class="small muted" style="text-align:center">A ${venue === "pub" ? "pub" : "café"} run by a manager. Fit-out ${money(fit)} and a deposit of ${money(dep)}, then ${money(rent * 7)} a week in rent. Its takings and costs go through your money each night.</p>
+    <p class="small"><b>Choose a manager</b></p>
+    <div class="acts">${mg.map((m, i) => `<button class="btn" data-a="m${i}" ${canAfford(cost) ? "" : "disabled"} style="text-align:left"><b>${esc(m.name)}</b>, level ${m.lvl} · ${money(m.wage)} a day</button>`).join("")}
+    ${canAfford(cost) ? "" : `<p class="small neg">You need ${money(cost)}.</p>`}<button class="btn" data-a="">Not now</button></div>`, a => {
+    if (!a || !canAfford(cost)) return;
+    const m = mg[+a.slice(1)];
+    spend(cost);
+    S.places = S.places || [];
+    S.places.push({ id: "p" + (S.pid = (S.pid || 1) + 1), site: s.id, venue, name: nm, rep: Math.round(S.rep * .25), mgr: m, decor: 0, pl: 1, dep, fit, opened: S.day, buzz: 0, hist: [], last: null });
+    saveGame(); CM.sel = null; openManage("city"); toastOffice(`${nm} is opening, with ${m.name} in charge!`);
   });
 }
 
