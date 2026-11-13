@@ -717,6 +717,18 @@
         "Pubs near a ground now get group bookings for home games: supporters' clubs, rugby club socials, cricket club dinners and race-day parties.",
         "Warnings pop up as the fans arrive, the forecast and morning briefing say who's coming and when, and automatic stock buys in the food fans order."
       ]
+    },
+    {
+      "id": 62,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: build-ins, walls and busy days",
+      "details": [
+        "Match days and events are now local: fans fill the pubs near the ground, not pubs across the city, and county cricket only gives a small lift right next to Grace Road.",
+        "Walls and doors: in Layout → Rearrange, tap the gaps between spots in the dining room to put up a wall, then add a door. People walk round walls through the doors, and walls keep the noise of a TV or a soft play away from other tables.",
+        "Café build-ins (Upgrades): a soft play corner (more families, £2.50 a child), a reading & work corner where students and laptop workers stay for hours, a bookable meeting room (needs walls and a door; far more bookings near offices and in town) and a takeaway window that sells to passers-by.",
+        "Pub build-ins: a sports TV corner that shows the big televised games, so fans come even if you're nowhere near the ground (a big screen with every sports channel costs more each day), fruit machines for steady money, a pool table, and a function room for booked parties.",
+        "Busy days need help: on match days, events and sunny weekends more people turn up than Lee Lee can serve alone. The forecast warns you (👥), and the Team tab lets you book agency staff for just that day."
+      ]
     }
   ]
 }

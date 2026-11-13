@@ -224,6 +224,17 @@ Taste-offs: `S.duel {id, day, need}` adds a `duel` goal to the next day; a win t
 **More places**: `S.places` (max `MAX_PLACES` = 2 more, needing `PLACE_ST` stars), each `{id, site, venue, name, rep, mgr, decor, pl,
 dep, fit, opened, hist, last}`, simulated each night by `runPlace` through `placeSave` (a stand-in save, so the same demand code runs).
 `placeValue` / `closeValue` when sold or closed; `swapMain` swaps the main place with one (`fitTo` resizes the kitchen).
+**Build-ins and walls** (free play): `BUILDINS` (keyed by id, append only; café: softplay, nook, meet, hatch; pub: sports, fruit, pool, func)
+in `S.bi {id: {p, lv, n}}`. Ones with `cell` take one of the 9 dining spots (`TABLE_POS`) shared with tables (`cellCap` = tables + 1, max 9;
+`biCells`, `freeSpot`); ones with `seats` become tables with `sp` that only groups with the same `g.sp` use (nook workers, pool players,
+TV/match fans `watch`, room bookings `b.room`). `S.walls {edge: 1 wall | 2 door}` on `LINKS` between spots (`DX`/`DY` grid, T counter, B
+entrance; `t` edges stay open): `wallPath` routes staff (`route`) and customers (`walkTo`, `p.wp`) through doors, `wallsOk` keeps every
+spot reachable, `roomsOf` (walls and doors shut noise: TV and soft play upset diners in the same room, `patMul`), `enclosed` for meeting
+and function rooms. Money from build-ins goes through `addExtra` into `G.extra` (`EXTRA_N`; the takeaway window and the sports channels'
+daily fee at the end of the day). Televised sport `tvOn` (pubs with a sports corner; never 3pm Saturday) adds watchers anywhere in the city.
+Moving (`fitTo`) leaves walls behind and keeps build-ins that fit. **Busy days**: `expectedGroups` lets more than the tables' turnover
+arrive on busy days; `crewCap` (Lee Lee 6 groups, plus `ROLE_CAP` per worker, measured with a coachNext bot) drives the 👥 warnings, and
+`S.temps [{day, role, name, wage}]` are agency staff for one day (actors in `startDay`, paid in `endDay`).
 Balance scripts: compare suburbs and centre with `expectedGroups` on stand-in saves (the centre should lose money before ~5★ and
 earn 2-3× the suburbs once its nearest rivals are beaten).
 
