@@ -201,6 +201,19 @@ Week and weather (free play only): `dayInfo(save, day)` gives `{wd, w, match}` f
 `newBookingRequest` at the end of a day, accepted ones reserve a table, `t.res`, and arrive as a party group). Kids: recipes with
 `kid`, family groups have `kids` and people with `kid`. Pub bar: `S.bar` (index into `BAR`) adds standing spots from `BAR_SPOTS`
 as tables with `bar: true` that only drinkers use; drinkers order rounds. Tables can seat 6 (`seatOffsets`).
+**The city** (free play only; CORE after `newSave`): Leicester drawn by hand (approximate, km from the Clock Tower, x east, y south):
+`ROADS`, `RIVER`, `RAIL`, `PARKS`, `DISTRICTS` (gaussian fields `pop com stu night tour spice`, read by `fieldAt` / `siteMix`),
+`STADIUMS`, `LANDMARKS`. Premises to let are `SITES` (`id`, `v` cafe/pub/both, `t` size = index into `PREMISES`, `pk` from `PERKS`,
+snags have `bad`), keyed by id in `S.site`: append only. `S.prem` is still the size (palettes, tables, slots, staff), so a move sets
+both (`moveTo`: fit-out `siteFit` + deposit of 28 days' rent in `S.dep`, refunded on leaving; what doesn't fit is sold). Rent
+`siteRent`, demand `siteDemand` (footfall `footOf`), local prices `sitePrice` (`lp(r)` in play), tips `siteTip`, week shape
+`weekPattern`, `seasonMul`, order tastes `areaPref` (inside `prefW`). Old saves get `OLD_SITE[venue][prem]`. Seasons: 21 days each,
+84-day year, day 1 is the first Monday of spring (`calOf`); weather weights per season (`SEASONS[].w`, `WEATHER[5]` snow). `EVENTS`
+(keyed by id, append only): one a season picked per save and year from `EVENT_POOL`, both winter ones every year (`seasonEvents`);
+`evPull` is the strength at a place. Match days come from `matchOn` (stadium distance, `stadiumPull`); `dayInfo` now also returns
+`mi mk se year week ev rw mix`. Money difficulty `S.biz` (`BIZ`: Peaceful, Normal, Hard; only easier later): overdrawn nights `S.od`;
+Normal evicts to the cheapest small place, Hard sets `S.bust` (game over). Page: the City tab (`tabCity`), the map screen `#city`
+(`openCity("start" | "browse")`, `drawCity`, heat overlays `heatCanvas`, `renderSheet`), `calendarNews`, `opts.map` (overlay choices).
 
 ### Gravity Well (`games/gravity-well`)
 

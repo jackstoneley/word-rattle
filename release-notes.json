@@ -685,6 +685,22 @@
         "Families with children come, especially at weekends, and make more mess. Learn the new kids' menu dishes to keep them happy.",
         "Pub only: build a bar and standing area (Upgrades). People who just want a drink stand at the bar, order rounds, and bring in more customers."
       ]
+    },
+    {
+      "id": 60,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: the map of Leicester, seasons and events",
+      "details": [
+        "Free play now happens in Leicester. A new game starts with a map: pick a small café or pub in the suburbs to rent.",
+        "The map shows the roads, and you can switch on colour overlays for where people live, shops and offices, students, nightlife, visitors and rents. You can also show stadiums, landmarks and events.",
+        "Every place to let has its own rent, size, perks (beer garden, car park, riverside, listed building…) and snags (roadworks, leaky roof…). Tap one to see how busy it would be, what a usual week looks like, and how much customers pay there.",
+        "Move to busier, bigger places as your reputation grows, right up to the city centre. Moving costs a fit-out and a deposit, which you get back when you leave. The new City tab in the office shows your place, the season and what's coming.",
+        "Seasons: each lasts three weeks. Summer brings visitors and sun but the students go home, and winter is cold, sometimes snowy, and has Christmas.",
+        "One big event a season and two at Christmas: Diwali on the Golden Mile, the Caribbean Carnival, Freshers' week, the Christmas market and more. Places near an event get crowds and sell different food.",
+        "Match days come from real grounds: Leicester City, the Tigers, county cricket at Grace Road and race days in Oadby. The nearer the ground, the busier it gets.",
+        "A new Money setting for each game: Peaceful (cheaper rent, you can't go bust), Normal (stay overdrawn for a week and you're moved to a cheap place) or Hard (stay overdrawn for five days and the business goes bust).",
+        "Saved games carry on where they were, now placed somewhere in Leicester."
+      ]
     }
   ]
 }

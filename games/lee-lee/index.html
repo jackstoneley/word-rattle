@@ -173,6 +173,40 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
 .fc .big{font-size:22px;line-height:1}
 .fc i{display:block;width:60%;background:var(--gold);border-radius:4px;margin-top:auto}
 .fc small{font-size:.66rem;color:var(--muted)}
+/* city map */
+#city{display:flex;flex-direction:column;gap:6px;padding:8px 8px 6px;max-width:900px;width:100%;margin:0 auto}
+.chead{display:flex;align-items:center;gap:8px;flex:none}
+.chead .ttl{flex:1;min-width:0}
+.chead .ttl b{display:block;font-family:var(--display);font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chead .ttl span{display:block;font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cchips{display:flex;gap:6px;overflow-x:auto;flex:none;scrollbar-width:none;padding:1px 0}
+.cchips::-webkit-scrollbar{display:none}
+.cchips button{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:6px 11px;font-weight:700;font-size:.82rem;display:flex;align-items:center;gap:6px}
+.cchips button i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.cchips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.cmap{flex:1;min-height:0;position:relative;border-radius:14px;overflow:hidden;background:#EFE9DD;touch-action:none;border:1px solid var(--line)}
+#ccv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.czoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+.czoom .ib{background:rgba(255,255,255,.94)}
+.ckey{position:absolute;left:8px;top:8px;background:rgba(255,255,255,.93);border:1px solid var(--line);border-radius:12px;padding:7px 9px;font-size:.72rem;line-height:1.35;max-width:min(240px,62%);pointer-events:none}
+.ckey b{font-size:.78rem}
+.ckey .grad{height:8px;border-radius:99px;margin:4px 0 2px}
+.ckey .lh{display:flex;justify-content:space-between;color:var(--muted)}
+.ckey .dots{display:flex;flex-wrap:wrap;gap:3px 9px;margin-top:3px}
+.ckey .dots span{display:flex;align-items:center;gap:4px}
+.ckey .dots i{width:9px;height:9px;border-radius:50%;display:inline-block;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.csheet{position:absolute;left:6px;right:6px;bottom:6px;max-height:62%;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:9px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.csheet h3{font-size:1.15rem;line-height:1.2}
+.csheet .x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:800;padding:0;flex:none}
+.abars{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:.8rem;align-items:center}
+.abars .dots5{display:flex;gap:3px}
+.abars .dots5 i{width:14px;height:7px;border-radius:3px;background:var(--line)}
+.abars .dots5 i.on{background:var(--accent)}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:end;height:46px}
+.wk div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:.62rem;color:var(--muted);gap:2px}
+.wk i{display:block;width:70%;background:var(--gold);border-radius:3px}
+.perks{display:flex;flex-direction:column;gap:4px;font-size:.84rem}
+.perks .bad{color:var(--bad)}
 .news{background:#FFF0E8;border:1px solid #F5C9B6;border-radius:12px;padding:10px 12px;font-size:.9rem;line-height:1.4}
 </style>
 </head>
@@ -247,13 +281,34 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
         <div class="diffs" id="ngDiffs"></div>
         <p class="small muted" id="ngDiffD"></p>
       </div>
+      <div class="card">
+        <span class="label">Money</span>
+        <div class="diffs" id="ngBiz"></div>
+        <p class="small muted" id="ngBizD"></p>
+      </div>
       <p class="news" id="ngCert" hidden></p>
       <div class="card">
         <label class="label" for="ngName">Name of the place</label>
         <input type="text" id="ngName" maxlength="28" autocomplete="off">
         <p class="small muted">You can change it later in the office.</p>
       </div>
-      <button class="btn pri" id="ngGo" style="min-height:50px;font-size:1.05rem">Open the doors</button>
+      <button class="btn pri" id="ngGo" style="min-height:50px;font-size:1.05rem">Choose where in Leicester →</button>
+    </div>
+  </section>
+
+  <section id="city" class="screen" hidden>
+    <div class="chead">
+      <button class="ib" id="cBack" aria-label="Back">←</button>
+      <div class="ttl"><b id="cTitle">Leicester</b><span id="cSub"></span></div>
+      <button class="btn sm" id="cList">📋 List</button>
+      <div class="cashbox"><b id="cCash"></b><span id="cStars"></span></div>
+    </div>
+    <div class="cchips" id="cHeat"></div>
+    <div class="cchips" id="cShow"></div>
+    <div class="cmap" id="cMap"><canvas id="ccv"></canvas>
+      <div class="ckey" id="cKey"></div>
+      <div class="czoom"><button class="ib" data-z="in" aria-label="Zoom in">＋</button><button class="ib" data-z="out" aria-label="Zoom out">－</button><button class="ib" data-z="me" aria-label="Show my place">⌖</button></div>
+      <div class="csheet" id="cSheet" hidden></div>
     </div>
   </section>
 
@@ -523,22 +578,34 @@ const WEATHER = [
   { n: "Cloudy", e: "⛅", crowd: 1, pub: 1, cold: 1, warm: 1, w: 3, say: "a bit of everything" },
   { n: "Rainy", e: "🌧️", crowd: .85, pub: 1.05, cold: .7, warm: 1.7, w: 2.5, say: "hot drinks and warming food" },
   { n: "Cold", e: "🥶", crowd: .9, pub: .95, cold: .6, warm: 2.1, w: 1.5, say: "hot drinks, soups and pies" },
-  { n: "Heatwave", e: "🔥", crowd: 1.05, pub: 1.15, cold: 2.6, warm: .5, w: .8, say: "anything cold" }
+  { n: "Heatwave", e: "🔥", crowd: 1.05, pub: 1.15, cold: 2.6, warm: .5, w: .8, say: "anything cold" },
+  { n: "Snow", e: "❄️", crowd: .75, pub: .85, cold: .4, warm: 2.4, w: 0, say: "hot drinks and anything warming" }
 ];
 function dayInfo(save, day) {
-  const r = seeded((save.created % 1000003) * 7 + day * 131 + 17), wd = (day - 1) % 7;
-  let x = r() * WEATHER.reduce((a, w) => a + w.w, 0), w = 0;
-  while (x > WEATHER[w].w && w < WEATHER.length - 1) { x -= WEATHER[w].w; w++; }
-  const m = r(), match = save.venue === "pub" && (wd === 5 ? m < .6 : wd === 2 ? m < .25 : false);
-  return { wd, w, match };
+  const r = seeded((save.created % 1000003) * 7 + day * 131 + 17), wd = (day - 1) % 7, c = calOf(day), SW = SEASONS[c.se].w;
+  let x = r() * SW.reduce((a, w) => a + w, 0), w = 0;
+  while (x > SW[w] && w < WEATHER.length - 1) { x -= SW[w]; w++; }
+  const mt = matchOn(save, day);
+  return { wd, w, match: !!mt, mi: mt ? mt.i : -1, mk: mt ? mt.k : 0, se: c.se, year: c.year, week: c.week, ev: eventsOn(save, day).filter(o => o.k > .05), rw: roadworksOn(save, day), mix: siteMix(siteOf(save)) };
 }
-function dayCrowd(save, day) { const d = dayInfo(save, day), W = WEATHER[d.w]; return Math.max(.7, Math.min(1.35, WEEK_CROWD[save.venue][d.wd] * (save.venue === "pub" ? W.pub : W.crowd) * (d.match ? 1.3 : 1))); }
+// how busy a free-play day is: the week, weather, season, the premises' area and perks, match days and events
+function dayCrowd(save, day) {
+  const d = dayInfo(save, day), W = WEATHER[d.w], s = siteOf(save);
+  let c = weekPattern(save)[d.wd] * (save.venue === "pub" ? W.pub : W.crowd) * seasonMul(save, d.se);
+  if (hasPk(s, "garden")) c *= d.w === 0 ? 1.12 : d.w === 4 ? 1.22 : d.w === 3 || d.w === 5 ? .97 : 1;
+  if (hasPk(s, "river") && (d.w === 0 || d.w === 4)) c *= 1.06;
+  if (hasPk(s, "leaky") && (d.w === 2 || d.w === 5)) c *= .94;
+  if (d.match) c *= 1 + STADIUMS[d.mi].b * d.mk;
+  for (const o of d.ev) c *= 1 + (o.E[save.venue] - 1) * o.k;
+  if (d.rw) c *= .8;
+  return Math.max(.6, Math.min(1.9, c));
+}
 function prefW(info, r) {
   if (!info) return 1;
   const R = RECIPES[r], W = WEATHER[info.w];
   let w = R.t === "c" ? W.cold : R.t === "w" ? W.warm : 1;
   if (info.match && (r === "lager" || r === "chips" || r === "burger")) w *= r === "lager" ? 2.6 : 1.6;
-  return w;
+  return w * areaPref(info, r);
 }
 const OCCASIONS = [{ n: "Birthday party", e: "🎂" }, { n: "Engagement drinks", e: "💍" }, { n: "Office party", e: "🏢" }, { n: "Graduation", e: "🎓" },
   { n: "Family get-together", e: "👪", kids: 2 }, { n: "Kids' birthday", e: "🧸", kids: 3, v: "cafe" }, { n: "Hen do", e: "👰", v: "pub" }];
@@ -551,17 +618,322 @@ function roleName(save, r) { return r === "drinks" ? VENUES[save.venue].drinks :
 function fairWage(role, lvl) { return Math.round(ROLES[role].w * (1 + .35 * (lvl - 1))); }
 function boost(save) { return Math.min(1.5, (save.camp || []).reduce((a, c) => a + ((CAMPAIGNS.find(x => x.id === c.id) || {}).b || 0), 0)); }
 function expectedGroups(save) {
-  const prem = PREMISES[save.prem];
-  let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * prem.demand * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1) * diffOf(save).crowd * dayCrowd(save, save.day);
+  let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * siteDemand(save) * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1) * diffOf(save).crowd * dayCrowd(save, save.day);
   return Math.min(g, save.tables.length * 2.8 + 2);
 }
-function newSave(venue, name) {
+function newSave(venue, name, site) {
   const V = VENUES[venue], stock = {};
   for (const r of V.menu) for (const k in RECIPES[r].i) stock[k] = 14;
   return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
     owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], tpos: [0, 1, 2], plates: 6,
     decor: 0, shoes: 0, prem: 0, autoStock: true, diff: 1, bookings: [], bar: 0, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
-    stats: { served: 0, angry: 0, earned: 0, best: 0 } };
+    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0 };
+}
+/* ---------- The city (free play only) ----------
+   Leicester, drawn by hand from a rough knowledge of the real city (not a survey): roads, river, parks, districts with
+   what kind of people live and work there, stadiums, landmarks, premises to let, seasons and events.
+   Map units are kilometres from the Clock Tower, x east, y south. SITES and EVENTS are keyed by id: append only. */
+const CITY = { n: "Leicester", x0: -7.2, x1: 7.2, y0: -6.8, y1: 7.6 };
+const ROADS = [ // k: 0 motorway, 1 main road, 2 ring road, 3 other road. p: x, y pairs. Roads with names are labelled on the map.
+  { n: "M1", k: 0, p: [-6.6, -6.8, -6.3, -4.6, -6.1, -2.4, -6.2, -.2, -5.9, 2, -5.5, 3.6, -5.15, 4.8, -4.7, 6.2, -4.2, 7.6] },
+  { n: "M69", k: 0, p: [-5.15, 4.8, -5.9, 5.6, -7.2, 6.6] },
+  { n: "A46", k: 1, p: [-6.25, -4, -5, -5.1, -3.4, -5.9, -1.4, -6.3, .6, -6.1, 2.2, -5.8, 3.6, -5.4, 5, -5.6, 7.2, -6] },
+  { n: "Inner ring road", k: 2, p: [-.62, -.45, -.25, -.68, .2, -.66, .62, -.42, .86, .02, .8, .56, .52, .93, .05, .98, -.38, .82, -.68, .5, -.7, .1, -.62, -.45] },
+  { n: "Outer ring road", k: 2, p: [-3.6, -1.4, -3, -2.9, -1.5, -4.05, .3, -4.05, 1.7, -3.7, 2.9, -2.6, 3.6, -1.2, 3.85, .4, 3.6, 1.9, 2.8, 3, 1.4, 3.85, -.2, 4, -1.6, 3.6, -2.75, 2.6, -3.35, 1.2, -3.6, -1.4] },
+  { n: "Belgrave Road", k: 1, p: [.12, -.55, .3, -1, .45, -1.5, .55, -1.95] },
+  { n: "Loughborough Road", k: 1, p: [.55, -1.95, .48, -2.6, .38, -3.3, .2, -4.2, .08, -5.2, 0, -6, -.15, -6.8] },
+  { n: "Melton Road", k: 1, p: [.55, -1.95, 1.05, -2.6, 1.7, -3.4, 2.3, -4.3, 2.75, -5.1, 3.4, -6, 3.9, -6.8] },
+  { n: "Humberstone Road", k: 1, p: [.62, -.42, 1.2, -.62, 1.9, -.85, 2.6, -.95] },
+  { n: "Uppingham Road", k: 1, p: [2.6, -.95, 3.4, -.85, 4.3, -.5, 5.1, -.1, 6, .35, 7.2, .7] },
+  { n: "Evington Road", k: 3, p: [.85, .3, 1.4, .55, 2.1, .75, 2.75, .85, 3.4, 1.05, 4.1, 1.3] },
+  { n: "London Road", k: 1, p: [.62, .5, 1.05, 1, 1.55, 1.6, 2.2, 2.25, 2.95, 2.95, 3.6, 3.6, 4.2, 4.15, 5, 4.9, 6, 5.8, 7.2, 6.8] },
+  { n: "Welford Road", k: 1, p: [.22, .92, .15, 1.5, .35, 2.3, .75, 3.1, 1.15, 3.9, 1.6, 4.7, 1.95, 5.5, 2.25, 6.5, 2.4, 7.6] },
+  { n: "Saffron Lane", k: 3, p: [-.02, 1.9, .1, 2.6, .25, 3.3, .45, 4.1, .75, 4.95, .9, 5.6] },
+  { n: "Aylestone Road", k: 1, p: [-.05, .98, -.2, 1.5, -.3, 2.1, -.45, 2.8, -.6, 3.45, -.75, 4.3, -.85, 5.2, -.9, 6.1, -.95, 7, -1.05, 7.6] },
+  { n: "Narborough Road", k: 1, p: [-.7, .5, -1.15, .95, -1.6, 1.5, -2.2, 2.2, -2.9, 3, -3.6, 3.65, -4.4, 4.2, -5.15, 4.8] },
+  { n: "Hinckley Road", k: 1, p: [-.7, .1, -1.3, .05, -1.9, .02, -2.6, .05, -3.4, .25, -4.3, .55, -5.2, .85, -6.2, 1.1, -7.2, 1.3] },
+  { n: "Braunstone Lane", k: 3, p: [-1.95, 2.05, -2.6, 1.85, -3.2, 1.25, -3.55, .4] },
+  { n: "Groby Road", k: 1, p: [-.62, -.45, -1.1, -.85, -1.7, -1.25, -2.4, -1.75, -3.2, -2.3, -4.1, -2.9, -5.1, -3.5, -6.25, -4] },
+  { n: "Anstey Lane", k: 3, p: [-1.45, -1.1, -1.75, -1.9, -2.15, -2.8, -2.75, -3.7, -3.5, -4.3, -4.5, -4.85, -5.4, -5.3] },
+  { n: "Abbey Lane", k: 3, p: [-.2, -1.05, -.15, -1.7, -.15, -2.4, -.2, -3.2, -.15, -4.1, -.05, -5] },
+  { n: "Fosse Road", k: 3, p: [-1.3, -1.35, -1.5, -.75, -1.6, -.1, -1.62, .6, -1.55, 1.3, -1.4, 1.75] },
+  { n: "Gipsy Lane", k: 3, p: [.55, -1.95, 1.2, -1.9, 1.85, -1.55, 2.3, -.95] },
+  { n: "", k: 3, p: [2.3, -.95, 2.5, -.2, 2.55, .6, 2.35, 1.4, 1.95, 2.15, 1.45, 2.6, .85, 2.75, .35, 2.75] },
+  { n: "Queens Road", k: 3, p: [.35, 2.1, .8, 2.2, 1.3, 2.35, 1.6, 2.1] },
+  { n: "Victoria Park Road", k: 3, p: [.2, 1.75, .65, 1.85, 1.3, 1.95] },
+  { n: "Granby Street", k: 3, p: [.02, .02, .25, .2, .45, .38, .62, .5] },
+  { n: "Charles Street", k: 3, p: [.2, -.62, .3, -.25, .35, .1, .45, .38] },
+  { n: "High Street", k: 3, p: [-.62, .02, -.3, .0, 0, 0] },
+  { n: "Abbey Park Road", k: 3, p: [-.2, -1.05, .2, -1.1, .38, -1.15] },
+  { n: "", k: 3, p: [-2.9, -.9, -2.4, -1.75] }, { n: "", k: 3, p: [-2.75, -3.7, -1.5, -4.05] },
+  { n: "", k: 3, p: [3.6, 3.6, 3.75, 4.6, 3.3, 5.3, 2.25, 5.6] }, { n: "", k: 3, p: [-.85, 5.2, .1, 5.1, .75, 4.95] },
+  { n: "", k: 3, p: [1.7, -3.4, 2.4, -3.3, 3.2, -3.1, 3.5, -2.6] }, { n: "", k: 3, p: [4.3, -.5, 4.6, -1.3, 5.2, -1.7] },
+  { n: "", k: 3, p: [-3.4, .25, -3.7, -.7, -3.9, -1.7, -4.1, -2.9] }, { n: "", k: 3, p: [-2.2, 2.2, -2.9, 2.7, -3.3, 3.2] },
+  { n: "", k: 3, p: [3.85, .4, 4.6, .9, 5.2, .5] }, { n: "", k: 3, p: [-.15, -4.1, .2, -4.2] }
+];
+const RIVER = [-1.6, 7.6, -1.25, 6.4, -1.05, 5.4, -.85, 4.4, -.65, 3.5, -.55, 2.7, -.5, 2.1, -.55, 1.5, -.62, .95, -.7, .45, -.75, 0, -.62, -.6, -.42, -1.15, -.35, -1.6, -.42, -2.1, -.5, -2.8, -.38, -3.5, -.2, -4.2, -.12, -4.9, .2, -5.6, .7, -6.2, 1.3, -6.8];
+const RAIL = [[.65, .55, .7, -.1, .8, -.9, .95, -1.9, 1.3, -3, 1.85, -4.2, 2.5, -5.4, 3, -6.8], [.65, .55, .82, 1.3, 1.02, 2.3, 1.15, 3.3, 1.3, 4.3, 1.6, 5.3, 2.05, 6.4, 2.4, 7.6], [.9, 1.6, .2, 2.45, -.6, 3.1, -1.6, 3.9, -2.8, 4.9, -4, 5.7, -5.4, 6.5]];
+const PARKS = [ // x, y, rx, ry, name
+  [.9, 1.45, .36, .3, "Victoria Park"], [-.28, -1.32, .26, .3, "Abbey Park"], [-2.9, 1.15, .45, .4, "Braunstone Park"], [-2.4, .25, .36, .25, "Western Park"],
+  [1.45, -.15, .2, .18, "Spinney Hill Park"], [1.6, 3.2, .3, .25, "Knighton Park"], [-.15, -5, .35, .75, "Watermead Park"], [-.75, 3.95, .3, .45, "Aylestone Meadows"],
+  [2.65, -1.35, .2, .17, "Humberstone Park"], [2.95, 1.2, .25, .22, "Evington Park"], [4.8, 3.7, .45, .35, "Racecourse"], [-.3, 4.6, .22, .2, ""], [-4.3, -1.4, .3, .25, ""], [5.6, -2.3, .4, .3, ""]
+];
+// pop: people living there, com: shops and offices, stu: students, night: nightlife, tour: visitors, spice: famous for curry. r: radius (km).
+const DISTRICTS = [
+  { n: "City centre", x: 0, y: .1, r: .75, pop: .25, com: 1, stu: .3, night: .85, tour: .75 },
+  { n: "Cultural Quarter", x: .5, y: .1, r: .4, com: .4, night: .75, tour: .35, stu: .2, lab: 0 },
+  { n: "", x: -.25, y: .3, r: .35, tour: .7 },
+  { n: "", x: -.25, y: -.25, r: .4, com: .6 },
+  { n: "De Montfort Uni", x: -.55, y: .6, r: .45, stu: 1, pop: .3, night: .2 },
+  { n: "University", x: .5, y: 1.6, r: .45, stu: 1, pop: .3 },
+  { n: "Clarendon Park", x: .8, y: 2.25, r: .6, pop: .8, stu: .65, night: .35 },
+  { n: "Highfields", x: 1.05, y: .35, r: .65, pop: 1, com: .2, spice: .6 },
+  { n: "West End", x: -1.25, y: 1, r: .85, pop: .9, stu: .5, night: .25, com: .25 },
+  { n: "Golden Mile", x: .45, y: -1.55, r: .55, com: .55, tour: .55, pop: .5, night: .2, spice: 1 },
+  { n: "Belgrave", x: .7, y: -2.25, r: .9, pop: .9, spice: .7 },
+  { n: "Rushey Mead", x: 1.5, y: -2.9, r: .85, pop: .8, spice: .5 },
+  { n: "Beaumont Leys", x: -2.25, y: -3.7, r: 1.05, pop: .8, com: .3 },
+  { n: "New Parks", x: -2.9, y: -.95, r: 1, pop: .8 },
+  { n: "Braunstone", x: -3, y: 1.85, r: 1.05, pop: .9 },
+  { n: "Aylestone", x: -.6, y: 3.3, r: .85, pop: .7 },
+  { n: "Saffron", x: .3, y: 3, r: .65, pop: .75 },
+  { n: "Knighton", x: 1.4, y: 3.1, r: .95, pop: .7 },
+  { n: "Stoneygate", x: 1.95, y: 1.95, r: .8, pop: .6, tour: .1 },
+  { n: "Evington", x: 3, y: .95, r: .95, pop: .7, spice: .4 },
+  { n: "Humberstone", x: 3.2, y: -1.4, r: 1, pop: .75 },
+  { n: "Hamilton", x: 3.1, y: -3.2, r: .9, pop: .65 },
+  { n: "Netherhall", x: 4.6, y: -1.3, r: .65, pop: .6 },
+  { n: "Thurnby", x: 5.3, y: .3, r: 1, pop: .5 },
+  { n: "Scraptoft", x: 5.5, y: -1.8, r: .7, pop: .4 },
+  { n: "Thurmaston", x: 2.4, y: -4.7, r: 1, pop: .6, com: .1 },
+  { n: "Birstall", x: 0, y: -5.4, r: .95, pop: .6 },
+  { n: "Glenfield", x: -4, y: -2.1, r: 1.1, pop: .6, com: .2 },
+  { n: "Anstey", x: -4.6, y: -4.95, r: .7, pop: .45 },
+  { n: "Leicester Forest East", x: -5.4, y: 1, r: .9, pop: .45 },
+  { n: "Braunstone Town", x: -3.5, y: 3, r: .9, pop: .6 },
+  { n: "Fosse Park", x: -5.1, y: 4.65, r: .75, com: .9, tour: .15 },
+  { n: "Blaby", x: -.85, y: 6.5, r: .8, pop: .5 },
+  { n: "South Wigston", x: .8, y: 5, r: .6, pop: .55 },
+  { n: "Wigston", x: 2.05, y: 5.6, r: 1.15, pop: .7, com: .2 },
+  { n: "Oadby", x: 4, y: 4, r: 1.2, pop: .7, com: .25, stu: .15 },
+  { n: "", x: -2.6, y: 2.6, r: .45, night: .35, com: .35 },
+  { n: "", x: -.3, y: -2.4, r: .55, tour: .75 },
+  { n: "", x: .9, y: 1.4, r: .45, tour: .3 },
+  { n: "", x: -.4, y: .9, r: .35, com: .4 },
+  { n: "", x: -3.9, y: -1.5, r: .4, com: .3 },
+  { n: "", x: 3.6, y: 3.3, r: .5, stu: .45 },
+  { n: "", x: .3, y: .35, r: .35, night: .4 },
+  { n: "", x: -.3, y: -1.25, r: .5, tour: .55, pop: .2 },
+  { n: "Newfoundpool", x: -1.75, y: -.45, r: .75, pop: .85 },
+  { n: "St Matthews", x: 1.05, y: -.55, r: .5, pop: .8, spice: .3 }
+];
+// days: the days a home game can fall on (0 = Monday); home: share of weeks with a home game; sea: seasons with games; b: how much busier.
+const STADIUMS = [
+  { n: "King Power Stadium", club: "Leicester City", e: "⚽", x: -.5, y: 1.95, days: [5, 5, 5, 1], home: .5, sea: [0, 2, 3], b: .45, what: "football" },
+  { n: "Welford Road", club: "Leicester Tigers", e: "🏉", x: .12, y: 1.2, days: [5, 6], home: .45, sea: [0, 2, 3], b: .35, what: "rugby" },
+  { n: "Grace Road", club: "Leicestershire", e: "🏏", x: -.38, y: 2.95, days: [2, 3, 5, 6], home: .6, sea: [1], b: .2, what: "cricket" },
+  { n: "Leicester Racecourse", club: "", e: "🏇", x: 4.8, y: 3.7, days: [5], home: .35, sea: [1, 2], b: .25, what: "race" }
+];
+const LANDMARKS = [
+  { n: "Clock Tower", e: "🕰️", x: 0, y: 0 }, { n: "Cathedral & King Richard III", e: "👑", x: -.25, y: .27 }, { n: "Leicester Market", e: "🧺", x: .02, y: .2 },
+  { n: "Highcross", e: "🛍️", x: -.33, y: -.22 }, { n: "Curve theatre", e: "🎭", x: .47, y: .2 }, { n: "Railway station", e: "🚉", x: .65, y: .55 },
+  { n: "Jewry Wall", e: "🏛️", x: -.55, y: .1 }, { n: "National Space Centre", e: "🚀", x: -.32, y: -2.55 }, { n: "De Montfort Hall", e: "🎵", x: .78, y: 1.32 },
+  { n: "New Walk Museum", e: "🦖", x: .52, y: .82 }, { n: "Abbey Pumping Station", e: "⚙️", x: -.55, y: -2.2 }, { n: "Fosse Park shops", e: "🛒", x: -5.1, y: 4.55 },
+  { n: "Botanic Garden", e: "🌷", x: 3.05, y: 3 }, { n: "Beaumont Leys shops", e: "🛒", x: -2.2, y: -3.55 }, { n: "University of Leicester", e: "🎓", x: .5, y: 1.62 },
+  { n: "De Montfort University", e: "🎓", x: -.55, y: .62 }, { n: "Golden Mile", e: "🪔", x: .45, y: -1.55 }, { n: "Watermead Park", e: "🦆", x: -.15, y: -5.1 }
+];
+/* Perks (and snags, bad: 1) a premises can come with. Their effects are applied where noted. */
+const PERKS = {
+  garden: { n: "Beer garden", nc: "Outdoor tables", e: "🌳", d: "Busier on sunny days, much busier in a heatwave." },
+  river: { n: "Riverside", e: "🌊", d: "A nice view: better tips, busier when it's sunny." },
+  corner: { n: "Corner spot", e: "📍", d: "Seen from two streets: more passing trade." },
+  parking: { n: "Car park", e: "🅿️", d: "Families drive over at weekends." },
+  station: { n: "Near the station", e: "🚉", d: "Commuters and visitors on weekdays." },
+  listed: { n: "Listed building", e: "🏛️", d: "Beautiful: better tips and reputation, but repairs cost money every week." },
+  store: { n: "Big storeroom", e: "📦", d: "Fresh food keeps better: only a quarter goes off overnight." },
+  seats: { n: "Extra room", e: "🪑", d: "Space for one more table than usual." },
+  roadworks: { n: "Roadworks nearby", e: "🚧", bad: 1, d: "Some weeks the road is dug up and fewer people come by." },
+  leaky: { n: "Leaky roof", e: "☔", bad: 1, d: "Rainy days cost money in repairs, and it's a little quieter." },
+  tiny: { n: "Tiny storeroom", e: "🥡", bad: 1, d: "Fresh food goes off faster: three quarters overnight." },
+  hidden: { n: "Tucked away", e: "🫥", bad: 1, d: "Down a side street: fewer people find it." }
+};
+/* Premises to let. v: "cafe", "pub" or "both"; t: size (index into PREMISES); pk: perks and snags. */
+const SITES = [
+  { id: "saffron", n: "Corner unit, Saffron Lane", a: "Saffron", x: .22, y: 3.1, v: "cafe", t: 0, pk: ["corner", "parking"] },
+  { id: "aylestone", n: "Parade shop, Aylestone Road", a: "Aylestone", x: -.56, y: 3.6, v: "cafe", t: 0, pk: ["river", "roadworks"] },
+  { id: "uppingham", n: "Shop unit, Uppingham Road", a: "Humberstone", x: 3.35, y: -.84, v: "cafe", t: 0, pk: [] },
+  { id: "birstall", n: "Little shop, Birstall", a: "Birstall", x: .1, y: -5.25, v: "cafe", t: 0, pk: ["parking", "tiny"] },
+  { id: "braunstone", n: "Old newsagent's, Braunstone Lane", a: "Braunstone", x: -2.7, y: 1.8, v: "cafe", t: 0, pk: ["store"] },
+  { id: "anstey", n: "Village café, Anstey", a: "Anstey", x: -4.55, y: -4.85, v: "cafe", t: 0, pk: ["garden", "hidden"] },
+  { id: "westcotes", n: "Back-street local, Westcotes", a: "West End", x: -1.2, y: 1.25, v: "pub", t: 0, pk: [] },
+  { id: "belgrave", n: "The corner local, Belgrave", a: "Belgrave", x: .62, y: -2.35, v: "pub", t: 0, pk: ["corner"] },
+  { id: "newparks", n: "Estate pub, New Parks", a: "New Parks", x: -2.85, y: -1, v: "pub", t: 0, pk: ["parking", "leaky"] },
+  { id: "thurmaston", n: "Village local, Thurmaston", a: "Thurmaston", x: 2.45, y: -4.55, v: "pub", t: 0, pk: ["garden"] },
+  { id: "swigston", n: "Locals' pub, South Wigston", a: "South Wigston", x: .78, y: 4.95, v: "pub", t: 0, pk: ["hidden"] },
+  { id: "oadby", n: "High Street café, Oadby", a: "Oadby", x: 4.05, y: 4.05, v: "cafe", t: 1, pk: ["parking"] },
+  { id: "queens", n: "Queens Road café, Clarendon Park", a: "Clarendon Park", x: .85, y: 2.22, v: "both", t: 1, pk: ["corner"] },
+  { id: "wigston", n: "Bell Street shop, Wigston", a: "Wigston", x: 2, y: 5.5, v: "cafe", t: 1, pk: ["parking", "store"] },
+  { id: "narborough", n: "Narborough Road unit", a: "West End", x: -1.45, y: 1.38, v: "both", t: 1, pk: ["roadworks"] },
+  { id: "evington", n: "Main Street café, Evington", a: "Evington", x: 3.05, y: 1, v: "cafe", t: 1, pk: ["garden"] },
+  { id: "wigstonpub", n: "Market pub, Wigston Magna", a: "Wigston", x: 2.2, y: 5.7, v: "pub", t: 1, pk: ["garden", "parking"] },
+  { id: "western", n: "Hinckley Road pub, Western Park", a: "Western Park", x: -2.15, y: .08, v: "pub", t: 1, pk: ["garden"] },
+  { id: "canal", n: "Canal-side pub, Aylestone", a: "Aylestone", x: -.6, y: 2.95, v: "pub", t: 1, pk: ["river", "leaky"] },
+  { id: "humberstone", n: "Humberstone Road bar", a: "Highfields", x: 1.25, y: -.65, v: "pub", t: 1, pk: ["station"] },
+  { id: "bakery", n: "The Old Bakery, Stoneygate", a: "Stoneygate", x: 2.05, y: 2.1, v: "cafe", t: 2, pk: ["listed", "garden"] },
+  { id: "granby", n: "Former bank, Granby Street", a: "City centre", x: .3, y: .25, v: "both", t: 2, pk: ["listed", "station"] },
+  { id: "cathedral", n: "Café by the Cathedral", a: "City centre", x: -.18, y: .3, v: "cafe", t: 2, pk: ["tiny"] },
+  { id: "goldenmile", n: "Golden Mile restaurant, Belgrave Road", a: "Golden Mile", x: .42, y: -1.45, v: "both", t: 2, pk: ["parking"] },
+  { id: "coaching", n: "The Coaching Inn, London Road", a: "Stoneygate", x: 2.3, y: 2.35, v: "pub", t: 2, pk: ["listed", "garden", "parking"] },
+  { id: "stationpub", n: "Station-side pub, London Road", a: "City centre", x: .78, y: .68, v: "pub", t: 2, pk: ["station"] },
+  { id: "fosse", n: "Fosse Park unit", a: "Fosse Park", x: -5, y: 4.5, v: "cafe", t: 2, pk: ["parking", "corner"] },
+  { id: "rutland", n: "Cultural Quarter bar, Rutland Street", a: "Cultural Quarter", x: .5, y: .05, v: "pub", t: 2, pk: ["roadworks"] },
+  { id: "highcross", n: "Shop unit by Highcross", a: "City centre", x: -.25, y: -.12, v: "cafe", t: 2, pk: ["corner"] },
+  { id: "filbert", n: "Sports bar, Filbert Way", a: "Aylestone", x: -.35, y: 1.75, v: "pub", t: 2, pk: ["parking"] },
+  { id: "riverside", n: "Riverside café & deli, Abbey Park", a: "Abbey Park", x: -.48, y: -1.05, v: "cafe", t: 3, pk: ["river", "garden"] },
+  { id: "soarlane", n: "Riverside gastropub, Soar Lane", a: "City centre", x: -.66, y: -.32, v: "pub", t: 3, pk: ["river", "garden"] },
+  { id: "corn", n: "The Corn Exchange, Market Place", a: "City centre", x: .05, y: .17, v: "both", t: 3, pk: ["listed", "corner"] },
+  { id: "clocktower", n: "Clock Tower corner", a: "City centre", x: .06, y: -.07, v: "both", t: 3, pk: ["corner", "seats"] },
+  { id: "newwalk", n: "Townhouse on New Walk", a: "City centre", x: .62, y: .9, v: "both", t: 3, pk: ["listed", "garden", "store"] },
+  { id: "stgeorges", n: "Warehouse bar, St George's", a: "Cultural Quarter", x: .62, y: .22, v: "pub", t: 3, pk: ["seats", "leaky"] },
+  { id: "pavilion", n: "Victoria Park pavilion", a: "Victoria Park", x: .98, y: 1.32, v: "cafe", t: 3, pk: ["garden", "listed"] }
+];
+const SITE = {}; for (const s of SITES) SITE[s.id] = s;
+// where saves from before the map are placed, by venue and old premises size
+const OLD_SITE = { cafe: ["saffron", "oadby", "bakery", "riverside"], pub: ["westcotes", "wigstonpub", "coaching", "soarlane"] };
+const hasPk = (s, k) => s.pk.includes(k);
+function fieldAt(x, y) {
+  const f = { pop: 0, com: 0, stu: 0, night: 0, tour: 0, spice: 0 };
+  for (const D of DISTRICTS) {
+    const d2 = ((x - D.x) ** 2 + (y - D.y) ** 2) / (D.r * D.r); if (d2 > 9) continue;
+    const g = Math.exp(-d2);
+    for (const k in f) if (D[k]) f[k] += D[k] * g;
+  }
+  for (const k in f) f[k] = Math.min(1, f[k]);
+  return f;
+}
+const MIX = {};
+function siteMix(s) { return MIX[s.id] || (MIX[s.id] = fieldAt(s.x, s.y)); }
+// how many people pass by, before the size of the place: about 0.75 in a quiet suburb up to about 1.45 by the Clock Tower
+function footOf(m, venue) {
+  const v = venue === "pub" ? .45 * m.pop + .25 * m.com + .3 * m.stu + .6 * m.night + .3 * m.tour : .5 * m.pop + .55 * m.com + .25 * m.stu + .1 * m.night + .4 * m.tour;
+  return .72 + .62 * Math.min(1.2, v);
+}
+function siteFoot(s, venue) {
+  let f = footOf(siteMix(s), venue);
+  if (hasPk(s, "corner")) f *= 1.06;
+  if (hasPk(s, "hidden")) f *= .88;
+  return f;
+}
+function siteRent(s, venue, biz) {
+  const f = siteFoot(s, venue);
+  let r = PREMISES[s.t].rent * Math.pow(f / .95, 1.15);
+  if (hasPk(s, "listed")) r *= 1.1; if (hasPk(s, "garden") || hasPk(s, "river")) r *= 1.06; if (hasPk(s, "seats")) r *= 1.08;
+  for (const k of s.pk) if (PERKS[k].bad) r *= .88;
+  return Math.max(6, Math.round(r * BIZ[biz == null ? 1 : biz].rent));
+}
+// paid when moving in: the fit-out (bigger places cost more) plus a deposit of four weeks' rent that comes back when you leave
+function siteFit(s, venue) { return Math.round(PREMISES[s.t].cost * Math.pow(siteFoot(s, venue) / .95, .8) / 50) * 50; }
+const siteTables = save => Math.min(9, PREMISES[save.prem].tables + (hasPk(siteOf(save), "seats") ? 1 : 0));
+function siteOf(save) { return SITE[save.site] || SITE[OLD_SITE[save.venue][save.prem] || OLD_SITE[save.venue][0]]; }
+function siteFits(s, venue) { return s.v === "both" || s.v === venue; }
+/* Business difficulty (S.biz): how hard the money side is. "How busy" (S.diff) is separate. */
+const BIZ = [
+  { n: "Peaceful", e: "🕊️", rent: .75, fee: 0, evict: 0, d: "Lower rents and no overdraft charges. You can't go bust." },
+  { n: "Normal", e: "🏪", rent: 1, fee: 4, evict: 7, d: "Stay overdrawn for a week and the landlord ends your lease: you move to a cheap place." },
+  { n: "Hard", e: "🔥", rent: 1.25, fee: 8, evict: 5, bust: 1, d: "Higher rents. Stay overdrawn for five days and the business goes bust: game over." }
+];
+const bizOf = save => BIZ[save && save.biz != null ? save.biz : 1] || BIZ[1];
+/* Seasons: three weeks each, a year of 84 days; day 1 is the first Monday of spring. */
+const SEASONS = [
+  { n: "Spring", e: "🌸", w: [3, 3, 3, 1, .2, 0], say: "Mild and changeable." },
+  { n: "Summer", e: "☀️", w: [4, 2.5, 1.5, 0, 1.3, 0], say: "Sunshine and visitors. The students go home." },
+  { n: "Autumn", e: "🍂", w: [2, 3, 3.5, 1.5, 0, 0], say: "The students are back. Rain, and warming food." },
+  { n: "Winter", e: "❄️", w: [1, 2.5, 3, 3, 0, .8], say: "Cold, the odd snowy day, and Christmas." }
+];
+const SEASON_LEN = 21, YEAR_LEN = 84;
+function calOf(day) { const d = day - 1, y = Math.floor(d / YEAR_LEN), se = Math.floor((d % YEAR_LEN) / SEASON_LEN); return { year: y + 1, se, week: Math.floor((d % SEASON_LEN) / 7) + 1, start: y * YEAR_LEN + se * SEASON_LEN + 1 }; }
+/* Events: one a season, two in winter (Christmas). w: week of the season (0-2), d: weekday it starts, len: days.
+   x, y, r: where (r 0 = the whole city). cafe/pub: how much busier at the heart of it. like: what sells. */
+const EVENTS = [
+  { id: "easter", se: 0, n: "Easter weekend", e: "🐣", x: 0, y: 0, r: 0, w: 1, d: 4, len: 4, cafe: 1.3, pub: 1.15, kids: 1, like: ["muffin", "pancakes", "sponge", "hightea", "roast", "pudding", "icecream", "sundae"], say: "Families out for the long weekend, all over the city." },
+  { id: "vaisakhi", se: 0, n: "Vaisakhi", e: "🟠", x: .5, y: -1.6, r: 1.8, w: 2, d: 6, len: 1, cafe: 1.55, pub: 1.35, like: ["curry", "soup", "eggs", "tea"], say: "A colourful procession along the Golden Mile." },
+  { id: "foodfest", se: 0, n: "Food & drink festival", e: "🍴", x: 0, y: .15, r: 2.2, w: 1, d: 5, len: 2, cafe: 1.45, pub: 1.45, like: ["quiche", "wrap", "steak", "pie", "cocktail", "hightea"], say: "Food lovers fill the city centre." },
+  { id: "carnival", se: 1, n: "Caribbean Carnival", e: "🎊", x: .9, y: 1.45, r: 2.3, w: 1, d: 5, len: 1, cafe: 1.6, pub: 1.6, like: ["lager", "cocktail", "salad", "icecream", "chips", "burger"], say: "Music, costumes and a parade to Victoria Park." },
+  { id: "riverfest", se: 1, n: "Riverside Festival", e: "🛶", x: -.6, y: .2, r: 2, w: 2, d: 5, len: 2, cafe: 1.45, pub: 1.45, like: ["lager", "wine", "salad", "icecream", "ploughmans"], say: "Boats, stalls and music along the river." },
+  { id: "abbeyshow", se: 1, n: "Abbey Park summer show", e: "🎪", x: -.28, y: -1.4, r: 2, w: 0, d: 5, len: 2, cafe: 1.5, pub: 1.3, kids: 1, like: ["icecream", "sundae", "salad", "lager", "muffin"], say: "Funfair, stalls and fireworks in Abbey Park." },
+  { id: "diwali", se: 2, n: "Diwali", e: "🪔", x: .45, y: -1.55, r: 2.4, w: 2, d: 3, len: 4, cafe: 1.6, pub: 1.45, like: ["curry", "muffin", "sponge", "pudding", "pancakes", "croissant", "fizz"], say: "Lights, fireworks and crowds on the Golden Mile: one of the biggest Diwali celebrations outside India." },
+  { id: "freshers", se: 2, n: "Freshers' week", e: "🎓", x: 0, y: 1.1, r: 2, w: 0, d: 0, len: 7, cafe: 1.3, pub: 1.55, like: ["lager", "chips", "cocktail", "toast", "toastie", "latte", "burger"], say: "Thousands of new students arrive at both universities." },
+  { id: "pride", se: 2, n: "Leicester Pride", e: "🏳️‍🌈", x: .3, y: .7, r: 2, w: 1, d: 5, len: 1, cafe: 1.35, pub: 1.55, like: ["cocktail", "fizz", "wine", "latte", "muffin"], say: "A parade through town and a party in Victoria Park." },
+  { id: "marathon", se: 2, n: "Leicester Marathon", e: "🏃", x: .9, y: 1.45, r: 2.2, w: 1, d: 6, len: 1, cafe: 1.45, pub: 1.15, like: ["soup", "latte", "tea", "pancakes", "english", "chips"], say: "Runners and their supporters all over the south of the city." },
+  { id: "xmasmarket", se: 3, n: "Christmas market & lights", e: "🎄", x: 0, y: .1, r: 3, w: 0, d: 3, len: 11, cafe: 1.3, pub: 1.25, like: ["hightea", "pudding", "latte", "soup", "pie", "wine", "croissant"], say: "Lights switched on, a market in town and shoppers everywhere." },
+  { id: "xmas", se: 3, n: "Christmas week", e: "🎅", x: 0, y: 0, r: 0, w: 2, d: 0, len: 7, cafe: 1.2, pub: 1.35, party: 1, like: ["roast", "pudding", "fizz", "hightea", "english", "pie", "sponge"], say: "Office parties, families home and a big night on New Year's Eve." }
+];
+const EV = {}; for (const E of EVENTS) EV[E.id] = E;
+const EVENT_POOL = [["easter", "vaisakhi", "foodfest"], ["carnival", "riverfest", "abbeyshow"], ["diwali", "diwali", "freshers", "pride", "marathon"], ["xmasmarket", "xmas"]];
+const seedOf = save => (save.created || 1) % 1000003;
+function seasonEvents(save, day) {
+  const c = calOf(day);
+  const ids = c.se === 3 ? EVENT_POOL[3] : [EVENT_POOL[c.se][Math.floor(seeded(seedOf(save) * 13 + c.year * 4 + c.se)() * EVENT_POOL[c.se].length)]];
+  return ids.map(id => { const E = EV[id], from = c.start + E.w * 7 + E.d; return { E, from, to: from + E.len - 1 }; });
+}
+function evPull(E, s) { if (!E.r) return 1; const d = Math.hypot(s.x - E.x, s.y - E.y); return Math.max(0, Math.min(1, 1.15 - d / E.r)); }
+function eventsOn(save, day) { const s = siteOf(save); return seasonEvents(save, day).filter(o => day >= o.from && day <= o.to).map(o => ({ E: o.E, k: evPull(o.E, s) })); }
+function stadiumPull(st, s, venue) { const d = Math.hypot(s.x - st.x, s.y - st.y), k = Math.max(0, 1 - d / 3); return Math.pow(k, 1.5) * (venue === "pub" ? 1 : .55); }
+function matchOn(save, day) {
+  const s = siteOf(save), c = calOf(day), wd = (day - 1) % 7, wk = Math.floor((day - 1) / 7);
+  let best = null;
+  STADIUMS.forEach((st, i) => {
+    if (!st.sea.includes(c.se)) return;
+    const k = stadiumPull(st, s, save.venue); if (k < .04) return;
+    const r = seeded(seedOf(save) * 5 + wk * 37 + i * 101); if (r() > st.home) return;
+    if (st.days[Math.floor(r() * st.days.length)] !== wd) return;
+    if (!best || k * st.b > best.k * STADIUMS[best.i].b) best = { i, k };
+  });
+  return best;
+}
+function roadworksOn(save, day) { return hasPk(siteOf(save), "roadworks") && seeded(seedOf(save) * 3 + Math.floor((day - 1) / 7) * 71)() < .34; }
+const WEEK_CACHE = {};
+function weekPattern(save) {
+  const s = siteOf(save), key = s.id + save.venue;
+  if (WEEK_CACHE[key]) return WEEK_CACHE[key];
+  const base = WEEK_CROWD[save.venue], m = siteMix(s), mean = base.reduce((a, b) => a + b, 0) / 7;
+  const w = base.map((v, d) => {
+    const we = d >= 5;
+    v *= we ? 1 - .22 * m.com + .1 * m.pop + .18 * m.tour : 1 + .12 * m.com;
+    if (save.venue === "pub" && (d === 2 || d === 3)) v *= 1 + .25 * m.stu;
+    if (we && hasPk(s, "parking")) v *= 1.07;
+    if (!we && hasPk(s, "station")) v *= 1.07;
+    return v;
+  });
+  const m2 = w.reduce((a, b) => a + b, 0) / 7;
+  return (WEEK_CACHE[key] = w.map(v => v * mean / m2));
+}
+function seasonMul(save, se) {
+  const m = siteMix(siteOf(save));
+  return se === 1 ? (1 + .25 * m.tour) * (1 - .3 * m.stu) : se === 2 ? 1 + .08 * m.stu : se === 3 ? (1 + .1 * m.com) * (save.venue === "pub" ? 1.04 : 1) : 1;
+}
+// local prices: people pay more in town and less where the students are
+function sitePrice(save) { const m = siteMix(siteOf(save)); return Math.round((.95 + .3 * Math.min(1, .6 * m.com + .5 * m.tour + .3 * m.night) - .08 * m.stu) * 100) / 100; }
+const siteDemand = save => PREMISES[save.prem].demand * siteFoot(siteOf(save), save.venue);
+// tips: visitors and office workers tip more; listed buildings and river views help too
+function siteTip(save) { const s = siteOf(save), m = siteMix(s); return (1 + .15 * m.tour + .08 * m.com) * (hasPk(s, "listed") ? 1.12 : 1) * (hasPk(s, "river") ? 1.06 : 1); }
+const AREA_LIKES = {
+  com: ["latte", "toastie", "wrap", "croissant", "muffin", "wine", "burger"],
+  tour: ["hightea", "sponge", "english", "fishchips", "roast", "pie", "ploughmans", "fizz"],
+  night: ["cocktail", "lager", "wine", "fizz", "chips"]
+};
+// how much a place's area, the season and any event change what people order
+function areaPref(info, r) {
+  const R = RECIPES[r], m = info.mix; let w = 1;
+  if (m) {
+    if (R.p <= 5) w *= 1 + .5 * m.stu; else if (R.p >= 12) w *= 1 - .3 * m.stu;
+    for (const k in AREA_LIKES) if (AREA_LIKES[k].includes(r)) w *= 1 + .5 * m[k];
+    if (r === "curry") w *= 1 + 1.6 * m.spice;
+  }
+  if (info.se === 3 || info.se === 2) w *= R.t === "w" ? 1.15 : R.t === "c" ? .85 : 1;
+  if (info.se === 1) w *= R.t === "c" ? 1.15 : R.t === "w" ? .85 : 1;
+  for (const o of info.ev || []) if (o.E.like.includes(r)) w *= 1 + 1.2 * o.k;
+  return w;
 }
 /*CORE-END*/
 
@@ -582,13 +954,14 @@ let S = null, slot = -1, view = "title";
 
 function migrate(s) {
   if (!s || typeof s !== "object" || !VENUES[s.venue]) return null;
+  if (!s.site || !SITE[s.site]) s.site = OLD_SITE[s.venue][s.prem || 0] || OLD_SITE[s.venue][0];
   const d = newSave(s.venue, s.name);
   if (!Array.isArray(s.tpos) && Array.isArray(s.tables)) s.tpos = s.tables.map((_, i) => i);
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   return s;
 }
 function saveGame() { if (S && slot >= 0) { S.at = Date.now(); store(slotKey(slot), S); } }
-function show(id) { for (const s of ["title", "camp", "newgame", "play", "manage"]) $(s).hidden = s !== id; view = id; }
+function show(id) { for (const s of ["title", "camp", "newgame", "play", "manage", "city"]) $(s).hidden = s !== id; view = id; }
 
 /* ---------- drawing people ---------- */
 const SKINS = ["#F3CFAE", "#E6B48C", "#D19A6E", "#B57A50", "#8A5636", "#5E3A24", "#FADCC5"];
@@ -677,7 +1050,7 @@ function renderTitle() {
       el.innerHTML = `<div class="ic">＋</div><div class="info"><b>Slot ${i + 1}</b><span>Empty</span></div><button class="btn pri sm" data-new="${i}">New game</button>`;
     } else {
       el.className = "slot " + s.venue;
-      el.innerHTML = `<div class="ic">${VENUES[s.venue].icon}</div><div class="info"><b>${esc(s.name)}</b><span>Day ${s.day} · <span class="stars" style="font-size:.85rem">${starStr(starsOf(s.rep))}</span> · ${money(Math.round(s.cash))}</span></div>
+      el.innerHTML = `<div class="ic">${VENUES[s.venue].icon}</div><div class="info"><b>${esc(s.name)}</b><span>${s.bust ? `Went bust on day ${s.bust.day}` : `Day ${s.day} · <span class="stars" style="font-size:.85rem">${starStr(starsOf(s.rep))}</span> · ${money(Math.round(s.cash))}`}<br>${esc(siteOf(s).a)}</span></div>
         <button class="btn sm" data-del="${i}" aria-label="Delete">🗑</button><button class="btn pri sm" data-go="${i}">Play</button>`;
     }
     box.append(el);
@@ -686,7 +1059,7 @@ function renderTitle() {
 $("slots").onclick = e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.new) { newGameScreen(+b.dataset.new); return; }
-  if (b.dataset.go) { LV = null; EASY = false; slot = +b.dataset.go; S = migrate(load(slotKey(slot), null)); if (S) openManage(S.last && !S.last.seen ? "day" : "day"); return; }
+  if (b.dataset.go) { LV = null; EASY = false; slot = +b.dataset.go; S = migrate(load(slotKey(slot), null)); if (S && S.bust) bustDialog(); else if (S) openManage("day"); return; }
   if (b.dataset.del) {
     const i = +b.dataset.del, s = load(slotKey(i), null);
     dialog(`<h3>Delete this save?</h3><p class="muted" style="text-align:center">${esc(s && s.name || "")}, day ${s && s.day}. This can't be undone.</p>
@@ -700,10 +1073,10 @@ const HELP_NEXT = { auto: "on", on: "off", off: "auto" };
 $("helpBtn").onclick = () => { opts.help = HELP_NEXT[helpMode()]; store("ll.opts", opts); renderTitle(); };
 $("soundBtn").onclick = () => { opts.sound = !opts.sound; store("ll.opts", opts); renderTitle(); if (opts.sound) snd("ready"); };
 
-let ngVenue = "cafe", ngSlot = 0, ngDiff = 1;
+let ngVenue = "cafe", ngSlot = 0, ngDiff = 1, ngBiz = 1;
 function certs() { const d = campData(); return CHAPTERS.filter((C, ci) => LEVELS.every((L, i) => L.ch !== ci || (d.s[i] || 0) > 0)).length; }
 function newGameScreen(i) {
-  ngSlot = i; ngVenue = "cafe"; ngDiff = 1;
+  ngSlot = i; ngVenue = "cafe"; ngDiff = 1; ngBiz = 1;
   $("ngName").value = "";
   renderNG(); show("newgame");
 }
@@ -711,17 +1084,26 @@ function renderNG() {
   document.querySelectorAll(".venue").forEach(b => b.classList.toggle("on", b.dataset.v === ngVenue));
   $("ngDiffs").innerHTML = DIFFS.map((D, i) => `<button class="${i === ngDiff ? "on" : ""}" data-d="${i}"><span>${D.e}</span>${D.n}</button>`).join("");
   $("ngDiffD").textContent = DIFFS[ngDiff].d + " You can change this later in the office.";
+  $("ngBiz").innerHTML = BIZ.map((B, i) => `<button class="${i === ngBiz ? "on" : ""}" data-b="${i}"><span>${B.e}</span>${B.n}</button>`).join("");
+  $("ngBizD").textContent = BIZ[ngBiz].d + (ngBiz ? " You can make it easier later, but not harder." : "");
   const c = certs(); $("ngCert").hidden = !c; $("ngCert").textContent = `🎓 ${c} campaign certificate${c > 1 ? "s" : ""}: Lee Lee starts with an extra ${money(75 * c)}.`;
   $("ngName").placeholder = VENUES[ngVenue].names[0];
 }
 document.querySelectorAll(".venue").forEach(b => b.onclick = () => { ngVenue = b.dataset.v; renderNG(); });
 $("ngDiffs").onclick = e => { const b = e.target.closest("[data-d]"); if (b) { ngDiff = +b.dataset.d; renderNG(); } };
+$("ngBiz").onclick = e => { const b = e.target.closest("[data-b]"); if (b) { ngBiz = +b.dataset.b; renderNG(); } };
 $("ngBack").onclick = () => { renderTitle(); show("title"); };
 $("ngGo").onclick = () => {
   const name = $("ngName").value.trim() || VENUES[ngVenue].names[0];
-  LV = null; EASY = false; slot = ngSlot; S = newSave(ngVenue, name); S.diff = ngDiff; S.cash += 75 * certs(); S.cands = makeCands(); saveGame();
-  startDay();
+  CM.ng = { venue: ngVenue, name, diff: ngDiff, biz: ngBiz, slot: ngSlot };
+  openCity("start");
 };
+// the new game starts once a first (small) place has been picked on the map
+function startAt(site) {
+  const N = CM.ng; if (!N) return;
+  LV = null; EASY = false; slot = N.slot; S = newSave(N.venue, N.name, site.id); S.diff = N.diff; S.biz = N.biz; S.cash += 75 * certs(); S.cands = makeCands(); saveGame();
+  CM.ng = null; startDay();
+}
 
 /* ---------- campaign ---------- */
 let LV = null, EASY = false; // level index while a campaign day is being played; EASY = an easier retry
@@ -838,6 +1220,7 @@ function startDay() {
   // the pub's standing area: bar spots behave like tables for drinkers only
   if (LV == null && S.venue === "pub" && S.bar) BAR_SPOTS.slice(0, BAR[S.bar - 1].spots).forEach(([x, y], k) => G.tables.push({ i: G.tables.length, x, y, seats: 3, bar: true, group: null, dirty: 0, claim: null }));
   G.info = LV == null ? dayInfo(S, S.day) : null;
+  G.tipM = LV == null ? siteTip(S) : 1;
   const info = G.info;
   // arrivals
   if (LV != null) { G.len = LEVELS[LV].len; G.arr = levelArrivals(LV); }
@@ -851,7 +1234,7 @@ function startDay() {
     size = Math.min(size, big);
     const late = S.venue === "pub" && u > .6;
     const a = { t: u * G.len, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep) + (info.match ? .08 : 0), late };
-    if (big >= 3 && !late && Math.random() < .1 + (info.wd >= 5 ? .15 : 0) + (S.venue === "cafe" && info.w === 0 ? .05 : 0)) { a.size = big >= 4 && Math.random() < .5 ? 4 : 3; a.kids = a.size - 2; a.rowdy = false; }
+    if (big >= 3 && !late && Math.random() < .1 + (info.wd >= 5 ? .15 : 0) + (S.venue === "cafe" && info.w === 0 ? .05 : 0) + (info.wd >= 5 && hasPk(siteOf(S), "parking") ? .05 : 0) + (info.ev.some(o => o.E.kids) ? .1 : 0)) { a.size = big >= 4 && Math.random() < .5 ? 4 : 3; a.kids = a.size - 2; a.rowdy = false; }
     else if (S.bar && late && a.size <= 3 && Math.random() < .25) a.drinker = true;
     G.arr.push(a);
   }
@@ -889,7 +1272,7 @@ function startDay() {
 /* Two goals each free-play day, the same if the day is restarted. */
 function dailyGoals() {
   const r = seeded((S.created % 1000003) * 31 + S.day * 977), people = expectedGroups(S) * 1.7, menu = onMenu().filter(canMakeS);
-  const avg = menu.reduce((a, x) => a + RECIPES[x].p, 0) / Math.max(1, menu.length), expRev = people * avg * 1.12;
+  const avg = menu.reduce((a, x) => a + lp(x), 0) / Math.max(1, menu.length), expRev = people * avg * 1.12;
   const pool = [["served", Math.max(3, Math.round(people * .72))], ["earn", Math.max(10, Math.round(expRev * .75 / 5) * 5)],
     ["streak", Math.min(8, 3 + Math.floor(starsOf(S.rep) / 2) + (S.diff === 2 ? 1 : 0))]];
   if (S.day >= 2) pool.push(["out", 0]);
@@ -902,14 +1285,20 @@ function dailyGoals() {
   return out;
 }
 function kit() { return S.stations.filter(Boolean); }
+// a dish's price here: town-centre customers pay more (campaign days use the plain price)
+function lp(r) { return LV != null || !S ? RECIPES[r].p : Math.round(RECIPES[r].p * sitePrice(S) * 10) / 10; }
 function canMakeS(r) { return RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t)); }
 const RUSH = { cafe: ["Breakfast rush coming! ☕", "Lunch rush coming! 🥪"], pub: ["After-work crowd coming! 🍺", "Late-night crowd coming! 🎵"] };
 function clockAt(u) { const V = VENUES[S.venue], h = V.open + (V.close - V.open) * u, hh = Math.floor(h), mm = Math.floor((h - hh) * 4) * 15; return String(hh % 24).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
 function briefing() {
   const D = diffOf(S), tip = S.last && S.last.advice && S.last.advice[0];
   paused = true;
-  dialog(`<div class="small muted" style="text-align:center">${esc(S.name)} · ${D.e} ${D.n}</div><h3>${WEEKDAYS[G.info.wd]} · Day ${S.day}</h3>
-    <p class="small" style="text-align:center"><b>${WEATHER[G.info.w].e} ${WEATHER[G.info.w].n}</b>: people will want ${WEATHER[G.info.w].say}.${G.info.match ? " <b>⚽ Match day!</b> Lots of beer and chips." : ""}</p>
+  const I = G.info, M = I.match ? STADIUMS[I.mi] : null;
+  dialog(`<div class="small muted" style="text-align:center">${esc(S.name)} · ${D.e} ${D.n}</div><h3>${WEEKDAYS[I.wd]} · Day ${S.day}</h3>
+    <div class="small muted" style="text-align:center">${calText(S.day)}</div>
+    <p class="small" style="text-align:center"><b>${WEATHER[I.w].e} ${WEATHER[I.w].n}</b>: people will want ${WEATHER[I.w].say}.${M ? ` <b>${M.e} ${matchText(M)}!</b>${S.venue === "pub" ? " Lots of beer and chips." : " Fans stop by before the game."}` : ""}</p>
+    ${I.ev.map(o => `<p class="news small">${o.E.e} <b>${o.E.n}</b>: ${esc(o.E.say)} ${o.k > .6 ? "It's right on your doorstep." : o.k > .25 ? "Some of the crowds come your way." : "A few people come your way."}</p>`).join("")}
+    ${I.rw ? `<p class="small" style="text-align:center">🚧 Roadworks outside this week: a bit quieter.</p>` : ""}
     ${(S.bookings || []).filter(b => b.ok && b.day === S.day).map(b => `<p class="news small">${OCCASIONS[b.occ].e} <b>${OCCASIONS[b.occ].n}</b> for ${b.size} at ${clockAt(b.at)}. Their table is reserved.</p>`).join("")}
     <div class="goals">${G.goals.map(g => `<div><span>☆</span><span>${GOAL_TEXT[g.k](g.n)} <span class="muted small">+${money(g.cash)}</span></span></div>`).join("")}</div>
     <p class="small muted">About ${Math.round(expectedGroups(S))} groups expected. Busiest around ${VENUES[S.venue].peaks.map(([mu]) => clockAt(mu)).join(" and ")}.</p>
@@ -1064,9 +1453,9 @@ function groupLeave(g, happy) {
 }
 function payAndLeave(g) {
   let total = 0;
-  for (const k of g.tickets) { const R = RECIPES[k.r]; total += R.p * (S.disc && S.disc.r === k.r ? 1 - S.disc.pct : 1); }
+  for (const k of g.tickets) total += lp(k.r) * (S.disc && S.disc.r === k.r ? 1 - S.disc.pct : 1);
   const D = diffOf(S), glad = g.pat > .55;
-  const tip = Math.round((total * (.04 + .22 * g.pat) * (1 + .06 * S.decor) * (1 + .05 * Math.min(G.streak, 10)) * D.tips + g.bonus) * 10) / 10;
+  const tip = Math.round((total * (.04 + .22 * g.pat) * (1 + .06 * S.decor) * (1 + .05 * Math.min(G.streak, 10)) * D.tips * (G.tipM || 1) + g.bonus) * 10) / 10;
   G.rev += total; G.tips += tip; G.served += g.size;
   const happy = g.pat > .45;
   if (happy) G.happy += g.size;
@@ -1701,7 +2090,7 @@ function draw() {
     const W = WEATHER[G.info.w];
     if (G.info.w === 2 || G.info.w === 3) { c.fillStyle = "rgba(70,100,150,.07)"; c.fillRect(PX(0), PY(4.4), 9 * T, (H - 4.4) * T); }
     if (G.info.w === 0 || G.info.w === 4) { c.fillStyle = "rgba(255,210,110,.07)"; c.fillRect(PX(0), PY(4.4), 9 * T, (H - 4.4) * T); }
-    emoji(W.e, PX(8.55), PY(4.85), T * .42); if (G.info.match) emoji("⚽", PX(7.95), PY(4.85), T * .38);
+    emoji(W.e, PX(8.55), PY(4.85), T * .42); if (G.info.match) emoji(STADIUMS[G.info.mi].e, PX(7.95), PY(4.85), T * .38); else if (G.info.ev.length) emoji(G.info.ev[0].E.e, PX(7.95), PY(4.85), T * .38);
   }
   // night (pub)
   if (S.venue === "pub") { const a = clamp((G.t / G.len - .45) * .45, 0, .2); if (a > 0) { c.fillStyle = `rgba(20,10,50,${a})`; c.fillRect(PX(0), PY(4.4), W * T, (H - 4.4) * T); } }
@@ -1829,7 +2218,7 @@ function clock() { const V = VENUES[S.venue], h = V.open + (V.close - V.open) * 
 function uiTick(dt) {
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $("toast").style.opacity = 0; }
   uiT -= dt; if (uiT > 0) return; uiT = .2;
-  $("pClock").textContent = `${LV != null ? CHAPTERS[LEVELS[LV].ch].e + " Day " + (LV + 1) : WEEKDAYS[G.info.wd].slice(0, 3) + " " + WEATHER[G.info.w].e + (G.info.match ? "⚽" : "") + " · Day " + S.day} · ${G.open ? clock() : "Closing up"}`;
+  $("pClock").textContent = `${LV != null ? CHAPTERS[LEVELS[LV].ch].e + " Day " + (LV + 1) : WEEKDAYS[G.info.wd].slice(0, 3) + " " + WEATHER[G.info.w].e + (G.info.match ? STADIUMS[G.info.mi].e : "") + G.info.ev.map(o => o.E.e).join("") + " · Day " + S.day} · ${G.open ? clock() : "Closing up"}`;
   $("pCash").textContent = money(G.rev + G.tips);
   $("pServed").textContent = (LV != null ? `${G.served + G.thrown}/${LEVELS[LV].goals[0][1]} served${G.angry ? " · " + G.angry + " out" : ""}` : `${G.served} served${G.angry ? " · " + G.angry + " out" : ""}`) + (G.streak >= 2 ? ` · 🔥${G.streak}` : "");
   // tickets
@@ -1909,7 +2298,7 @@ function dayTips(g) {
   add(g.turned * 3, "Some people couldn't get what they wanted because stock ran out. Turn on automatic stock in the office.");
   add(g.slack > 10 ? g.slack / 5 : 0, "Lee Lee stood still while work was waiting. Tap an order on the strip at the top to jump straight to it.");
   if (g.critic === "angry") add(10, "The critic walked out. Serve the 🧐 table first.");
-  if (LV == null && g.info && dayCrowd(S, S.day) > 1.15 && g.angry >= 4) add(g.angry * 1.2, `${WEEKDAYS[g.info.wd]}s${g.info.match ? " with a match on" : ""} are busy. Check the forecast in the office and get ready: more staff, more tables, or skip the adverts.`);
+  if (LV == null && g.info && dayCrowd(S, S.day) > 1.15 && g.angry >= 4) add(g.angry * 1.2, `${g.info.ev.length ? g.info.ev[0].E.n + " days" : WEEKDAYS[g.info.wd] + "s" + (g.info.match ? " with a match on" : "")} are busy. Check the forecast in the office and get ready: more staff, more tables, or skip the adverts.`);
   if (g.party === "angry") add(9, "The booked party walked out. Take their order as soon as they sit, and start their food first.");
   t.sort((a, b) => b[0] - a[0]);
   const out = t.slice(0, 2).map(x => x[1]);
@@ -1921,7 +2310,8 @@ function dayTips(g) {
 /* Bookings: a request now and then for a party of 5 or 6 a few days ahead. Accept it in the office. */
 function newBookingRequest() {
   S.bookings = (S.bookings || []).filter(b => b.day > S.day || (b.day === S.day && b.ok));
-  if (S.bookings.filter(b => !b.ok).length >= 2 || Math.random() > .3 + .08 * starsOf(S.rep)) return null;
+  const xmas = [1, 2, 3].some(k => eventsOn(S, S.day + k).some(o => o.E.party));
+  if (S.bookings.filter(b => !b.ok).length >= 2 || Math.random() > .3 + .08 * starsOf(S.rep) + (xmas ? .3 : 0)) return null;
   const day = S.day + 1 + Math.floor(Math.random() * 3); if (S.bookings.some(b => b.day === day)) return null;
   const occ = pickOne(OCCASIONS.filter(o => !o.v || o.v === S.venue)), size = Math.random() < .5 ? 5 : 6;
   const b = { id: S.day * 10 + Math.floor(Math.random() * 10), day, at: Math.round(rnd(.2, .6) * 100) / 100, size, occ: OCCASIONS.indexOf(occ), kids: occ.kids || 0, dep: Math.round(size * (6 + 2 * starsOf(S.rep))), ok: false };
@@ -1936,20 +2326,24 @@ function endDay() {
   if (G.ended) return;
   if (LV != null) return levelEnd();
   G.ended = true; closeMini();
-  const wages = S.staff.reduce((a, s) => a + s.wage, 0), rent = PREMISES[S.prem].rent;
-  let fee = S.cash < 0 ? 4 : 0;
+  const wages = S.staff.reduce((a, s) => a + s.wage, 0), site = siteOf(S), rent = siteRent(site, S.venue, S.biz), B = bizOf(S), info = G.info;
+  let fee = S.cash < 0 ? B.fee : 0;
+  // repairs: a listed building every Sunday, a leaky roof on wet days
+  let repairs = 0;
+  if (hasPk(site, "listed") && info.wd === 6) repairs += 15 + 15 * S.prem;
+  if (hasPk(site, "leaky") && (info.w === 2 || info.w === 5)) repairs += 8 + 6 * S.prem;
   // leftover messes and dirty plates count against you
   const messes = G.messes.length; G.repD -= messes * 2;
   const pr = progress(), goals = (G.goals || []).map(g => Object.assign({ ok: goalMet(g.k, g.n, pr) }, g));
   const bonus = goals.reduce((a, g) => a + (g.ok ? g.cash : 0), 0); G.repD += goals.reduce((a, g) => a + (g.ok ? g.rep : 0), 0);
   const income = Math.round((G.rev + G.tips + bonus) * 100) / 100;
-  const net = income - wages - rent - fee;
+  const net = income - wages - rent - fee - repairs;
   const repBefore = S.rep, starsBefore = starsOf(S.rep);
-  S.rep = Math.max(0, Math.round(S.rep + G.repD));
+  S.rep = Math.max(0, Math.round(S.rep + G.repD * (G.repD > 0 && hasPk(site, "listed") ? 1.1 : 1)));
   S.cash = Math.round((S.cash + net) * 100) / 100;
   // stock: what's left, fresh food half goes off
   const spoiled = {};
-  for (const k in G.stock) { let v = G.stock[k]; if (INGS[k].f && v > 0) { const lost = Math.floor(v / 2); if (lost) spoiled[k] = lost; v -= lost; } G.stock[k] = v; }
+  for (const k in G.stock) { let v = G.stock[k]; if (INGS[k].f && v > 0) { const lost = Math.floor(v * (hasPk(site, "store") ? .25 : hasPk(site, "tiny") ? .75 : .5)); if (lost) spoiled[k] = lost; v -= lost; } G.stock[k] = v; }
   S.stock = G.stock; S.bt = {};
   // staff morale
   const news = [];
@@ -1975,13 +2369,28 @@ function endDay() {
   if (starsNow < starsBefore) news.unshift(`Your reputation slipped to ${starsNow} star${starsNow === 1 ? "" : "s"}.`);
   if (G.critic === "loved") news.unshift("The food critic loved it! A glowing review is in the paper.");
   if (G.critic === "angry") news.unshift("The food critic walked out. Ouch, a bad review.");
-  if (S.cash < 0) news.push("You're overdrawn. The bank charges £4 a night until you're back in the black.");
+  // overdrawn too long: the landlord ends the lease (Normal) or the business goes bust (Hard)
+  S.od = S.cash < 0 ? (S.od || 0) + 1 : 0;
+  let evicted = null;
+  if (S.cash < 0) {
+    const left = B.evict ? B.evict - S.od : 0;
+    if (B.evict && left <= 0) {
+      if (B.bust) S.bust = { day: S.day, cash: Math.round(S.cash) };
+      else {
+        const to = SITES.filter(x => x.t === 0 && siteFits(x, S.venue) && x.id !== S.site).sort((a, b) => siteRent(a, S.venue, S.biz) - siteRent(b, S.venue, S.biz))[0];
+        evicted = { from: site.n, to: to.n, sold: moveTo(S, to, true) }; S.od = 0;
+        news.unshift(`The landlord has ended your lease at ${site.n}. Lee Lee has moved to ${to.n}, the cheapest place going.${evicted.sold.length ? " Things that didn't fit were sold: " + evicted.sold.join(", ") + "." : ""}`);
+      }
+    } else news.push(B.fee ? `You're overdrawn. The bank charges ${money(B.fee)} a night until you're back in the black.${B.evict ? ` ${left} more night${left === 1 ? "" : "s"} overdrawn and ${B.bust ? "the business goes bust" : "the landlord ends your lease"}.` : ""}` : "You're overdrawn, but on Peaceful there's no charge.");
+  }
+  if (repairs) news.push(`Repairs today: ${money(repairs)}${hasPk(site, "listed") && info.wd === 6 ? " (the weekly upkeep of a listed building)" : " (the leaky roof)"}.`);
   const last = { day: S.day, rev: G.rev, tips: G.tips, wages, rent, fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
-    messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G) };
+    messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G), repairs };
   S.last = last;
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
   S.stats.served += G.served; S.stats.angry += G.angry; S.stats.earned += income; S.stats.best = Math.max(S.stats.best, Math.round(net));
   S.day++;
+  for (const n of calendarNews(S.day)) news.push(n);
   const req = newBookingRequest(); if (req) news.push(`📅 New booking request: ${OCCASIONS[req.occ].n.toLowerCase()} for ${req.size} on ${WEEKDAYS[dayInfo(S, req.day).wd]}. See Today.`);
   saveGame();
   const g = G; G = null;
@@ -1995,20 +2404,26 @@ function endDay() {
     ${last.perfect ? `<div><span>Perfect pours</span><b class="pos">${last.perfect}</b></div>` : ""}
     <div><span>Takings + tips</span><b>${money(last.rev + last.tips)}</b></div>
     ${bonus ? `<div><span>Goal rewards</span><b class="pos">${money(bonus)}</b></div>` : ""}
-    <div><span>Rent${wages ? " + wages" : ""}</span><b>−${money(rent + wages + fee)}</b></div>
+    <div><span>Rent${wages ? " + wages" : ""}${repairs ? " + repairs" : ""}</span><b>−${money(rent + wages + fee + repairs)}</b></div>
     <div class="tot"><span>Profit</span><b class="${net >= 0 ? "pos" : "neg"}">${money(net)}</b></div>
     <div><span>Reputation</span><b class="${last.repD >= 0 ? "pos" : "neg"}">${last.repD >= 0 ? "+" : ""}${last.repD}</b></div></div>
     ${goals.length ? `<div class="goals">${goals.map(x => `<div><span>${x.ok ? "⭐" : "✖️"}</span><span>${GOAL_TEXT[x.k](x.n)}${x.ok ? ` <b class="pos">+${money(x.cash)}</b>` : ""}</span></div>`).join("")}</div>` : ""}
     ${last.streak >= 3 ? `<p class="small" style="text-align:center">🔥 Best streak: <b>${last.streak}</b> happy tables in a row</p>` : ""}
     <div class="news small"><b>Next time</b><br>${last.advice.map(esc).join("<br>")}</div>
-    <div class="acts"><button class="btn pri" data-a="ok">To the office</button></div>`);
+    <div class="acts"><button class="btn pri" data-a="ok">${S.bust ? "Oh no…" : "To the office"}</button></div>`, S.bust ? () => setTimeout(bustDialog, 50) : null);
+}
+function bustDialog() {
+  dialog(`<h3>Gone bust</h3><div style="text-align:center;font-size:2.4rem">📉</div>
+    <p class="muted" style="text-align:center">${esc(S.name)} stayed overdrawn for too long and the bank has closed the business on day ${S.bust.day}. On Hard, that's the end.</p>
+    <div class="lines"><div><span>Days open</span><b>${S.bust.day}</b></div><div><span>Customers served</span><b>${S.stats.served}</b></div><div><span>Best day</span><b>${money(S.stats.best)}</b></div></div>
+    <div class="acts"><button class="btn pri" data-a="ok">Back to save slots</button></div>`, () => { renderTitle(); show("title"); });
 }
 
 /* ======================================================================
    THE OFFICE (between days)
    ====================================================================== */
 let tab = "day";
-const TABS = [["day", "Today"], ["menu", "Menu"], ["staff", "Team"], ["up", "Upgrades"]];
+const TABS = [["day", "Today"], ["menu", "Menu"], ["staff", "Team"], ["up", "Upgrades"], ["city", "City"]];
 let stockOpen = false;
 function openManage(t) { show("manage"); renderManage(t || "day"); }
 function canAfford(c) { return S.cash >= c; }
@@ -2037,13 +2452,13 @@ function renderManage(t) {
   tab = t || tab;
   const V = VENUES[S.venue], st = starsOf(S.rep);
   $("mName").textContent = S.name;
-  $("mSub").textContent = `${V.places[S.prem]} · day ${S.day} next`;
+  $("mSub").textContent = `${siteOf(S).n} · ${SEASONS[calOf(S.day).se].e} day ${S.day} next`;
   $("mCash").textContent = money(Math.round(S.cash * 100) / 100); $("mCash").className = S.cash < 0 ? "neg" : "";
   $("mStars").innerHTML = `<span class="stars" style="font-size:.85rem">${starStr(st)}</span>`;
   $("tabs").innerHTML = TABS.map(([id, n]) => `<button class="${id === tab ? "on" : ""}" data-tab="${id}">${n}</button>`).join("");
   $("openBtn").textContent = `Open for day ${S.day} →`;
   if (!TABS.some(x => x[0] === tab)) tab = "day";
-  const f = { day: tabDay, menu: tabMenu, staff: tabStaff, up: tabUp }[tab];
+  const f = { day: tabDay, menu: tabMenu, staff: tabStaff, up: tabUp, city: tabCity }[tab];
   const sc = $("mbody").scrollTop, openIds = [...$("mwrap").querySelectorAll("details[id]")].filter(d => d.open).map(d => d.id);
   $("mwrap").innerHTML = f();
   for (const id of openIds) { const d = $(id); if (d) d.open = true; }
@@ -2057,6 +2472,7 @@ function autoStock() {
   for (const k in sug) { const want = sug[k] - (S.stock[k] || 0); if (want <= 0) continue; const can = Math.min(want, Math.floor((S.cash + 150) / INGS[k].c)); if (can <= 0) continue; spend(can * INGS[k].c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
 }
 $("openBtn").onclick = () => {
+  if (S.bust) { bustDialog(); return; }
   if (S.autoStock !== false) { autoStock(); saveGame(); }
   const sug = suggested(), short = Object.keys(sug).filter(k => (S.stock[k] || 0) < sug[k] * .5);
   if (short.length) {
@@ -2074,7 +2490,7 @@ function tabDay() {
       <p class="small">${L.served} of ${L.people} customers served${L.angry ? `, <b class="neg">${L.angry} walked out</b>` : ""}${L.turned ? `, <b class="neg">${L.turned} found nothing in stock</b>` : ""}${L.burnt ? `, ${L.burnt} burnt` : ""}.</p>
       <details class="small" id="moneyBox"><summary class="muted">Money in and out</summary><div class="lines" style="margin-top:6px">
       <div><span>Takings</span><b>${money(L.rev)}</b></div><div><span>Tips</span><b>${money(L.tips)}</b></div>
-      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
+      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
       ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
     if (L.advice) h += `<div class="news small"><b>💡 Next time</b><br>${L.advice.map(esc).join("<br>")}</div>`;
   } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
@@ -2098,12 +2514,12 @@ function forecastCard() {
   let cells = "";
   for (let k = 0; k < 5; k++) {
     const day = S.day + k, d = dayInfo(S, day), c = dayCrowd(S, day), bk = (S.bookings || []).find(b => b.ok && b.day === day);
-    cells += `<div class="fc${k === 0 ? " on" : ""}"><b>${WEEKDAYS[d.wd].slice(0, 3)}</b><span class="big">${WEATHER[d.w].e}</span><span>${d.match ? "⚽" : bk ? OCCASIONS[bk.occ].e : "&nbsp;"}</span><i style="height:${Math.round(clamp(c, .6, 1.9) * 22)}px"></i><small>${busy(c)}</small></div>`;
+    cells += `<div class="fc${k === 0 ? " on" : ""}"><b>${WEEKDAYS[d.wd].slice(0, 3)}</b><span class="big">${WEATHER[d.w].e}</span><span>${d.match ? STADIUMS[d.mi].e : d.ev.length ? d.ev[0].E.e : bk ? OCCASIONS[bk.occ].e : d.rw ? "🚧" : "&nbsp;"}</span><i style="height:${Math.round(clamp(c, .6, 1.9) * 22)}px"></i><small>${busy(c)}</small></div>`;
   }
   return `<div class="card"><div class="row spread"><h2>Tomorrow: ${WEEKDAYS[d0.wd]}</h2><span class="small muted">Day ${S.day}</span></div>
-    <p class="small"><b>${W.e} ${W.n}</b>${d0.match ? " · <b>⚽ Match day</b>" : ""} · ${busy(dayCrowd(S, S.day))}. People will want ${W.say}${d0.match ? ", and lots of beer" : ""}.${likes.length ? ` Selling well: ${likes.join(" ")}` : ""}</p>
+    <p class="small"><b>${W.e} ${W.n}</b>${d0.match ? ` · <b>${STADIUMS[d0.mi].e} ${matchText(STADIUMS[d0.mi])}</b>` : ""}${d0.ev.map(o => ` · <b>${o.E.e} ${o.E.n}</b>`).join("")}${d0.rw ? " · 🚧 roadworks" : ""} · ${busy(dayCrowd(S, S.day))}. People will want ${W.say}${d0.match && S.venue === "pub" ? ", and lots of beer" : ""}.${likes.length ? ` Selling well: ${likes.join(" ")}` : ""}</p>
     <div class="fcs">${cells}</div>
-    <p class="small muted">Weekends are busiest. Plan stock, specials, staff and adverts for the days ahead.</p></div>`;
+    <p class="small muted">${calText(S.day)}. Plan stock, specials, staff and adverts for the days ahead. Events and seasons: City tab.</p></div>`;
 }
 function bookingsCard() {
   const list = (S.bookings || []).filter(b => b.day >= S.day).sort((a, b) => a.day - b.day);
@@ -2133,7 +2549,7 @@ function tabMenu() {
   let h = `<div class="card"><h2>On the menu</h2>`;
   for (const r of S.owned) {
     const R = RECIPES[r], on = !S.off.includes(r), missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t));
-    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">${money(R.p)}</span></b>${missing.length ? `<span class="neg">Needs a ${missing.map(t => STATIONS[t].n.toLowerCase()).join(" and ")} (Upgrades)</span>` : ""}</div>
+    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} <span class="muted small">${money(lp(r))}</span></b>${missing.length ? `<span class="neg">Needs a ${missing.map(t => STATIONS[t].n.toLowerCase()).join(" and ")} (Upgrades)</span>` : ""}</div>
       <button class="btn sm ${on ? "good" : ""}" data-act="toggle" data-r="${r}">${on ? "On" : "Off"}</button></div>`;
   }
   const opts2 = onMenuS();
@@ -2146,7 +2562,7 @@ function tabMenu() {
   if (!locked.length) h += `<p class="muted">You know every recipe!</p>`;
   for (const r of now) {
     const R = RECIPES[r], missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t));
-    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} ${R.kid ? `<span class="pill">Kids' menu</span> ` : ""}<span class="muted small">sells for ${money(R.p)}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")}${missing.length ? ` · <b>also needs a ${missing.map(t => STATIONS[t].n.toLowerCase()).join(" and ")}</b>` : ""}</span></div>
+    h += `<div class="item"><div class="ic">${R.e}</div><div class="grow"><b>${esc(R.n)} ${R.kid ? `<span class="pill">Kids' menu</span> ` : ""}<span class="muted small">sells for ${money(lp(r))}</span></b><span>${R.s.filter(t => t !== "plate").map(t => STATIONS[t].n).join(" → ")}${missing.length ? ` · <b>also needs a ${missing.map(t => STATIONS[t].n.toLowerCase()).join(" and ")}</b>` : ""}</span></div>
       <button class="btn sm pri" data-act="learn" data-r="${r}" ${canAfford(R.c) ? "" : "disabled"}>${money(R.c)}</button></div>`;
   }
   if (later.length) h += `<p class="small muted">More with a better reputation: ${later.map(r => `${RECIPES[r].e} ${RECIPES[r].st}★`).join(" · ")}</p>`;
@@ -2167,7 +2583,7 @@ function tabStaff() {
   }
   h += `</div><div class="card"><h2>Looking for work</h2>`;
   const full = S.staff.length >= prem.staff;
-  if (full) h += `<p class="small muted">No room for more staff here. A bigger place holds more (Upgrades).</p>`;
+  if (full) h += `<p class="small muted">No room for more staff here. A bigger place holds more (City tab).</p>`;
   S.cands.forEach((c, i) => {
     h += `<div class="item"><div class="ic">${ROLES[c.role].e}</div><div class="grow"><b>${esc(c.name)} <span class="muted small">${roleName(S, c.role)} · level ${c.lvl}</span></b><span>${esc(ROLES[c.role].job)} ${money(c.wage)} a day.</span></div>
       <button class="btn sm pri" data-act="hire" data-i="${i}" ${full ? "disabled" : ""}>Hire</button></div>`;
@@ -2202,7 +2618,7 @@ function tabUp() {
   if (kit().length) h += `<details class="small" id="sellBox"><summary class="muted">Sell equipment</summary>${S.stations.map((t, i) => !t ? "" : `<div class="item"><div class="ic">${STATIONS[t].e || "🟫"}</div><div class="grow"><b>${STATIONS[t].n}</b></div><button class="btn sm" data-act="sell" data-i="${i}">Sell ${money(Math.round(STATIONS[t].c / 2))}</button></div>`).join("")}</details>`;
   h += `</div><div class="card"><h2>Dining room</h2>`;
   const tc = 100 + 60 * S.tables.length, small = S.tables.indexOf(2), d = DECOR[S.decor];
-  h += upRow("🪑", "Another table", `${S.tables.length} of ${prem.tables} here`, "table", S.tables.length < prem.tables ? tc : null, S.tables.length < prem.tables);
+  h += upRow("🪑", "Another table", `${S.tables.length} of ${siteTables(S)} here`, "table", S.tables.length < siteTables(S) ? tc : null, S.tables.length < siteTables(S));
   h += upRow("🍽", "Make a table seat four", small >= 0 ? `${S.tables.filter(n => n < 4).length} tables seat two` : "Every table seats four", "bigtable", small >= 0 ? 150 : null, small >= 0, `data-i="${small}"`);
   const four = S.tables.indexOf(4);
   h += upRow("🎉", "Make a table seat six", four >= 0 ? "A long table for booked parties and big families" : S.tables.includes(6) && S.tables.indexOf(2) < 0 ? "Done" : "Make a table seat four first", "sixtable", four >= 0 ? 300 : null, four >= 0, `data-i="${four}"`);
@@ -2215,14 +2631,12 @@ function tabUp() {
     const running = (S.camp || []).some(c => c.id === C.id);
     h += upRow(C.e, esc(C.n), C.job ? esc(C.job) : `About ${Math.round(C.b * 100)}% more customers for ${C.days} days`, "camp", running ? null : C.c, !running, `data-id="${C.id}"`).replace(">Max<", running ? ">Running<" : ">Max<");
   }
-  h += `</div><div class="card"><h2>Somewhere bigger</h2>`;
-  const nx = PREMISES[S.prem + 1];
-  if (nx) h += upRow("🏠", `Move to ${esc(V.places[S.prem + 1])}`, `${nx.tables} tables, ${nx.slots} kitchen spaces, ${nx.staff} staff, more passing trade. Rent ${money(nx.rent)} a day.${st < nx.st ? ` <b>Needs ${nx.st}★.</b>` : ""} You keep everything.`, "move", nx.cost, st >= nx.st);
-  else h += `<p class="pos"><b>This is the finest spot in town.</b></p>`;
+  h += `</div><div class="card"><div class="row spread"><div class="grow"><h2>Somewhere bigger</h2><p class="small muted">Bigger places and busier streets are on the map of Leicester.</p></div><button class="btn sm pri" data-act="map">🗺️ Map</button></div>`;
   return h + `</div>`;
 }
 $("mwrap").addEventListener("change", e => {
   if (e.target.id === "diffSel") { S.diff = +e.target.value; saveGame(); renderManage(); return; }
+  if (e.target.id === "bizSel") { S.biz = Math.min(+e.target.value, S.biz != null ? S.biz : 1); saveGame(); renderManage(); return; }
   if (e.target.id === "discR" || e.target.id === "discP") {
     const r = $("discR").value, p = +$("discP").value;
     S.disc = r ? { r, pct: p } : null; saveGame();
@@ -2232,6 +2646,7 @@ $("mwrap").onclick = e => {
   const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
   const a = b.dataset.act, V = VENUES[S.venue];
   if (a === "title") { renderTitle(); show("title"); return; }
+  if (a === "map") { openCity("browse"); return; }
   if (a === "rename") {
     dialog(`<h3>Rename</h3><input type="text" id="rnIn" maxlength="28" value="${esc(S.name)}"><div class="acts"><button class="btn pri" data-a="ok">Save</button><button class="btn" data-a="">Cancel</button></div>`, x => {
       const v = $("rnIn").value.trim(); if (x === "ok" && v) { S.name = v; saveGame(); renderManage(); }
@@ -2268,19 +2683,12 @@ $("mwrap").onclick = e => {
   if (a === "lvl") { const t = b.dataset.t, l = S.lvl[t] || 0, c = Math.round(STATIONS[t].c * [1, 2, 4][l]); if (l < 3 && canAfford(c)) { spend(c); S.lvl[t] = l + 1; } }
   if (a === "plates") { const pc = 30 + 10 * Math.max(0, S.plates - 6); if (canAfford(pc)) { spend(pc); S.plates += 2; } }
   if (a === "shoes") { const sh = SHOES[S.shoes]; if (sh && canAfford(sh.c)) { spend(sh.c); S.shoes++; } }
-  if (a === "table") { const tc = 100 + 60 * S.tables.length; if (canAfford(tc) && S.tables.length < PREMISES[S.prem].tables) { spend(tc); S.tables.push(2); let p = 0; while (S.tpos.includes(p)) p++; S.tpos.push(p); } }
+  if (a === "table") { const tc = 100 + 60 * S.tables.length; if (canAfford(tc) && S.tables.length < siteTables(S)) { spend(tc); S.tables.push(2); let p = 0; while (S.tpos.includes(p)) p++; S.tpos.push(p); } }
   if (a === "sixtable") { const i = +b.dataset.i; if (S.tables[i] === 4 && canAfford(300)) { spend(300); S.tables[i] = 6; } }
   if (a === "bar") { const nb = BAR[S.bar || 0]; if (nb && canAfford(nb.c)) { spend(nb.c); S.bar = (S.bar || 0) + 1; } }
   if (a === "book" || a === "nobook") { const bk = (S.bookings || []).find(x => x.id === +b.dataset.id); if (bk) { if (a === "book") bk.ok = true; else S.bookings = S.bookings.filter(x => x !== bk); } }
   if (a === "bigtable") { const i = +b.dataset.i; if (canAfford(150)) { spend(150); S.tables[i] = 4; } }
   if (a === "decor") { const d = DECOR[S.decor]; if (d && canAfford(d.c)) { spend(d.c); S.decor++; } }
-  if (a === "move") {
-    const nx = PREMISES[S.prem + 1];
-    dialog(`<h3>Move to ${esc(V.places[S.prem + 1])}?</h3><p class="muted" style="text-align:center">Costs ${money(nx.cost)}. Rent goes up to ${money(nx.rent)} a day, but more people pass by.</p><div class="acts"><button class="btn pri" data-a="yes">Move!</button><button class="btn" data-a="">Not yet</button></div>`, x => {
-      if (x === "yes" && canAfford(nx.cost)) { spend(nx.cost); S.prem++; saveGame(); renderManage(); toastOffice(`Welcome to ${V.places[S.prem]}!`); }
-    });
-    return;
-  }
   if (a === "camp") { const C = CAMPAIGNS.find(x => x.id === b.dataset.id); if (C && canAfford(C.c)) { spend(C.c); S.camp.push({ id: C.id, days: C.days }); } }
   saveGame(); renderManage();
 };
@@ -2326,10 +2734,402 @@ $("ovc").addEventListener("click", e => {
 });
 function toastOffice(m) { dialog(`<h3>${esc(m)}</h3><div class="acts"><button class="btn pri" data-a="ok">Great</button></div>`); }
 
+/* ======================================================================
+   THE CITY (free play): the calendar, the City tab, the map of Leicester
+   ====================================================================== */
+function calText(day) { const c = calOf(day), Se = SEASONS[c.se]; return `${Se.e} ${Se.n}, week ${c.week} of 3 · year ${c.year}`; }
+function matchText(M) { return M.what === "cricket" ? `Cricket at ${M.n}` : M.what === "race" ? `Race day at ${M.n}` : `${M.club} at home (${M.n})`; }
+const SIZE_N = ["Small", "Medium", "Large", "Very large"];
+function sizeText(s) { const P = PREMISES[s.t]; return `${SIZE_N[s.t]}: ${Math.min(9, P.tables + (hasPk(s, "seats") ? 1 : 0))} tables, ${P.slots} kitchen spaces, ${P.staff} staff`; }
+const pct = v => Math.round(v * 100) + "%";
+function pullText(k) { return k >= .95 ? "busier all over the city" : k > .6 ? "big crowds right here" : k > .25 ? "some of the crowd comes this way" : k > .05 ? "a little busier here" : "too far away to make a difference here"; }
+function evWhen(o) { return o.E.len === 1 ? `${WEEKDAYS[(o.from - 1) % 7]}, day ${o.from}` : `${WEEKDAYS[(o.from - 1) % 7]} to ${WEEKDAYS[(o.to - 1) % 7]}, days ${o.from}–${o.to}`; }
+function seasonEventsFrom(save, day) {
+  const c = calOf(day), list = seasonEvents(save, day).concat(seasonEvents(save, c.start + SEASON_LEN)), seen = {};
+  return list.filter(o => { const k = o.E.id + o.from; if (seen[k]) return false; seen[k] = 1; return o.to >= day; });
+}
+// news for the office when a new day comes round: a new season, and events a week ahead and the day before
+function calendarNews(day) {
+  const out = [], c = calOf(day), p = calOf(day - 1), s = siteOf(S);
+  if (c.se !== p.se) out.push(`${SEASONS[c.se].e} ${SEASONS[c.se].n} has arrived${c.se === 0 ? ` (year ${c.year})` : ""}. ${SEASONS[c.se].say}`);
+  for (const o of seasonEventsFrom(S, day)) {
+    const gap = o.from - day, k = evPull(o.E, s);
+    if (gap === 0) out.push(`${o.E.e} ${o.E.n} starts tomorrow: ${pullText(k)}.${k > .25 ? " Stock up and think about extra staff." : ""}`);
+    else if (gap === 6) out.push(`${o.E.e} ${o.E.n} is coming next week (${evWhen(o)}): ${pullText(k)}.`);
+  }
+  return out;
+}
+function areaBars(m) {
+  const row = (n, v) => `<span>${n}</span><span class="dots5">${[0, 1, 2, 3, 4].map(i => `<i class="${v > i * .2 + .04 ? "on" : ""}"></i>`).join("")}</span>`;
+  return `<div class="abars">${row("People living nearby", m.pop)}${row("Shops & offices", m.com)}${row("Students", m.stu)}${row("Nightlife", m.night)}${row("Visitors", m.tour)}</div>`;
+}
+function perkList(s, venue) {
+  if (!s.pk.length) return `<p class="small muted">No particular perks or snags.</p>`;
+  return `<div class="perks">${s.pk.map(k => { const P = PERKS[k]; return `<div class="${P.bad ? "bad" : ""}">${P.e} <b>${P.bad ? "" : ""}${k === "garden" && venue === "cafe" ? P.nc : P.n}</b> · ${P.d}</div>`; }).join("")}</div>`;
+}
+function weekChart(save) {
+  const w = weekPattern(save), mx = Math.max(...w);
+  return `<div class="wk">${w.map((v, d) => `<div><i style="height:${Math.round(v / mx * 30)}px"></i>${WEEKDAYS[d].slice(0, 2)}</div>`).join("")}</div>`;
+}
+function avgGroups(save) { let t = 0; for (let k = 0; k < 7; k++) t += expectedGroups(Object.assign({}, save, { day: save.day + k })); return t / 7; }
+function nearStadiums(s, venue) { return STADIUMS.map(st => ({ st, k: stadiumPull(st, s, venue) })).filter(x => x.k > .08).sort((a, b) => b.k - a.k); }
+
+/* the City tab in the office */
+function tabCity() {
+  const s = siteOf(S), m = siteMix(s), rent = siteRent(s, S.venue, S.biz), c = calOf(S.day), B = bizOf(S);
+  let h = `<div class="card"><div><span class="label">Your place</span><h2>${esc(s.n)}</h2><p class="small muted">${esc(s.a)} · ${sizeText(s)}</p></div>
+    <div class="lines small"><div><span>Rent</span><b>${money(rent * 7)} a week</b></div><div><span>Prices here</span><b>${pct(sitePrice(S))} of usual</b></div>
+    ${S.dep ? `<div><span>Deposit (comes back when you leave)</span><b>${money(S.dep)}</b></div>` : ""}</div>
+    ${perkList(s, S.venue)}${areaBars(m)}
+    <div><span class="small"><b>A usual week here</b></span>${weekChart(S)}</div>
+    ${nearStadiums(s, S.venue).map(x => `<p class="small">${x.st.e} <b>${x.st.n}</b> is ${Math.hypot(s.x - x.st.x, s.y - x.st.y).toFixed(1)} km away: home ${x.st.what === "race" ? "race days" : "games"} make it ${x.k * x.st.b > .15 ? "much " : ""}busier${x.st.sea.length < 3 ? ` (${x.st.sea.map(i => SEASONS[i].n.toLowerCase()).join(" and ")} only)` : " (not in summer)"}.</p>`).join("")}
+    <button class="btn pri" data-act="map">🗺️ Open the map of Leicester</button>
+    <p class="small muted">Rents, who lives and works where, stadiums and events. Moving keeps your recipes, staff and equipment, as long as they fit.</p></div>`;
+  h += `<div class="card"><div class="row spread"><h2>${SEASONS[c.se].e} ${SEASONS[c.se].n}</h2><span class="small muted">week ${c.week} of 3 · year ${c.year}</span></div>
+    <p class="small">${SEASONS[c.se].say} Each season lasts three weeks.</p>`;
+  for (const o of seasonEventsFrom(S, S.day)) {
+    const k = evPull(o.E, s), soon = o.from - S.day;
+    h += `<div class="item"><div class="ic">${o.E.e}</div><div class="grow"><b>${o.E.n}</b><span>${SEASONS[o.E.se].n}: ${evWhen(o)}${soon > 0 ? ` (in ${soon} day${soon === 1 ? "" : "s"})` : soon === 0 ? " (tomorrow)" : " (on now)"}</span>
+      <span>${esc(o.E.say)} For you: ${pullText(k)}${k > .05 ? `, up to +${pct((o.E[S.venue] - 1) * k)}` : ""}.</span></div></div>`;
+  }
+  h += `<p class="small muted">One big event a season, two at Christmas. Events near your place bring crowds and change what people order.</p></div>`;
+  const bi = S.biz != null ? S.biz : 1;
+  h += `<div class="card"><div class="row spread"><h2>Money</h2><select id="bizSel">${BIZ.map((x, i) => i > bi ? "" : `<option value="${i}" ${i === bi ? "selected" : ""}>${x.e} ${x.n}</option>`).join("")}</select></div>
+    <p class="small muted">${esc(B.d)}${bi ? " You can make it easier, but not harder." : ""}</p>
+    ${S.od ? `<p class="small neg">Overdrawn ${S.od} night${S.od === 1 ? "" : "s"} in a row.</p>` : ""}</div>`;
+  return h;
+}
+
+/* ---------- the map ---------- */
+const HEATS = [["none", "Roads only", ""], ["pop", "People", "Where people live: steady trade, families at weekends."], ["com", "Shops & offices", "Busy weekdays, quieter weekends. People pay a bit more."],
+  ["stu", "Students", "Cheap food and drink sell best. Quiet in summer."], ["night", "Nightlife", "Evening crowds: good for pubs."], ["tour", "Visitors", "Busy weekends and summers, bigger tips."], ["rent", "Rents", "How much places cost to rent."]];
+const HEAT_COL = { pop: [124, 77, 191], com: [52, 112, 201], stu: [38, 150, 86], night: [205, 60, 140], tour: [232, 140, 30], rent: [210, 72, 58] };
+const SHOWS = [["let", "🏷️ To let"], ["stad", "🏟️ Stadiums"], ["land", "📍 Landmarks"], ["ev", "🎉 Events"]];
+const FF = '"Figtree",system-ui,sans-serif';
+const TIER_COL = ["#5FAE72", "#3E9DA0", "#4F7FC0", "#7A5FC2"];
+const CM = { mode: "browse", sel: null, z: 40, cx: 0, cy: .4, save: null, ptrs: new Map(), heatC: {}, ng: null, moved: 0, raf: 0 };
+const mapOpts = () => (opts.map = Object.assign({ heat: "none", let: 1, stad: 1, land: 1, ev: 1 }, opts.map || {}));
+const ccv = $("ccv"), cctx = ccv.getContext("2d");
+let CW = 300, CH = 300, CDPR = 1;
+function cityResize() {
+  const r = $("cMap").getBoundingClientRect(); CDPR = Math.min(2.5, window.devicePixelRatio || 1);
+  CW = Math.max(100, r.width); CH = Math.max(100, r.height);
+  ccv.width = Math.round(CW * CDPR); ccv.height = Math.round(CH * CDPR);
+}
+const zMin = () => Math.min(CW / (CITY.x1 - CITY.x0), CH / (CITY.y1 - CITY.y0)) * .95;
+function clampView() {
+  CM.z = clamp(CM.z, zMin(), 420);
+  CM.cx = clamp(CM.cx, CITY.x0, CITY.x1); CM.cy = clamp(CM.cy, CITY.y0, CITY.y1);
+}
+function openCity(mode) {
+  CM.mode = mode; CM.sel = null; mapOpts();
+  if (mode === "start") { const N = CM.ng; CM.save = newSave(N.venue, N.name); CM.save.biz = N.biz; CM.save.diff = N.diff; CM.save.created = 1; }
+  else CM.save = S;
+  show("city"); cityResize();
+  const me = mode === "start" ? null : siteOf(S);
+  CM.z = me ? clamp(zMin() * 2.4, zMin(), 420) : zMin(); CM.cx = me ? me.x : 0; CM.cy = me ? me.y : .4;
+  clampView(); renderCityUI(); drawCity();
+}
+function closeCity() {
+  if (CM.mode === "start") { show("newgame"); return; }
+  openManage(tab === "city" ? "city" : tab);
+}
+function renderCityUI() {
+  const o = mapOpts(), sv = CM.save, start = CM.mode === "start";
+  $("cTitle").textContent = start ? "Choose a first place" : "Leicester";
+  $("cSub").textContent = start ? "Tap a green pin" : `${SEASONS[calOf(sv.day).se].e} ${SEASONS[calOf(sv.day).se].n} · tap a pin`;
+  $("cCash").textContent = start ? money(250 + 75 * certs()) : money(Math.round(sv.cash)); $("cCash").className = !start && sv.cash < 0 ? "neg" : "";
+  $("cStars").innerHTML = `<span class="stars" style="font-size:.8rem">${starStr(starsOf(sv.rep))}</span>`;
+  $("cHeat").innerHTML = HEATS.map(([k, n]) => `<button class="${o.heat === k ? "on" : ""}" data-h="${k}">${HEAT_COL[k] ? `<i style="background:rgb(${HEAT_COL[k].join(",")})"></i>` : ""}${n}</button>`).join("");
+  $("cShow").innerHTML = SHOWS.map(([k, n]) => `<button class="${o[k] ? "on" : ""}" data-s="${k}">${n}</button>`).join("");
+  const H = HEATS.find(x => x[0] === o.heat), col = HEAT_COL[o.heat];
+  let key = "";
+  if (col) key += `<b>${H[1]}</b><div class="grad" style="background:linear-gradient(90deg,rgba(${col},.08),rgba(${col},.85))"></div><div class="lh"><span>low</span><span>high</span></div><div>${H[2]}</div>`;
+  if (o.let) key += `<div class="dots">${TIER_COL.map((c, i) => `<span><i style="background:${c}"></i>${SIZE_N[i]}</span>`).join("")}</div>`;
+  $("cKey").innerHTML = key; $("cKey").hidden = !key;
+  renderSheet();
+}
+$("cHeat").onclick = e => { const b = e.target.closest("[data-h]"); if (!b) return; mapOpts().heat = b.dataset.h; store("ll.opts", opts); renderCityUI(); drawCity(); };
+$("cShow").onclick = e => { const b = e.target.closest("[data-s]"); if (!b) return; const o = mapOpts(); o[b.dataset.s] = o[b.dataset.s] ? 0 : 1; store("ll.opts", opts); renderCityUI(); drawCity(); };
+$("cBack").onclick = () => closeCity();
+$("cMap").querySelector(".czoom").onclick = e => {
+  const b = e.target.closest("[data-z]"); if (!b) return;
+  if (b.dataset.z === "me") { const s = CM.mode === "start" ? null : siteOf(S); CM.cx = s ? s.x : 0; CM.cy = s ? s.y : .4; CM.z = s ? Math.max(CM.z, zMin() * 2.4) : zMin(); }
+  else CM.z *= b.dataset.z === "in" ? 1.5 : 1 / 1.5;
+  clampView(); drawCity();
+};
+$("cList").onclick = () => {
+  const sv = CM.save, start = CM.mode === "start", st = starsOf(sv.rep);
+  const list = SITES.filter(s => siteFits(s, sv.venue) && (!start || s.t === 0)).sort((a, b) => a.t - b.t || siteRent(a, sv.venue, sv.biz) - siteRent(b, sv.venue, sv.biz));
+  dialog(`<h3>${start ? "Small places to start" : "Places in Leicester"}</h3>
+    ${list.map(s => `<button class="btn" data-a="${s.id}" style="text-align:left;display:flex;gap:10px;align-items:center"><i style="width:12px;height:12px;border-radius:50%;background:${TIER_COL[s.t]};flex:none"></i>
+      <span class="grow"><b style="display:block">${esc(s.n)}${!start && sv.site === s.id ? " · you're here" : ""}</b><span class="small muted">${esc(s.a)} · ${SIZE_N[s.t]} · ${money(siteRent(s, sv.venue, sv.biz) * 7)} a week${!start && PREMISES[s.t].st > st ? ` · needs ${PREMISES[s.t].st}★` : ""}</span></span></button>`).join("")}
+    <div class="acts"><button class="btn" data-a="">Close</button></div>`, a => { const s = SITE[a]; if (s) { CM.sel = { k: "site", o: s }; CM.z = Math.max(CM.z, zMin() * 3); renderSheet(); lookAt(s.x, s.y); drawCity(); } });
+};
+// heat overlays are drawn once into a small picture (one pixel = 100 m) and stretched over the map
+function heatCanvas(k, venue) {
+  const key = k + venue; if (CM.heatC[key]) return CM.heatC[key];
+  const cell = .1, nx = Math.round((CITY.x1 - CITY.x0) / cell), ny = Math.round((CITY.y1 - CITY.y0) / cell);
+  const cv = document.createElement("canvas"); cv.width = nx; cv.height = ny;
+  const g = cv.getContext("2d"), img = g.createImageData(nx, ny), [R, G2, B] = HEAT_COL[k];
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const f = fieldAt(CITY.x0 + (i + .5) * cell, CITY.y0 + (j + .5) * cell);
+    const v = k === "rent" ? clamp((footOf(f, venue) - .78) / .6, 0, 1) : f[k], o = (j * nx + i) * 4;
+    img.data[o] = R; img.data[o + 1] = G2; img.data[o + 2] = B; img.data[o + 3] = v < .03 ? 0 : Math.round(25 + 200 * v);
+  }
+  g.putImageData(img, 0, 0);
+  return (CM.heatC[key] = cv);
+}
+function smoothPath(c, p, X, Y) {
+  c.beginPath(); c.moveTo(X(p[0]), Y(p[1]));
+  const n = p.length / 2;
+  for (let i = 1; i < n - 1; i++) { const x = p[i * 2], y = p[i * 2 + 1], mx = (x + p[i * 2 + 2]) / 2, my = (y + p[i * 2 + 3]) / 2; c.quadraticCurveTo(X(x), Y(y), X(mx), Y(my)); }
+  c.lineTo(X(p[n * 2 - 2]), Y(p[n * 2 - 1]));
+}
+function haloText(c, t, x, y, size, col, weight) {
+  c.font = `${weight || 700} ${size}px ${FF}`; c.textAlign = "center"; c.textBaseline = "middle";
+  c.lineJoin = "round"; c.strokeStyle = "rgba(255,255,255,.92)"; c.lineWidth = 3.2; c.strokeText(t, x, y); c.fillStyle = col; c.fillText(t, x, y);
+}
+function pinEmoji(c, e, x, y, r, ring) {
+  c.fillStyle = "#fff"; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+  c.lineWidth = ring ? 3 : 1.2; c.strokeStyle = ring || "rgba(0,0,0,.2)"; c.stroke();
+  c.font = `${Math.round(r * 1.15)}px ${EMOJI}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(e, x, y + r * .06);
+}
+function mapEvents() { const sv = CM.save; return seasonEventsFrom(sv, sv.day).filter(o => o.E.r); }
+function siteState(s) {
+  const sv = CM.save, start = CM.mode === "start";
+  if (!start && sv.site === s.id) return "here";
+  if (!siteFits(s, sv.venue)) return "no";
+  if (start) return s.t === 0 ? "ok" : "no";
+  return PREMISES[s.t].st > starsOf(sv.rep) ? "lock" : "ok";
+}
+function drawCity() {
+  if (view !== "city") return;
+  const c = cctx, w = CW, h = CH, z = CM.z, o = mapOpts(), sv = CM.save, venue = sv.venue;
+  c.setTransform(CDPR, 0, 0, CDPR, 0, 0);
+  const X = x => w / 2 + (x - CM.cx) * z, Y = y => h / 2 + (y - CM.cy) * z;
+  c.fillStyle = "#F1ECE2"; c.fillRect(0, 0, w, h);
+  // built-up areas, all in one path so they merge
+  c.fillStyle = "#E6DED0"; c.beginPath();
+  for (const D of DISTRICTS) { const v = Math.max(D.pop || 0, D.com || 0); if (v < .2) continue; const r = D.r * (.75 + .5 * v) * z; c.moveTo(X(D.x) + r, Y(D.y)); c.arc(X(D.x), Y(D.y), r, 0, 7); }
+  c.fill();
+  // parks
+  for (const [x, y, rx, ry] of PARKS) { c.fillStyle = "#CFE4BE"; c.strokeStyle = "#B4D29F"; c.lineWidth = 1; c.beginPath(); c.ellipse(X(x), Y(y), rx * z, ry * z, 0, 0, 7); c.fill(); c.stroke(); }
+  // river and canal
+  c.lineCap = "round"; c.lineJoin = "round";
+  c.strokeStyle = "#9CCAE6"; c.lineWidth = Math.max(2.2, .07 * z); smoothPath(c, RIVER, X, Y); c.stroke();
+  // overlay
+  if (HEAT_COL[o.heat]) { c.save(); c.imageSmoothingEnabled = true; c.globalAlpha = .78; c.drawImage(heatCanvas(o.heat, venue), X(CITY.x0), Y(CITY.y0), (CITY.x1 - CITY.x0) * z, (CITY.y1 - CITY.y0) * z); c.restore(); }
+  // railway
+  for (const r of RAIL) { c.strokeStyle = "#A39B90"; c.lineWidth = 2.4; smoothPath(c, r, X, Y); c.stroke(); c.strokeStyle = "#fff"; c.lineWidth = 1.2; c.setLineDash([5, 5]); c.stroke(); c.setLineDash([]); }
+  // roads: casings, then fills, smaller roads first
+  const RW = [Math.max(3.2, .1 * z), Math.max(2.4, .06 * z), Math.max(2.2, .055 * z), Math.max(1.1, .032 * z)];
+  const FILL = ["#93B4DF", "#F7D88C", "#FFFFFF", "#FFFFFF"], CASE = ["#6C8FBD", "#D4AC5C", "#C4B49C", "#D5C9B8"];
+  const order = [3, 2, 1, 0];
+  for (const k of order) for (const R of ROADS) if (R.k === k) { c.strokeStyle = CASE[k]; c.lineWidth = RW[k] + 2; smoothPath(c, R.p, X, Y); c.stroke(); }
+  for (const k of order) for (const R of ROADS) if (R.k === k) { c.strokeStyle = FILL[k]; c.lineWidth = RW[k]; smoothPath(c, R.p, X, Y); c.stroke(); }
+  // event areas
+  if (o.ev) for (const ev of mapEvents()) {
+    const E = ev.E, now = sv.day >= ev.from;
+    c.fillStyle = now ? "rgba(232,102,74,.14)" : "rgba(232,102,74,.07)"; c.strokeStyle = "rgba(232,102,74,.55)"; c.lineWidth = 1.5; c.setLineDash([6, 5]);
+    c.beginPath(); c.arc(X(E.x), Y(E.y), E.r * z, 0, 7); c.fill(); c.stroke(); c.setLineDash([]);
+  }
+  // selected stadium: how far its crowds reach
+  if (CM.sel && CM.sel.k === "stad") { const st = CM.sel.o; c.fillStyle = "rgba(62,155,107,.1)"; c.strokeStyle = "rgba(62,155,107,.6)"; c.lineWidth = 1.5; c.beginPath(); c.arc(X(st.x), Y(st.y), 3 * z, 0, 7); c.fill(); c.stroke(); }
+  // labels: districts, parks and road names
+  for (const D of DISTRICTS) if (D.n && D.lab !== 0 && (z > 34 || D.r > .9 || D.n === "City centre")) {
+    const big = D.n === "City centre"; haloText(c, big ? D.n.toUpperCase() : D.n, X(D.x), Y(D.y) + (big ? -.38 * z : 0), big ? 12 : z > 70 ? 12 : 10.5, "#7B6A5B", 700);
+  }
+  if (z > 70) for (const [x, y, , , n] of PARKS) if (n) haloText(c, n, X(x), Y(y), 10, "#4E7A3C", 600);
+  if (z > 55) for (const R of ROADS) if (R.n && R.k) roadLabel(c, R, X, Y);
+  for (const R of ROADS) if (R.k === 0) { const n = R.p.length / 2, i = Math.floor(n / 2); shield(c, R.n, X(R.p[i * 2]), Y(R.p[i * 2 + 1])); }
+  // landmarks, stadiums, events, places to let
+  if (o.land && z > 45) for (const L of LANDMARKS) { pinEmoji(c, L.e, X(L.x), Y(L.y), z > 90 ? 11 : 8.5); if (z > 120) haloText(c, L.n, X(L.x), Y(L.y) + 17, 10, "#5E4E40", 600); }
+  if (o.stad) for (const st of STADIUMS) { pinEmoji(c, st.e, X(st.x), Y(st.y), 12.5, CM.sel && CM.sel.o === st ? "#3E9B6B" : "#3E9B6B"); if (z > 60) haloText(c, st.n, X(st.x), Y(st.y) + 20, 10.5, "#2F6E4E", 700); }
+  if (o.ev) for (const ev of mapEvents()) pinEmoji(c, ev.E.e, X(ev.E.x), Y(ev.E.y), 13, "#E8664A");
+  if (o.let || CM.mode === "start") {
+    const sites = SITES.slice().sort((a, b) => (siteState(a) === "here") - (siteState(b) === "here"));
+    for (const s of sites) {
+      const stt = siteState(s), x = X(s.x), y = Y(s.y), sel = CM.sel && CM.sel.o === s;
+      if (stt === "no") { if (CM.mode === "start" && !siteFits(s, venue)) continue; c.fillStyle = "rgba(140,117,99,.45)"; c.beginPath(); c.arc(x, y, 4.5, 0, 7); c.fill(); continue; }
+      if (stt === "here") { pinEmoji(c, "👩🏽‍🍳", x, y - 4, 15, "#E8664A"); haloText(c, "You", x, y + 16, 10.5, "#C24B33", 800); continue; }
+      const r = sel ? 11 : 9;
+      c.fillStyle = TIER_COL[s.t]; c.globalAlpha = stt === "lock" ? .5 : 1;
+      c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.lineWidth = sel ? 3.5 : 2; c.strokeStyle = sel ? "#3A2A22" : "#fff"; c.stroke();
+      c.globalAlpha = 1;
+      haloText(c, stt === "lock" ? "🔒" : "£", x, y + .5, stt === "lock" ? 9 : 11, "#fff", 800);
+      if (z > 75 || sel) { const t = money(siteRent(s, venue, sv.biz) * 7) + "/wk"; c.font = `800 10px ${FF}`; const tw = c.measureText(t).width + 8;
+        c.fillStyle = "rgba(255,255,255,.95)"; rr(c, x + r + 2, y - 8, tw, 16, 6); c.fill(); c.fillStyle = "#3A2A22"; c.textAlign = "left"; c.textBaseline = "middle"; c.fillText(t, x + r + 6, y); }
+    }
+  }
+  c.font = `600 9px ${FF}`; c.textAlign = "right"; c.textBaseline = "bottom"; c.fillStyle = "rgba(90,74,62,.6)";
+  c.fillText("Leicester, drawn by hand: roads and places are approximate", w - 6, h - 4);
+}
+function roadLabel(c, R, X, Y) {
+  // along the longest straight bit, kept the right way up
+  let best = -1, bl = 0; const p = R.p;
+  for (let i = 0; i < p.length / 2 - 1; i++) { const l = Math.hypot(X(p[i * 2 + 2]) - X(p[i * 2]), Y(p[i * 2 + 3]) - Y(p[i * 2 + 1])); if (l > bl) { bl = l; best = i; } }
+  c.font = `600 10px ${FF}`;
+  if (best < 0 || bl < c.measureText(R.n).width + 16) return;
+  const x0 = X(p[best * 2]), y0 = Y(p[best * 2 + 1]), x1 = X(p[best * 2 + 2]), y1 = Y(p[best * 2 + 3]);
+  let a = Math.atan2(y1 - y0, x1 - x0); if (a > Math.PI / 2) a -= Math.PI; if (a < -Math.PI / 2) a += Math.PI;
+  c.save(); c.translate((x0 + x1) / 2, (y0 + y1) / 2); c.rotate(a); haloText(c, R.n, 0, -1, 10, "#6B5646", 600); c.restore();
+}
+function shield(c, t, x, y) {
+  c.font = `800 10px ${FF}`; const tw = c.measureText(t).width + 8;
+  c.fillStyle = "#3F6FB5"; rr(c, x - tw / 2, y - 8, tw, 16, 4); c.fill(); c.fillStyle = "#fff"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(t, x, y + .5);
+}
+// taps: the nearest pin within reach
+function cityHit(px, py) {
+  const o = mapOpts(), z = CM.z, X = x => CW / 2 + (x - CM.cx) * z, Y = y => CH / 2 + (y - CM.cy) * z;
+  let best = null, bd = 22;
+  const test = (k, ob, x, y, r) => { const d = Math.hypot(px - X(x), py - Y(y)); if (d < (r || 22) && d < bd) { bd = d; best = { k, o: ob }; } };
+  if (o.let || CM.mode === "start") for (const s of SITES) if (siteState(s) !== "no" || CM.mode !== "start") test("site", s, s.x, s.y);
+  if (o.stad) for (const st of STADIUMS) test("stad", st, st.x, st.y);
+  if (o.ev) for (const ev of mapEvents()) test("ev", ev, ev.E.x, ev.E.y);
+  if (o.land && z > 45) for (const L of LANDMARKS) test("land", L, L.x, L.y, 16);
+  return best;
+}
+ccv.addEventListener("pointerdown", e => {
+  ccv.setPointerCapture(e.pointerId); CM.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (CM.ptrs.size === 1) CM.moved = 0;
+  CM.pinch = null;
+});
+ccv.addEventListener("pointermove", e => {
+  const p = CM.ptrs.get(e.pointerId); if (!p) return;
+  const pts = [...CM.ptrs.values()];
+  if (pts.length >= 2) {
+    const [a, b] = pts, d0 = Math.hypot(a.x - b.x, a.y - b.y);
+    p.x = e.clientX; p.y = e.clientY;
+    const [a2, b2] = [...CM.ptrs.values()], d1 = Math.hypot(a2.x - b2.x, a2.y - b2.y);
+    if (d0 > 10) { const r = ccv.getBoundingClientRect(), mx = (a2.x + b2.x) / 2 - r.left, my = (a2.y + b2.y) / 2 - r.top; zoomAt(mx, my, d1 / d0); }
+    CM.moved += 99;
+  } else {
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    CM.moved += Math.abs(dx) + Math.abs(dy);
+    if (CM.moved > 6) { CM.cx -= dx / CM.z; CM.cy -= dy / CM.z; }
+  }
+  clampView(); schedCity();
+});
+function zoomAt(mx, my, f) {
+  const wx = CM.cx + (mx - CW / 2) / CM.z, wy = CM.cy + (my - CH / 2) / CM.z;
+  CM.z = clamp(CM.z * f, zMin(), 420);
+  CM.cx = wx - (mx - CW / 2) / CM.z; CM.cy = wy - (my - CH / 2) / CM.z;
+}
+function endPtr(e) {
+  const had = CM.ptrs.has(e.pointerId); CM.ptrs.delete(e.pointerId);
+  if (had && CM.ptrs.size === 0 && CM.moved <= 6 && e.type === "pointerup") {
+    const r = ccv.getBoundingClientRect(), hit = cityHit(e.clientX - r.left, e.clientY - r.top);
+    CM.sel = hit; renderSheet();
+    if (hit) { const o = hit.o.E || hit.o, py = CH / 2 + (o.y - CM.cy) * CM.z; if (py > sheetTop() - 30) lookAt(o.x, o.y); }
+    drawCity();
+  }
+}
+ccv.addEventListener("pointerup", endPtr); ccv.addEventListener("pointercancel", endPtr);
+ccv.addEventListener("wheel", e => { e.preventDefault(); const r = ccv.getBoundingClientRect(); zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15); clampView(); schedCity(); }, { passive: false });
+// the top of the card at the bottom, in map pixels
+function sheetTop() { const el = $("cSheet"); return el.hidden ? CH : CH - el.offsetHeight - 6; }
+// centre a point in the part of the map the card doesn't cover
+function lookAt(x, y) { CM.cx = x; CM.cy = y + (CH / 2 - sheetTop() / 2) / CM.z; clampView(); }
+function schedCity() { if (!CM.raf) CM.raf = requestAnimationFrame(() => { CM.raf = 0; drawCity(); }); }
+window.addEventListener("resize", () => { if (view === "city") { cityResize(); clampView(); drawCity(); } });
+
+/* the card at the bottom of the map */
+function renderSheet() {
+  const el = $("cSheet"), sel = CM.sel;
+  if (!sel) { el.hidden = true; return; }
+  if (el.hidden || el.dataset.for !== (sel.o.id || sel.o.n || (sel.o.E && sel.o.E.id))) el.scrollTop = 0;
+  el.hidden = false; el.dataset.for = sel.o.id || sel.o.n || (sel.o.E && sel.o.E.id);
+  const head = (t, sub) => `<div class="row spread" style="flex-wrap:nowrap;align-items:flex-start"><div class="grow"><h3>${t}</h3>${sub ? `<div class="small muted">${sub}</div>` : ""}</div><button class="x" data-cs="close" aria-label="Close">✕</button></div>`;
+  const sv = CM.save;
+  if (sel.k === "land") { el.innerHTML = head(`${sel.o.e} ${esc(sel.o.n)}`, "A Leicester landmark"); return; }
+  if (sel.k === "stad") {
+    const st = sel.o;
+    el.innerHTML = head(`${st.e} ${esc(st.n)}`, st.club ? `Home of ${esc(st.club)} (${st.what})` : "Horse racing") +
+      `<p class="small">Home ${st.what === "race" ? "race days" : "games"} come round ${st.home >= .5 ? "most weeks" : "some weeks"}, mostly ${[...new Set(st.days)].map(d => WEEKDAYS[d] + "s").join(" or ")}, in ${st.sea.map(i => SEASONS[i].n.toLowerCase()).join(", ")}.
+      ${sv.venue === "pub" ? "Pubs" : "Cafés"} within about 3 km (the green ring) get busier on the day, the closer the busier.</p>`;
+    return;
+  }
+  if (sel.k === "ev") {
+    const o = sel.o, E = o.E, k = CM.mode === "start" ? null : evPull(E, siteOf(sv));
+    el.innerHTML = head(`${E.e} ${esc(E.n)}`, `${SEASONS[E.se].n}: ${evWhen(o)}`) + `<p class="small">${esc(E.say)}</p><p class="small muted">Places inside the dashed circle get busier: the nearer the middle, the bigger the crowds (up to +${pct(E[sv.venue] - 1)} for a ${sv.venue === "pub" ? "pub" : "café"}).${k != null ? ` Your place: ${pullText(k)}.` : ""}</p>`;
+    return;
+  }
+  const s = sel.o, stt = siteState(s), start = CM.mode === "start", P = PREMISES[s.t], venue = sv.venue;
+  const rent = siteRent(s, venue, sv.biz), fit = start ? 0 : siteFit(s, venue), dep = start ? 0 : rent * 28;
+  const full = n => Array(n).fill(2);
+  const tmp = Object.assign({}, sv, { site: s.id, prem: s.t, tables: full(Math.min(9, P.tables + (hasPk(s, "seats") ? 1 : 0))), disc: null, camp: [] });
+  const est = avgGroups(tmp), now = start || stt === "here" ? null : avgGroups(Object.assign({}, sv, { tables: full(siteTables(sv)), disc: null, camp: [] }));
+  const menu = sv.owned.filter(r => !sv.off.includes(r)), avgP = menu.reduce((a, r) => a + RECIPES[r].p, 0) / Math.max(1, menu.length);
+  const take = est * 1.9 * 1.5 * avgP * sitePrice(tmp);
+  const need = Math.max(0, fit + dep - (sv.dep || 0));
+  let act = "";
+  if (start) act = stt === "ok" ? `<button class="btn pri" data-cs="start">Open here</button>` : `<button class="btn" disabled>${siteFits(s, venue) ? "Start somewhere small first" : `Not licensed as a ${venue === "pub" ? "pub" : "café"}`}</button>`;
+  else if (stt === "here") act = `<button class="btn" disabled>Lee Lee is here</button>`;
+  else if (stt === "no") act = `<button class="btn" disabled>Not licensed as a ${venue === "pub" ? "pub" : "café"}</button>`;
+  else if (stt === "lock") act = `<button class="btn" disabled>Needs ${P.st}★ (you have ${starsOf(sv.rep)}★)</button>`;
+  else act = `<button class="btn pri" data-cs="move" ${sv.cash >= need ? "" : "disabled"}>Move here · ${money(need)}</button>${sv.cash < need ? `<p class="small neg">You need ${money(need - Math.round(sv.cash))} more.</p>` : ""}`;
+  el.innerHTML = head(esc(s.n), `${esc(s.a)} · ${s.v === "both" ? "Café or pub" : s.v === "pub" ? "Pub" : "Café"} · ${sizeText(s)}`) +
+    `<div class="lines small"><div><span>Rent</span><b>${money(rent * 7)} a week</b></div>
+    ${start ? `<div><span>To move in</span><b class="pos">Free to start</b></div>` : `<div><span>Fitting out</span><b>${fit ? money(fit) : "nothing"}</b></div><div><span>Deposit (comes back when you leave)</span><b>${money(dep)}</b></div>${sv.dep ? `<div><span>Your old deposit back</span><b class="pos">+${money(sv.dep)}</b></div>` : ""}`}
+    <div><span>Customers on a usual day</span><b>about ${Math.round(est)} groups${now != null ? ` <span class="${est >= now ? "pos" : "neg"}">(now ${Math.round(now)})</span>` : ""}</b></div>
+    <div><span>Prices here</span><b>${pct(sitePrice(tmp))} of usual</b></div>
+    <div><span>Takings, rough guess</span><b>${money(Math.round(take / 5) * 5)} a day</b></div></div>
+    ${perkList(s, venue)}${areaBars(siteMix(s))}
+    <div><span class="small"><b>A usual week</b></span>${weekChart(tmp)}</div>
+    ${nearStadiums(s, venue).slice(0, 2).map(x => `<p class="small">${x.st.e} ${x.st.n} is ${Math.hypot(s.x - x.st.x, s.y - x.st.y).toFixed(1)} km away: ${x.k * x.st.b > .15 ? "big" : x.k * x.st.b > .06 ? "busy" : "slightly busier"} ${x.st.what === "race" ? "race days" : "match days"}.</p>`).join("")}
+    ${act}`;
+}
+$("cSheet").onclick = e => {
+  const b = e.target.closest("[data-cs]"); if (!b || b.disabled) return;
+  const a = b.dataset.cs, s = CM.sel && CM.sel.o;
+  if (a === "close") { CM.sel = null; renderSheet(); drawCity(); return; }
+  if (a === "start") { startAt(s); return; }
+  if (a === "move") moveDialog(s);
+};
+// moving premises: pay the fit-out and a new deposit, get the old deposit back; what doesn't fit is sold
+function moveTo(sv, s, forced) {
+  const rent = siteRent(s, sv.venue, sv.biz), dep = forced ? 0 : rent * 28, out = [];
+  sv.cash = Math.round((sv.cash + (sv.dep || 0) - (forced ? 0 : siteFit(s, sv.venue) + dep)) * 100) / 100;
+  sv.dep = dep; sv.site = s.id; sv.prem = s.t; sv.od = 0;
+  const P = PREMISES[s.t], maxT = siteTables(sv);
+  while (sv.tables.length > maxT) { sv.tables.pop(); sv.tpos.pop(); sv.cash += 50; out.push("a table"); }
+  // the kitchen keeps one of everything the menu needs (and a fridge, worktop and somewhere to wash up) first, then the dearest things
+  const have = sv.stations.map((t, i) => ({ t, i })).filter(x => x.t);
+  if (have.length > P.slots) {
+    const needed = new Set(["fridge", "top", "sink", "dishwasher"]); for (const r of sv.owned) for (const t of RECIPES[r].s) needed.add(t);
+    have.sort((a, b) => STATIONS[b.t].c - STATIONS[a.t].c);
+    const first = [], rest = [], got = new Set();
+    for (const x of have) { if (needed.has(x.t) && !got.has(x.t)) { got.add(x.t); first.push(x); } else rest.push(x); }
+    for (const x of first.concat(rest).slice(P.slots)) { sv.stations[x.i] = null; sv.cash += Math.round(STATIONS[x.t].c / 2); out.push(STATIONS[x.t].n.toLowerCase()); }
+  }
+  // anything beyond the new kitchen's spaces moves into a free space
+  for (let i = P.slots; i < sv.stations.length; i++) if (sv.stations[i]) { const j = sv.stations.findIndex((x, k) => !x && k < P.slots); sv.stations[j] = sv.stations[i]; sv.stations[i] = null; }
+  sv.stations = sv.stations.slice(0, P.slots); while (sv.stations.length && !sv.stations[sv.stations.length - 1]) sv.stations.pop();
+  while (sv.staff.length > P.staff) { const x = sv.staff.pop(); out.push(`${x.name} (had to leave)`); }
+  sv.cash = Math.round(sv.cash * 100) / 100;
+  return out;
+}
+function moveDialog(s) {
+  const trial = JSON.parse(JSON.stringify(S)), lost = moveTo(trial, s, false), cost = Math.round((S.cash - trial.cash) * 100) / 100;
+  dialog(`<h3>Move to ${esc(s.n)}?</h3>
+    <div class="lines small"><div><span>Fitting out</span><b>${money(siteFit(s, S.venue))}</b></div><div><span>New deposit</span><b>${money(trial.dep)}</b></div>
+    ${S.dep ? `<div><span>Old deposit back</span><b class="pos">+${money(S.dep)}</b></div>` : ""}${lost.length ? `<div><span>Things sold</span><b class="pos">+${money(Math.max(0, Math.round(trial.cash - (S.cash + (S.dep || 0) - siteFit(s, S.venue) - trial.dep))))}</b></div>` : ""}
+    <div class="tot"><span>${cost >= 0 ? "Costs" : "You get back"}</span><b>${money(Math.abs(cost))}</b></div></div>
+    <p class="small muted" style="text-align:center">Rent becomes ${money(siteRent(s, S.venue, S.biz) * 7)} a week. You keep your recipes, staff, stock and equipment.</p>
+    ${lost.length ? `<p class="small neg">This place is smaller, so these go: ${lost.map(esc).join(", ")}.</p>` : ""}
+    <div class="acts"><button class="btn pri" data-a="yes">Move!</button><button class="btn" data-a="">Not yet</button></div>`, a => {
+    if (a !== "yes") return;
+    moveTo(S, s, false); S.bookings = (S.bookings || []).filter(b => b.size <= Math.max(0, ...S.tables) || !b.ok); saveGame();
+    CM.sel = null; openManage("city"); toastOffice(`Welcome to ${s.n}!`);
+  });
+}
+
 /* ---------- back button ---------- */
 window.SG_BACK = () => {
   if (!$("ov").hidden) { if (view === "play" && paused) { closeDialog(); paused = false; lastT = performance.now(); } else { const cb = dlgCb; closeDialog(); if (view === "play" && cb && !paused) cb(""); } return true; }
   if (view === "play") { if (mg) { mg.s.user = null; closeMini(); return true; } pauseMenu(); return true; }
+  if (view === "city") { if (CM.sel) { CM.sel = null; renderSheet(); drawCity(); } else closeCity(); return true; }
   if (view === "manage" || view === "newgame" || view === "camp") { renderTitle(); show("title"); return true; }
   return false;
 };
