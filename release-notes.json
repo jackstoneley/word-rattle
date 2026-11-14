@@ -820,6 +820,17 @@
         "Places your managers run now have their own opening hours, a tired-or-fresh team with a bonus button, and the same free floor plan as your own place.",
         "Fixed: making a table bigger could leave it overlapping something."
       ]
+    },
+    {
+      "id": 71,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: squeeze in more tables",
+      "details": [
+        "Every place can now take up to three more tables than its usual number, at a higher price.",
+        "Where a table stands matters: one hemmed in by other tables, seating areas or the kitchen is cramped. Those customers lose patience sooner and tip less.",
+        "Rearrange shows cramped tables in orange (a bit tight) and red (cramped), so you can spread them out. New tables are put where there's most room.",
+        "Places your managers run can squeeze in tables too; cramped rooms leave fewer customers happy."
+      ]
     }
   ]
 }
