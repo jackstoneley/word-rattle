@@ -198,6 +198,14 @@ noise complaints `save.lic {n, until}`, the third in 21 days fines `LIC_FINE` an
 Managed places run the same: `P.hours`, `P.fat`, `P.sick`, `P.bon`, `P.lic` and `P.design.L` (their free floor plan, no kitchen pieces)
 through `placeSv` (a stand-in save with the layout made); `runPlace` scales crew, wages and bills by the hours, has late fights and the
 licence, and uses `roomShare` / `biWalled` for noise and private rooms. `swapMain` swaps the two buildings' floor plans.
+**Catchment**: `catchment(save)` (6 + 14 × footfall²) softens `expectedGroups` past it (`CATCH_OVER`); `siteDemand` also grows faster than
+footfall on busy streets (footfall over 1). **Events** (`HOSTS`, keyed by id: append only): `S.host[weekday]` / `P.host`, `hostPlan(save, day)`
+gives the groups and window inside the opening hours; guests carry `g.host` (patient, `spend`), other diners mind the `noise`, `nightRisk` /
+`licenceNight` take a `noise` term, regulars build in `S.hostN`; page `hostCard(P)` (selects `data-hev`). **Food hygiene** (free play, `hygOn`):
+station `s.dirt` grows by `DIRT` per step (+.2 when food burns), carries 60% overnight in `S.kd`, slows work (`dirtSlow`); `cleanStation`
+(Lee Lee taps a grubby one; `tryScrub` for porters, cleaners and idle cooks). Dirty jobs set `a.dh`; food steps (`foodStep`: not drinks, not
+plating) need `washThen` at the `basin` station (or the sink) first. Inspections: `S.hyg {r, day, next, why}`, `G.insp`, `inspect()`; the rating
+scales appeal (`HYG_A`, `hygA`); managed places get `P.hyg` / `P.hygN` from the manager and team.
 Staff levels: `lvlWalk`, `lvlSkill`, `fairWage` (+12% a level), `promoCost`, `promoDays`; letting go costs `redundancy(st)` (`st.td` total
 days worked). Idle staff wait a moment, then go to `staffHome` (worked out from the layout); waiters carry up to two more plates in `a.extra`.
 Learning and balance: `coachNext()` is the "what would a good player do next" planner behind the green helper arrow

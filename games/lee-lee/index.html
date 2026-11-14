@@ -166,6 +166,9 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
 .lay-tb{border-radius:50%;background:#C08A55;color:#fff;font-weight:800;font-size:.95rem;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .lay-tb small{font-size:.55rem;font-weight:700;opacity:.85}
 .lay-st.empty,.lay-tb.empty{background:transparent;border:2px dashed rgba(0,0,0,.18)}
+.hyg{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;font-weight:900;font-size:1.4rem;color:#fff;background:#3E9B6B;flex:none}.hyg.h3{background:#8DB33A}.hyg.h2{background:#E0A030}.hyg.h1,.hyg.h0{background:#D2483A}
+.erow{display:grid;grid-template-columns:64px 1fr;gap:2px 6px;align-items:center}.erow select{font:inherit;font-size:.8rem;padding:3px 2px;border-radius:8px;border:1px solid rgba(0,0,0,.15);background:#fff;min-width:0}
+.erow small{grid-column:2;color:var(--muted);font-size:.7rem}
 .hrows{display:flex;flex-direction:column;gap:6px}.hrow{display:grid;grid-template-columns:64px auto auto 1fr;grid-template-rows:auto auto;gap:2px 6px;align-items:center}
 .hrow select{font:inherit;font-size:.8rem;padding:3px 2px;border-radius:8px;border:1px solid rgba(0,0,0,.15);background:#fff}
 .hrow small{grid-column:2 / 5;color:var(--muted);font-size:.7rem}.hbars{display:flex;align-items:flex-end;gap:1px;height:24px}
@@ -365,13 +368,13 @@ const STAR_AT = [0, 60, 250, 700, 1600, 3200];
 const VENUES = {
   cafe: { n: "Café, bakery & deli", short: "Café", open: 9, close: 15, peaks: [[.22, .1], [.58, .12]], icon: "🧁",
     start: ["fridge", "kettle", "toaster", "board", "sink", "top"], menu: ["tea", "toast", "salad"],
-    stations: ["fridge", "board", "bowl", "kettle", "coffee", "toaster", "grill", "hob", "oven", "sink", "dishwasher", "top"],
+    stations: ["fridge", "board", "bowl", "kettle", "coffee", "toaster", "grill", "hob", "oven", "sink", "dishwasher", "top", "basin"],
     names: ["The Copper Kettle", "Lee Lee's Café", "Crumbs & Co.", "The Little Bakehouse", "Sunny Side Deli"],
     places: ["Corner café", "High Street café", "The Old Bakery", "Riverside café & deli"],
     drinks: "Barista", floor: "Cleaner" },
   pub: { n: "Restaurant & pub", short: "Pub", open: 17, close: 24, peaks: [[.2, .1], [.66, .14]], icon: "🍺",
     start: ["fridge", "tap", "fryer", "board", "sink", "top"], menu: ["lager", "chips", "ploughmans"],
-    stations: ["fridge", "board", "bowl", "tap", "fryer", "grill", "hob", "oven", "sink", "dishwasher", "top"],
+    stations: ["fridge", "board", "bowl", "tap", "fryer", "grill", "hob", "oven", "sink", "dishwasher", "top", "basin"],
     names: ["The Red Lion", "The Rose & Crown", "The Fox & Hound", "The Golden Pint", "Lee Lee's Bar & Kitchen"],
     places: ["Back-street local", "Market Square pub", "The Coaching Inn", "Riverside gastropub"],
     drinks: "Bartender", floor: "Bouncer" }
@@ -404,7 +407,8 @@ const STATIONS = {
   fryer: { n: "Fryer", e: "🍟", k: "pas", d: 8, b: 8, c: 350, col: "#E2CF9C" },
   sink: { n: "Sink", e: "🚰", k: "sink", c: 150, col: "#CFE3EC" },
   dishwasher: { n: "Dishwasher", e: "🧼", k: "dw", c: 900, col: "#D6E6EE" },
-  top: { n: "Worktop", e: "", k: "top", c: 40, col: "#D9B98F" }
+  top: { n: "Worktop", e: "", k: "top", c: 40, col: "#D9B98F" },
+  basin: { n: "Hand basin", e: "🧼", k: "basin", c: 60, col: "#E8F1F4" }
 };
 // s: steps ("plate" = plate up at the counter), i: ingredients, p: price, c: cost to learn, st: stars needed, d: a drink
 const RECIPES = {
@@ -715,16 +719,38 @@ const fatSlow = f => 1 - .0035 * Math.max(0, (f || 0) - 30);
 const bonusCost = w => Math.round(w * 2);
 // staying open after midnight in a residential street brings noise complaints (so does a fight); three in three weeks and the
 // council fines you and takes away the late licence (closing by midnight) for two weeks (save.lic {n: [days], until})
-function nightRisk(save, close, fights) { const m = siteMix(siteOf(save)); return save.venue !== "pub" ? 0 : (close > 24 ? Math.max(0, m.pop - .6 * m.night - .2) * .3 * (close - 24) : 0) + .12 * (fights || 0); }
+function nightRisk(save, close, fights, noise) { const m = siteMix(siteOf(save)), q = Math.max(0, m.pop - .6 * m.night - .2); return save.venue !== "pub" ? 0 : (close > 24 ? q * .3 * (close - 24) : 0) + .12 * (fights || 0) + .25 * q * (noise || 0); }
 const LIC_FINE = 150, LIC_DAYS = 14;
-function licenceNight(save, close, fights, r, news, who) {
+function licenceNight(save, close, fights, r, news, who, noise) {
   const L = save.lic = save.lic || { n: [], until: 0 }; L.n = L.n.filter(d => d > save.day - 21);
-  if (r() >= nightRisk(save, close, fights)) return 0;
+  if (r() >= nightRisk(save, close, fights, noise)) return 0;
   L.n.push(save.day);
   if (L.n.length < 3) { news.push(`📣 Neighbours complained about the noise ${fights ? "and the fighting " : ""}at ${who}${close > 24 ? " after midnight" : ""}. Three complaints and the council steps in.`); return 0; }
   L.n = []; L.until = save.day + LIC_DAYS;
   news.push(`🏛️ The council has fined ${who} ${money(LIC_FINE)} after complaints from the neighbours, and it has lost its late licence: closing by midnight for the next two weeks.`);
   return LIC_FINE;
+}
+/* Events you host (free play): one on any night of the week, S.host[weekday] = id (P.host for a managed place). Each brings
+   extra groups during its hours, liked more in some areas (like) and on some nights (wd: Monday first), and more as regulars
+   learn about it (S.hostN[id], up to +30%). c: the cost of putting it on; spend: how much its guests pay; noise: upsets other
+   diners nearby and the neighbours; rowdy: share of rowdy groups. Keyed by id: append only. */
+const HOSTS = [
+  { id: "quiz", v: "pub", n: "Quiz night", e: "🧠", c: 35, at: [20, 22.5], g: 5, size: [3, 5], like: m => .5 + m.pop + .6 * m.stu, wd: [1, 1.1, 1.15, 1.1, .8, .6, .9], rowdy: .04, noise: .2, spend: 1, d: "Teams of friends come early and drink steadily. Best on a quiet weeknight." },
+  { id: "music", v: "pub", n: "Live music", e: "🎸", c: 110, at: [20.5, 23.5], g: 7, size: [2, 4], like: m => .3 + .5 * m.pop + m.night + .6 * m.stu, wd: [.6, .6, .7, .9, 1.2, 1.3, .8], rowdy: .2, noise: 1, spend: 1.1, d: "A band draws a crowd, best on Fridays and Saturdays. Loud: diners and neighbours notice." },
+  { id: "karaoke", v: "pub", n: "Karaoke", e: "🎤", c: 55, at: [21, 24], g: 6, size: [2, 5], like: m => .3 + .4 * m.pop + .8 * m.stu + .6 * m.night, wd: [.7, .8, .9, 1.1, 1.2, 1.1, .7], rowdy: .3, noise: .8, spend: 1, d: "Students and birthday crowds love it. Rowdy and loud late on." },
+  { id: "supper", v: "cafe", n: "Supper club", e: "🍷", c: 70, at: [18, 20.5], g: 4, size: [2, 4], like: m => .3 + .7 * m.pop + .5 * m.tour + .3 * m.com, wd: [.6, .7, .9, 1, 1.2, 1.2, .6], rowdy: 0, noise: .1, spend: 1.6, d: "A set evening menu: you need to be open into the evening. Guests spend well." },
+  { id: "kids", v: "cafe", n: "Kids' craft morning", e: "🖍️", c: 30, at: [9.5, 11.5], g: 5, size: [3, 4], kids: 1, like: m => .4 + m.pop, wd: [.7, .7, .7, .7, .7, 1.3, 1.1], rowdy: 0, noise: .5, spend: 1, d: "Families come for crafts and stay for cake. Busy, and noisy for other diners." },
+  { id: "book", v: "cafe", n: "Book club", e: "📚", c: 15, at: [14, 16], g: 3, size: [3, 5], like: m => .5 + .6 * m.pop + .4 * m.stu, wd: [1, 1, 1, 1, .8, .6, .8], rowdy: 0, noise: 0, spend: 1, d: "A cheap, quiet afternoon regular." }
+];
+const HOST = Object.fromEntries(HOSTS.map(H => [H.id, H]));
+// what an event on that day would bring: {H, n groups, from, to} (closed: the doors aren't open for it)
+function hostPlan(save, day) {
+  const wd = (day - 1) % 7, id = save.host && save.host[wd], H = id && HOST[id]; if (!H || H.v !== save.venue) return null;
+  const [O, C] = hoursOn(save, day), from = Math.max(H.at[0], O), to = Math.min(H.at[1], C - .25);
+  if (to - from < .75) return { H, closed: true, from, to, n: 0 };
+  const m = siteMix(siteOf(save)), runs = (save.hostN && save.hostN[id]) || 0;
+  const n = H.g * H.like(m) * H.wd[wd] * (.7 + .1 * starsF(save.rep || 0)) * (1 + Math.min(.3, .03 * runs)) * Math.min(1, (to - from) / (H.at[1] - H.at[0]));
+  return { H, n, from, to };
 }
 const FOOT_C = {};
 function footSum(venue, wd, m, a, z) { let t = 0; for (let h = a + .125; h < z; h += .25) t += footRate(venue, wd, h, m) * .25; return t; }
@@ -763,8 +789,12 @@ const promoCost = l => 40 * l * l, promoDays = l => 3 * l;
 // letting someone go: a week's notice, plus a day for every fortnight they've worked here (up to 10 more)
 const redundancy = st => st.wage * (5 + Math.min(10, Math.floor((st.td != null ? st.td : st.days || 0) / 14)));
 function boost(save) { return Math.min(1.5, (save.camp || []).reduce((a, c) => a + ((CAMPAIGNS.find(x => x.id === c.id) || {}).b || 0), 0)); }
+// the catchment: about how many groups a day the people round here can supply. Past it, stars still bring more (from further
+// afield) but each counts for less: a quiet suburb levels off, a busy street keeps growing
+const catchment = save => 6 + 14 * siteFoot(siteOf(save), save.venue) ** 2, CATCH_OVER = .65;
 function expectedGroups(save) {
   let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * siteDemand(save) * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1) * diffOf(save).crowd * dayCrowd(save, save.day);
+  { const k = catchment(save); if (g > k) g = k + (g - k) * CATCH_OVER; }
   // opening hours: longer days bring more people if there are people about then (no hours: the usual ones)
   const hs = save.hours ? footShare(save, save.day) : 1, hm = save.hours ? hoursMul(save, save.day) : 1;
   // on busy days more people turn up than the tables would normally turn over: they queue, and need staff to keep up
@@ -1113,7 +1143,8 @@ function localPrice(s) { return Math.round((.93 + 1.05 * wealthOf(s) - .08 * sit
 const priceTol = s => { const w = wealthOf(s); return w < .25 ? 1 : w < .6 ? 2 : 3; };
 function sitePrice(save) { return localPrice(siteOf(save)) * priceOf(save).p; }
 // customers: the size of the place times the people passing times the share the place wins from its rivals
-const siteDemand = save => PREMISES[save.prem].demand * siteFoot(siteOf(save), save.venue) * compInfo(save).share * SHARE_K * Math.pow(.55, Math.max(0, (save.pl != null ? save.pl : 1) - priceTol(siteOf(save))));
+// busy streets (footfall over 1: the centre, the station) draw people from far and wide, so demand grows faster than footfall there
+const siteDemand = save => PREMISES[save.prem].demand * siteFoot(siteOf(save), save.venue) * Math.pow(Math.max(1, siteFoot(siteOf(save), save.venue)), 1.2) * compInfo(save).share * SHARE_K * Math.pow(.55, Math.max(0, (save.pl != null ? save.pl : 1) - priceTol(siteOf(save))));
 // tips: visitors and office workers tip more; listed buildings and river views help too
 function siteTip(save) { const s = siteOf(save), m = siteMix(s); return priceOf(save).tip * (1 + .15 * m.tour + .08 * m.com) * (hasPk(s, "listed") ? 1.12 : 1) * (hasPk(s, "river") ? 1.06 : 1); }
 /* ---------- Competition: other cafés, pubs and curry houses ----------
@@ -1183,8 +1214,14 @@ function gapsAt(save, near) {
   const mine = new Set(menuOf(save).map(r => RCATS[r]).filter(Boolean));
   return [...mine].filter(c => !covered.has(c));
 }
+/* Food hygiene (free play): appliances get grubby with use (DIRT per step, more when food burns), hands must be washed before
+   preparing food after a dirty job, and an inspector calls now and then and gives a 0-5 rating (save.hyg {r, day, next, why}). */
+const DIRT = { fridge: .025, board: .08, bowl: .06, kettle: .02, coffee: .03, tap: .03, toaster: .05, grill: .1, hob: .09, oven: .07, fryer: .11 };
+const HYG_A = [.7, .8, .9, .97, 1.03, 1.08]; // how the rating sways people choosing between you and a rival
+const hygA = save => save.hyg && save.hyg.r != null ? HYG_A[save.hyg.r] : 1;
+const dirtSlow = s => 1 + .5 * Math.max(0, (s.dirt || 0) - .6); // a filthy grill works slower
 function appealOf(save, gaps) {
-  return (1 + .8 * starsF(save.rep || 0)) * (1 + .06 * (save.decor || 0)) * (1 + .12 * Math.min(5, gaps.length)) * priceOf(save).a * ((save.buzz || 0) >= save.day ? 1.3 : 1);
+  return hygA(save) * (1 + .8 * starsF(save.rep || 0)) * (1 + .06 * (save.decor || 0)) * (1 + .12 * Math.min(5, gaps.length)) * priceOf(save).a * ((save.buzz || 0) >= save.day ? 1.3 : 1);
 }
 // the whole picture for a save at its site: appeal, competition, share of the local customers
 function compInfo(save) {
@@ -1227,7 +1264,7 @@ function placeSave(save, P) {
   const s = SITE[P.site], d = pDesign(P);
   return { venue: P.venue, site: P.site, prem: s.t, created: save.created, day: save.day, rep: P.rep, tables: d.tables.length ? d.tables : [2],
     disc: null, camp: save.camp || [], diff: save.diff, biz: save.biz, owned: autoMenu(P.venue, P.rep), off: d.off || [], decor: P.decor || 0, pl: P.pl != null ? P.pl : 1,
-    buzz: P.buzz || 0, rv: save.rv, chains: save.chains, places: [], bi: d.bi, walls: d.walls, tpos: d.tpos, stations: [], L: d.L, hours: P.hours, lic: P.lic };
+    buzz: P.buzz || 0, host: P.host, hostN: P.hostN, hyg: P.hyg != null ? { r: P.hyg } : null, rv: save.rv, chains: save.chains, places: [], bi: d.bi, walls: d.walls, tpos: d.tpos, stations: [], L: d.L, hours: P.hours, lic: P.lic };
 }
 // a managed place's stand-in save with its free layout made (or brought up to date) and kept in the design
 function placeSv(save, P) { const sv = placeSave(save, P); ensureLayout(sv); pDesign(P).L = sv.L; return sv; }
@@ -1252,7 +1289,8 @@ function runPlace(save, P, r, news) {
   const fit = Math.min(1, .5 + .1 * menu.length) * (drinks ? 1 : .8) * (food ? 1 : .75);
   // opening hours: the crowd follows the hours (expectedGroups), the team covers the hours, tired teams are slower, a sick day leaves them short
   const hm = hoursMul(sv, save.day), [ho, hc] = hoursOn(sv, save.day), sick = P.sick === save.day;
-  const groups = expectedGroups(sv) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), crew = placeCrew(P, d) * hm * fatSlow(P.fat) * (sick ? .7 : 1);
+  const hp = hostPlan(sv, save.day), hn = hp && !hp.closed ? hp.n : 0;
+  const groups = (expectedGroups(sv) + hn) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), crew = placeCrew(P, d) * hm * fatSlow(P.fat) * (sick ? .7 : 1);
   const cr = crampOf(sv, sv.L), cramp = cr.length ? cr.reduce((a, v) => a + (v || 0), 0) / cr.length : 0;
   const servedG = Math.min(groups, crew) * (.86 + .025 * lv) * (1 - .1 * cramp) * fit * (d.sign && d.team > 0 ? 1 : .94), people = groups * 2, served = servedG * 2;
   // noise: tables in the same room as the sports TV on game days, or the soft play
@@ -1275,8 +1313,15 @@ function runPlace(save, P, r, news) {
   const wages = Math.round((P.mgr.wage + (d.team || 0) * 22) * hm), rent = siteRent(s, P.venue, save.biz), stock = rev * .3;
   const bills = Math.round(billsHour(sv) * ((hc - ho) - (STD_H[P.venue][1] - STD_H[P.venue][0])));
   // late nights at a pub: the odd fight (fewer with more staff about), and the neighbours
+  if (!P.hygN) P.hygN = save.day + 4 + Math.floor(r() * 10);
+  if (save.day >= P.hygN) {
+    P.hyg = clamp(Math.round(1.6 + .6 * lv + ((d.team || 0) >= 2 ? .5 : 0) - (P.fat || 0) / 40 + r() - .5), 0, 5);
+    P.hygN = save.day + (P.hyg <= 2 ? 4 : 14 + Math.floor(r() * 10));
+    (news || []).push(`🧾 Food hygiene inspection at ${P.name}: rated ${P.hyg} out of 5.${P.hyg <= 2 ? " A better manager or more staff would help; they'll be back soon." : ""}`);
+  }
   const nm = news || [], fights = pub && hc > 24 && r() < .08 * (hc - 24) * (1.6 - .15 * (d.team || 0)) ? 1 : 0, breaks = fights ? 25 : 0;
-  const fine = licenceNight(sv, hc, fights, r, nm, P.name); P.lic = sv.lic;
+  const fine = licenceNight(sv, hc, fights, r, nm, P.name, hn ? hp.H.noise : 0); P.lic = sv.lic;
+  const hostc = hn ? hp.H.c + hn * 2 * avg * (hp.H.spend - 1) * -1 : 0; if (hn) { P.hostN = P.hostN || {}; P.hostN[hp.H.id] = (P.hostN[hp.H.id] || 0) + 1; }
   // the team tires on long days (P.fat), goes off sick, and in the end someone walks out
   P.fat = clamp((P.fat || 0) + fatDelta(hm, groups > crew, false), 0, 100);
   if (P.fat > 75 && r() < (P.fat - 70) / 100) { P.sick = save.day + 1; P.fat -= 10; nm.push(`🤒 Someone at ${P.name} is off sick tomorrow, worn out from long shifts.`); }
@@ -1284,8 +1329,8 @@ function runPlace(save, P, r, news) {
   else if (P.fat > 70) nm.push(`😴 The team at ${P.name} is exhausted. Shorter days or a bonus would help.`);
   const repD = Math.round(happy * .9 - (people - served) * 2.2 + (happy / Math.max(1, served) - .7) * 20) - 10 * fights;
   P.rep = Math.max(0, P.rep + repD);
-  const net = Math.round((rev + tips + extra - wages - rent - stock - bills - breaks - fine) * 100) / 100;
-  P.last = { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages, rent, stock: Math.round(stock), bills, fights, fine, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0 };
+  const net = Math.round((rev + tips + extra - wages - rent - stock - bills - breaks - fine - hostc) * 100) / 100;
+  P.last = { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages, rent, stock: Math.round(stock), bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0 };
   P.hist = (P.hist || []).concat([{ d: save.day, net: Math.round(net) }]).slice(-28);
   return net;
 }
@@ -1901,7 +1946,7 @@ function startDay() {
     rev: 0, tips: 0, served: 0, angry: 0, happy: 0, turned: 0, burnt: 0, spills: 0, thrown: 0, people: 0, repD: 0, critic: null, perfect: 0, binned: 0,
     stock: Object.assign({}, S.stock), used: {},
     tables: S.tables.map((seats, i) => { const p = ensureLayout(S).tb[i], [w, h] = fpOf("tb", seats, p[2]); return { i, x: p[0] + w / 2, y: p[1] + h / 2, rot: p[2] || 0, fp: { x: p[0], y: p[1], w, h }, seats, group: null, dirty: 0, claim: null, cramp: LV == null ? crampOf(S, S.L)[i] || 0 : 0 }; }),
-    stations: S.stations.map((t, i) => t && { i, t, item: null, user: null, claim: null, load: 0, run: 0, x: ensureLayout(S).st[i][0] + .5, y: S.L.st[i][1] + .5 }).filter(Boolean),
+    stations: S.stations.map((t, i) => t && { i, t, item: null, user: null, claim: null, load: 0, run: 0, dirt: LV == null && S.kd ? (S.kd[i] || 0) * .6 : 0, x: ensureLayout(S).st[i][0] + .5, y: S.L.st[i][1] + .5 }).filter(Boolean),
     spots: [null, null, null, null, null, null], party: null, taps: [], idle: 0, coach: null, slack: 0, outBy: { queue: 0, order: 0, food: 0 }, plateless: 0, streak: 0, bestStreak: 0, clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
   G.extra = {};
   // the room: what blocks the way, the walls, where noise carries, and the counter's spots
@@ -1921,10 +1966,12 @@ function startDay() {
   if (LV == null && S.venue === "pub" && S.bar) BAR_SPOTS.slice(0, BAR[S.bar - 1].spots).forEach(([x, y], k) => G.tables.push({ i: G.tables.length, x, y, fp: { x: x - .5, y: y - .5, w: 1, h: .5 }, seats: 3, bar: true, group: null, dirty: 0, claim: null }));
   G.info = LV == null ? dayInfo(S, S.day) : null;
   G.tipM = LV == null ? siteTip(S) : 1;
+  if (LV == null) { if (!S.hyg) S.hyg = { r: null, day: 0, next: S.day + 3 + (seedOf(S) % 5) }; G.insp = S.hyg.next <= S.day ? { t: rnd(.25, .7) } : null; }
   G.tvLive = hasBi(S, "sports") && (LV != null ? !!LEVELS[LV].fans : !!(G.info.tv || (G.info.match && S.venue === "pub")));
   const info = G.info;
   // opening hours: the day runs from G.O to G.C o'clock, G.sph seconds of play an hour
   { const V0 = STD_H[S.venue]; if (LV == null) { [G.O, G.C] = hoursOn(S, S.day); G.sph = SEC_H(S.venue); G.len = (G.C - G.O) * G.sph; } else { [G.O, G.C] = V0; G.sph = LEVELS[LV].len / (V0[1] - V0[0]); } }
+  if (G.insp) G.insp.t *= G.len;
   const V0 = STD_H[S.venue], stdT = u => (V0[0] + u * (V0[1] - V0[0]) - G.O) * G.sph, inDay = t => t > 0 && t < G.len * .92, lateAt = t => S.venue === "pub" && G.O + t / G.sph >= 21;
   // arrivals
   if (LV != null) {
@@ -1984,6 +2031,16 @@ function startDay() {
     const extra = Math.min(Math.round(n * .22 * S.bar * (info.match ? 1.4 : 1)), BAR[S.bar - 1].spots * 2);
     for (let i = 0; i < extra; i++) { const u = rnd(.2, .92); G.arr.push({ t: u * G.len, size: 1 + Math.floor(Math.random() * 3), drinker: true, late: lateAt(u * G.len), rowdy: lateAt(u * G.len) && Math.random() < .15 + (info.match ? .08 : 0) }); }
   }
+  // tonight's event: its guests mostly arrive round the start
+  G.host = null;
+  if (LV == null) { const hp = hostPlan(S, S.day); if (hp && !hp.closed) {
+    const H = hp.H; G.host = { id: H.id, from: hp.from, to: hp.to };
+    for (let k = 0, n = Math.round(hp.n * rnd(.85, 1.15)); k < n; k++) {
+      const hr = hp.from - .3 + Math.random() * Math.min(1.2, hp.to - hp.from) * (Math.random() < .7 ? .5 : 1), t = (hr - G.O) * G.sph; if (t <= 0 || t > G.len * .92) continue;
+      const size = Math.min(big, H.size[0] + Math.floor(Math.random() * (H.size[1] - H.size[0] + 1)));
+      G.arr.push({ t, size, host: H.id, rowdy: Math.random() < H.rowdy, late: lateAt(t), kids: H.kids && size >= 3 ? size - 2 : 0, drinker: S.venue === "pub" && S.bar && size <= 3 && Math.random() < .3 });
+    }
+  } else if (hp && hp.closed) G.hostClosed = hp.H.id; }
   // booked parties: their table is reserved from opening time
   if (LV == null) for (const b of (S.bookings || []).filter(b => b.ok && b.day === S.day)) {
     const t = G.tables.filter(t => !t.bar && !t.res && t.seats >= b.size && (b.room ? t.room : !t.sp)).sort((p, q) => p.seats - q.seats)[0]
@@ -2007,7 +2064,9 @@ function startDay() {
   paused = false; closeDialog(); closeMini();
   G.goals = LV == null ? dailyGoals() : [];
   if (LV == null && S.duel && S.duel.day === S.day) G.goals.push({ k: "duel", n: S.duel.need, cash: 0, rep: 0 });
+  const hpl = LV == null ? hostPlan(S, S.day) : null;
   G.rush = LV == null ? rushTimes(S, S.day).map(h => ({ t: Math.max(4, (h - .9 - G.O) * G.sph), say: rushSay(S.venue, G.info.wd, h), h })) : [];
+  if (hpl && !hpl.closed) { G.rush.push({ t: Math.max(4, (hpl.from - .5 - G.O) * G.sph), say: `${hpl.H.e} ${hpl.H.n} starts at ${clockH(hpl.from)}!` }); G.rush.sort((a, b) => a.t - b.t); }
   if (G.mplan) {
     const M = STADIUMS[G.info.mi];
     for (const w of G.mplan.waves) if (w.tag !== "all") G.rush.push({ t: Math.max(4, ((V0[0] + (w.u - .08) * (V0[1] - V0[0])) - G.O) * G.sph), say: w.tag === "pre" ? (S.venue === "pub" ? `Fans want a pint before the ${M.what === "cricket" ? "start" : "kick-off"}! ${M.e}` : `Fans on their way to the ${M.what === "race" ? "races" : "game"}! ${M.e}`)
@@ -2097,6 +2156,7 @@ function standFor(o, a) {
 }
 function actorStep(a, dt) {
   a.moving = false;
+  if (a.hand && a.hand.k === "dirty") a.dh = true;
   if (a.path.length) {
     const [tx, ty] = a.path[0], dx = tx - a.x, dy = ty - a.y, d = Math.hypot(dx, dy), step = a.speed * dt;
     if (d <= step) { a.x = tx; a.y = ty; a.path.shift(); } else { a.x += dx / d * step; a.y += dy / d * step; }
@@ -2188,7 +2248,7 @@ const hrI = () => Math.max(0, Math.min(G.hr.arr.length - 1, Math.floor(G.t / G.s
 function spawnGroup(a) {
   if (G.hr) G.hr.arr[hrI()] += a.size;
   const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, kids: a.kids || 0, drinker: !!a.drinker, fan: a.fan || null, sp: a.sp || null, watch: !!a.watch, party: a.party || null, rounds: 0, spilt: false, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
-    claim: null, calmClaim: null, shout: 0, rt: rnd(6, 12), calmed: 0, people: [] };
+    host: a.host || null, claim: null, calmClaim: null, shout: 0, rt: rnd(6, 12), calmed: 0, people: [] };
   for (let i = 0; i < a.size; i++) g.people.push({ x: DOOR[0] + (i - (a.size - 1) / 2) * .4, y: DOOR[1], look: randomLook(), tx: 0, ty: 0, kid: i >= a.size - (a.kids || 0) });
   if (g.party) fx(4.5, 13, `${OCCASIONS[g.party.occ].e} The ${OCCASIONS[g.party.occ].n.toLowerCase()} has arrived!`, "#E8664A");
   G.groups.push(g); G.queue.push(g); G.people += a.size;
@@ -2249,7 +2309,8 @@ function patMul(g) {
       if (!g.kids && G.biRoom.softplay === r) m *= 1.1;
     }
   }
-  if (g.table && g.table.cramp) m *= 1 + .45 * g.table.cramp; // squashed in: they want to be out quicker
+  if (g.table && g.table.cramp) m *= 1 + .45 * g.table.cramp;
+  if (G.host) { const H = HOST[G.host.id], hr = G.O + G.t / G.sph; if (g.host) m *= .85; else if (H.noise && hr >= G.host.from && hr <= G.host.to + .5) m *= 1 + .2 * H.noise; } // squashed in: they want to be out quicker
   if (g.party) m *= .55;
   if (g.kids && !onMenu().some(r => RECIPES[r].kid)) m *= 1.15;
   if (g.table && G.messes.some(ms => Math.hypot(ms.x - g.table.x, ms.y - g.table.y) < 2.2)) m *= 1.25;
@@ -2265,6 +2326,7 @@ function groupLeave(g, happy) {
 function payAndLeave(g) {
   let total = 0;
   for (const k of g.tickets) total += lp(k.r) * (S.disc && S.disc.r === k.r ? 1 - S.disc.pct : 1);
+  if (g.host) total *= HOST[g.host].spend;
   const D = diffOf(S), glad = g.pat > .55;
   const tip = Math.round((total * (.04 + .22 * g.pat) * (1 - .35 * ((g.table && g.table.cramp) || 0)) * (1 + .06 * S.decor) * (1 + .05 * Math.min(G.streak, 10)) * D.tips * (G.tipM || 1) + g.bonus) * 10) / 10;
   G.rev += total; G.tips += tip; G.served += g.size; if (G.hr) G.hr.rev[hrI()] += total + tip;
@@ -2360,13 +2422,14 @@ function groupsStep(dt) {
 function speedOf(t) { return 1 + .2 * (S.lvl[t] || 0); }
 function doStep(a, s) {
   const def = STATIONS[s.t], d = a.hand;
+  if (hygOn() && DIRT[s.t]) s.dirt = Math.min(1, (s.dirt || 0) + DIRT[s.t]);
   if (def.k === "get") { s.user = a; work(a, def.d, () => { s.user = null; d.s++; }, () => { s.user = null; }); }
   else if (def.k === "act") {
     s.user = a;
     if (a === lee && opts.mini) openMini(def.g, d, s);
-    else work(a, def.d * (a === lee ? 1.35 : 1) / speedOf(s.t), () => { s.user = null; d.s++; }, () => { s.user = null; }, "prep");
+    else work(a, def.d * (a === lee ? 1.35 : 1) / speedOf(s.t) * dirtSlow(s), () => { s.user = null; d.s++; }, () => { s.user = null; }, "prep");
   } else if (def.k === "pas") {
-    s.item = d; d.t = 0; d.dur = def.d / speedOf(s.t); d.burnAt = def.b ? d.dur + def.b * (1 + .3 * (S.lvl[s.t] || 0)) * (LV != null ? (EASY ? 1.35 : 1) : diffOf(S).burn) : Infinity; d.ready = false;
+    s.item = d; d.t = 0; d.dur = def.d / speedOf(s.t) * dirtSlow(s); d.burnAt = def.b ? d.dur + def.b * (1 + .3 * (S.lvl[s.t] || 0)) * (LV != null ? (EASY ? 1.35 : 1) : diffOf(S).burn) : Infinity; d.ready = false;
     a.hand = null;
   }
 }
@@ -2382,14 +2445,14 @@ function stationsStep(dt) {
       const d = s.item; d.t += dt;
       if (!d.ready && d.t >= d.dur) { d.ready = true; d.s++; if (!watched(s)) snd("ready"); }
       if (d.ready && !d.warned && !d.burnt && d.burnAt - d.t < 3.5) { d.warned = true; if (!watched(s)) snd("warn"); }
-      if (!d.burnt && d.t >= d.burnAt) { d.burnt = true; G.burnt++; G.streak = 0; fx(s.x, s.y + .5, "Burnt! 💨", "#3A2A22"); snd("burnt"); }
+      if (!d.burnt && d.t >= d.burnAt) { d.burnt = true; G.burnt++; if (hygOn()) s.dirt = Math.min(1, (s.dirt || 0) + .2); G.streak = 0; fx(s.x, s.y + .5, "Burnt! 💨", "#3A2A22"); snd("burnt"); }
     }
     if (s.t === "dishwasher" && s.run > 0) { s.run -= dt * speedOf("dishwasher"); if (s.run <= 0) { s.run = 0; G.clean += s.load; s.load = 0; } }
   }
 }
 function startWash(a) {
   const s = G.stations.find(x => x.t === "sink"); if (!s || G.sink <= 0) { G.washer = G.washer === a ? null : G.washer; return; }
-  G.washer = a;
+  G.washer = a; a.dh = true;
   work(a, 1.05 / speedOf("sink"), () => { G.sink--; G.clean++; if (G.sink > 0) startWash(a); else G.washer = null; }, () => { if (G.washer === a) G.washer = null; }, "wash");
 }
 function loadDishwasher(a, s) {
@@ -2397,6 +2460,31 @@ function loadDishwasher(a, s) {
   if (s.run > 0 || s.load >= DW_CAP) return false;
   const n = Math.min(a.hand.n, DW_CAP - s.load); s.load += n; a.hand.n -= n; if (!a.hand.n) a.hand = null;
   s.run = DW_TIME; return true;
+}
+
+/* ---------- food hygiene ---------- */
+const hygOn = () => LV == null && !window.NOHYG;
+const foodStep = (r, t) => !RECIPES[r].d && t !== "plate";
+const washer = a => { const bs = G.stations.filter(x => x.t === "basin"); return bs.length ? bs.sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y))[0] : G.stations.find(x => x.t === "sink"); };
+// clean hands before food: walk to the hand basin (or the sink), wash, then carry on
+function washThen(a, then) {
+  const b = washer(a); if (!b) { a.dh = false; then(); return; }
+  goStand(a, stObj(b), () => work(a, b.t === "basin" ? .7 : 1.2, () => { a.dh = false; then(); }, null, "wash"));
+}
+function cleanStation(a, s) { s.scrub = a; work(a, 1.6, () => { s.dirt = 0; s.scrub = null; a.dh = true; if (a === lee) fx(s.x, s.y - .6, "Sparkling ✨", "#3E9B6B"); }, () => { s.scrub = null; }, "clean"); }
+function inspect() {
+  G.insp.done = true;
+  const food = G.stations.filter(s => DIRT[s.t]), avg = food.length ? food.reduce((a, s) => a + (s.dirt || 0), 0) / food.length : 0, why = [];
+  let r = 5;
+  if (avg > .6) { r -= 2; why.push("grubby appliances"); } else if (avg > .35) { r -= 1; why.push("appliances need a wipe"); }
+  if (food.some(s => s.dirt > .85)) { r -= 1; why.push(`a filthy ${STATIONS[food.sort((p, q) => q.dirt - p.dirt)[0].t].n.toLowerCase()}`); }
+  if (G.messes.length >= 2) { r -= 1; why.push("spills on the floor"); }
+  if (G.sink >= 8) { r -= 1; why.push("dirty plates piling up"); }
+  if (G.burnt >= 3) { r -= 1; why.push("burnt food"); }
+  if (!G.stations.some(s => s.t === "basin")) { r -= 1; why.push("no hand basin"); }
+  r = Math.max(0, r);
+  S.hyg = { r, day: S.day, next: S.day + (r <= 2 ? 4 + Math.floor(Math.random() * 3) : 12 + Math.floor(Math.random() * 10)), why };
+  G.inspR = r; fx(4.5, 7, `🧾 Hygiene inspector: ${r} out of 5`, r >= 4 ? "#3E9B6B" : r >= 3 ? "#B07A10" : "#D2483A"); snd(r >= 4 ? "coin" : "warn");
 }
 
 /* ---------- Lee Lee: what a tap does ---------- */
@@ -2412,13 +2500,21 @@ function leeArrive(o) {
   if (o.k === "st") return leeStation(o.s, o.pref);
   if (o.k === "mess") {
     if (!G.messes.includes(o.m)) return;
-    work(L, 1.3, () => { const i = G.messes.indexOf(o.m); if (i >= 0) G.messes.splice(i, 1); }, null, "mop"); return;
+    work(L, 1.3, () => { const i = G.messes.indexOf(o.m); if (i >= 0) G.messes.splice(i, 1); L.dh = true; }, null, "mop"); return;
   }
   if (o.k === "counter") return leeCounter(o);
   if (o.k === "table") return leeTable(o.t);
 }
 function leeStation(s, pref) {
   const L = lee, h = L.hand, def = STATIONS[s.t];
+  if (def.k === "basin") { if (!L.dh) { toastMsg("Your hands are clean"); return; } work(L, .7, () => { L.dh = false; }, null, "wash"); return; }
+  if (hygOn() && def.k !== "sink" && def.k !== "dw" && def.k !== "top") {
+    // a grubby appliance gets a wipe first (or any time there's nothing to start)
+    if (!h && !s.item && !s.user && !s.scrub && ((s.dirt || 0) > .55 || ((s.dirt || 0) > .2 && !startable(s.t).length))) { toastMsg("Cleaning the " + def.n.toLowerCase() + " 🧽"); cleanStation(L, s); return; }
+    // food standards: wash your hands before handling food after a dirty job
+    const r = h && h.k === "dish" ? (RECIPES[h.r].s[h.s] === s.t ? h.r : null) : !h && !s.item ? (pref && startable(s.t).includes(pref) ? pref : startable(s.t)[0]) : null;
+    if (L.dh && r && foodStep(r, s.t) && washer(L)) { toastMsg("🧼 Wash your hands first: food safety"); washThen(L, () => leeTap(Object.assign(stObj(s), { pref }))); return; }
+  }
   if (def.k === "sink") {
     if (h && h.k === "dirty") { G.sink += h.n; L.hand = null; }
     else if (h) { toastMsg("The sink is for washing plates"); return; }
@@ -2477,6 +2573,7 @@ function leeCounter(o) {
     if (h.k === "dirty") { toastMsg("Dirty plates go to the sink"); return; }
     if (h.s >= RECIPES[h.r].s.length && plated(h.r)) G.clean++;
     if (!h.burnt) G.binned++;
+    L.dh = true;
     L.hand = null; return;
   }
   if (o.what === "plates") {
@@ -2598,6 +2695,7 @@ function coachNext() {
   const dt = G.tables.find(t => t.dirty && !t.claim);
   if (dt && !staffHas("porter") && !staffHas("waiter")) return { o: { k: "table", t: dt }, say: `Clear the plates from ${tname(dt)}` };
   if (G.sink > 0 && !G.washer && sink && !staffHas("porter")) return { o: stObj(sink), say: "Wash up while it's quiet" };
+  if (hygOn() && !staffHas("porter") && !staffHas("floor")) { const g2 = st.filter(s => DIRT[s.t] && (s.dirt || 0) > .55 && !s.item && !s.user && !s.scrub).sort((p, q) => q.dirt - p.dirt)[0]; if (g2) return { o: stObj(g2), say: `Give the ${sn(g2.t)} a clean` }; }
   const m = G.messes.find(m => !m.claim); if (m && !staffHas("floor")) return { o: { k: "mess", m }, say: "Mop up the spill" };
   return null;
 }
@@ -2623,10 +2721,10 @@ function staffThink(a, dt) {
   if (h && h.k === "dish") return staffDish(a);
   const role = a.role;
   const did = role === "waiter" ? tryOrder(a) || tryDeliver(a) || tryClear(a)
-    : role === "porter" ? tryWash(a) || tryClear(a)
-    : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null)
+    : role === "porter" ? tryWash(a) || tryClear(a) || tryScrub(a)
+    : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null) || tryScrub(a, .7)
     : role === "drinks" ? tryCook(a, true)
-    : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) : false;
+    : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) || tryScrub(a) : false;
   if (did) { a.idle = 0; return; }
   // nothing to do: stay put for a moment (more plates are often on the way), then wander back to their usual spot
   a.idle = (a.idle || 0) + .4; a.wait = .4;
@@ -2683,10 +2781,16 @@ function tryWash(a) {
   goStand(a, stObj(s), () => { if (G.washer === a) G.washer = null; if (!G.washer) startWash(a); });
   return true;
 }
+function tryScrub(a, over) {
+  if (!hygOn()) return false;
+  const s = G.stations.filter(s => DIRT[s.t] && (s.dirt || 0) > (over || .5) && !s.item && !s.user && !s.scrub && !s.claim).sort((p, q) => q.dirt - p.dirt)[0]; if (!s) return false;
+  s.scrub = a; goStand(a, stObj(s), () => { if (s.item || s.user) { s.scrub = null; return; } cleanStation(a, s); });
+  return true;
+}
 function tryMop(a) {
   const m = G.messes.find(m => !m.claim); if (!m) return false;
   m.claim = a;
-  goTo(a, m.x, m.y + .3, () => work(a, 1.3, () => { const i = G.messes.indexOf(m); if (i >= 0) G.messes.splice(i, 1); }));
+  goTo(a, m.x, m.y + .3, () => work(a, 1.3, () => { const i = G.messes.indexOf(m); if (i >= 0) G.messes.splice(i, 1); a.dh = true; }));
   return true;
 }
 function tryCalm(a) {
@@ -2711,7 +2815,7 @@ function tryCook(a, drinks) {
 }
 function staffDish(a) {
   const d = a.hand, R = RECIPES[d.r];
-  if (d.burnt) { goStand(a, binObj(), () => { a.hand = null; }); return; }
+  if (d.burnt) { goStand(a, binObj(), () => { a.hand = null; a.dh = true; }); return; }
   if (d.s >= R.s.length) {
     if (a.role === "waiter") {
       const o = openTickets(d.r).find(x => x.g.table);
@@ -2728,6 +2832,7 @@ function staffDish(a) {
     goStand(a, platesObj(), () => { if (G.clean > 0) work(a, .35, () => { if (G.clean > 0) { G.clean--; d.s++; } }); else a.wait = 1; });
     return;
   }
+  if (a.dh && hygOn() && foodStep(d.r, next) && washer(a)) { washThen(a, () => {}); return; }
   const free = G.stations.filter(s => s.t === next && !s.item && !s.user && (!s.claim || s.claim === a)).sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y));
   if (!free.length) { a.wait = .5; return; }
   const s = free[0]; s.claim = a;
@@ -2817,7 +2922,7 @@ function step(dt) {
   if (G.open && G.t >= G.len) { G.open = false; toastMsg("Closing time! Finish serving everyone.", 2.5); snd("bell"); }
   if (G.rush.length && G.t >= G.rush[0].t) { toastMsg(G.rush.shift().say, 2.6); snd("bell"); }
   if (G.clean === 0 && G.groups.some(g => g.state === "wait")) G.plateless += dt;
-  groupsStep(dt); stationsStep(dt); mgStep(dt);
+  groupsStep(dt); stationsStep(dt); mgStep(dt); if (G.insp && !G.insp.done && G.t >= G.insp.t) inspect();
   for (const a of G.actors) { actorStep(a, dt); if (a !== lee) staffThink(a, dt); }
   for (const f of G.fx) f.t += dt; G.fx = G.fx.filter(f => f.t < 1.8);
   for (const tp of G.taps) tp.t += dt; G.taps = G.taps.filter(tp => tp.t < .45);
@@ -2885,6 +2990,7 @@ function draw() {
     c.fillStyle = "rgba(0,0,0,.12)"; rr(c, x - w / 2, y - w / 2 + 3, w, w, 8); c.fill();
     const busy = !!((s.item && !s.item.ready && !s.item.burnt && def.k === "pas") || (s.user && def.k !== "top") || (s.t === "dishwasher" && s.run > 0));
     drawAppliance(s, x, y, w, busy);
+    if ((s.dirt || 0) > .25) { const a2 = Math.min(.7, (s.dirt - .25) * 1.2); c.fillStyle = `rgba(110,72,30,${a2})`; for (let k = 0; k < 7; k++) { const ox = Math.sin(s.i * 7.1 + k * 2.3) * w * .32, oy = Math.cos(s.i * 3.7 + k * 1.9) * w * .3; c.beginPath(); c.ellipse(x + ox, y + oy, w * (.05 + .03 * (k % 3)), w * (.035 + .02 * (k % 2)), k, 0, 7); c.fill(); } }
     if (need && need === s.t) { c.strokeStyle = `rgba(232,102,74,${pulse})`; c.lineWidth = 3.5; rr(c, x - w / 2 - 2, y - w / 2 - 2, w + 4, w + 4, 10); c.stroke(); }
     { const lab = def.n.split(" ")[0]; c.font = `700 ${Math.round(T * .17)}px "Figtree",system-ui,sans-serif`; const lw = c.measureText(lab).width + 6;
       c.fillStyle = "rgba(255,250,243,.85)"; rr(c, x - lw / 2, y + T * .26, lw, T * .2, 4); c.fill(); text(lab, x, y + T * .36, T * .17, "rgba(40,28,20,.85)", 700); }
@@ -3036,6 +3142,12 @@ function drawAppliance(s, x, y, w, on) {
   // every appliance stands on a stretch of worktop
   box(x - h, y - h, w, w, w * .12, wood, "rgba(90,60,30,.25)");
   switch (t) {
+    case "basin": {
+      c.fillStyle = "#F7FAFB"; c.beginPath(); c.ellipse(x, y + h * .15, w * .34, w * .24, 0, 0, 7); c.fill(); c.strokeStyle = steel2; c.lineWidth = Math.max(1, w * .03); c.stroke();
+      c.fillStyle = "#CFE3EC"; c.beginPath(); c.ellipse(x, y + h * .2, w * .22, w * .14, 0, 0, 7); c.fill();
+      box(x - w * .04, y - h * .75, w * .08, w * .3, 2, steel2); box(x - w * .04, y - h * .75, w * .2, w * .07, 2, steel2);
+      circle(x + w * .3, y - h * .6, w * .07, "#7FD1AE"); // soap
+      break; }
     case "fridge": {
       box(x - h * .86, y - h * .95, w * .86, w * .95, w * .08, "#EEF3F6", steel2);
       c.fillStyle = steel2; c.fillRect(x - h * .86, y - h * .95 + w * .33, w * .86, Math.max(1, w * .025));
@@ -3180,6 +3292,7 @@ function drawActor(a) {
   drawPerson(c, x, y, a.look, T * 1.02, { bob: a.moving ? Math.abs(a.bob) * -1.5 : 0, ring: a === lee ? "#E8664A" : null });
   const hy = y - T * 1.12;
   if (a.extra && a.extra.length) a.extra.forEach((d, k) => { const ex = x + (k ? -1 : 1) * T * .34, ey = hy + T * .14; c.fillStyle = "#fff"; c.beginPath(); c.ellipse(ex, ey + T * .08, T * .2, T * .08, 0, 0, Math.PI * 2); c.fill(); emoji(RECIPES[d.r].e, ex, ey, T * .3); });
+  if (a === lee && a.dh && LV == null) text("🦠", x + T * .32, y - T * .45, T * .26, "#000", 400);
   if (a.hand) {
     if (a.hand.k === "dirty") { emoji("🍽️", x, hy, T * .36); if (a.hand.n > 1) text("×" + a.hand.n, x + T * .32, hy - T * .12, T * .2, "#3A2A22", 800); }
     else { const d = a.hand, R = RECIPES[d.r], done = d.s >= R.s.length;
@@ -3383,8 +3496,11 @@ function endDay() {
   const extras = Object.values(G.extra || {}).reduce((a, v) => a + v, 0);
   S.temps = (S.temps || []).filter(x => x.day > S.day);
   const income = Math.round((G.rev + G.tips + bonus + extras) * 100) / 100;
-  const breaks = G.breaks || 0, lnews = [], fine = licenceNight(S, hc, G.fights || 0, Math.random, lnews, "your place");
-  const net = income - wages - rent - fee - repairs - bills - breaks - fine;
+  const breaks = G.breaks || 0, lnews = [], fine = licenceNight(S, hc, G.fights || 0, Math.random, lnews, "your place", G.host ? HOST[G.host.id].noise : 0);
+  const hostc = G.host ? HOST[G.host.id].c : 0;
+  if (G.host) { S.hostN = S.hostN || {}; S.hostN[G.host.id] = (S.hostN[G.host.id] || 0) + 1; }
+  if (G.hostClosed) lnews.push(`${HOST[G.hostClosed].e} Your ${HOST[G.hostClosed].n.toLowerCase()} couldn't happen: you weren't open at ${clockH(HOST[G.hostClosed].at[0])}.`);
+  const net = income - wages - rent - fee - repairs - bills - breaks - fine - hostc;
   const repBefore = S.rep, starsBefore = starsOf(S.rep);
   S.rep = Math.max(0, Math.round(S.rep + G.repD * (G.repD > 0 && hasPk(site, "listed") ? 1.1 : 1)));
   S.cash = Math.round((S.cash + net) * 100) / 100;
@@ -3398,6 +3514,8 @@ function endDay() {
   S.stock = G.stock; S.bt = {};
   // staff morale
   const news = lnews.concat(pnews);
+  S.kd = []; for (const st0 of G.stations) S.kd[st0.i] = Math.round((st0.dirt || 0) * 100) / 100;
+  if (G.inspR != null) news.push(`🧾 The food hygiene inspector called: rated ${G.inspR} out of 5${S.hyg.why.length ? " (" + S.hyg.why.join(", ") + ")" : ""}. ${G.inspR <= 2 ? "Customers will be put off, and they'll be back within the week." : G.inspR >= 4 ? "Customers like to see that." : ""}`);
   const busy = G.people / Math.max(1, S.staff.length + 1);
   for (const st of S.staff.slice()) {
     st.days = (st.days || 0) + 1; st.td = (st.td != null ? st.td : st.days - 1) + 1;
@@ -3457,7 +3575,7 @@ function endDay() {
   if (repairs) news.push(`Repairs today: ${money(repairs)}${hasPk(site, "listed") && info.wd === 6 ? " (the weekly upkeep of a listed building)" : " (the leaky roof)"}.`);
   if (S.day % 7 === 0 && S.day < 36) news.push("🕘 A new week starts tomorrow. Your opening hours are on the Today tab.");
   if (G.hr) { G.hr.cost = Math.round((wages / Math.max(1, hc - ho) + billsHour(S)) * 100) / 100; S.hh = S.hh || {}; S.hh[info.wd] = Object.assign({ day: S.day }, G.hr); }
-  const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, bills, breaks, fine, fights: G.fights || 0, hr: G.hr, hours: [ho, hc], fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
+  const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, bills, breaks, fine, hostc, host: G.host && G.host.id, fights: G.fights || 0, hr: G.hr, hours: [ho, hc], fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
     messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G), repairs };
   S.last = last;
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
@@ -3571,14 +3689,15 @@ function tabDay() {
       <p class="small">${L.served} of ${L.people} customers served${L.angry ? `, <b class="neg">${L.angry} walked out</b>` : ""}${L.turned ? `, <b class="neg">${L.turned} found nothing in stock</b>` : ""}${L.burnt ? `, ${L.burnt} burnt` : ""}.</p>
       <details class="small" id="moneyBox"><summary class="muted">Money in and out</summary><div class="lines" style="margin-top:6px">
       <div><span>Takings</span><b>${money(L.rev)}</b></div>${Object.entries(L.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].n}</span><b>${money(Math.round(v))}</b></div>`).join("")}<div><span>Tips</span><b>${money(L.tips)}</b></div>
-      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.bills ? `<div><span>${L.bills > 0 ? "Bills for the extra hours" : "Bills saved by shorter hours"}</span><b>${L.bills > 0 ? "−" : "+"}${money(Math.abs(L.bills))}</b></div>` : ""}${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.breaks ? `<div><span>Broken in fights</span><b>−${money(L.breaks)}</b></div>` : ""}${L.fine ? `<div><span>Council fine</span><b>−${money(L.fine)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
+      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.bills ? `<div><span>${L.bills > 0 ? "Bills for the extra hours" : "Bills saved by shorter hours"}</span><b>${L.bills > 0 ? "−" : "+"}${money(Math.abs(L.bills))}</b></div>` : ""}${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.breaks ? `<div><span>Broken in fights</span><b>−${money(L.breaks)}</b></div>` : ""}${L.fine ? `<div><span>Council fine</span><b>−${money(L.fine)}</b></div>` : ""}${L.hostc ? `<div><span>${HOST[L.host].e} ${HOST[L.host].n}</span><b>−${money(L.hostc)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
       ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
     if (L.hr) h = h.replace(/<\/details><\/div>$/, `</details>${hourChart(L.hr)}</div>`);
     if (L.advice) h += `<div class="news small"><b>💡 Next time</b><br>${L.advice.map(esc).join("<br>")}</div>`;
   } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
+  if (S.hyg && S.hyg.r != null) h += `<div class="card"><div class="row spread"><div class="grow"><h2>Food hygiene</h2><p class="small muted">Inspected on day ${S.hyg.day}${S.hyg.why && S.hyg.why.length ? ": " + esc(S.hyg.why.join(", ")) : ""}. The next visit is unannounced. Keep appliances clean, spills mopped, plates washed and a hand basin in the kitchen.</p></div><span class="hyg h${S.hyg.r}">${S.hyg.r}</span></div></div>`;
   h += `<div class="card"><div class="row spread"><h2>Reputation</h2><span class="stars">${starStr(st)}</span></div><div class="meter"><i style="width:${prog * 100}%"></i></div>
     <p class="small muted">${next ? `${Math.round(S.rep)} of ${next} for the next star.` : "Five stars: the best in town!"} About <b>${Math.round(expectedGroups(S))}</b> groups expected tomorrow.</p></div>`;
-  h += forecastCard() + hoursCard() + bookingsCard();
+  h += forecastCard() + hoursCard() + hostCard() + bookingsCard();
   const auto = S.autoStock !== false, cost = topUpCost();
   h += `<div class="card"><div class="row spread"><div class="grow"><h2>Stock</h2><p class="small muted">${auto ? (cost > 0 ? `Topped up automatically when you open: about ${money(cost)}.` : "You have enough for tomorrow.") : "You buy stock yourself."}</p></div>
       <button class="btn sm ${auto ? "good" : ""}" data-act="autotoggle">${auto ? "Auto: on" : "Auto: off"}</button></div>
@@ -3638,6 +3757,16 @@ function hoursCard(P) {
     <p class="small muted">Bars: how many people are about round here, hour by hour (coloured while you're open). Staff are paid by the hour, each hour past the usual adds ${money(billsHour(sv))} of bills, and long shifts tire staff out.${pub ? " After midnight needs a late licence: rowdier, and quiet streets complain." : ""} Usual hours: ${clockH(sa)} to ${clockH(sz)}.</p>
     <div class="hrows">${rows}</div>${lic && lic.until >= S.day ? `<p class="small neg">🏛️ The council has cut the hours: no late licence (closing by midnight) until day ${lic.until}.</p>` : lic && lic.n && lic.n.length ? `<p class="small">📣 ${lic.n.length} noise complaint${lic.n.length > 1 ? "s" : ""} in the last three weeks.</p>` : ""}
     ${!P && S.hh && Object.keys(S.hh).length ? `<details class="small" id="hhBox"><summary class="muted">How each day went last time, hour by hour</summary>${[0, 1, 2, 3, 4, 5, 6].filter(w => S.hh[w]).map(w => hourChart(S.hh[w], `${WEEKDAYS[w]} (day ${S.hh[w].day})`)).join("")}</details>` : ""}</div>`;
+}
+function hostCard(P) {
+  const sv = P ? placeSv(S, P) : S, list = HOSTS.filter(H => H.v === sv.venue), own = P || S;
+  let rows = "";
+  for (let k = 0; k < 7; k++) {
+    const day = S.day + k, wd = (day - 1) % 7, id = own.host && own.host[wd], hp = hostPlan(sv, day);
+    rows += `<div class="erow"><b>${WEEKDAYS[wd].slice(0, 3)}${k === 0 ? ` <span class="small muted">next</span>` : ""}</b><select data-hev="${wd}" data-hp="${P ? P.id : ""}"><option value="">No event</option>${list.map(H => `<option value="${H.id}" ${H.id === id ? "selected" : ""}>${H.e} ${H.n} · ${money(H.c)}</option>`).join("")}</select>
+      <small>${hp ? hp.closed ? `<b class="neg">You're closed at ${clockH(hp.H.at[0])}: change the hours</b>` : `≈${Math.round(hp.n)} extra groups, ${clockH(hp.from)}-${clockH(hp.to)}` : ""}</small></div>`;
+  }
+  return `<div class="card"><h2>🎉 Events</h2><p class="small muted">Put something on to fill a quiet night. It costs to run, and regulars come back for it week after week. ${list.map(H => `<b>${H.e} ${H.n}</b> (${clockH(H.at[0])}): ${esc(H.d)}`).join(" ")}</p><div class="hrows">${rows}</div></div>`;
 }
 function bookingsCard() {
   const list = (S.bookings || []).filter(b => b.day >= S.day).sort((a, b) => a.day - b.day);
@@ -3800,7 +3929,14 @@ function tabUp() {
 }
 // opening hours, for the main place or a managed one (data-hp)
 document.addEventListener("change", e => {
-  const t = e.target; if (!t.dataset || t.dataset.hw == null || !S) return;
+  const t = e.target; if (!t.dataset || !S) return;
+  if (t.dataset.hev != null) {
+    const P = t.dataset.hp ? (S.places || []).find(x => String(x.id) === t.dataset.hp) : null, own = P || S;
+    own.host = own.host || [null, null, null, null, null, null, null]; own.host[+t.dataset.hev] = t.value || null; saveGame();
+    if (P) { const sc = $("ovc").scrollTop; placeDlg(P); $("ovc").scrollTop = sc; } else { const sc = $("mbody").scrollTop; renderManage(); $("mbody").scrollTop = sc; }
+    return;
+  }
+  if (t.dataset.hw == null) return;
   const P = t.dataset.hp ? (S.places || []).find(x => String(x.id) === t.dataset.hp) : null, own = P || S, venue = P ? P.venue : S.venue;
   const wd = +t.dataset.hw, v = +t.value, [lo, hi] = HOUR_LIM[venue];
   own.hours = own.hours || [null, null, null, null, null, null, null];
@@ -3813,7 +3949,7 @@ document.addEventListener("change", e => {
 });
 $("mwrap").addEventListener("change", e => {
   if (e.target.id === "diffSel") { S.diff = +e.target.value; saveGame(); renderManage(); return; }
-  if (e.target.dataset.hw != null) return;
+  if (e.target.dataset.hw != null || e.target.dataset.hev != null) return;
   if (e.target.id === "plSel") { S.pl = +e.target.value; saveGame(); renderManage(); return; }
   if (e.target.id === "bizSel") { S.biz = Math.min(+e.target.value, S.biz != null ? S.biz : 1); saveGame(); renderManage(); return; }
   if (e.target.id === "discR" || e.target.id === "discP") {
@@ -4559,7 +4695,7 @@ function placeDlg(P) {
     <button class="btn pri" data-a="design">🛠️ Design: tables, build-ins, walls, menu and staff</button>
     <div class="item"><div class="ic">😴</div><div class="grow"><b>The team: ${Math.round(P.fat || 0)}% tired${P.sick === S.day ? " · 🤒 one off sick tomorrow" : ""}</b><span>Long days tire them out: tired teams look after fewer people, go off sick and quit. A bonus cheers everyone up (once a week).</span></div>
       <button class="btn sm" data-a="pbonus" ${canAfford(bonusCost(P.mgr.wage + (pDesign(P).team || 0) * 22) * .75) && !(P.bon && S.day - P.bon < 7) ? "" : "disabled"}>Bonus ${money(Math.round(bonusCost(P.mgr.wage + (pDesign(P).team || 0) * 22) * .75))}</button></div>
-    ${hoursCard(P)}
+    ${hoursCard(P)}${hostCard(P)}${P.hyg != null ? `<p class="small">🧾 Food hygiene: rated <b>${P.hyg}</b> out of 5 at the last inspection. Better managers and enough staff keep it high.</p>` : ""}
     <div class="item"><div class="ic">🧑‍💼</div><div class="grow"><b>${esc(P.mgr.name)}, level ${P.mgr.lvl}</b><span>${money(P.mgr.wage)} a day. Better managers serve more people and keep them happier.</span></div>
       ${tc ? `<button class="btn sm pri" data-a="train" ${canAfford(tc) ? "" : "disabled"}>Train ${money(tc)}</button>` : ""}</div>
     <div class="item"><div class="ic">🪴</div><div class="grow"><b>${d ? esc(d.n) : "Fully decorated"}</b><span>Decor ${P.decor || 0} of ${DECOR.length}: more people choose it over rivals.</span></div>

@@ -831,6 +831,17 @@
         "Rearrange shows cramped tables in orange (a bit tight) and red (cramped), so you can spread them out. New tables are put where there's most room.",
         "Places your managers run can squeeze in tables too; cramped rooms leave fewer customers happy."
       ]
+    },
+    {
+      "id": 72,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: events, food hygiene and a fairer city",
+      "details": [
+        "Events: put on a quiz night, live music or karaoke at the pub, or a supper club, kids' craft morning or book club at the café, on any night of the week (Today tab). They cost to run, bring extra customers, and regulars come back week after week. Some are loud or rowdy.",
+        "Food hygiene: appliances get grubby as you cook (more when food burns). Tap a grubby one to clean it; porters and cleaners wipe them down too. After a dirty job (clearing tables, washing up, the bin, mopping, cleaning) hands must be washed before touching food, so Lee Lee and the cooks stop at the sink or a new Hand basin first.",
+        "An inspector calls now and then without warning and gives a rating from 0 to 5. Good ratings win customers from rivals; poor ones put people off until the next visit. Places your managers run are inspected too.",
+        "Every area now has a natural limit of local customers. Quiet suburbs level off as you gain stars, while busy streets, and above all the city centre once its rivals are beaten, can grow far busier."
+      ]
     }
   ]
 }
