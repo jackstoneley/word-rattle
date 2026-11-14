@@ -166,6 +166,10 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
 .lay-tb{border-radius:50%;background:#C08A55;color:#fff;font-weight:800;font-size:.95rem;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .lay-tb small{font-size:.55rem;font-weight:700;opacity:.85}
 .lay-st.empty,.lay-tb.empty{background:transparent;border:2px dashed rgba(0,0,0,.18)}
+.hrows{display:flex;flex-direction:column;gap:6px}.hrow{display:grid;grid-template-columns:64px auto auto 1fr;grid-template-rows:auto auto;gap:2px 6px;align-items:center}
+.hrow select{font:inherit;font-size:.8rem;padding:3px 2px;border-radius:8px;border:1px solid rgba(0,0,0,.15);background:#fff}
+.hrow small{grid-column:2 / 5;color:var(--muted);font-size:.7rem}.hbars{display:flex;align-items:flex-end;gap:1px;height:24px}
+.hbars i{flex:1;background:rgba(0,0,0,.12);border-radius:2px 2px 0 0;min-width:3px}.hbars i.on{background:var(--accent)}
 .lg{position:relative;margin:0 auto;border-radius:12px;background-color:#F2E2CB;background-image:linear-gradient(rgba(0,0,0,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.05) 1px,transparent 1px);touch-action:none;flex:none;overflow:hidden}
 .lg-strip{position:absolute;left:0;right:0;background:repeating-linear-gradient(45deg,rgba(0,0,0,.05) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:var(--muted)}
 .lg-p{position:absolute;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1rem;line-height:1;border:2px solid rgba(0,0,0,.14);box-sizing:border-box;pointer-events:none;overflow:hidden}
@@ -636,11 +640,6 @@ function levelArrivals(i) {
 /* Free play: a week, the weather and match days change how busy it is and what people want.
    Everything about a day comes from dayInfo(save, day), seeded, so the forecast in the office is what happens. */
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-// when the crowds come: weekdays follow work (breakfast before it, drinks after it); weekends are later and lazier (free play)
-function dayPeaks(venue, wd) {
-  if (wd < 5 || wd == null) return VENUES[venue].peaks;
-  return venue === "cafe" ? [[.36, .13], [.62, .12]] : wd === 5 ? [[.3, .13], [.68, .14]] : [[.12, .12], [.45, .14]];
-}
 const WEEK_CROWD = { cafe: [.8, .85, .9, .95, 1.05, 1.35, 1.25], pub: [.75, .8, .9, 1, 1.3, 1.4, 1.1] };
 const WEATHER = [
   { n: "Sunny", e: "☀️", crowd: 1.1, pub: 1.05, cold: 1.9, warm: .7, w: 3, say: "cold drinks and salads" },
@@ -670,6 +669,55 @@ function dayCrowd(save, day) {
   if (d.rw) c *= .8;
   return Math.max(.6, Math.min(1.9, c));
 }
+/* Opening hours (free play): S.hours[weekday] = [open, close] in whole hours; missing = the venue's usual hours.
+   footRate is how many people want to come in at hour h, shaped by the area (siteMix) and the day of the week; the usual
+   hours keep the old numbers, so a day's crowd = the old crowd x footShare (more hours, more people, if anyone's about). */
+const STD_H = { cafe: [9, 15], pub: [17, 24] }, HOUR_LIM = { cafe: [6, 20], pub: [11, 24] }, MIN_HOURS = 3;
+const SEC_H = v => DAY_LEN / (STD_H[v][1] - STD_H[v][0]); // seconds of play per hour open
+function hoursOf(save, wd) { const h = save.hours && save.hours[wd]; return h ? h : STD_H[save.venue]; }
+const hoursOn = (save, day) => hoursOf(save, (day - 1) % 7);
+function footRate(venue, wd, h, m) {
+  const b = (mu, sd, w) => w * Math.exp(-.5 * ((h - mu) / sd) ** 2), { pop, com, stu, night, tour } = m;
+  if (venue === "cafe") {
+    if (wd < 5) return .1 + b(8.1, .8, .9 * (.3 + 1.3 * com)) + b(12.7, 1, 1.1 * (.6 + com)) + b(15.4, 1.1, .45 * (.5 + pop + tour)) + b(18.2, 1.4, .3 * (.2 + stu + night));
+    return .08 + b(8.6, .9, .3 * (.3 + pop)) + b(10.9, 1.3, 1.2 * (.6 + pop + tour)) + b(13.1, 1.2, (.6 + tour + .5 * pop)) + b(15.8, 1.2, .6 * (.5 + tour + pop)) + b(18.2, 1.4, .25 * (.2 + tour + night));
+  }
+  if (wd < 4) return .08 + b(12.8, 1, .5 * (.2 + com + tour)) + b(17.8, 1, (.4 + 1.2 * com)) + b(19.7, 1.2, .8 * (.6 + pop)) + b(22, 1.3, .6 * (.3 + night + stu));
+  if (wd === 4) return .08 + b(12.8, 1, .55 * (.2 + com + tour)) + b(17.7, 1.1, 1.4 * (.4 + com)) + b(19.8, 1.2, .9 * (.6 + pop)) + b(22.3, 1.3, (.4 + night + stu));
+  if (wd === 5) return .1 + b(13.3, 1.3, .9 * (.5 + pop + tour)) + b(16, 1.3, .6 * (.5 + tour + pop)) + b(19.5, 1.2, 1.1 * (.6 + pop)) + b(22.4, 1.2, 1.2 * (.4 + night + stu));
+  return .1 + b(13.5, 1.3, 1.3 * (.6 + pop)) + b(16.2, 1.3, .7 * (.5 + pop + tour)) + b(19, 1.3, .6 * (.5 + pop)) + b(21.5, 1, .3 * (.3 + night));
+}
+// the day's busy times (up to two peaks, two hours apart) inside the opening hours
+function rushTimes(save, day) {
+  const [a, z] = hoursOn(save, day), wd = (day - 1) % 7, m = siteMix(siteOf(save)), pk = [];
+  const f = h => footRate(save.venue, wd, h, m);
+  for (let h = a + .5; h <= z - .75; h += .25) if (f(h) >= f(h - .25) && f(h) > f(h + .25) && f(h) > .35) pk.push(h);
+  if (f(a + .25) > f(a + .5) && f(a + .25) > .5) pk.push(a + .25); // busy from the moment the doors open
+  const out = []; for (const h of pk.sort((p, q) => f(q) - f(p))) if (out.length < 2 && out.every(o => Math.abs(o - h) >= 2)) out.push(h);
+  return out.sort((p, q) => p - q);
+}
+function rushSay(venue, wd, h) {
+  const we = wd >= 5;
+  if (venue === "cafe") return h < 10 ? (we ? "Early birds coming! ☕" : "Breakfast rush coming! ☕") : h < 12 ? (we ? "Weekend brunch crowd coming! 🥐" : "Mid-morning coffee crowd coming! ☕") : h < 14.5 ? (we ? "Weekend lunch rush coming! 🥪" : "Lunch rush coming! 🥪") : h < 17 ? "Afternoon tea crowd coming! 🍰" : "Evening crowd coming! 🌆";
+  if (h < 15) return wd === 6 ? "Sunday lunch crowd coming! 🍗" : "Lunchtime crowd coming! 🍽️";
+  if (h < 17) return "Afternoon drinkers coming! 🍺";
+  if (h < 19) return we ? "Early evening crowd coming! 🍺" : wd === 4 ? "Friday after-work crowd coming! 🍻" : "After-work crowd coming! 🍺";
+  if (h < 21) return wd === 5 ? "Saturday dinner crowd coming! 🍽️" : wd === 6 ? "Sunday dinner crowd coming! 🍗" : "Dinner crowd coming! 🍽️";
+  return wd === 5 ? "Saturday night crowd coming! 🎵" : wd === 4 ? "Friday night crowd coming! 🎵" : wd === 6 ? "Sunday evening regulars coming! 🍺" : "Late-night crowd coming! 🎵";
+}
+const clockH = h => String(Math.floor(h) % 24).padStart(2, "0") + ":" + String(Math.floor((h - Math.floor(h)) * 4) * 15).padStart(2, "0");
+const FOOT_C = {};
+function footSum(venue, wd, m, a, z) { let t = 0; for (let h = a + .125; h < z; h += .25) t += footRate(venue, wd, h, m) * .25; return t; }
+// the share of a usual day's customers that come with these hours (1 = the usual hours)
+function footShare(save, day, hrs) {
+  const s = siteOf(save), wd = (day - 1) % 7, [a, z] = hrs || hoursOn(save, day), k = s.id + save.venue + wd + ":" + a + "-" + z;
+  if (FOOT_C[k] == null) { const m = siteMix(s), [sa, sz] = STD_H[save.venue]; FOOT_C[k] = footSum(save.venue, wd, m, a, z) / footSum(save.venue, wd, m, sa, sz); }
+  return FOOT_C[k];
+}
+// lights, heating, the fryer warming up: the usual hours' bills are part of the rent; each hour more or less costs or saves this
+const billsHour = save => [1.5, 2.5, 4, 6][save.prem || 0];
+// staff are paid for the hours you open; their wage is for the usual day
+const hoursMul = (save, day) => { const [a, z] = hoursOn(save, day), [sa, sz] = STD_H[save.venue]; return (z - a) / (sz - sa); };
 function prefW(info, r) {
   if (!info) return 1;
   const R = RECIPES[r], W = WEATHER[info.w];
@@ -697,8 +745,10 @@ const redundancy = st => st.wage * (5 + Math.min(10, Math.floor((st.td != null ?
 function boost(save) { return Math.min(1.5, (save.camp || []).reduce((a, c) => a + ((CAMPAIGNS.find(x => x.id === c.id) || {}).b || 0), 0)); }
 function expectedGroups(save) {
   let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * siteDemand(save) * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1) * diffOf(save).crowd * dayCrowd(save, save.day);
+  // opening hours: longer days bring more people if there are people about then (no hours: the usual ones)
+  const hs = save.hours ? footShare(save, save.day) : 1, hm = save.hours ? hoursMul(save, save.day) : 1;
   // on busy days more people turn up than the tables would normally turn over: they queue, and need staff to keep up
-  return Math.min(g, (save.tables.length * 2.8 + 2) * (1 + .4 * Math.max(0, dayCrowd(save, save.day) - 1)));
+  return Math.min(g * hs, (save.tables.length * 2.8 + 2) * hm * (1 + .4 * Math.max(0, dayCrowd(save, save.day) - 1)));
 }
 function newSave(venue, name, site) {
   const V = VENUES[venue], stock = {};
@@ -1818,6 +1868,9 @@ function startDay() {
   G.tipM = LV == null ? siteTip(S) : 1;
   G.tvLive = hasBi(S, "sports") && (LV != null ? !!LEVELS[LV].fans : !!(G.info.tv || (G.info.match && S.venue === "pub")));
   const info = G.info;
+  // opening hours: the day runs from G.O to G.C o'clock, G.sph seconds of play an hour
+  { const V0 = STD_H[S.venue]; if (LV == null) { [G.O, G.C] = hoursOn(S, S.day); G.sph = SEC_H(S.venue); G.len = (G.C - G.O) * G.sph; } else { [G.O, G.C] = V0; G.sph = LEVELS[LV].len / (V0[1] - V0[0]); } }
+  const V0 = STD_H[S.venue], stdT = u => (V0[0] + u * (V0[1] - V0[0]) - G.O) * G.sph, inDay = t => t > 0 && t < G.len * .92, lateAt = t => S.venue === "pub" && G.O + t / G.sph >= 21;
   // arrivals
   if (LV != null) {
     const L = LEVELS[LV]; G.len = L.len; G.arr = levelArrivals(LV);
@@ -1831,31 +1884,35 @@ function startDay() {
   const P = G.mplan = LV == null ? planOf(S, info) : null, fanSh = P ? P.waves.reduce((a, w) => a + w.sh, 0) : 0, fanP = P ? fanSh / planMul(P) : 0;
   const gauss = () => (rnd(-1, 1) + rnd(-1, 1) + rnd(-1, 1)) / 1.5;
   const TV = LV == null ? info.tv : null, tvP = TV ? TV.sh / (1 + TV.sh) : 0, sportsSp = hasBi(S, "sports") ? "sports" : null;
+  let fMax = 0; if (LV == null) for (let h = G.O; h <= G.C; h += .25) fMax = Math.max(fMax, footRate(S.venue, info.wd, h, info.mix));
   for (let i = 0; i < n; i++) {
     let u;
     if (TV && Math.random() < tvP) {
-      u = clamp(Math.max(.01, TV.u - .03) + .04 * gauss(), .01, .7);
-      G.arr.push({ t: u * G.len, size: Math.min(big, 2 + Math.floor(Math.random() * 3)), fan: "tv", watch: true, sp: sportsSp, rowdy: Math.random() < (TV.big ? .25 : .12), late: u > .6 });
+      u = clamp(Math.max(.01, TV.u - .03) + .04 * gauss(), .01, .7); const tt = stdT(u); if (!inDay(tt)) continue; // closed while it's on
+      G.arr.push({ t: tt, size: Math.min(big, 2 + Math.floor(Math.random() * 3)), fan: "tv", watch: true, sp: sportsSp, rowdy: Math.random() < (TV.big ? .25 : .12), late: lateAt(tt) });
       continue;
     }
     if (P && Math.random() < fanP) {
       let x = Math.random() * fanSh, w = P.waves[0]; for (const v of P.waves) { w = v; if ((x -= v.sh) <= 0) break; }
-      u = clamp(w.u + w.sd * gauss(), .01, .9);
+      u = clamp(w.u + w.sd * gauss(), .01, .9); const tt = stdT(u); if (!inDay(tt)) continue; // fans who came while you were closed
       const F = P.fan, kids = F.kids && big >= 3 && Math.random() < F.kids;
-      const a = { t: u * G.len, size: kids ? Math.min(big, 3 + (Math.random() < .5 ? 1 : 0)) : Math.min(big, F.size[0] + Math.floor(Math.random() * (F.size[1] - F.size[0] + 1))), fan: STADIUMS[info.mi].what, late: S.venue === "pub" && u > .6, sp: S.venue === "pub" ? sportsSp : null, watch: false };
+      const a = { t: tt, size: kids ? Math.min(big, 3 + (Math.random() < .5 ? 1 : 0)) : Math.min(big, F.size[0] + Math.floor(Math.random() * (F.size[1] - F.size[0] + 1))), fan: STADIUMS[info.mi].what, late: lateAt(tt), sp: S.venue === "pub" ? sportsSp : null, watch: false };
       if (kids) a.kids = a.size - 2;
       a.rowdy = !kids && a.size <= 4 && Math.random() < F.rowdy;
       if (S.bar && a.size <= 3 && Math.random() < F.drink) a.drinker = true;
       G.arr.push(a); continue;
     }
+    // regulars come when people are about: the hour's footfall in this area on this day
+    let hr = G.O;
     for (let tries = 0; tries < 2; tries++) {
-      if (Math.random() < .3) u = rnd(0, 1); else { const [mu, sd] = pickOne(dayPeaks(S.venue, info.wd)); u = mu + sd * gauss(); }
-      if (!(P && P.quiet && u > P.quiet[0] && u < P.quiet[1] && Math.random() < .6)) break; // most regulars don't come in while the game is on
+      for (let k = 0; k < 60; k++) { hr = rnd(G.O, G.C - .3); if (Math.random() * fMax < footRate(S.venue, info.wd, hr, info.mix)) break; }
+      const us = (hr - V0[0]) / (V0[1] - V0[0]);
+      if (!(P && P.quiet && us > P.quiet[0] && us < P.quiet[1] && Math.random() < .6)) break; // most regulars don't come in while the game is on
     }
-    u = clamp(u, .01, .9);
+    u = (hr - G.O) / (G.C - G.O);
     let size = Math.random() < .42 ? 1 : Math.random() < .7 ? 2 : Math.random() < .6 ? 3 : 4;
     size = Math.min(size, big);
-    const late = S.venue === "pub" && u > .6;
+    const late = S.venue === "pub" && hr >= 21;
     const a = { t: u * G.len, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep), late };
     if (big >= 3 && !late && Math.random() < .1 + (info.wd >= 5 ? .15 : 0) + (S.venue === "cafe" && info.w === 0 ? .05 : 0) + (info.wd >= 5 && hasPk(siteOf(S), "parking") ? .05 : 0) + (info.ev.some(o => o.E.kids) ? .1 : 0)) { a.size = big >= 4 && Math.random() < .5 ? 4 : 3; a.kids = a.size - 2; a.rowdy = false; }
     else if (S.bar && late && a.size <= 3 && Math.random() < .25) a.drinker = true;
@@ -1865,18 +1922,18 @@ function startDay() {
   if (LV == null && hasBi(S, "nook")) { const m = siteMix(siteOf(S)), k = Math.min(8, Math.round(n * .16 * (1 + 1.5 * m.com + 1.5 * m.stu) * (info.wd >= 5 ? .6 : 1)));
     for (let i = 0; i < k; i++) G.arr.push({ t: rnd(.03, .75) * G.len, size: 1, sp: "nook" }); }
   if (LV == null && hasBi(S, "pool")) { const k = Math.min(6, Math.round(n * .12 + 1));
-    for (let i = 0; i < k; i++) { const u = rnd(.15, .85); G.arr.push({ t: u * G.len, size: 2 + Math.floor(Math.random() * 3), sp: "pool", late: u > .6, rowdy: u > .6 && Math.random() < .15 }); } }
+    for (let i = 0; i < k; i++) { const u = rnd(.15, .85); G.arr.push({ t: u * G.len, size: 2 + Math.floor(Math.random() * 3), sp: "pool", late: lateAt(u * G.len), rowdy: lateAt(u * G.len) && Math.random() < .15 }); } }
   // the bar brings in people who only want a drink
   if (LV == null && S.venue === "pub" && S.bar) {
     const extra = Math.min(Math.round(n * .22 * S.bar * (info.match ? 1.4 : 1)), BAR[S.bar - 1].spots * 2);
-    for (let i = 0; i < extra; i++) { const u = rnd(.2, .92); G.arr.push({ t: u * G.len, size: 1 + Math.floor(Math.random() * 3), drinker: true, late: u > .6, rowdy: u > .6 && Math.random() < .15 + (info.match ? .08 : 0) }); }
+    for (let i = 0; i < extra; i++) { const u = rnd(.2, .92); G.arr.push({ t: u * G.len, size: 1 + Math.floor(Math.random() * 3), drinker: true, late: lateAt(u * G.len), rowdy: lateAt(u * G.len) && Math.random() < .15 + (info.match ? .08 : 0) }); }
   }
   // booked parties: their table is reserved from opening time
   if (LV == null) for (const b of (S.bookings || []).filter(b => b.ok && b.day === S.day)) {
     const t = G.tables.filter(t => !t.bar && !t.res && t.seats >= b.size && (b.room ? t.room : !t.sp)).sort((p, q) => p.seats - q.seats)[0]
       || G.tables.filter(t => !t.bar && !t.res && !t.sp && t.seats >= b.size).sort((p, q) => p.seats - q.seats)[0];
     if (t) t.res = b;
-    G.arr.push({ t: clamp(b.at, .05, .8) * G.len, size: b.size, party: b, kids: b.kids || 0, fan: OCCASIONS[b.occ].m || null });
+    G.arr.push({ t: clamp(stdT(b.at), .05 * G.len, .8 * G.len), size: b.size, party: b, kids: b.kids || 0, fan: OCCASIONS[b.occ].m || null });
   }
   G.arr.sort((a, b) => a.t - b.t);
   if (critic) { const a = G.arr[Math.floor(G.arr.length * .4)]; if (a) { a.critic = 1; a.size = 1; a.rowdy = false; } }
@@ -1894,13 +1951,12 @@ function startDay() {
   paused = false; closeDialog(); closeMini();
   G.goals = LV == null ? dailyGoals() : [];
   if (LV == null && S.duel && S.duel.day === S.day) G.goals.push({ k: "duel", n: S.duel.need, cash: 0, rep: 0 });
-  const wd = G.info ? G.info.wd : 0, sayR = wd < 5 ? RUSH[S.venue] : S.venue === "cafe" ? ["Weekend brunch crowd coming! 🥐", "Weekend lunch rush coming! 🥪"] : wd === 5 ? ["Saturday dinner crowd coming! 🍽️", "Saturday night crowd coming! 🎵"] : ["Sunday dinner crowd coming! 🍗", "Sunday evening regulars coming! 🍺"];
-  G.rush = LV == null ? dayPeaks(S.venue, wd).map(([mu], i) => ({ t: Math.max(4, (mu - .09) * G.len), say: sayR[i] })) : [];
+  G.rush = LV == null ? rushTimes(S, S.day).map(h => ({ t: Math.max(4, (h - .9 - G.O) * G.sph), say: rushSay(S.venue, G.info.wd, h), h })) : [];
   if (G.mplan) {
     const M = STADIUMS[G.info.mi];
-    for (const w of G.mplan.waves) if (w.tag !== "all") G.rush.push({ t: Math.max(4, (w.u - .08) * G.len), say: w.tag === "pre" ? (S.venue === "pub" ? `Fans want a pint before the ${M.what === "cricket" ? "start" : "kick-off"}! ${M.e}` : `Fans on their way to the ${M.what === "race" ? "races" : "game"}! ${M.e}`)
+    for (const w of G.mplan.waves) if (w.tag !== "all") G.rush.push({ t: Math.max(4, ((V0[0] + (w.u - .08) * (V0[1] - V0[0])) - G.O) * G.sph), say: w.tag === "pre" ? (S.venue === "pub" ? `Fans want a pint before the ${M.what === "cricket" ? "start" : "kick-off"}! ${M.e}` : `Fans on their way to the ${M.what === "race" ? "races" : "game"}! ${M.e}`)
       : M.what === "race" ? "The racing's over: racegoers heading your way! 🏇" : M.what === "cricket" ? `Stumps! Cricket fans heading your way ${M.e}` : `Final whistle! Fans heading your way ${M.e}` });
-    G.rush.sort((a, b) => a.t - b.t);
+    G.rush = G.rush.filter(r => r.t < G.len * .9); G.rush.sort((a, b) => a.t - b.t);
   }
   $("pName").textContent = LV != null ? LEVELS[LV].n + (EASY ? " (easier)" : "") : S.name;
   show("play"); resize();
@@ -1946,7 +2002,7 @@ function briefing() {
     ${S.duel && S.duel.day === S.day ? `<p class="news small">🥊 <b>Taste-off day</b> against ${esc((allRivals(S).find(x => x.id === S.duel.id) || {}).n || "a rival")}. Keep ${S.duel.need}% of customers happy!</p>` : ""}
     ${(S.bookings || []).filter(b => b.ok && b.day === S.day).map(b => `<p class="news small">${OCCASIONS[b.occ].e} <b>${OCCASIONS[b.occ].n}</b> for ${b.size} at ${clockAt(b.at)}. Their table is reserved.</p>`).join("")}
     <div class="goals">${G.goals.map(g => `<div><span>☆</span><span>${GOAL_TEXT[g.k](g.n)} ${g.cash ? `<span class="muted small">+${money(g.cash)}</span>` : ""}</span></div>`).join("")}</div>
-    <p class="small muted">About ${Math.round(expectedGroups(S))} groups expected. Busiest around ${(LV == null ? dayPeaks(S.venue, I.wd) : VENUES[S.venue].peaks).map(([mu]) => clockAt(mu)).join(" and ")}.</p>
+    <p class="small muted">About ${Math.round(expectedGroups(S))} groups expected. Open ${clockH(G.O)} to ${clockH(G.C)}${G.rush.some(r => r.h) ? `, busiest around ${G.rush.filter(r => r.h).map(r => clockH(r.h)).join(" and ")}` : ""}.</p>
     ${tip ? `<p class="news small">💡 ${esc(tip)}</p>` : S.day === 1 ? `<p class="news small">💡 New here? Follow the green arrow: it shows what to do next.</p>` : ""}
     <div class="acts"><button class="btn pri" data-a="open">Open the doors</button></div>`, () => { paused = false; lastT = performance.now(); });
 }
@@ -2820,7 +2876,7 @@ function draw() {
     emoji(W.e, PX(8.55), PY(4.85), T * .42); if (G.info.match) emoji(STADIUMS[G.info.mi].e, PX(7.95), PY(4.85), T * .38); else if (G.info.ev.length) emoji(G.info.ev[0].E.e, PX(7.95), PY(4.85), T * .38);
   }
   // night (pub)
-  if (S.venue === "pub") { const a = clamp((G.t / G.len - .45) * .45, 0, .2); if (a > 0) { c.fillStyle = `rgba(20,10,50,${a})`; c.fillRect(PX(0), PY(4.4), W * T, (H - 4.4) * T); } }
+  if (S.venue === "pub") { const a = clamp((G.O + G.t / G.sph - 20.15) * .065, 0, .2); if (a > 0) { c.fillStyle = `rgba(20,10,50,${a})`; c.fillRect(PX(0), PY(4.4), W * T, (H - 4.4) * T); } }
 }
 const patCol = p => p > .55 ? "#3E9B6B" : p > .28 ? "#E9A93A" : "#D2483A";
 function drawItem(d, x, y, s) {
@@ -3110,7 +3166,7 @@ function goalBox(o) {
 /* ---------- HUD ---------- */
 let uiT = 0, toastT = 0;
 function toastMsg(m, secs) { const t = $("toast"); t.textContent = m; t.style.opacity = 1; toastT = secs || 1.8; }
-function clock() { const V = VENUES[S.venue], h = V.open + (V.close - V.open) * Math.min(1, G.t / G.len), hh = Math.floor(h), mm = Math.floor((h - hh) * 4) * 15; return String(hh % 24).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
+function clock() { const h = G.O + Math.min(G.t, G.len) / G.sph, hh = Math.floor(h), mm = Math.floor((h - hh) * 4) * 15; return String(hh % 24).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
 function uiTick(dt) {
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $("toast").style.opacity = 0; }
   uiT -= dt; if (uiT > 0) return; uiT = .2;
@@ -3240,7 +3296,9 @@ function endDay() {
   if (G.ended) return;
   if (LV != null) return levelEnd();
   G.ended = true; closeMini();
-  const temps = (S.temps || []).filter(x => x.day === S.day), wages = S.staff.reduce((a, s) => a + s.wage, 0) + temps.reduce((a, x) => a + x.wage, 0), site = siteOf(S), rent = siteRent(site, S.venue, S.biz), B = bizOf(S), info = G.info;
+  // staff are paid by the hour: their wage is for the usual hours; the lights and heating cost by the hour too
+  const hm = hoursMul(S, S.day), [ho, hc] = hoursOn(S, S.day), bills = Math.round(billsHour(S) * ((hc - ho) - (STD_H[S.venue][1] - STD_H[S.venue][0])));
+  const temps = (S.temps || []).filter(x => x.day === S.day), wages = Math.round((S.staff.reduce((a, s) => a + s.wage, 0) + temps.reduce((a, x) => a + x.wage, 0)) * hm * 100) / 100, site = siteOf(S), rent = siteRent(site, S.venue, S.biz), B = bizOf(S), info = G.info;
   let fee = S.cash < 0 ? B.fee : 0;
   // repairs: a listed building every Sunday, a leaky roof on wet days
   let repairs = 0;
@@ -3256,7 +3314,7 @@ function endDay() {
   const extras = Object.values(G.extra || {}).reduce((a, v) => a + v, 0);
   S.temps = (S.temps || []).filter(x => x.day > S.day);
   const income = Math.round((G.rev + G.tips + bonus + extras) * 100) / 100;
-  const net = income - wages - rent - fee - repairs;
+  const net = income - wages - rent - fee - repairs - bills;
   const repBefore = S.rep, starsBefore = starsOf(S.rep);
   S.rep = Math.max(0, Math.round(S.rep + G.repD * (G.repD > 0 && hasPk(site, "listed") ? 1.1 : 1)));
   S.cash = Math.round((S.cash + net) * 100) / 100;
@@ -3322,7 +3380,8 @@ function endDay() {
     } else news.push(B.fee ? `You're overdrawn. The bank charges ${money(B.fee)} a night until you're back in the black.${B.evict ? ` ${left} more night${left === 1 ? "" : "s"} overdrawn and ${B.bust ? "the business goes bust" : "the landlord ends your lease"}.` : ""}` : "You're overdrawn, but on Peaceful there's no charge.");
   }
   if (repairs) news.push(`Repairs today: ${money(repairs)}${hasPk(site, "listed") && info.wd === 6 ? " (the weekly upkeep of a listed building)" : " (the leaky roof)"}.`);
-  const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
+  if (S.day % 7 === 0 && S.day < 36) news.push("🕘 A new week starts tomorrow. Check your opening hours on the Today tab: open longer when people are about here (weekends, breakfast near offices, Sunday lunch at a pub) and cut the quiet hours to save wages.");
+  const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, bills, hours: [ho, hc], fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
     messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G), repairs };
   S.last = last;
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
@@ -3348,7 +3407,7 @@ function endDay() {
     <div><span>Takings + tips</span><b>${money(last.rev + last.tips)}</b></div>
     ${Object.entries(last.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].e} ${EXTRA_N[k].n}</span><b class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : "−"}${money(Math.abs(Math.round(v)))}</b></div>`).join("")}
     ${bonus ? `<div><span>Goal rewards</span><b class="pos">${money(bonus)}</b></div>` : ""}
-    <div><span>Rent${wages ? " + wages" : ""}${repairs ? " + repairs" : ""}</span><b>−${money(rent + wages + fee + repairs)}</b></div>
+    <div><span>Rent${bills > 0 ? " + bills" : ""}${wages ? " + wages" : ""}${repairs ? " + repairs" : ""}</span><b>−${money(rent + bills + wages + fee + repairs)}</b></div>
     <div class="tot"><span>Profit</span><b class="${net >= 0 ? "pos" : "neg"}">${money(net)}</b></div>
     ${(S.places || []).length ? `<div><span>Your other places</span><b class="${others >= 0 ? "pos" : "neg"}">${others >= 0 ? "+" : ""}${money(others)}</b></div>` : ""}
     <div><span>Reputation</span><b class="${last.repD >= 0 ? "pos" : "neg"}">${last.repD >= 0 ? "+" : ""}${last.repD}</b></div></div>
@@ -3436,13 +3495,13 @@ function tabDay() {
       <p class="small">${L.served} of ${L.people} customers served${L.angry ? `, <b class="neg">${L.angry} walked out</b>` : ""}${L.turned ? `, <b class="neg">${L.turned} found nothing in stock</b>` : ""}${L.burnt ? `, ${L.burnt} burnt` : ""}.</p>
       <details class="small" id="moneyBox"><summary class="muted">Money in and out</summary><div class="lines" style="margin-top:6px">
       <div><span>Takings</span><b>${money(L.rev)}</b></div>${Object.entries(L.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].n}</span><b>${money(Math.round(v))}</b></div>`).join("")}<div><span>Tips</span><b>${money(L.tips)}</b></div>
-      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
+      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.bills ? `<div><span>${L.bills > 0 ? "Bills for the extra hours" : "Bills saved by shorter hours"}</span><b>${L.bills > 0 ? "−" : "+"}${money(Math.abs(L.bills))}</b></div>` : ""}${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
       ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
     if (L.advice) h += `<div class="news small"><b>💡 Next time</b><br>${L.advice.map(esc).join("<br>")}</div>`;
   } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
   h += `<div class="card"><div class="row spread"><h2>Reputation</h2><span class="stars">${starStr(st)}</span></div><div class="meter"><i style="width:${prog * 100}%"></i></div>
     <p class="small muted">${next ? `${Math.round(S.rep)} of ${next} for the next star.` : "Five stars: the best in town!"} About <b>${Math.round(expectedGroups(S))}</b> groups expected tomorrow.</p></div>`;
-  h += forecastCard() + bookingsCard();
+  h += forecastCard() + hoursCard() + bookingsCard();
   const auto = S.autoStock !== false, cost = topUpCost();
   h += `<div class="card"><div class="row spread"><div class="grow"><h2>Stock</h2><p class="small muted">${auto ? (cost > 0 ? `Topped up automatically when you open: about ${money(cost)}.` : "You have enough for tomorrow.") : "You buy stock yourself."}</p></div>
       <button class="btn sm ${auto ? "good" : ""}" data-act="autotoggle">${auto ? "Auto: on" : "Auto: off"}</button></div>
@@ -3466,6 +3525,23 @@ function forecastCard() {
     <p class="small"><b>${W.e} ${W.n}</b>${d0.match ? ` · <b>${STADIUMS[d0.mi].e} ${matchText(STADIUMS[d0.mi])}</b>` : ""}${d0.ev.map(o => ` · <b>${o.E.e} ${o.E.n}</b>`).join("")}${d0.rw ? " · 🚧 roadworks" : ""} · ${busy(dayCrowd(S, S.day))}. People will want ${W.say}.${d0.match ? " " + planOf(S, d0).say : ""}${d0.tv ? ` 📺 <b>${esc(d0.tv.n)}</b> on TV at ${d0.tv.kick}: fans come to watch it in your sports corner.` : ""}${groupsOn(S.day) > crewCap(S.day) * 1.15 ? ` <b class="neg">👥 About ${Math.round(groupsOn(S.day))} groups: more than you and your team can serve. Book agency staff in the Team tab.</b>` : ""}${likes.length ? ` Selling well: ${likes.join(" ")}` : ""}</p>
     <div class="fcs">${cells}</div>
     <p class="small muted">${calText(S.day)}. Plan stock, specials, staff and adverts for the days ahead. Events and seasons: City tab.</p></div>`;
+}
+// opening hours for each day of the week: who's about at each hour here, and what the hours cost in wages
+function hoursCard() {
+  const [lo, hi] = HOUR_LIM[S.venue], [sa, sz] = STD_H[S.venue], m = siteMix(siteOf(S)), pay = S.staff.reduce((a, x) => a + x.wage, 0);
+  let rows = "", mx = 0;
+  for (let wd = 0; wd < 7; wd++) for (let h = lo; h < hi; h++) mx = Math.max(mx, footRate(S.venue, wd, h + .5, m));
+  for (let k = 0; k < 7; k++) {
+    const day = S.day + k, wd = (day - 1) % 7, [a, z] = hoursOf(S, wd), g = groupsOn(day), wg = pay * hoursMul(S, day);
+    let bars = ""; for (let h = lo; h < hi; h++) bars += `<i class="${h >= a && h < z ? "on" : ""}" style="height:${Math.max(2, Math.round(footRate(S.venue, wd, h + .5, m) / mx * 22))}px"></i>`;
+    const opt = (v, from, to) => { let o = ""; for (let x = from; x <= to; x++) o += `<option value="${x}" ${x === v ? "selected" : ""}>${clockH(x)}</option>`; return o; };
+    rows += `<div class="hrow"><b>${WEEKDAYS[wd].slice(0, 3)}${k === 0 ? ` <span class="small muted">next</span>` : ""}</b><select data-hw="${wd}" data-he="o">${opt(a, lo, hi - MIN_HOURS)}</select><select data-hw="${wd}" data-he="c">${opt(z, a + MIN_HOURS, hi)}</select>
+      <span class="hbars">${bars}</span><small>≈${Math.round(g)} groups${pay ? ` · staff ${money(Math.round(wg))}` : ""}</small></div>`;
+  }
+  const custom = S.hours && S.hours.some(Boolean);
+  return `<div class="card"><div class="row spread"><h2>🕘 Opening hours</h2>${custom ? `<button class="btn sm" data-act="hreset">Usual hours</button>` : ""}</div>
+    <p class="small muted">Set the hours for each day of the week. The bars show when people are about round here (darker: when you're open). Longer days bring more customers if there's anyone about, but staff are paid by the hour and the lights and heating cost ${money(billsHour(S))} an hour more than usual. The usual hours are ${clockH(sa)} to ${clockH(sz)}; longer days take longer to play.</p>
+    <div class="hrows">${rows}</div></div>`;
 }
 function bookingsCard() {
   const list = (S.bookings || []).filter(b => b.day >= S.day).sort((a, b) => a.day - b.day);
@@ -3522,7 +3598,7 @@ function tabStaff() {
     const canPromote = s.lvl < 5 && (s.days || 0) >= promoDays(s.lvl), pcost = promoCost(s.lvl);
     const mood = s.morale > 60 ? "😊 happy" : s.morale > 30 ? "😐 okay" : "☹️ unhappy";
     h += `<div class="item"><div class="ic">${ROLES[s.role].e}</div><div class="grow"><b>${esc(s.name)} <span class="muted small">${roleName(S, s.role)} · level ${s.lvl}</span></b>
-      <span>${money(s.wage)} a day · ${mood}${s.lvl > 1 ? ` · ${15 * (s.lvl - 1)}% quicker at work, ${10 * (s.lvl - 1)}% on foot` : ""}</span>
+      <span>${money(s.wage)} for a usual day (${money(Math.round(s.wage / (STD_H[S.venue][1] - STD_H[S.venue][0]) * 100) / 100)} an hour) · ${mood}${s.lvl > 1 ? ` · ${15 * (s.lvl - 1)}% quicker at work, ${10 * (s.lvl - 1)}% on foot` : ""}</span>
       <span class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-act="raise" data-id="${s.id}">Pay rise</button>
       ${s.lvl < 5 ? `<button class="btn sm" data-act="promote" data-id="${s.id}" ${canPromote && canAfford(pcost) ? "" : "disabled"}>${canPromote ? `Promote ${money(pcost)}` : `Promote in ${promoDays(s.lvl) - (s.days || 0)}d`}</button>` : ""}
       <button class="btn sm" data-act="fire" data-id="${s.id}">Let go (${money(redundancy(s))})</button></span></div></div>`;
@@ -3543,7 +3619,7 @@ const tempWage = r => Math.round(fairWage(r, 2) * 1.9);
 function crewCap(day) {
   let c = 6; for (const st of S.staff) c += ROLE_CAP[st.role] * (.75 + .15 * st.lvl);
   for (const t of S.temps || []) if (t.day === day) c += ROLE_CAP[t.role];
-  return c;
+  return c * hoursMul(S, day); // a longer day spreads the same people over more hours
 }
 const groupsOn = day => expectedGroups(Object.assign({}, S, { day }));
 const loadWord = (g, c) => g > c * 1.15 ? ["Too busy", "neg"] : g > c * .9 ? ["Tight", ""] : ["Fine", "pos"];
@@ -3628,6 +3704,14 @@ function tabUp() {
 }
 $("mwrap").addEventListener("change", e => {
   if (e.target.id === "diffSel") { S.diff = +e.target.value; saveGame(); renderManage(); return; }
+  if (e.target.dataset.hw != null) {
+    const wd = +e.target.dataset.hw, v = +e.target.value, [lo, hi] = HOUR_LIM[S.venue];
+    S.hours = S.hours || [null, null, null, null, null, null, null];
+    let [a, z] = hoursOf(S, wd); if (e.target.dataset.he === "o") a = v; else z = v;
+    if (z - a < MIN_HOURS) { if (e.target.dataset.he === "o") z = Math.min(hi, a + MIN_HOURS); else a = Math.max(lo, z - MIN_HOURS); }
+    S.hours[wd] = [a, z]; const [sa, sz] = STD_H[S.venue]; if (a === sa && z === sz) S.hours[wd] = null;
+    const sc = $("mbody").scrollTop; saveGame(); renderManage(); $("mbody").scrollTop = sc; return;
+  }
   if (e.target.id === "plSel") { S.pl = +e.target.value; saveGame(); renderManage(); return; }
   if (e.target.id === "bizSel") { S.biz = Math.min(+e.target.value, S.biz != null ? S.biz : 1); saveGame(); renderManage(); return; }
   if (e.target.id === "discR" || e.target.id === "discP") {
@@ -3662,6 +3746,7 @@ $("mwrap").onclick = e => {
     if (n > 0) { const can = Math.min(n, Math.floor((S.cash + 150) / I.c)); if (can <= 0) return; spend(can * I.c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
     else { const back = Math.min(-n, S.bt[k] || 0, S.stock[k] || 0); spend(-back * I.c); S.stock[k] -= back; S.bt[k] -= back; }
   }
+  if (a === "hreset") S.hours = null;
   if (a === "autotoggle") { S.autoStock = S.autoStock === false; }
   if (a === "autostock") {
     const sug = suggested();

@@ -796,6 +796,18 @@
         "Staff wait by the things they use (the waiter by the pass, the porter by the sink, cooks by the cooker), wherever you've put them.",
         "Fixed: career mode days wouldn't start after the last update."
       ]
+    },
+    {
+      "id": 69,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: choose your opening hours",
+      "details": [
+        "New on the Today tab: opening hours for each day of the week. Open earlier, close later, or cut the quiet hours.",
+        "Bars show when people are about where you are: breakfast near offices, brunch at the weekend, Sunday lunch and Saturday nights at the pub, late nights near students and the city centre.",
+        "Longer days bring more customers if anyone's about, but staff are paid by the hour and every extra hour adds to the bills. Shorter days save both.",
+        "Close before the match ends or the big game is on TV and you'll miss those fans.",
+        "The busy-time warnings during the day now follow your hours and your area."
+      ]
     }
   ]
 }

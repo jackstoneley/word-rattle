@@ -185,6 +185,11 @@ stock automatically (`autoStock`). **Campaign**: `CHAPTERS` and `LEVELS` (in COR
 staff, `people`, goals `[kind, n]`, the first must be met); arrivals come from `levelArrivals(i)` with a seeded random, so a
 level is the same every time. Progress is `ll.camp` `{s: {level index: stars}}`, so append levels only. A campaign day uses a
 throwaway save (`slot = -1`, `LV` set) and never touches the free-play slots. Chapters 5-6 (Leicester café and pub, days 26-35) teach the free-play systems: a level may also set `bi` and `walls` (build-ins and walls, used as in free play), `waves` (extra groups `{u, sd, n, size, kids, fan, sp, watch, drinker, rowdy}` added by `levelArrivals`), `fans` (sets `G.mplan` food for fan groups), `likes` (dishes that sell 2.5x) and `book` (a booked party `{occ name, size, at, dep, room}`, which gets the walled room). Goal kind `extra` = money from build-ins.
+Opening hours (free play): `S.hours[weekday] = [open, close]` (null = `STD_H`, limits `HOUR_LIM`, at least `MIN_HOURS`). `footRate(venue, wd, h,
+mix)` is the hourly footfall by area; `footShare` scales `expectedGroups` (the usual hours keep the old numbers), `hoursMul` scales wages and
+`crewCap`, `billsHour` costs or saves each hour beyond or short of the usual. In a day `G.O`/`G.C` are the hours and `G.sph` seconds an hour
+(`SEC_H`; campaign days keep the usual hours); match, TV and booking times are in usual-day fractions turned into hours (`stdT`), and anything
+outside the hours is lost. Rush warnings: `rushTimes`, `rushSay`. Page: `hoursCard`. Managed places keep the usual hours.
 Staff levels: `lvlWalk`, `lvlSkill`, `fairWage` (+12% a level), `promoCost`, `promoDays`; letting go costs `redundancy(st)` (`st.td` total
 days worked). Idle staff wait a moment, then go to `staffHome` (worked out from the layout); waiters carry up to two more plates in `a.extra`.
 Learning and balance: `coachNext()` is the "what would a good player do next" planner behind the green helper arrow
