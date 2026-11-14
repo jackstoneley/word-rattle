@@ -185,11 +185,19 @@ stock automatically (`autoStock`). **Campaign**: `CHAPTERS` and `LEVELS` (in COR
 staff, `people`, goals `[kind, n]`, the first must be met); arrivals come from `levelArrivals(i)` with a seeded random, so a
 level is the same every time. Progress is `ll.camp` `{s: {level index: stars}}`, so append levels only. A campaign day uses a
 throwaway save (`slot = -1`, `LV` set) and never touches the free-play slots. Chapters 5-6 (Leicester café and pub, days 26-35) teach the free-play systems: a level may also set `bi` and `walls` (build-ins and walls, used as in free play), `waves` (extra groups `{u, sd, n, size, kids, fan, sp, watch, drinker, rowdy}` added by `levelArrivals`), `fans` (sets `G.mplan` food for fan groups), `likes` (dishes that sell 2.5x) and `book` (a booked party `{occ name, size, at, dep, room}`, which gets the walled room). Goal kind `extra` = money from build-ins.
-Opening hours (free play): `S.hours[weekday] = [open, close]` (null = `STD_H`, limits `HOUR_LIM`, at least `MIN_HOURS`). `footRate(venue, wd, h,
+Opening hours (free play): `S.hours[weekday] = [open, close]` (null = `STD_H`, limits `HOUR_LIM`: cafés 6-20, pubs 11-26 i.e. 2am, at least `MIN_HOURS`). `footRate(venue, wd, h,
 mix)` is the hourly footfall by area; `footShare` scales `expectedGroups` (the usual hours keep the old numbers), `hoursMul` scales wages and
 `crewCap`, `billsHour` costs or saves each hour beyond or short of the usual. In a day `G.O`/`G.C` are the hours and `G.sph` seconds an hour
 (`SEC_H`; campaign days keep the usual hours); match, TV and booking times are in usual-day fractions turned into hours (`stdT`), and anything
-outside the hours is lost. Rush warnings: `rushTimes`, `rushSay`. Page: `hoursCard`. Managed places keep the usual hours.
+outside the hours is lost. Rush warnings: `rushTimes`, `rushSay`. Page: `hoursCard(P)` (main place or a managed one; selects carry
+`data-hw`/`data-hp`, handled by a document-level change listener). Hour-by-hour record `G.hr {o, arr, out, rev, cost}` (`hrI`), kept as
+`S.last.hr` and per weekday in `S.hh`, drawn by `hourChart`. **Jeopardy**: tiredness `st.fat` (`fatDelta` per day from `hoursMul`, `fatSlow`
+on speed and skill, morale loss over 50, sick days `st.sick` = a day off, burnout quits at 95 with low morale; `bonusCost`, `st.bon` weekly);
+after midnight pubs get rowdier, an uncalmed rowdy table's third shout is a `fight` (`G.fights`, `G.breaks`); `nightRisk`/`licenceNight`:
+noise complaints `save.lic {n, until}`, the third in 21 days fines `LIC_FINE` and `hoursOn` caps closing at midnight for `LIC_DAYS`.
+Managed places run the same: `P.hours`, `P.fat`, `P.sick`, `P.bon`, `P.lic` and `P.design.L` (their free floor plan, no kitchen pieces)
+through `placeSv` (a stand-in save with the layout made); `runPlace` scales crew, wages and bills by the hours, has late fights and the
+licence, and uses `roomShare` / `biWalled` for noise and private rooms. `swapMain` swaps the two buildings' floor plans.
 Staff levels: `lvlWalk`, `lvlSkill`, `fairWage` (+12% a level), `promoCost`, `promoDays`; letting go costs `redundancy(st)` (`st.td` total
 days worked). Idle staff wait a moment, then go to `staffHome` (worked out from the layout); waiters carry up to two more plates in `a.extra`.
 Learning and balance: `coachNext()` is the "what would a good player do next" planner behind the green helper arrow
@@ -199,9 +207,8 @@ should pass at 0 s; most at 1 s, the rest via the easier retry, `EASY`, offered 
 Free play has `S.diff` (index into `DIFFS`: patience, crowd, burn, tips, rep), two seeded daily goals (`dailyGoals`, cash
 and rep rewards), rush warnings, a service streak (`G.streak` raises tips), end-of-day advice (`dayTips`, stored as
 `S.last.advice`), WebAudio cues (`snd`, `opts.sound`), and campaign chapter certificates (+£75 start cash each).
-Layout: `S.stations[i]` is the station in kitchen spot i (`slotPos(i)`) and may be `null` (an empty spot; use `kit()` for the
-list without gaps); `S.tpos[j]` is table j's position in `TABLE_POS` (old saves get `0..n-1` in `migrate`). The office's
-Rearrange map (`layout()`) swaps them. Seating: `pickTable` (bookings, build-in spots and the bar first; otherwise weighted random, right size or one spare seat most likely); `S.sign` (and `P.design.sign`, a level's `sign`) with a waiter gives the best fit. Stations are drawn by `drawAppliance` (glows while busy). Drink recipes have no `plate` step (`plated(r)`), so they use no plate.
+Layout: `S.stations[i]` is the station in kitchen spot i and may be `null` (an empty spot; use `kit()` for the list without gaps);
+`S.tpos[j]` and `bi.p` are the old 3x3 spots, now only read by `defaultLayout` to make the free floor plan `S.L` (see **Free layout**). Seating: `pickTable` (bookings, build-in spots and the bar first; otherwise weighted random, right size or one spare seat most likely); `S.sign` (and `P.design.sign`, a level's `sign`) with a waiter gives the best fit. Stations are drawn by `drawAppliance` (glows while busy). Drink recipes have no `plate` step (`plated(r)`), so they use no plate.
 Week and weather (free play only): `dayInfo(save, day)` gives `{wd, w, match}` from a seed, so the office forecast is exact;
 `dayCrowd` scales `expectedGroups` (clamped 0.7-1.35) and `prefW` weights orders by the recipe's `t` tag (`c` sells when hot,
 `w` when cold) and match day. Bookings live in `S.bookings` (`{id, day, at, size, occ, kids, dep, ok}`; requests come from
@@ -214,7 +221,7 @@ as tables with `bar: true` that only drinkers use; drinkers order rounds. Tables
 snags have `bad`), keyed by id in `S.site`: append only. `S.prem` is still the size (palettes, tables, slots, staff), so a move sets
 both (`moveTo`: fit-out `siteFit` + deposit of 28 days' rent in `S.dep`, refunded on leaving; what doesn't fit is sold). Rent
 `siteRent`, demand `siteDemand` (footfall `footOf`), local prices `sitePrice` (`lp(r)` in play), tips `siteTip`, week shape
-`weekPattern` (weekend rush times and warnings: `dayPeaks`), `seasonMul`, order tastes `areaPref` (inside `prefW`). Old saves get `OLD_SITE[venue][prem]`. Seasons: 21 days each,
+`weekPattern` (the day's rush times and warnings come from the hourly footfall: `rushTimes`, `rushSay`), `seasonMul`, order tastes `areaPref` (inside `prefW`). Old saves get `OLD_SITE[venue][prem]`. Seasons: 21 days each,
 84-day year, day 1 is the first Monday of spring (`calOf`); weather weights per season (`SEASONS[].w`, `WEATHER[5]` snow). `EVENTS`
 (keyed by id, append only): one a season picked per save and year from `EVENT_POOL`, both winter ones every year (`seasonEvents`);
 `evPull` is the strength at a place. Match days come from `matchOn` (stadium distance, `stadiumPull`) and play out by `matchPlan(stadium, weekday, venue, k)`: `reg` (usual customers, who avoid the crowds), fan `waves` round the kick-off time (cafés before a day game, pubs after it, or before and after an evening one with a `quiet` spell), fan group traits and `MATCH_FOOD` (only fans order it: `g.fan`); `planMul` scales `dayCrowd`; pubs get match-day bookings (`OCCASIONS` with `m`). `dayInfo` now also returns
@@ -242,12 +249,13 @@ daily fee at the end of the day). Televised sport `tvOn` (pubs with a sports cor
 Moving (`fitTo`) leaves walls behind and keeps build-ins that fit. **Busy days**: `expectedGroups` lets more than the tables' turnover
 arrive on busy days; `crewCap` (Lee Lee 6 groups, plus `ROLE_CAP` per worker, measured with a coachNext bot) drives the 👥 warnings, and
 `S.temps [{day, role, name, wage}]` are agency staff for one day (actors in `startDay`, paid in `endDay`).
-**Free layout** (the main place only; managed places keep the 3x3 `P.design`): `S.L {v, st, tb [[x,y,rot]], bin, plates, pass, bi {id: [x,y]},
+**Free layout** (the main place and, through `placeSv`, managed places): `S.L {v, st, tb [[x,y,rot]], bin, plates, pass, bi {id: [x,y]},
 fr, walls {"v:i:j" | "h:i:j": 1 wall | 2 door}}`, top-left corners on a half-unit grid (`GW` x `GH`, `GU` = .5; nothing is built from y 13, the
 queue, door and bar strip). `ensureLayout` makes it from the old slots, `tpos`, `bi.p` and `S.walls` (`defaultLayout`) and `fixLayout` keeps it in
 step with what is owned; `S.L = null` regenerates it (moves, swaps). `layoutProblem` is the one check (inside the room, no overlaps, everything
 reachable from `DOOR_CELL`); `autoPlace` finds room for new things; in a day `G.grid`, `gridPath` (A*), `goStand`, `roomGrid`/`roomAt` (noise) and
-`gridEnclosed` (meeting and function rooms). Editor: `layoutGrid` (`LG`), walls cost `WALL_SEG` / `DOOR_SEG`.
+`gridEnclosed` (meeting and function rooms). Editor: `openLayout(P)` → `layoutGrid` (`LG.sv` the save or a place's stand-in,
+`LG.set`), walls cost `WALL_SEG` / `DOOR_SEG`. `ensureLayout` also re-fits a plan that no longer works (a table made bigger).
 Balance scripts: compare suburbs and centre with `expectedGroups` on stand-in saves (the centre should lose money before ~5★ and
 earn 2-3× the suburbs once its nearest rivals are beaten).
 

@@ -808,6 +808,18 @@
         "Close before the match ends or the big game is on TV and you'll miss those fans.",
         "The busy-time warnings during the day now follow your hours and your area."
       ]
+    },
+    {
+      "id": 70,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: long hours have a cost",
+      "details": [
+        "Staff get tired on shifts much longer than usual. Tired staff work slower, lose heart, go off sick and can burn out and quit. Usual or short days let them recover; good pay and a weekly bonus (Team tab) help.",
+        "Pubs can stay open until 2am. After midnight it gets rowdier, and a rowdy table nobody calms down will start a fight. In quiet residential streets the neighbours complain; three complaints in three weeks brings a council fine and the late licence is taken away for two weeks.",
+        "New chart after each day: takings, arrivals and walk-outs hour by hour against what each hour costs. The Opening hours card keeps the last chart for every day of the week.",
+        "Places your managers run now have their own opening hours, a tired-or-fresh team with a bonus button, and the same free floor plan as your own place.",
+        "Fixed: making a table bigger could leave it overlapping something."
+      ]
     }
   ]
 }
