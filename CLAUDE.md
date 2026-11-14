@@ -184,7 +184,7 @@ append, never reorder or rename ids. `window.LL` exposes the day for Playwright 
 stock automatically (`autoStock`). **Campaign**: `CHAPTERS` and `LEVELS` (in CORE) define fixed days (menu, stations, tables,
 staff, `people`, goals `[kind, n]`, the first must be met); arrivals come from `levelArrivals(i)` with a seeded random, so a
 level is the same every time. Progress is `ll.camp` `{s: {level index: stars}}`, so append levels only. A campaign day uses a
-throwaway save (`slot = -1`, `LV` set) and never touches the free-play slots.
+throwaway save (`slot = -1`, `LV` set) and never touches the free-play slots. Chapters 5-6 (Leicester café and pub, days 26-35) teach the free-play systems: a level may also set `bi` and `walls` (build-ins and walls, used as in free play), `waves` (extra groups `{u, sd, n, size, kids, fan, sp, watch, drinker, rowdy}` added by `levelArrivals`), `fans` (sets `G.mplan` food for fan groups), `likes` (dishes that sell 2.5x) and `book` (a booked party `{occ name, size, at, dep, room}`, which gets the walled room). Goal kind `extra` = money from build-ins.
 Learning and balance: `coachNext()` is the "what would a good player do next" planner behind the green helper arrow
 (`opts.help` auto/on/off; auto shows it always in campaign days 1-5 and free-play days 1-3, later after ~5 s idle). A bot
 that only follows `coachNext()` is the best balance test: run every campaign day with a 0 s and a 1 s reaction delay (all

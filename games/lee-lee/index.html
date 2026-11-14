@@ -462,7 +462,9 @@ const CHAPTERS = [
   { n: "The Bakery", v: "cafe", pal: 1, e: "🧁", d: "Mixing, the oven, perfect coffee and your first member of staff." },
   { n: "The Deli", v: "cafe", pal: 2, e: "🥪", d: "Grills, long recipes, a waiter, a cook, and a food critic." },
   { n: "The Pub", v: "pub", pal: 0, e: "🍺", d: "Pulling pints, rowdy nights, pub grub and a bar team." },
-  { n: "The Restaurant", v: "pub", pal: 3, e: "🍽️", d: "Roasts and steaks, a full team, and the grand opening.", calm: 1 }
+  { n: "The Restaurant", v: "pub", pal: 3, e: "🍽️", d: "Roasts and steaks, a full team, and the grand opening.", calm: 1 },
+  { n: "Leicester: the café", v: "cafe", pal: 3, e: "🧸", d: "Build-ins, walls and doors, a booked meeting, a home game and the Diwali crowds." },
+  { n: "Leicester: the pub", v: "pub", pal: 2, e: "📺", d: "Football fans, the big screen, pool and fruit machines, a supporters' club and a taste-off." }
 ];
 const LEVELS = [
   { ch: 0, n: "First customers", menu: ["tea"], st: ["kettle", "sink", "top"], tables: [2, 2], people: 3, size: 1, len: 100,
@@ -543,7 +545,49 @@ const LEVELS = [
     tip: ["The critic is back, and this time it's a proper restaurant.", "Nothing burnt for the third star."] },
   { ch: 4, n: "Grand opening", menu: ["fizz", "roast", "steak", "curry", "pie", "pudding", "wine", "lager"], st: ["fridge", "tap", "board", "board", "bowl", "grill", "hob", "oven", "oven", "dishwasher", "sink", "top", "top"], tables: [2, 2, 4, 4, 4, 4, 2, 2, 4], plates: 14, staff: [["cook", 3], ["cook", 2], ["waiter", 3], ["waiter", 2], ["porter", 2], ["drinks", 2]], people: 34, size: 4, len: 260,
     goals: [["served", 29], ["out", 2], ["earn", 450]],
-    tip: ["Opening night of Lee Lee's own restaurant!", "Everyone you've trained is here. Run the kitchen like a pro."] }
+    tip: ["Opening night of Lee Lee's own restaurant!", "Everyone you've trained is here. Run the kitchen like a pro."] },
+  // chapter 5: a café in Leicester
+  { ch: 5, n: "Soft play Saturday", menu: ["tea", "latte", "toastie", "soldiers", "icecream"], st: ["fridge", "kettle", "coffee", "board", "toaster", "hob", "sink", "top"], tables: [4, 4, 4, 2], bi: { softplay: { p: 5 } },
+    staff: [["waiter", 1], ["cook", 1]], plates: 14, people: 8, size: 2, len: 240, waves: [{ u: .45, sd: .3, n: 6, size: [3, 4], kids: 1 }],
+    goals: [["served", 18], ["out", 3], ["extra", 10]],
+    tip: ["This café has a soft play corner 🧸: families come more often, their children stay happy, and each child pays £2.50 to play.", "Children order from the kids' menu: egg & soldiers and ice cream.", "Soft play is noisy, so other tables in the same room get a bit less patient. Walls fix that (a later day).", "In your own place, build these in Upgrades → Build-ins."] },
+  { ch: 5, n: "Laptops & lattes", menu: ["tea", "latte", "croissant", "muffin", "toastie"], st: ["fridge", "kettle", "coffee", "bowl", "oven", "board", "toaster", "sink", "top"], tables: [2, 2, 4, 2], bi: { nook: { p: 4 } },
+    staff: [["drinks", 1], ["waiter", 1]], plates: 12, people: 7, size: 2, len: 250, waves: [{ u: .35, sd: .2, n: 5, size: [1, 1], sp: "nook" }],
+    goals: [["served", 9], ["extra", 8], ["out", 2]],
+    tip: ["The reading & work corner 📚 fills with students and people on laptops.", "They stay for hours ordering coffee and cake, round after round, and pay £2 for the desk when they leave.", "Keep their drinks coming: every round is another order.", "In free play these do best near offices and the universities: the City tab says who comes to your area."] },
+  { ch: 5, n: "The board meeting", menu: ["tea", "latte", "toastie", "salad", "muffin"], st: ["fridge", "kettle", "coffee", "board", "toaster", "bowl", "oven", "sink", "top"], tables: [2, 2, 4, 2], bi: { meet: { p: 7 } },
+    walls: { v20: 1, v21: 1, h11: 2, h21: 1 }, staff: [["waiter", 1]], plates: 12, people: 10, size: 2, len: 240, book: { occ: "Business meeting", size: 6, at: .3, dep: 80, room: 1 },
+    goals: [["party", 1], ["served", 12], ["out", 2]],
+    tip: ["A business meeting of six has booked the meeting room 🤝 at 10:45. Look after them first: they pay for the room.", "A meeting room only works with walls all round and a door: see the walls on the floor. People walk round walls through the doors.", "In your own place, put up walls and doors in Upgrades → Layout → Rearrange: tap the gaps between spots."] },
+  { ch: 5, n: "Home game", menu: ["tea", "latte", "toast", "toastie", "eggs", "english"], st: ["fridge", "kettle", "coffee", "toaster", "toaster", "board", "grill", "hob", "sink", "dishwasher", "top", "top"], tables: [2, 2, 4, 4, 2, 2], plates: 18,
+    staff: [["waiter", 2], ["cook", 2], ["porter", 1]], fans: "football", people: 6, size: 2, len: 250, waves: [{ u: .52, sd: .11, n: 8, size: [1, 3], fan: "football" }],
+    goals: [["served", 15], ["out", 3], ["burnt", 1]],
+    tip: ["Leicester City are at home at 3pm. Your usual shoppers stay away from the crowds, but fans pile in for fry-ups, toasties and hot drinks between about 11:30 and 2.", "It's far too busy for one person, so you've booked agency staff for the day: two waiters, two cooks and a kitchen porter.", "In free play the forecast shows 👥 on days like this: book agency staff in the Team tab."] },
+  { ch: 5, n: "Diwali on the Golden Mile", menu: ["tea", "latte", "muffin", "pancakes", "croissant", "sponge"], st: ["fridge", "kettle", "coffee", "bowl", "bowl", "oven", "oven", "hob", "board", "dishwasher", "sink", "top", "top"], tables: [4, 4, 4, 4, 2, 2, 6], plates: 18,
+    staff: [["waiter", 2], ["waiter", 2], ["cook", 2], ["cook", 2], ["drinks", 2], ["porter", 1]], likes: ["muffin", "pancakes", "sponge", "croissant"], people: 34, size: 3, len: 260,
+    goals: [["served", 28], ["out", 4], ["streak", 6]],
+    tip: ["It's Diwali, and the Golden Mile is packed with lights, fireworks and crowds.", "Everyone wants something sweet: cakes, muffins, pancakes and croissants sell fastest.", "In free play one big event comes each season (two at Christmas). The City tab shows when and where, and how close it is to you."] },
+  // chapter 6: a pub in Leicester
+  { ch: 6, n: "Final whistle", menu: ["lager", "chips", "burger", "wine"], st: ["fridge", "tap", "tap", "fryer", "board", "grill", "sink", "top"], tables: [4, 4, 4, 2, 2], plates: 14,
+    staff: [["drinks", 2], ["floor", 1], ["cook", 1]], fans: "football", people: 6, size: 2, len: 240, waves: [{ u: .07, sd: .06, n: 9, size: [2, 4], fan: "football", rowdy: .4 }],
+    goals: [["served", 22], ["out", 3], ["mess", 0]],
+    tip: ["The match finished at 5 and the fans are on their way: they pour in as soon as you open.", "Fans drink plenty, order beer, chips and burgers, and some get rowdy: your cleaner calms them down, or tap them yourself.", "Couples out for dinner stay away on match days. In free play only pubs close to a ground get the fans."] },
+  { ch: 6, n: "On the big screen", menu: ["lager", "wine", "chips", "burger", "ploughmans"], st: ["fridge", "tap", "tap", "fryer", "board", "grill", "sink", "top"], tables: [2, 2, 4, 4], bi: { sports: { p: 0, lv: 2 } },
+    walls: { v00: 1, h00: 2 }, staff: [["drinks", 2], ["waiter", 1], ["cook", 1]], fans: "football", people: 7, size: 2, len: 250, waves: [{ u: .4, sd: .05, n: 6, size: [2, 3], sp: "sports", watch: 1, fan: "football" }],
+    goals: [["served", 16], ["out", 2], ["streak", 4]],
+    tip: ["Tonight's big game is on the big screen 📺 at 8pm. Fans fill the sports corner just before kick-off, stay for the game and order round after round.", "A wall with a door keeps the noise away from couples eating in the rest of the pub, so they stay patient.", "In free play a sports TV brings in fans for televised games wherever your pub is. The channels cost money every day."] },
+  { ch: 6, n: "Pool and fruit machines", menu: ["lager", "wine", "cocktail", "chips", "burger"], st: ["fridge", "tap", "tap", "bowl", "fryer", "board", "grill", "sink", "top"], tables: [2, 2, 4, 2], bi: { pool: { p: 2 }, fruit: { n: 2 } },
+    staff: [["drinks", 2], ["floor", 1]], rowdy: 1, people: 12, size: 2, len: 240, waves: [{ u: .6, sd: .2, n: 5, size: [2, 3], sp: "pool" }],
+    goals: [["extra", 18], ["served", 16], ["out", 2]],
+    tip: ["Groups of friends come to play pool 🎱: they mostly drink, stay for more rounds and pay £1 a game each.", "The fruit machines 🎰 take coins from drinkers all night: the busier it is, the more they make.", "Watch the money from build-ins on the end-of-day summary."] },
+  { ch: 6, n: "Supporters' club do", menu: ["lager", "wine", "chips", "burger", "pie", "fishchips"], st: ["fridge", "tap", "tap", "fryer", "board", "grill", "bowl", "oven", "sink", "top", "top"], tables: [2, 2, 4, 4, 2], bi: { func: { p: 8 } },
+    walls: { v21: 2, h12: 1, h22: 1 }, staff: [["cook", 2], ["drinks", 2], ["waiter", 1]], plates: 14, fans: "football", people: 12, size: 2, len: 250, book: { occ: "Supporters' club", size: 6, at: .15, dep: 110, room: 1 },
+    goals: [["party", 1], ["served", 16], ["out", 2]],
+    tip: ["The supporters' club has booked the function room 🎉 for after the game. Six of them, hungry, at 6pm.", "Function rooms need walls all round and a door. They bring party bookings that pay for the room.", "In free play, pubs near a ground get match-day bookings like this one."] },
+  { ch: 6, n: "Taste-off", menu: ["lager", "wine", "cocktail", "burger", "fishchips", "pie", "pudding"], st: ["fridge", "tap", "bowl", "bowl", "board", "board", "grill", "fryer", "oven", "sink", "top", "top"], tables: [2, 2, 4, 4, 2], plates: 14,
+    staff: [["cook", 2], ["cook", 2], ["waiter", 2], ["drinks", 2]], people: 16, size: 3, len: 250,
+    goals: [["duel", 80], ["served", 14], ["out", 1]],
+    tip: ["The Red Lion down the road has challenged you to a taste-off. Keep at least 80% of your customers happy to win.", "Win and they lose trade; your reputation and buzz bring their customers to you.", "In free play, challenge rivals near your place from the City tab or by tapping them on the map. It's the way to take on the big names in town."] }
 ];
 /* Free-play difficulty (S.diff index): pat multiplies how fast patience drains, crowd the number of customers,
    burn the time before food burns, tips and rep what good service earns. */
@@ -554,10 +598,10 @@ const DIFFS = [
 ];
 const diffOf = save => DIFFS[save && save.diff != null ? save.diff : 1] || DIFFS[1];
 const GOAL_TEXT = { party: () => "Give the booked party a great time", streak: n => `A streak of ${n} happy tables`, served: n => `Serve ${n} customers`, out: n => n ? `No more than ${n} walk out` : "Nobody walks out", burnt: n => n ? `No more than ${n} burnt` : "Nothing burnt",
-  earn: n => `Take £${n} (with tips)`, duel: n => `Taste-off: keep ${n}% of customers happy`, perfect: n => `${n} perfect pours`, critic: () => "Make the critic happy", mess: n => "No mess left at closing" };
+  earn: n => `Take £${n} (with tips)`, duel: n => `Taste-off: keep ${n}% of customers happy`, extra: n => `Earn £${n} from build-ins`, perfect: n => `${n} perfect pours`, critic: () => "Make the critic happy", mess: n => "No mess left at closing" };
 function goalMet(kind, n, r) {
   return kind === "served" ? r.served >= n : kind === "out" ? r.angry <= n : kind === "burnt" ? r.burnt <= n : kind === "earn" ? r.rev + r.tips >= n
-    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : kind === "streak" ? r.streak >= n : kind === "party" ? r.party === "happy" : kind === "duel" ? r.served >= 6 && r.happyPct >= n : false;
+    : kind === "perfect" ? r.perfect >= n : kind === "critic" ? r.critic === "loved" : kind === "mess" ? r.messes <= n : kind === "streak" ? r.streak >= n : kind === "party" ? r.party === "happy" : kind === "duel" ? r.served >= 6 && r.happyPct >= n : kind === "extra" ? r.extra >= n : false;
 }
 function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function levelArrivals(i) {
@@ -569,6 +613,15 @@ function levelArrivals(i) {
     return { t: u * L.len, size, late, rowdy: !!L.rowdy && late && size <= 3 && r() < .5 };
   });
   if (L.critic) { const a = arr[Math.floor(n * .45)]; a.critic = 1; a.rowdy = false; }
+  for (const w of L.waves || []) for (let k = 0; k < w.n; k++) {
+    const u = Math.max(.01, Math.min(.88, w.u + w.sd * (r() + r() + r() - 1.5) / 1.5)), size = Math.min(big, w.size[0] + Math.floor(r() * (w.size[1] - w.size[0] + 1)));
+    const a = { t: u * L.len, size, late: CHAPTERS[L.ch].v === "pub" && u > .55 };
+    if (w.kids && size >= 3) a.kids = size - 2;
+    if (w.fan) a.fan = w.fan; if (w.sp) a.sp = w.sp; if (w.watch) a.watch = true; if (w.drinker) a.drinker = true;
+    a.rowdy = !!w.rowdy && r() < w.rowdy;
+    arr.push(a);
+  }
+  if (L.book) { const B = L.book, occ = OCCASIONS.findIndex(o => o.n === B.occ); arr.push({ t: B.at * L.len, size: B.size, party: { id: 1, day: 0, at: B.at, size: B.size, occ, kids: 0, dep: B.dep, ok: true, room: B.room || 0 }, kids: 0, fan: OCCASIONS[occ].m || null }); }
   return arr.sort((a, b) => a.t - b.t);
 }
 
@@ -1460,7 +1513,9 @@ function levelIntro(i) {
 }
 function levelSave(i) {
   const L = LEVELS[i], C = CHAPTERS[L.ch], s = newSave(C.v, C.n + ": " + L.n);
-  s.owned = L.menu.slice(); s.stations = L.st.slice(0, 13); s.tables = L.tables.slice(0, 9); s.tpos = s.tables.map((_, i) => i); s.plates = Math.max(L.plates || 6, Math.ceil(L.people * .45)); s.prem = C.pal;
+  s.owned = L.menu.slice(); s.stations = L.st.slice(0, 13); s.tables = L.tables.slice(0, 9);
+  s.bi = JSON.parse(JSON.stringify(L.bi || {})); s.walls = Object.assign({}, L.walls || {});
+  const taken = new Set(Object.keys(biCells(s)).map(Number)); s.tpos = []; for (let p = 0; s.tpos.length < s.tables.length && p < 9; p++) if (!taken.has(p)) s.tpos.push(p); s.plates = Math.max(L.plates || 6, Math.ceil(L.people * .45)); s.prem = C.pal;
   s.stock = {}; for (const r of L.menu) for (const k in RECIPES[r].i) s.stock[k] = 999;
   s.staff = (L.staff || []).map(([role, lvl], k) => ({ id: "c" + k, name: FIRST[(i * 7 + k * 5) % FIRST.length], role, lvl, wage: 0, morale: 70, days: 0 }));
   s.rep = 0; s.camp = [];
@@ -1533,7 +1588,7 @@ function startDay() {
     spots: [null, null, null, null, null, null], party: null, taps: [], idle: 0, coach: null, slack: 0, outBy: { queue: 0, order: 0, food: 0 }, plateless: 0, streak: 0, bestStreak: 0, clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
   G.extra = {};
   // build-ins that seat people: the reading corner, sports corner, pool table and private rooms; rooms for noise
-  if (LV == null) {
+  {
     const cells = biCells(S);
     for (const pos in cells) { const id = cells[pos], B = BI[id], [x, y] = TABLE_POS[+pos]; if (B.seats) G.tables.push({ i: G.tables.length, x, y, seats: id === "sports" && (S.bi.sports.lv || 1) > 1 ? 6 : B.seats, sp: id, room: B.room ? enclosed(S.walls || {}, +pos) : false, group: null, dirty: 0, claim: null }); }
     G.rooms = roomsOf(S.walls || {}); G.biRoom = {}; for (const pos in cells) G.biRoom[cells[pos]] = G.rooms[pos];
@@ -1542,10 +1597,15 @@ function startDay() {
   if (LV == null && S.venue === "pub" && S.bar) BAR_SPOTS.slice(0, BAR[S.bar - 1].spots).forEach(([x, y], k) => G.tables.push({ i: G.tables.length, x, y, seats: 3, bar: true, group: null, dirty: 0, claim: null }));
   G.info = LV == null ? dayInfo(S, S.day) : null;
   G.tipM = LV == null ? siteTip(S) : 1;
-  G.tvLive = LV == null && hasBi(S, "sports") && !!(G.info.tv || (G.info.match && S.venue === "pub"));
+  G.tvLive = hasBi(S, "sports") && (LV != null ? !!LEVELS[LV].fans : !!(G.info.tv || (G.info.match && S.venue === "pub")));
   const info = G.info;
   // arrivals
-  if (LV != null) { G.len = LEVELS[LV].len; G.arr = levelArrivals(LV); }
+  if (LV != null) {
+    const L = LEVELS[LV]; G.len = L.len; G.arr = levelArrivals(LV);
+    if (L.fans) G.mplan = { food: MATCH_FOOD[S.venue][L.fans] };
+    // a booked meeting or party gets the private room
+    for (const a of G.arr) if (a.party && a.party.room) { const t = G.tables.find(t => t.room && !t.res); if (t) t.res = a.party; }
+  }
   const n = LV != null ? 0 : Math.max(3, Math.round(expectedGroups(S) * rnd(.9, 1.1)));
   const big = Math.max(...S.tables), critic = LV == null && (S.camp || []).some(c => c.id === "critic");
   // match days: fans come in waves round the game (G.mplan), the usual customers thin out
@@ -1674,7 +1734,7 @@ function mkActor(o) { return Object.assign({ path: [], then: null, work: null, h
 
 /* ---------- movement & work ---------- */
 function route(a, x, y) {
-  const p = [], wp = (x0, y0, x1, y1) => LV == null && S.walls ? wallPath(S.walls, x0, y0, x1, y1) : [];
+  const p = [], wp = (x0, y0, x1, y1) => S.walls ? wallPath(S.walls, x0, y0, x1, y1) : [];
   if (zone(a.y) !== zone(y)) {
     if (zone(a.y) === 0) p.push([GAPX, 3.45], [GAPX, 4.9], ...wp(GAPX, 4.9, x, y));
     else p.push(...wp(a.x, a.y, GAPX, 4.9), [GAPX, 4.9], [GAPX, 3.45]);
@@ -1682,7 +1742,7 @@ function route(a, x, y) {
   p.push([x, y]); return p;
 }
 // customers walk round walls too, through the doors
-function walkTo(pp, x, y) { pp.tx = x; pp.ty = y; pp.wp = LV == null && S.walls ? wallPath(S.walls, pp.x, pp.y, x, y) : []; }
+function walkTo(pp, x, y) { pp.tx = x; pp.ty = y; pp.wp = S.walls ? wallPath(S.walls, pp.x, pp.y, x, y) : []; }
 function goTo(a, x, y, then) { a.path = route(a, x, y); a.then = then || null; }
 function work(a, dur, done, cancel, label) { a.work = { t: 0, dur, done, cancel, label }; }
 function interrupt(a) { if (a.work && a.work.cancel) a.work.cancel(); a.work = null; a.path = []; a.then = null; }
@@ -1743,6 +1803,7 @@ function chooseOrder(g, taken, kind) {
     w *= prefW(G.info, r);
     const ff = g.fan === "tv" && G.info && G.info.tv ? MATCH_FOOD.pub[G.info.tv.what] : g.fan && G.mplan ? G.mplan.food : null;
     if (ff) w *= ff.includes(r) ? 3 : .4; // fans order match-day food; everyone else orders as usual
+    if (LV != null && LEVELS[LV].likes && LEVELS[LV].likes.includes(r)) w *= 2.5; // a festival day's favourites
     opts.push([r, w]);
   }
   if (!opts.length) return null;
@@ -1810,7 +1871,7 @@ function trySeat() {
     const t = free[0]; t.group = g; t.res = null; g.table = t; g.state = "walk"; g.pat = Math.max(g.pat, .9);
     const offs = seatsOf(t);
     g.people.forEach((p, i) => walkTo(p, t.x + offs[i][0], t.y + offs[i][1]));
-    if (g.kids && hasBi(S, "softplay") && LV == null) addExtra("soft", 2.5 * g.kids, t);
+    if (g.kids && hasBi(S, "softplay")) addExtra("soft", 2.5 * g.kids, t);
     G.queue.splice(qi, 1); qi--;
   }
   let qx = .9;
@@ -1818,7 +1879,7 @@ function trySeat() {
 }
 function patMul(g) {
   let m = (1 - .06 * S.decor) * (LV != null ? (EASY ? .6 : .78) : diffOf(S).pat);
-  if (LV == null && G.rooms) {
+  if (G.rooms) {
     if (g.kids && hasBi(S, "softplay")) m *= .85;
     const t = g.table, pos = t && !t.sp && !t.bar ? S.tpos[t.i] : null;
     if (pos != null && !g.fan && !g.watch && !g.drinker) { // noise from a room it shares: TV crowds on game days, children at the soft play
@@ -1845,7 +1906,7 @@ function payAndLeave(g) {
   const D = diffOf(S), glad = g.pat > .55;
   const tip = Math.round((total * (.04 + .22 * g.pat) * (1 + .06 * S.decor) * (1 + .05 * Math.min(G.streak, 10)) * D.tips * (G.tipM || 1) + g.bonus) * 10) / 10;
   G.rev += total; G.tips += tip; G.served += g.size;
-  if (LV == null) {
+  {
     if (g.sp === "nook" && g.table && g.table.sp === "nook") addExtra("nook", 2 * g.size, g.table);
     const fm = S.bi && S.bi.fruit ? S.bi.fruit.n || 1 : 0;
     if (fm && (g.drinker || g.late || g.fan || g.sp === "pool")) addExtra("fruit", g.size * fm * rnd(.3, 1.4));
@@ -1910,7 +1971,7 @@ function groupsStep(dt) {
         if (g.kids && !g.spilt && g.timer < 4) { g.spilt = true; if (Math.random() < .35) { addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.5, 1)); fx(g.table.x, g.table.y - 1, "Oops! 🥤", "#5B8DB8"); } }
         if (g.timer <= 0) {
           const more = g.watch || g.sp === "pool" || g.sp === "nook";
-          if ((g.drinker || more) && g.rounds < (more ? 3 : 2) && G.open && Math.random() < (more ? .75 : .5)) { g.rounds++; if (g.sp === "pool") addExtra("pool", g.size, g.table); g.state = "order"; g.pat = Math.max(g.pat, .8); fx(g.table.x, g.table.y - 1, g.sp === "nook" ? "Another coffee, please ☕" : "Same again! 🍻", "#B07A10"); snd("order"); }
+          if ((g.drinker || more) && g.rounds < (more ? 3 : 2) && G.open && G.t < G.len - 30 && Math.random() < (more ? .75 : .5)) { g.rounds++; if (g.sp === "pool") addExtra("pool", g.size, g.table); g.state = "order"; g.pat = Math.max(g.pat, .8); fx(g.table.x, g.table.y - 1, g.sp === "nook" ? "Another coffee, please ☕" : "Same again! 🍻", "#B07A10"); snd("order"); }
           else payAndLeave(g);
         }
         break;
@@ -2458,7 +2519,7 @@ function draw() {
     c.fillStyle = P.top; rr(c, PX(left + .03), PY(13.42), (8.89 - left) * T, .22 * T, 4); c.fill();
     emoji("🍺", PX(8.6), PY(13.55), T * .32); text("BAR", PX(left + .35), PY(13.62), T * .2, "#F5E9DA", 800);
   }
-  if (LV == null) drawWallsBi(P);
+  drawWallsBi(P);
   // sorted scene: tables, people, actors
   const items = [];
   for (const t of G.tables) items.push({ y: t.y, f: () => drawTable(t, P) });
@@ -2812,7 +2873,7 @@ function newBookingRequest() {
 }
 
 /* How the day is going, in the shape goalMet reads. */
-function progress() { return { happyPct: G.people ? Math.round(100 * G.happy / G.people) : 0, served: G.served + G.thrown, angry: G.angry, burnt: G.burnt, rev: G.rev, tips: G.tips, perfect: G.perfect, critic: G.critic, messes: G.messes.length, streak: G.bestStreak, party: G.party }; }
+function progress() { return { extra: Object.values(G.extra || {}).reduce((a, v) => a + Math.max(0, v), 0), happyPct: G.people ? Math.round(100 * G.happy / G.people) : 0, served: G.served + G.thrown, angry: G.angry, burnt: G.burnt, rev: G.rev, tips: G.tips, perfect: G.perfect, critic: G.critic, messes: G.messes.length, streak: G.bestStreak, party: G.party }; }
 
 /* ---------- end of the day ---------- */
 function endDay() {
