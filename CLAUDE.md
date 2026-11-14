@@ -207,7 +207,7 @@ as tables with `bar: true` that only drinkers use; drinkers order rounds. Tables
 snags have `bad`), keyed by id in `S.site`: append only. `S.prem` is still the size (palettes, tables, slots, staff), so a move sets
 both (`moveTo`: fit-out `siteFit` + deposit of 28 days' rent in `S.dep`, refunded on leaving; what doesn't fit is sold). Rent
 `siteRent`, demand `siteDemand` (footfall `footOf`), local prices `sitePrice` (`lp(r)` in play), tips `siteTip`, week shape
-`weekPattern`, `seasonMul`, order tastes `areaPref` (inside `prefW`). Old saves get `OLD_SITE[venue][prem]`. Seasons: 21 days each,
+`weekPattern` (weekend rush times and warnings: `dayPeaks`), `seasonMul`, order tastes `areaPref` (inside `prefW`). Old saves get `OLD_SITE[venue][prem]`. Seasons: 21 days each,
 84-day year, day 1 is the first Monday of spring (`calOf`); weather weights per season (`SEASONS[].w`, `WEATHER[5]` snow). `EVENTS`
 (keyed by id, append only): one a season picked per save and year from `EVENT_POOL`, both winter ones every year (`seasonEvents`);
 `evPull` is the strength at a place. Match days come from `matchOn` (stadium distance, `stadiumPull`) and play out by `matchPlan(stadium, weekday, venue, k)`: `reg` (usual customers, who avoid the crowds), fan `waves` round the kick-off time (cafés before a day game, pubs after it, or before and after an evening one with a `quiet` spell), fan group traits and `MATCH_FOOD` (only fans order it: `g.fan`); `planMul` scales `dayCrowd`; pubs get match-day bookings (`OCCASIONS` with `m`). `dayInfo` now also returns

@@ -775,6 +775,15 @@
         "Lee Lee, staff and customers find their own way round whatever you build. The game won't let you block the way to anything.",
         "Your existing layout carries over as it was."
       ]
+    },
+    {
+      "id": 67,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: weekend crowds",
+      "details": [
+        "The after-work crowd only comes on weekdays now. At the weekend the pub gets a Saturday dinner crowd and a Saturday night crowd, and on Sunday a dinner crowd earlier in the evening followed by quieter regulars.",
+        "Cafés get a later weekend brunch crowd instead of the weekday breakfast rush, and the day's briefing shows the right busy times."
+      ]
     }
   ]
 }
