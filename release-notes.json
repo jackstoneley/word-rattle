@@ -784,6 +784,18 @@
         "The after-work crowd only comes on weekdays now. At the weekend the pub gets a Saturday dinner crowd and a Saturday night crowd, and on Sunday a dinner crowd earlier in the evening followed by quieter regulars.",
         "Cafés get a later weekend brunch crowd instead of the weekday breakfast rush, and the day's briefing shows the right busy times."
       ]
+    },
+    {
+      "id": 68,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: better staff",
+      "details": [
+        "Promotions are worth it now. Each level makes a worker 15% quicker at their job and 10% quicker on their feet, for only 12% more pay. Promotions are cheaper (£40, £160, £360, £640) and come round sooner.",
+        "Letting someone go now costs redundancy pay: a week's wages, plus a day's pay for every two weeks they've worked for you. For one busy day, agency staff are the cheaper choice.",
+        "Waiters carry up to three plates at once when several are ready on the pass, and take them straight to the tables instead of popping back to their spot in between.",
+        "Staff wait by the things they use (the waiter by the pass, the porter by the sink, cooks by the cooker), wherever you've put them.",
+        "Fixed: career mode days wouldn't start after the last update."
+      ]
     }
   ]
 }

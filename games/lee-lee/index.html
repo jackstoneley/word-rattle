@@ -688,7 +688,12 @@ const plated = r => RECIPES[r].s[RECIPES[r].s.length - 1] === "plate"; // drinks
 function starsOf(rep) { let s = 0; while (s < 5 && rep >= STAR_AT[s + 1]) s++; return s; }
 function starsF(rep) { const s = starsOf(rep); return s >= 5 ? 5 : s + (rep - STAR_AT[s]) / (STAR_AT[s + 1] - STAR_AT[s]); }
 function roleName(save, r) { return r === "drinks" ? VENUES[save.venue].drinks : r === "floor" ? VENUES[save.venue].floor : ROLES[r].n; }
-function fairWage(role, lvl) { return Math.round(ROLES[role].w * (1 + .35 * (lvl - 1))); }
+function fairWage(role, lvl) { return Math.round(ROLES[role].w * (1 + .12 * (lvl - 1))); }
+// what a level does: each level is 15% quicker at work and 10% quicker on foot than level 1, for 12% more pay
+const lvlWalk = l => .9 + .1 * l, lvlSkill = l => .85 + .15 * l;
+const promoCost = l => 40 * l * l, promoDays = l => 3 * l;
+// letting someone go: a week's notice, plus a day for every fortnight they've worked here (up to 10 more)
+const redundancy = st => st.wage * (5 + Math.min(10, Math.floor((st.td != null ? st.td : st.days || 0) / 14)));
 function boost(save) { return Math.min(1.5, (save.camp || []).reduce((a, c) => a + ((CAMPAIGNS.find(x => x.id === c.id) || {}).b || 0), 0)); }
 function expectedGroups(save) {
   let g = (5 + 2.6 * starsF(save.rep) + Math.min(save.day, 10) * .15) * siteDemand(save) * (1 + boost(save)) * (save.disc ? 1 + save.disc.pct * .6 : 1) * diffOf(save).crowd * dayCrowd(save, save.day);
@@ -1883,13 +1888,13 @@ function startDay() {
   for (const st of crew) {
     const look = Object.assign(randomLook(), STAFF_LOOK[st.role] || {}, st.look || {});
     const home = nearFree(...staffHome(st.role));
-    const a = mkActor({ id: st.id, name: st.name, role: st.role, look, x: home[0], y: home[1], speed: 2.3 * (.85 + .1 * st.lvl) * (.85 + st.morale * .003), skill: (.8 + .12 * st.lvl) * (.85 + st.morale * .003) });
+    const a = mkActor({ id: st.id, name: st.name, role: st.role, look, x: home[0], y: home[1], speed: 2.3 * lvlWalk(st.lvl) * (.85 + st.morale * .003), skill: lvlSkill(st.lvl) * (.85 + st.morale * .003) });
     G.actors.push(a);
   }
   paused = false; closeDialog(); closeMini();
   G.goals = LV == null ? dailyGoals() : [];
   if (LV == null && S.duel && S.duel.day === S.day) G.goals.push({ k: "duel", n: S.duel.need, cash: 0, rep: 0 });
-  const wd = G.info.wd, sayR = wd < 5 ? RUSH[S.venue] : S.venue === "cafe" ? ["Weekend brunch crowd coming! 🥐", "Weekend lunch rush coming! 🥪"] : wd === 5 ? ["Saturday dinner crowd coming! 🍽️", "Saturday night crowd coming! 🎵"] : ["Sunday dinner crowd coming! 🍗", "Sunday evening regulars coming! 🍺"];
+  const wd = G.info ? G.info.wd : 0, sayR = wd < 5 ? RUSH[S.venue] : S.venue === "cafe" ? ["Weekend brunch crowd coming! 🥐", "Weekend lunch rush coming! 🥪"] : wd === 5 ? ["Saturday dinner crowd coming! 🍽️", "Saturday night crowd coming! 🎵"] : ["Sunday dinner crowd coming! 🍗", "Sunday evening regulars coming! 🍺"];
   G.rush = LV == null ? dayPeaks(S.venue, wd).map(([mu], i) => ({ t: Math.max(4, (mu - .09) * G.len), say: sayR[i] })) : [];
   if (G.mplan) {
     const M = STADIUMS[G.info.mi];
@@ -1945,7 +1950,17 @@ function briefing() {
     ${tip ? `<p class="news small">💡 ${esc(tip)}</p>` : S.day === 1 ? `<p class="news small">💡 New here? Follow the green arrow: it shows what to do next.</p>` : ""}
     <div class="acts"><button class="btn pri" data-a="open">Open the doors</button></div>`, () => { paused = false; lastT = performance.now(); });
 }
-function staffHome(role) { return role === "waiter" ? [5.6, 5.2] : role === "floor" ? [2.5, 13.2] : role === "porter" ? [3, 2.6] : role === "drinks" ? [6, 2.6] : [4, 2.6]; }
+function staffHome(role) {
+  const old = role === "waiter" ? [5.6, 5.2] : role === "floor" ? [2.5, 13.2] : role === "porter" ? [3, 2.6] : role === "drinks" ? [6, 2.6] : [4, 2.6];
+  if (!G || !G.cnt || !G.acc || role === "floor") return old;
+  if (role === "waiter") { const ps = G.cnt.pass; if (!ps.length) return old; const mx = ps.reduce((a, q) => a + q.x, 0) / ps.length, my = ps.reduce((a, q) => a + q.y, 0) / ps.length; return [mx, my + 1.3]; }
+  // the others wait by what they use most
+  const want = role === "porter" ? ["sink", "dishwasher"] : role === "drinks" ? ["coffee", "kettle", "tap", "bar"] : ["hob", "grill", "fryer", "toaster", "oven", "board"];
+  const ss = G.stations.filter(x => want.includes(x.t)); if (!ss.length) return old;
+  const mx = ss.reduce((a, q) => a + q.x, 0) / ss.length, my = ss.reduce((a, q) => a + q.y, 0) / ss.length;
+  const s = ss.sort((p, q) => Math.hypot(p.x - mx, p.y - my) - Math.hypot(q.x - mx, q.y - my))[0];
+  return standFor({ k: "st", s }, { x: mx, y: my + 1 });
+}
 function mkActor(o) { return Object.assign({ path: [], then: null, work: null, hand: null, wait: 0, watch: null, skill: 1, bob: 0, moving: false }, o); }
 
 /* ---------- movement & work ---------- */
@@ -1991,7 +2006,7 @@ function canMake(r) { return RECIPES[r].s.every(t => t === "plate" || hasStation
 function openTickets(r) { const out = []; for (const g of G.groups) if (g.state === "wait" || g.state === "eat") for (const k of g.tickets) if (!k.done && (!r || k.r === r)) out.push({ g, k }); return out; }
 function allDishes() {
   const out = [];
-  for (const a of G.actors) if (a.hand && a.hand.k === "dish") out.push(a.hand);
+  for (const a of G.actors) { if (a.hand && a.hand.k === "dish") out.push(a.hand); if (a.extra) out.push(...a.extra); }
   for (const s of G.stations) if (s.item) out.push(s.item);
   for (const d of G.spots) if (d) out.push(d);
   return out.filter(d => !d.burnt);
@@ -2474,6 +2489,10 @@ function staffThink(a, dt) {
   if (a.path.length || a.work) return;
   if (a.wait > 0) { a.wait -= dt; return; }
   if (a.watch) { const s = a.watch; if (s.item && s.item.id === a.watchId) { if (s.item.ready || s.item.burnt) { a.hand = s.item; s.item = null; a.watch = null; } return; } a.watch = null; }
+  if (!a.hand && a.extra && a.extra.length) { // more plates in hand: the nearest table next
+    const dist = d => { const o = openTickets(d.r).find(x => x.g.table); return o ? Math.hypot(o.g.table.x - a.x, o.g.table.y - a.y) : 99; };
+    a.extra.sort((p, q) => dist(p) - dist(q)); a.hand = a.extra.shift();
+  }
   const h = a.hand;
   if (h && h.k === "dirty") return staffDirty(a);
   if (h && h.k === "dish") return staffDish(a);
@@ -2483,7 +2502,10 @@ function staffThink(a, dt) {
     : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null)
     : role === "drinks" ? tryCook(a, true)
     : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) : false;
-  if (!did) { const hm = nearFree(...staffHome(role)); if (Math.hypot(a.x - hm[0], a.y - hm[1]) > .3) goTo(a, hm[0] + rnd(-.4, .4), hm[1]); a.wait = .4; }
+  if (did) { a.idle = 0; return; }
+  // nothing to do: stay put for a moment (more plates are often on the way), then wander back to their usual spot
+  a.idle = (a.idle || 0) + .4; a.wait = .4;
+  if (a.idle >= (role === "waiter" ? 3 : 1.2)) { const hm = nearFree(...staffHome(role)); if (Math.hypot(a.x - hm[0], a.y - hm[1]) > .6) goTo(a, hm[0] + rnd(-.3, .3), hm[1]); }
 }
 function tryOrder(a) {
   const g = G.groups.find(g => g.state === "order" && !g.claim); if (!g) return false;
@@ -2496,7 +2518,15 @@ function tryDeliver(a) {
   const d = G.spots.find(ok);
   if (d) {
     d.claim = a;
-    goStand(a, spotObj(G.spots.indexOf(d)), () => { d.claim = null; const i = G.spots.indexOf(d); if (i >= 0 && !a.hand) { a.hand = d; G.spots[i] = null; } });
+    goStand(a, spotObj(G.spots.indexOf(d)), () => {
+      d.claim = null; const i = G.spots.indexOf(d); if (i < 0 || a.hand) return; a.hand = d; G.spots[i] = null;
+      // a waiter takes up to three plates at once, if more are waiting within reach on the pass
+      if (a.role !== "waiter") return; a.extra = a.extra || [];
+      for (let j = 0; j < G.spots.length && a.extra.length < 2; j++) { const e = G.spots[j], c = G.cnt.pass[j];
+        if (!ok(e) || Math.hypot(c.x - a.x, c.y - a.y) > 2.6) continue;
+        const carried = [a.hand, ...a.extra].filter(x => x.r === e.r).length; if (openTickets(e.r).length <= carried) continue;
+        a.extra.push(e); G.spots[j] = null; }
+    });
     return true;
   }
   const top = G.stations.find(s => s.t === "top" && ok(s.item)); if (!top) return false;
@@ -3024,6 +3054,7 @@ function drawActor(a) {
   const c = ctx, x = PX(a.x), y = PY(a.y);
   drawPerson(c, x, y, a.look, T * 1.02, { bob: a.moving ? Math.abs(a.bob) * -1.5 : 0, ring: a === lee ? "#E8664A" : null });
   const hy = y - T * 1.12;
+  if (a.extra && a.extra.length) a.extra.forEach((d, k) => { const ex = x + (k ? -1 : 1) * T * .34, ey = hy + T * .14; c.fillStyle = "#fff"; c.beginPath(); c.ellipse(ex, ey + T * .08, T * .2, T * .08, 0, 0, Math.PI * 2); c.fill(); emoji(RECIPES[d.r].e, ex, ey, T * .3); });
   if (a.hand) {
     if (a.hand.k === "dirty") { emoji("🍽️", x, hy, T * .36); if (a.hand.n > 1) text("×" + a.hand.n, x + T * .32, hy - T * .12, T * .2, "#3A2A22", 800); }
     else { const d = a.hand, R = RECIPES[d.r], done = d.s >= R.s.length;
@@ -3241,7 +3272,7 @@ function endDay() {
   const news = [];
   const busy = G.people / Math.max(1, S.staff.length + 1);
   for (const st of S.staff.slice()) {
-    st.days = (st.days || 0) + 1;
+    st.days = (st.days || 0) + 1; st.td = (st.td != null ? st.td : st.days - 1) + 1;
     const fair = fairWage(st.role, st.lvl);
     st.morale += st.wage >= fair * 1.15 ? 3 : st.wage >= fair ? 1 : -4;
     if (busy > 12) st.morale -= 2;
@@ -3488,13 +3519,13 @@ function tabStaff() {
   let h = `<div class="card"><div class="row spread"><h2>Your team</h2><span class="muted small">${S.staff.length} of ${prem.staff} places</span></div>`;
   if (!S.staff.length) h += `<p class="muted small">It's just Lee Lee for now. Staff get on with their job by themselves and are paid each night.</p>`;
   for (const s of S.staff) {
-    const canPromote = s.lvl < 5 && (s.days || 0) >= s.lvl * 4, pcost = 60 * s.lvl * s.lvl;
+    const canPromote = s.lvl < 5 && (s.days || 0) >= promoDays(s.lvl), pcost = promoCost(s.lvl);
     const mood = s.morale > 60 ? "😊 happy" : s.morale > 30 ? "😐 okay" : "☹️ unhappy";
     h += `<div class="item"><div class="ic">${ROLES[s.role].e}</div><div class="grow"><b>${esc(s.name)} <span class="muted small">${roleName(S, s.role)} · level ${s.lvl}</span></b>
-      <span>${money(s.wage)} a day · ${mood}</span>
+      <span>${money(s.wage)} a day · ${mood}${s.lvl > 1 ? ` · ${15 * (s.lvl - 1)}% quicker at work, ${10 * (s.lvl - 1)}% on foot` : ""}</span>
       <span class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-act="raise" data-id="${s.id}">Pay rise</button>
-      ${s.lvl < 5 ? `<button class="btn sm" data-act="promote" data-id="${s.id}" ${canPromote && canAfford(pcost) ? "" : "disabled"}>${canPromote ? `Promote ${money(pcost)}` : `Promote in ${s.lvl * 4 - (s.days || 0)}d`}</button>` : ""}
-      <button class="btn sm" data-act="fire" data-id="${s.id}">Let go</button></span></div></div>`;
+      ${s.lvl < 5 ? `<button class="btn sm" data-act="promote" data-id="${s.id}" ${canPromote && canAfford(pcost) ? "" : "disabled"}>${canPromote ? `Promote ${money(pcost)}` : `Promote in ${promoDays(s.lvl) - (s.days || 0)}d`}</button>` : ""}
+      <button class="btn sm" data-act="fire" data-id="${s.id}">Let go (${money(redundancy(s))})</button></span></div></div>`;
   }
   h += `</div><div class="card"><h2>Looking for work</h2>`;
   const full = S.staff.length >= prem.staff;
@@ -3508,9 +3539,9 @@ function tabStaff() {
 /* Busy days: roughly how many groups Lee Lee and the team can look after in a day, and agency staff for a single day */
 // measured with a bot that follows the helper arrow: Lee Lee alone keeps about 6 groups a day happy, a waiter and a cook double it
 const ROLE_CAP = { waiter: 3, cook: 3, porter: 1.5, drinks: 2, floor: 1 };
-const tempWage = r => Math.round(fairWage(r, 2) * 1.6);
+const tempWage = r => Math.round(fairWage(r, 2) * 1.9);
 function crewCap(day) {
-  let c = 6; for (const st of S.staff) c += ROLE_CAP[st.role] * (.8 + .1 * st.lvl);
+  let c = 6; for (const st of S.staff) c += ROLE_CAP[st.role] * (.75 + .15 * st.lvl);
   for (const t of S.temps || []) if (t.day === day) c += ROLE_CAP[t.role];
   return c;
 }
@@ -3640,10 +3671,11 @@ $("mwrap").onclick = e => {
   if (a === "learn") { const R = RECIPES[b.dataset.r]; if (canAfford(R.c)) { spend(R.c); S.owned.push(b.dataset.r); for (const k in R.i) if (S.stock[k] == null) S.stock[k] = 0; } }
   if (a === "hire") { const c = S.cands[+b.dataset.i]; if (c && S.staff.length < PREMISES[S.prem].staff) { S.staff.push({ id: "s" + (S.sid++), name: c.name, role: c.role, lvl: c.lvl, wage: c.wage, morale: 70, days: 0, look: c.look }); S.cands.splice(+b.dataset.i, 1); } }
   if (a === "raise") { const s = S.staff.find(x => x.id === b.dataset.id); if (s) { s.wage += Math.max(2, Math.round(s.wage * .1)); s.morale = Math.min(100, s.morale + 15); } }
-  if (a === "promote") { const s = S.staff.find(x => x.id === b.dataset.id), c = s && 60 * s.lvl * s.lvl; if (s && canAfford(c)) { spend(c); s.lvl++; s.wage = Math.max(s.wage, fairWage(s.role, s.lvl)); s.morale = Math.min(100, s.morale + 12); s.days = 0; } }
+  if (a === "promote") { const s = S.staff.find(x => x.id === b.dataset.id), c = s && promoCost(s.lvl); if (s && canAfford(c)) { spend(c); s.lvl++; s.wage = Math.max(s.wage, fairWage(s.role, s.lvl)); s.morale = Math.min(100, s.morale + 12); s.days = 0; } }
   if (a === "fire") {
     const s = S.staff.find(x => x.id === b.dataset.id);
-    dialog(`<h3>Let ${esc(s.name)} go?</h3><div class="acts"><button class="btn" data-a="yes" style="color:var(--bad)">Let them go</button><button class="btn" data-a="">Keep them</button></div>`, x => { if (x === "yes") { S.staff = S.staff.filter(y => y !== s); saveGame(); renderManage(); } });
+    const fee = redundancy(s);
+    dialog(`<h3>Let ${esc(s.name)} go?</h3><p>Redundancy pay: <b>${money(fee)}</b> (a week's notice, plus a day's pay for every two weeks they've worked for you).</p>${canAfford(fee) ? "" : `<p class="small" style="color:var(--bad)">You haven't got that much: it would leave you overdrawn.</p>`}<p class="small muted">For a single busy day, agency staff (below) are cheaper.</p><div class="acts"><button class="btn" data-a="yes" style="color:var(--bad)">Pay ${money(fee)} and let them go</button><button class="btn" data-a="">Keep them</button></div>`, x => { if (x === "yes") { S.cash -= fee; S.staff = S.staff.filter(y => y !== s); saveGame(); renderManage(); } });
     return;
   }
   if (a === "sell") { const t = S.stations[+b.dataset.i]; if (t) { S.stations[+b.dataset.i] = null; S.cash += Math.round(STATIONS[t].c / 2); } }
