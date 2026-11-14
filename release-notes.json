@@ -752,6 +752,17 @@
         "Each day teaches one of the new things from free play and says where to find it in your own place. Finishing a chapter earns another +£75 certificate for free play.",
         "Customers who stay for rounds (drinkers, laptop workers, sports fans) no longer order another one just before closing."
       ]
+    },
+    {
+      "id": 65,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: real-looking kitchens and choosier customers",
+      "details": [
+        "Every appliance now looks like the real thing: fridge, kettle, coffee machine, toaster, chopping board, mixing bowl, grill, hob, oven, fryer, beer taps, sink and dishwasher. They light up while they work: rings glow, the oven window glows, the fryer bubbles and the kettle steams.",
+        "Customers choose their own table now. They usually pick one with the right number of seats or one to spare, sometimes spread out on a bigger table, and not always the first free one.",
+        "New in Upgrades: a “Wait to be seated” sign (£250). With a waiter on the team, every group is shown to the table that fits them best, so big tables stay free for big groups. Your managed places can have one too (Design).",
+        "Laptop workers only settle in for hours at a reading corner: at an ordinary table they have a coffee and go."
+      ]
     }
   ]
 }

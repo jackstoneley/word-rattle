@@ -1,6 +1,6 @@
 /* Stoneley Games offline support for the website: keeps the home page and every game on the phone
    so they open with no connection. tools/build.py rewrites VERSION whenever a game changes. */
-const VERSION = "de3ab0e0a6";
+const VERSION = "1e887a1979";
 const CACHE = "stoneley-games-" + VERSION;
 const CORE = [
   "./", "./index.html", "./shell.js", "./manifest.webmanifest",

@@ -551,10 +551,10 @@ const LEVELS = [
     staff: [["waiter", 1], ["cook", 1]], plates: 14, people: 8, size: 2, len: 240, waves: [{ u: .45, sd: .3, n: 6, size: [3, 4], kids: 1 }],
     goals: [["served", 18], ["out", 3], ["extra", 10]],
     tip: ["This café has a soft play corner 🧸: families come more often, their children stay happy, and each child pays £2.50 to play.", "Children order from the kids' menu: egg & soldiers and ice cream.", "Soft play is noisy, so other tables in the same room get a bit less patient. Walls fix that (a later day).", "In your own place, build these in Upgrades → Build-ins."] },
-  { ch: 5, n: "Laptops & lattes", menu: ["tea", "latte", "croissant", "muffin", "toastie"], st: ["fridge", "kettle", "coffee", "bowl", "oven", "board", "toaster", "sink", "top"], tables: [2, 2, 4, 2], bi: { nook: { p: 4 } },
+  { ch: 5, n: "Laptops & lattes", menu: ["tea", "latte", "croissant", "muffin", "toastie"], st: ["fridge", "kettle", "coffee", "bowl", "oven", "board", "toaster", "sink", "top"], tables: [2, 2, 4, 2], bi: { nook: { p: 4 } }, sign: 1,
     staff: [["drinks", 1], ["waiter", 1]], plates: 12, people: 7, size: 2, len: 250, waves: [{ u: .35, sd: .2, n: 5, size: [1, 1], sp: "nook" }],
     goals: [["served", 9], ["extra", 8], ["out", 2]],
-    tip: ["The reading & work corner 📚 fills with students and people on laptops.", "They stay for hours ordering coffee and cake, round after round, and pay £2 for the desk when they leave.", "Keep their drinks coming: every round is another order.", "In free play these do best near offices and the universities: the City tab says who comes to your area."] },
+    tip: ["The reading & work corner 📚 fills with students and people on laptops.", "They stay for hours ordering coffee and cake, round after round, and pay £2 for the desk when they leave.", "Keep their drinks coming: every round is another order.", "In free play these do best near offices and the universities: the City tab says who comes to your area.", "There's a “Wait to be seated” sign 🪧 by the door: your waiter shows each group to the table that fits them, so two people don't take a table for four. Buy one in Upgrades."] },
   { ch: 5, n: "The board meeting", menu: ["tea", "latte", "toastie", "salad", "muffin"], st: ["fridge", "kettle", "coffee", "board", "toaster", "bowl", "oven", "sink", "top"], tables: [2, 2, 4, 2], bi: { meet: { p: 7 } },
     walls: { v20: 1, v21: 1, h11: 2, h21: 1 }, staff: [["waiter", 1]], plates: 12, people: 10, size: 2, len: 240, book: { occ: "Business meeting", size: 6, at: .3, dep: 80, room: 1 },
     goals: [["party", 1], ["served", 12], ["out", 2]],
@@ -572,7 +572,7 @@ const LEVELS = [
     staff: [["drinks", 2], ["floor", 1], ["cook", 1]], fans: "football", people: 6, size: 2, len: 240, waves: [{ u: .07, sd: .06, n: 9, size: [2, 4], fan: "football", rowdy: .4 }],
     goals: [["served", 22], ["out", 3], ["mess", 0]],
     tip: ["The match finished at 5 and the fans are on their way: they pour in as soon as you open.", "Fans drink plenty, order beer, chips and burgers, and some get rowdy: your cleaner calms them down, or tap them yourself.", "Couples out for dinner stay away on match days. In free play only pubs close to a ground get the fans."] },
-  { ch: 6, n: "On the big screen", menu: ["lager", "wine", "chips", "burger", "ploughmans"], st: ["fridge", "tap", "tap", "fryer", "board", "grill", "sink", "top"], tables: [2, 2, 4, 4], bi: { sports: { p: 0, lv: 2 } },
+  { ch: 6, n: "On the big screen", menu: ["lager", "wine", "chips", "burger", "ploughmans"], st: ["fridge", "tap", "tap", "fryer", "board", "grill", "sink", "top"], tables: [2, 2, 4, 4], bi: { sports: { p: 0, lv: 2 } }, sign: 1,
     walls: { v00: 1, h00: 2 }, staff: [["drinks", 2], ["waiter", 1], ["cook", 1]], fans: "football", people: 7, size: 2, len: 250, waves: [{ u: .4, sd: .05, n: 6, size: [2, 3], sp: "sports", watch: 1, fan: "football" }],
     goals: [["served", 16], ["out", 2], ["streak", 4]],
     tip: ["Tonight's big game is on the big screen 📺 at 8pm. Fans fill the sports corner just before kick-off, stay for the game and order round after round.", "A wall with a door keeps the noise away from couples eating in the rest of the pub, so they stay patient.", "In free play a sports TV brings in fans for televised games wherever your pub is. The channels cost money every day."] },
@@ -688,7 +688,7 @@ function newSave(venue, name, site) {
   return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
     owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], tpos: [0, 1, 2], plates: 6,
     decor: 0, shoes: 0, prem: 0, autoStock: true, diff: 1, bookings: [], bar: 0, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
-    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0, bi: {}, walls: {}, temps: [], pl: 1, rv: {}, chains: [], places: [], duel: null, buzz: 0, pid: 1 };
+    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0, bi: {}, walls: {}, temps: [], sign: 0, pl: 1, rv: {}, chains: [], places: [], duel: null, buzz: 0, pid: 1 };
 }
 /* ---------- The city (free play only) ----------
    Leicester, drawn by hand from a rough knowledge of the real city (not a survey): roads, river, parks, districts with
@@ -1154,7 +1154,7 @@ function runPlace(save, P, r) {
   // the menu: too short, or no drinks or no food, and some people go elsewhere; dishes that suit the area and the day sell more
   const fit = Math.min(1, .5 + .1 * menu.length) * (drinks ? 1 : .8) * (food ? 1 : .75);
   const groups = expectedGroups(sv) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), crew = placeCrew(P, d);
-  const servedG = Math.min(groups, crew) * (.86 + .025 * lv) * fit, people = groups * 2, served = servedG * 2;
+  const servedG = Math.min(groups, crew) * (.86 + .025 * lv) * fit * (d.sign && d.team > 0 ? 1 : .94), people = groups * 2, served = servedG * 2;
   // noise: tables in the same room as the sports TV on game days, or the soft play
   const rooms = roomsOf(d.walls || {}), cells = biCells(sv), share = id => { const p = Object.keys(cells).find(q => cells[q] === id); if (p == null || !d.tpos.length) return 0; return d.tpos.filter(t => rooms[t] === rooms[p]).length / d.tpos.length; };
   const noise = 1 - (hasBi(sv, "sports") && (info.tv || (info.match && pub)) ? .14 * share("sports") : 0) - (hasBi(sv, "softplay") ? .06 * share("softplay") : 0);
@@ -1514,7 +1514,7 @@ function levelIntro(i) {
 function levelSave(i) {
   const L = LEVELS[i], C = CHAPTERS[L.ch], s = newSave(C.v, C.n + ": " + L.n);
   s.owned = L.menu.slice(); s.stations = L.st.slice(0, 13); s.tables = L.tables.slice(0, 9);
-  s.bi = JSON.parse(JSON.stringify(L.bi || {})); s.walls = Object.assign({}, L.walls || {});
+  s.bi = JSON.parse(JSON.stringify(L.bi || {})); s.walls = Object.assign({}, L.walls || {}); s.sign = L.sign || 0;
   const taken = new Set(Object.keys(biCells(s)).map(Number)); s.tpos = []; for (let p = 0; s.tpos.length < s.tables.length && p < 9; p++) if (!taken.has(p)) s.tpos.push(p); s.plates = Math.max(L.plates || 6, Math.ceil(L.people * .45)); s.prem = C.pal;
   s.stock = {}; for (const r of L.menu) for (const k in RECIPES[r].i) s.stock[k] = 999;
   s.staff = (L.staff || []).map(([role, lvl], k) => ({ id: "c" + k, name: FIRST[(i * 7 + k * 5) % FIRST.length], role, lvl, wage: 0, morale: 70, days: 0 }));
@@ -1838,7 +1838,7 @@ function serve(g, tk, dish) {
   if (dish.perfect) g.bonus += .6;
   snd("serve");
   fx(g.table.x, g.table.y - .9, RECIPES[dish.r].e + " ✓", "#3E9B6B");
-  if (g.tickets.every(k => k.done)) { g.state = "eat"; g.timer = g.watch || g.sp === "nook" ? rnd(12, 17) : g.drinker ? rnd(5, 8) : rnd(7, 10) + (g.party ? 4 : 0); }
+  if (g.tickets.every(k => k.done)) { g.state = "eat"; g.timer = g.watch || (g.sp === "nook" && g.table && g.table.sp === "nook") ? rnd(12, 17) : g.drinker ? rnd(5, 8) : rnd(7, 10) + (g.party ? 4 : 0); }
 }
 
 /* ---------- customers ---------- */
@@ -1859,6 +1859,23 @@ function seatsOf(t) {
 }
 const SP_N = { nook: "the reading corner", sports: "the sports corner", pool: "the pool table", meet: "the meeting room", func: "the function room" };
 const tname = t => t.bar ? "the bar" : t.sp ? SP_N[t.sp] : "table " + (t.i + 1);
+/* Where a group sits. Bookings, build-in spots and the bar come first, as before. Otherwise people pick for themselves:
+   the right number of seats most of the time, one spare seat just as happily, a table with room to spread out now and then,
+   and not always the first free table. With a "Wait to be seated" sign and a waiter, they're shown to the best fit. */
+function pickTable(g, free) {
+  const top = free[0];
+  if ((top.res && top.res === g.party) || (g.sp && top.sp === g.sp) || (g.drinker && top.bar)) return top;
+  const plain = free.filter(t => !t.sp && !t.bar); if (!plain.length) return top;
+  if (S.sign && G.actors.some(a => a.role === "waiter")) {
+    const t = plain.slice().sort((a, b) => a.seats - b.seats)[0];
+    g.pat = Math.min(1, g.pat + .05); fx(t.x, t.y - 1.1, "This way, please 🪧", "#3E9B6B");
+    return t;
+  }
+  const want = t => { const spare = t.seats - g.size; return spare <= 1 ? 3 : spare === 2 ? 1.2 : spare <= 4 ? .25 : .1; };
+  let x = Math.random() * plain.reduce((a, t) => a + want(t), 0);
+  for (const t of plain) { x -= want(t); if (x <= 0) return t; }
+  return plain[plain.length - 1];
+}
 function trySeat() {
   for (let qi = 0; qi < G.queue.length; qi++) {
     const g = G.queue[qi];
@@ -1868,7 +1885,7 @@ function trySeat() {
       if (g.party && !G.tables.some(t => !t.bar && t.seats >= g.size)) { angryLeave(g, "No table big enough for us! 😞"); qi--; }
       continue;
     }
-    const t = free[0]; t.group = g; t.res = null; g.table = t; g.state = "walk"; g.pat = Math.max(g.pat, .9);
+    const t = pickTable(g, free); t.group = g; t.res = null; g.table = t; g.state = "walk"; g.pat = Math.max(g.pat, .9);
     const offs = seatsOf(t);
     g.people.forEach((p, i) => walkTo(p, t.x + offs[i][0], t.y + offs[i][1]));
     if (g.kids && hasBi(S, "softplay")) addExtra("soft", 2.5 * g.kids, t);
@@ -1970,7 +1987,7 @@ function groupsStep(dt) {
         g.timer -= dt;
         if (g.kids && !g.spilt && g.timer < 4) { g.spilt = true; if (Math.random() < .35) { addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.5, 1)); fx(g.table.x, g.table.y - 1, "Oops! 🥤", "#5B8DB8"); } }
         if (g.timer <= 0) {
-          const more = g.watch || g.sp === "pool" || g.sp === "nook";
+          const more = g.watch || g.sp === "pool" || (g.sp === "nook" && g.table && g.table.sp === "nook"); // workers only settle in at the reading corner
           if ((g.drinker || more) && g.rounds < (more ? 3 : 2) && G.open && G.t < G.len - 30 && Math.random() < (more ? .75 : .5)) { g.rounds++; if (g.sp === "pool") addExtra("pool", g.size, g.table); g.state = "order"; g.pat = Math.max(g.pat, .8); fx(g.table.x, g.table.y - 1, g.sp === "nook" ? "Another coffee, please ☕" : "Same again! 🍻", "#B07A10"); snd("order"); }
           else payAndLeave(g);
         }
@@ -2490,11 +2507,11 @@ function draw() {
   for (const s of G.stations) {
     const def = STATIONS[s.t], x = PX(s.x), y = PY(s.y), w = T * .9;
     c.fillStyle = "rgba(0,0,0,.12)"; rr(c, x - w / 2, y - w / 2 + 3, w, w, 8); c.fill();
-    c.fillStyle = def.col; rr(c, x - w / 2, y - w / 2, w, w, 8); c.fill();
+    const busy = !!((s.item && !s.item.ready && !s.item.burnt && def.k === "pas") || (s.user && def.k !== "top") || (s.t === "dishwasher" && s.run > 0));
+    drawAppliance(s, x, y, w, busy);
     if (need && need === s.t) { c.strokeStyle = `rgba(232,102,74,${pulse})`; c.lineWidth = 3.5; rr(c, x - w / 2 - 2, y - w / 2 - 2, w + 4, w + 4, 10); c.stroke(); }
-    if (def.k === "top") { c.fillStyle = "rgba(255,255,255,.25)"; rr(c, x - w / 2 + 4, y - w / 2 + 4, w - 8, w * .5, 5); c.fill(); }
-    else emoji(def.e, x, y - T * .06, T * .5);
-    text(def.n.split(" ")[0], x, y + T * .32, T * .2, "rgba(40,28,20,.75)", 700);
+    { const lab = def.n.split(" ")[0]; c.font = `700 ${Math.round(T * .17)}px "Figtree",system-ui,sans-serif`; const lw = c.measureText(lab).width + 6;
+      c.fillStyle = "rgba(255,250,243,.85)"; rr(c, x - lw / 2, y + T * .26, lw, T * .2, 4); c.fill(); text(lab, x, y + T * .36, T * .17, "rgba(40,28,20,.85)", 700); }
     if (s.item && def.k === "top") drawItem(s.item, x, y - T * .08, T * 1.05);
     else if (s.item) {
       const d = s.item;
@@ -2597,6 +2614,8 @@ function drawWallsBi(P) {
     c.fillStyle = "#fff"; for (let k = 0; k < 3; k++) c.fillRect(x - w * .3 + k * w * .22, y - h * .26, w * .16, h * .2);
     c.fillStyle = "#D32F2F"; c.beginPath(); c.arc(x + w * .32, y + h * .2, T * .06, 0, 7); c.fill();
   }
+  if (S.sign) { const x = PX(5.75), y = PY(13.95); c.fillStyle = "#5D4037"; c.beginPath(); c.moveTo(x - T * .3, y + T * .3); c.lineTo(x, y - T * .4); c.lineTo(x + T * .3, y + T * .3); c.fill();
+    c.fillStyle = "#263238"; rr(c, x - T * .26, y - T * .3, T * .52, T * .44, 3); c.fill(); text("Please", x, y - T * .17, T * .13, "#fff", 700); text("wait", x, y - T * .03, T * .13, "#fff", 700); }
   if (hasBi(S, "hatch")) {
     const x = PX(1.6), y = PY(H - .18);
     c.fillStyle = "#E8664A"; for (let k = 0; k < 5; k++) { c.fillStyle = k % 2 ? "#FFF" : "#E8664A"; c.fillRect(x - T * .9 + k * T * .36, y - T * .5, T * .36, T * .22); }
@@ -2636,6 +2655,110 @@ function drawSpecial(t, P) {
   if (g) { let k = 0; for (const tk of g.tickets) if (tk.done && k < 4) { emoji(RECIPES[tk.r].e, x + (k - 1.5) * T * .3, y - T * .12, T * .26); k++; } }
   for (let i = 0; i < Math.min(t.dirty, 4); i++) { c.fillStyle = "#F4EFE6"; c.beginPath(); c.ellipse(x + (i - 1.5) * T * .22, y + T * .05, T * .14, T * .08, 0, 0, Math.PI * 2); c.fill(); }
   if (t.dirty && !g) emoji("🧽", x + T * .7, y - T * .45, T * .28);
+}
+/* Kitchen appliances, drawn as the real thing in a square of w pixels round (x, y); "on" while something cooks or someone uses it. */
+function drawAppliance(s, x, y, w, on) {
+  const c = ctx, h = w / 2, t = s.t, glow = .55 + .45 * Math.sin(G.t * 8);
+  const box = (x0, y0, ww, hh, r, f, st) => { c.fillStyle = f; rr(c, x0, y0, ww, hh, r); c.fill(); if (st) { c.strokeStyle = st; c.lineWidth = Math.max(1, w * .03); c.stroke(); } };
+  const circle = (cx, cy, r, f, st, lw) => { c.beginPath(); c.arc(cx, cy, r, 0, 7); if (f) { c.fillStyle = f; c.fill(); } if (st) { c.strokeStyle = st; c.lineWidth = lw || 1.5; c.stroke(); } };
+  const steam = (cx, cy) => { if (!on) return; c.strokeStyle = "rgba(255,255,255,.75)"; c.lineWidth = Math.max(1.5, w * .04); for (let k = 0; k < 2; k++) { const ox = cx + (k - .5) * w * .18, ph = G.t * 3 + k * 2; c.beginPath(); c.moveTo(ox, cy); c.quadraticCurveTo(ox + Math.sin(ph) * w * .1, cy - w * .14, ox, cy - w * .26); c.stroke(); } };
+  const wood = "#D9B98F", wood2 = "#C49A68", steel = "#D7DEE2", steel2 = "#9AA7B0", dark = "#3A3F44";
+  // every appliance stands on a stretch of worktop
+  box(x - h, y - h, w, w, w * .12, wood, "rgba(90,60,30,.25)");
+  switch (t) {
+    case "fridge": {
+      box(x - h * .86, y - h * .95, w * .86, w * .95, w * .08, "#EEF3F6", steel2);
+      c.fillStyle = steel2; c.fillRect(x - h * .86, y - h * .95 + w * .33, w * .86, Math.max(1, w * .025));
+      box(x + h * .5, y - h * .8, w * .06, w * .2, 2, "#8E9AA2"); box(x + h * .5, y - h * .1, w * .06, w * .3, 2, "#8E9AA2");
+      circle(x - h * .45, y - h * .5, w * .05, "#E8664A"); circle(x - h * .25, y + h * .3, w * .045, "#5B8DB8");
+      break; }
+    case "kettle": {
+      c.fillStyle = "#B0BEC5"; c.beginPath(); c.ellipse(x, y + h * .45, w * .32, w * .08, 0, 0, 7); c.fill();
+      c.fillStyle = "#E3E9EC"; c.beginPath(); c.moveTo(x - w * .26, y + h * .4); c.quadraticCurveTo(x - w * .3, y - h * .55, x, y - h * .55); c.quadraticCurveTo(x + w * .3, y - h * .55, x + w * .26, y + h * .4); c.closePath(); c.fill();
+      c.strokeStyle = steel2; c.lineWidth = Math.max(1, w * .03); c.stroke();
+      c.strokeStyle = dark; c.lineWidth = Math.max(2, w * .06); c.beginPath(); c.arc(x + w * .3, y - h * .05, w * .14, -1.2, 1.2); c.stroke();
+      c.fillStyle = "#E3E9EC"; c.beginPath(); c.moveTo(x - w * .25, y - h * .1); c.lineTo(x - w * .44, y - h * .4); c.lineTo(x - w * .4, y - h * .3); c.lineTo(x - w * .22, y + h * .1); c.fill();
+      circle(x, y + h * .2, w * .05, on ? "#4FC3F7" : "#90A4AE");
+      steam(x - w * .4, y - h * .45);
+      break; }
+    case "toaster": {
+      box(x - w * .36, y - h * .55, w * .72, w * .62, w * .14, "#C9CFD3", steel2);
+      for (const dx of [-.15, .15]) box(x + w * dx - w * .1, y - h * .45, w * .2, w * .1, 2, on ? `rgba(255,${Math.round(120 + 60 * glow)},40,1)` : dark);
+      box(x + w * .36, y - h * .1, w * .07, w * .16, 2, dark);
+      if (on) { c.fillStyle = "#E0B067"; for (const dx of [-.15, .15]) c.fillRect(x + w * dx - w * .08, y - h * .6, w * .16, w * .06); }
+      break; }
+    case "coffee": {
+      box(x - w * .4, y - h * .9, w * .8, w * .9, w * .08, "#4A4542", "#2B2826");
+      box(x - w * .4, y - h * .9, w * .8, w * .16, w * .06, steel);
+      for (const dx of [-.18, .18]) { box(x + w * dx - w * .09, y - h * .38, w * .18, w * .1, 2, steel2); }
+      box(x - w * .32, y + h * .5, w * .64, w * .06, 2, "#7B7672");
+      c.fillStyle = "#fff"; rr(c, x - w * .27, y + h * .18, w * .17, w * .15, 3); c.fill(); c.fillStyle = "#6D4C41"; c.fillRect(x - w * .25, y + h * .2, w * .13, w * .04);
+      circle(x + w * .25, y - h * .65, w * .045, on ? "#7CFC9A" : "#777");
+      steam(x + w * .18, y - h * .25);
+      break; }
+    case "tap": {
+      box(x - h, y + h * .25, w, w * .3, w * .06, "#6E4630");
+      box(x - w * .36, y + h * .45, w * .72, w * .1, 2, steel2);
+      const cols = ["#C62828", "#F9A825", "#2E7D32"];
+      cols.forEach((col, k) => { const tx = x + (k - 1) * w * .26; c.fillStyle = steel; c.fillRect(tx - w * .025, y - h * .3, w * .05, w * .4); box(tx - w * .055, y - h * .82, w * .11, w * .3, w * .04, col); });
+      if (on) { c.fillStyle = "#F2B33D"; c.fillRect(x - w * .015, y - h * .1, w * .03, w * .25); }
+      break; }
+    case "board": {
+      box(x - w * .4, y - h * .62, w * .8, w * .62, w * .08, "#E2B57C", "#A97A44");
+      c.strokeStyle = "rgba(150,100,50,.35)"; c.lineWidth = 1; for (let k = 1; k < 4; k++) { c.beginPath(); c.moveTo(x - w * .36, y - h * .62 + k * w * .15); c.lineTo(x + w * .36, y - h * .62 + k * w * .15); c.stroke(); }
+      circle(x - w * .14, y - h * .15, w * .1, "#E53935"); c.fillStyle = "#43A047"; c.fillRect(x - w * .15, y - h * .4, w * .03, w * .06);
+      c.save(); c.translate(x + w * .16, y - h * .1); c.rotate(-.6); c.fillStyle = "#CFD8DC"; rr(c, -w * .04, -w * .3, w * .08, w * .3, 3); c.fill(); c.fillStyle = dark; rr(c, -w * .045, 0, w * .09, w * .16, 3); c.fill(); c.restore();
+      break; }
+    case "bowl": {
+      c.fillStyle = "#E7D3C4"; c.beginPath(); c.ellipse(x, y - h * .05, w * .36, w * .3, 0, 0, 7); c.fill();
+      c.fillStyle = "#F8EDE3"; c.beginPath(); c.ellipse(x, y - h * .12, w * .3, w * .23, 0, 0, 7); c.fill();
+      c.fillStyle = on ? "#F3E2B3" : "#EADCC9"; c.beginPath(); c.ellipse(x, y - h * .05, w * .2, w * .14, 0, 0, 7); c.fill();
+      c.save(); c.translate(x + w * .14, y - h * .3); c.rotate(on ? Math.sin(G.t * 10) * .4 + .5 : .5); c.strokeStyle = "#90A4AE"; c.lineWidth = Math.max(1, w * .025);
+      for (let k = -1; k <= 1; k++) { c.beginPath(); c.ellipse(k * w * .03, 0, w * .05, w * .16, 0, 0, 7); c.stroke(); } c.fillStyle = dark; c.fillRect(-w * .02, -w * .38, w * .04, w * .2); c.restore();
+      break; }
+    case "grill": {
+      box(x - w * .42, y - h * .8, w * .84, w * .8, w * .06, "#2F3336", "#151719");
+      for (let k = 0; k < 6; k++) { c.fillStyle = on ? `rgba(255,${Math.round(90 + 60 * glow)},40,.9)` : "#5C6166"; c.fillRect(x - w * .36, y - h * .66 + k * w * .12, w * .72, Math.max(1.5, w * .04)); }
+      if (on) { c.fillStyle = `rgba(255,140,0,${.35 * glow})`; rr(c, x - w * .38, y - h * .72, w * .76, w * .66, 4); c.fill(); }
+      break; }
+    case "hob": {
+      box(x - w * .44, y - h * .88, w * .88, w * .88, w * .06, "#2B2F33", "#151719");
+      for (const [dx, dy, r] of [[-.2, -.2, .14], [.2, -.2, .11], [-.2, .2, .11], [.2, .2, .14]]) {
+        circle(x + w * dx, y + w * dy - h * .05, w * r, on ? `rgba(220,${Math.round(40 + 40 * glow)},30,1)` : "#4A5056", "#6B7278", 1);
+        circle(x + w * dx, y + w * dy - h * .05, w * r * .55, null, on ? "#FF7043" : "#5C6268", 1);
+      }
+      break; }
+    case "oven": {
+      box(x - w * .42, y - h * .9, w * .84, w * .9, w * .06, "#CFD6DA", steel2);
+      for (let k = 0; k < 4; k++) circle(x - w * .27 + k * w * .18, y - h * .72, w * .045, dark);
+      box(x - w * .32, y - h * .42, w * .64, w * .42, w * .05, on ? `rgba(255,${Math.round(150 + 40 * glow)},60,1)` : "#2B2F33", "#1E2124");
+      if (on) { c.fillStyle = "rgba(120,60,20,.5)"; c.fillRect(x - w * .2, y - h * .05, w * .4, w * .06); }
+      box(x - w * .28, y - h * .52, w * .56, w * .05, 2, "#8E9AA2");
+      break; }
+    case "fryer": {
+      box(x - w * .42, y - h * .85, w * .84, w * .85, w * .06, steel, steel2);
+      box(x - w * .36, y - h * .7, w * .72, w * .55, w * .04, "#C8961E");
+      if (on) { c.fillStyle = "rgba(255,240,180,.85)"; for (let k = 0; k < 5; k++) circle(x - w * .28 + ((k * 37 + Math.floor(G.t * 6)) % 10) * w * .06, y - h * .6 + ((k * 53 + Math.floor(G.t * 9)) % 7) * w * .06, w * .025, "rgba(255,240,180,.85)"); }
+      for (const dx of [-.17, .17]) { c.strokeStyle = "#5C6166"; c.lineWidth = Math.max(1, w * .03); c.strokeRect(x + w * dx - w * .13, y - h * .62, w * .26, w * .38); c.fillStyle = dark; c.fillRect(x + w * dx - w * .02, y - h * .2, w * .04, w * .2); }
+      break; }
+    case "sink": {
+      box(x - w * .42, y - h * .75, w * .84, w * .75, w * .1, steel, steel2);
+      box(x - w * .32, y - h * .55, w * .64, w * .45, w * .12, "#B7C3CA", "#8E9AA2");
+      circle(x, y - h * .1, w * .04, "#7D8A92");
+      c.strokeStyle = "#8E9AA2"; c.lineWidth = Math.max(2, w * .05); c.beginPath(); c.moveTo(x, y - h * .8); c.lineTo(x, y - h * .62); c.quadraticCurveTo(x, y - h * .52, x + w * .1, y - h * .52); c.stroke();
+      if (G.sink > 0) { c.fillStyle = "rgba(180,220,240,.7)"; rr(c, x - w * .28, y - h * .48, w * .56, w * .32, w * .1); c.fill(); for (let k = 0; k < Math.min(3, G.sink); k++) { c.fillStyle = "#fff"; c.beginPath(); c.ellipse(x - w * .1 + k * w * .1, y - h * .32, w * .1, w * .04, 0, 0, 7); c.fill(); } }
+      break; }
+    case "dishwasher": {
+      box(x - w * .42, y - h * .9, w * .84, w * .9, w * .06, "#F2F5F7", steel2);
+      box(x - w * .42, y - h * .9, w * .84, w * .14, w * .06, "#DDE4E8");
+      for (let k = 0; k < 3; k++) circle(x - w * .2 + k * w * .12, y - h * .75, w * .025, on && k === Math.floor(G.t * 3) % 3 ? "#4FC3F7" : "#9AA7B0");
+      box(x - w * .3, y - h * .55, w * .6, w * .05, 2, "#9AA7B0");
+      if (on) { for (let k = 0; k < 4; k++) circle(x - w * .2 + k * w * .13, y - h * .1 + Math.sin(G.t * 4 + k) * w * .06, w * .04, null, "rgba(91,141,184,.7)", 1.2); }
+      break; }
+    default: { // worktop: a clear patch of counter
+      c.fillStyle = wood2; c.globalAlpha = .35; for (let k = 0; k < 3; k++) c.fillRect(x - h * .8, y - h * .6 + k * w * .25, w * .8, 1); c.globalAlpha = 1;
+    }
+  }
 }
 function drawTable(t, P) {
   if (t.sp) return drawSpecial(t, P);
@@ -3250,6 +3373,7 @@ function tabUp() {
   const tc = 100 + 60 * S.tables.length, small = S.tables.indexOf(2), d = DECOR[S.decor];
   const spotFree = usedSpots() < cellCap(S);
   h += upRow("🪑", "Another table", `${S.tables.length} of ${siteTables(S)} here${!spotFree && S.tables.length < siteTables(S) ? ". No free spot: build-ins use them" : ""}`, "table", S.tables.length < siteTables(S) ? tc : null, S.tables.length < siteTables(S) && spotFree);
+  h += upRow("🪧", "“Wait to be seated” sign", S.sign ? "Your waiters show each group to the table that fits them best, so big tables stay free for big groups." : "Without it, people pick their own table, sometimes a big one for two. With it, a waiter shows each group to the best fit. Needs a waiter on the team.", "sign", S.sign ? null : 250, !S.sign).replace(">Max<", ">Built<");
   h += upRow("🍽", "Make a table seat four", small >= 0 ? `${S.tables.filter(n => n < 4).length} tables seat two` : "Every table seats four", "bigtable", small >= 0 ? 150 : null, small >= 0, `data-i="${small}"`);
   const four = S.tables.indexOf(4);
   h += upRow("🎉", "Make a table seat six", four >= 0 ? "A long table for booked parties and big families" : S.tables.includes(6) && S.tables.indexOf(2) < 0 ? "Done" : "Make a table seat four first", "sixtable", four >= 0 ? 300 : null, four >= 0, `data-i="${four}"`);
@@ -3338,6 +3462,7 @@ $("mwrap").onclick = e => {
   if (a === "bar") { const nb = BAR[S.bar || 0]; if (nb && canAfford(nb.c)) { spend(nb.c); S.bar = (S.bar || 0) + 1; } }
   if (a === "book" || a === "nobook") { const bk = (S.bookings || []).find(x => x.id === +b.dataset.id); if (bk) { if (a === "book") bk.ok = true; else S.bookings = S.bookings.filter(x => x !== bk); } }
   if (a === "bigtable") { const i = +b.dataset.i; if (canAfford(150)) { spend(150); S.tables[i] = 4; } }
+  if (a === "sign" && !S.sign && canAfford(250)) { spend(250); S.sign = 1; }
   if (a === "decor") { const d = DECOR[S.decor]; if (d && canAfford(d.c)) { spend(d.c); S.decor++; } }
   if (a === "camp") { const C = CAMPAIGNS.find(x => x.id === b.dataset.id); if (C && canAfford(C.c)) { spend(C.c); S.camp.push({ id: C.id, days: C.days }); } }
   saveGame(); renderManage();
@@ -3968,6 +4093,8 @@ function placeDesign(P) {
       <span class="row" style="gap:4px;margin-top:6px"><button class="btn sm pri" data-a="tadd" ${d.tables.length < maxT && used < cap && canAfford(tc) ? "" : "disabled"}>Add ${money(tc)}</button>
       <button class="btn sm" data-a="tbig" ${(small >= 0 && canAfford(150)) || (small < 0 && four >= 0 && canAfford(300)) ? "" : "disabled"}>${small >= 0 ? `Seat four ${money(150)}` : `Seat six ${money(300)}`}</button>
       <button class="btn sm" data-a="tdel" ${d.tables.length > 1 ? "" : "disabled"}>Remove one</button></span></div></div>
+    <div class="item"><div class="ic">🪧</div><div class="grow"><b>“Wait to be seated” sign${d.sign ? ` <span class="pill g">Built</span>` : ""}</b><span>Staff show each group to the table that fits them best, so tables are used better. Needs at least one member of staff.</span></div>
+      ${d.sign ? "" : `<button class="btn sm pri" data-a="sign" ${canAfford(250) ? "" : "disabled"}>${money(250)}</button>`}</div>
     <button class="btn" data-a="lay">📐 Arrange tables, build-ins, walls and doors</button>
     <p class="small"><b>Build-ins</b></p>`;
   for (const B of BUILDINS.filter(B => B.v === P.venue)) {
@@ -3984,6 +4111,7 @@ function placeDesign(P) {
   dialog(h, a => {
     if (!a) { saveGame(); placeDlg(P); return; }
     if (a === "lay") { laySel = null; layout(P); return; }
+    if (a === "sign" && !d.sign && canAfford(250)) { spend(250); d.sign = 1; }
     if (a === "t-") d.team = Math.max(0, d.team - 1);
     if (a === "t+") d.team = Math.min(PREMISES[s.t].staff, d.team + 1);
     if (a === "tadd" && d.tables.length < maxT && placeSpots(d) < cap && canAfford(tc)) { spend(tc); d.tables.push(2); d.tpos.push(placeFree(d)); }

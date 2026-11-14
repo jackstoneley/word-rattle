@@ -194,7 +194,7 @@ and rep rewards), rush warnings, a service streak (`G.streak` raises tips), end-
 `S.last.advice`), WebAudio cues (`snd`, `opts.sound`), and campaign chapter certificates (+£75 start cash each).
 Layout: `S.stations[i]` is the station in kitchen spot i (`slotPos(i)`) and may be `null` (an empty spot; use `kit()` for the
 list without gaps); `S.tpos[j]` is table j's position in `TABLE_POS` (old saves get `0..n-1` in `migrate`). The office's
-Rearrange map (`layout()`) swaps them. Drink recipes have no `plate` step (`plated(r)`), so they use no plate.
+Rearrange map (`layout()`) swaps them. Seating: `pickTable` (bookings, build-in spots and the bar first; otherwise weighted random, right size or one spare seat most likely); `S.sign` (and `P.design.sign`, a level's `sign`) with a waiter gives the best fit. Stations are drawn by `drawAppliance` (glows while busy). Drink recipes have no `plate` step (`plated(r)`), so they use no plate.
 Week and weather (free play only): `dayInfo(save, day)` gives `{wd, w, match}` from a seed, so the office forecast is exact;
 `dayCrowd` scales `expectedGroups` (clamped 0.7-1.35) and `prefW` weights orders by the recipe's `t` tag (`c` sells when hot,
 `w` when cold) and match day. Bookings live in `S.bookings` (`{id, day, at, size, occ, kids, dep, ok}`; requests come from
