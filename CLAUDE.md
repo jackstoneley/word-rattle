@@ -235,6 +235,12 @@ daily fee at the end of the day). Televised sport `tvOn` (pubs with a sports cor
 Moving (`fitTo`) leaves walls behind and keeps build-ins that fit. **Busy days**: `expectedGroups` lets more than the tables' turnover
 arrive on busy days; `crewCap` (Lee Lee 6 groups, plus `ROLE_CAP` per worker, measured with a coachNext bot) drives the 👥 warnings, and
 `S.temps [{day, role, name, wage}]` are agency staff for one day (actors in `startDay`, paid in `endDay`).
+**Free layout** (the main place only; managed places keep the 3x3 `P.design`): `S.L {v, st, tb [[x,y,rot]], bin, plates, pass, bi {id: [x,y]},
+fr, walls {"v:i:j" | "h:i:j": 1 wall | 2 door}}`, top-left corners on a half-unit grid (`GW` x `GH`, `GU` = .5; nothing is built from y 13, the
+queue, door and bar strip). `ensureLayout` makes it from the old slots, `tpos`, `bi.p` and `S.walls` (`defaultLayout`) and `fixLayout` keeps it in
+step with what is owned; `S.L = null` regenerates it (moves, swaps). `layoutProblem` is the one check (inside the room, no overlaps, everything
+reachable from `DOOR_CELL`); `autoPlace` finds room for new things; in a day `G.grid`, `gridPath` (A*), `goStand`, `roomGrid`/`roomAt` (noise) and
+`gridEnclosed` (meeting and function rooms). Editor: `layoutGrid` (`LG`), walls cost `WALL_SEG` / `DOOR_SEG`.
 Balance scripts: compare suburbs and centre with `expectedGroups` on stand-in saves (the centre should lose money before ~5★ and
 earn 2-3× the suburbs once its nearest rivals are beaten).
 

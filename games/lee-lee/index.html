@@ -166,6 +166,14 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
 .lay-tb{border-radius:50%;background:#C08A55;color:#fff;font-weight:800;font-size:.95rem;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .lay-tb small{font-size:.55rem;font-weight:700;opacity:.85}
 .lay-st.empty,.lay-tb.empty{background:transparent;border:2px dashed rgba(0,0,0,.18)}
+.lg{position:relative;margin:0 auto;border-radius:12px;background-color:#F2E2CB;background-image:linear-gradient(rgba(0,0,0,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.05) 1px,transparent 1px);touch-action:none;flex:none;overflow:hidden}
+.lg-strip{position:absolute;left:0;right:0;background:repeating-linear-gradient(45deg,rgba(0,0,0,.05) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:var(--muted)}
+.lg-p{position:absolute;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1rem;line-height:1;border:2px solid rgba(0,0,0,.14);box-sizing:border-box;pointer-events:none;overflow:hidden}
+.lg-p small{font-size:.5rem;font-weight:700;opacity:.8}
+.lg-p.k-st{background:#E7EEF0}.lg-p.k-bin,.lg-p.k-plates,.lg-p.k-pass{background:#C9A57A}.lg-p.k-tb{background:#C08A55;color:#fff;font-weight:800;border-radius:40%}
+.lg-p.k-bi{background:#7A5FC2;color:#fff}.lg-p.k-fr{background:#5E35B1}
+.lg-p.sel{border:3px solid var(--accent);box-shadow:0 0 0 3px rgba(232,102,74,.35);z-index:2}
+.lg-w{position:absolute;background:#5E4636;border-radius:2px;pointer-events:none}.lg-w.w2{background:repeating-linear-gradient(45deg,#C9A15A 0 3px,#8C6A4E 3px 6px)}
 .lay-tb.bi{border-radius:10px;background:#7A5FC2;font-size:1.05rem}
 .lay-wall{position:absolute;padding:0;border:2px dashed rgba(0,0,0,.18);background:transparent;border-radius:4px;font-size:.7rem;display:grid;place-items:center;z-index:2}
 .lay-wall.w1{background:#5E4636;border:none}.lay-wall.w2{background:repeating-linear-gradient(90deg,#5E4636 0 30%,transparent 30% 70%,#5E4636 70%);border:none}
@@ -670,7 +678,7 @@ const OCCASIONS = [{ n: "Birthday party", e: "🎂" }, { n: "Engagement drinks",
   { n: "Cricket club dinner", e: "🏏", v: "pub", m: "cricket" }, { n: "Day at the races", e: "🏇", v: "pub", m: "race" },
   { n: "Business meeting", e: "💼", v: "cafe", room: 1 }];
 const BAR = [{ n: "Bar & standing area", c: 1200, st: 1, spots: 2 }, { n: "Bigger standing area", c: 2500, st: 2, spots: 3 }];
-const BAR_SPOTS = [[6.4, 12.95], [8.15, 12.95], [4.6, 12.95]];
+const BAR_SPOTS = [[6.4, 13.25], [8.15, 13.25], [7.3, 13.25]];
 const plated = r => RECIPES[r].s[RECIPES[r].s.length - 1] === "plate"; // drinks go out without a plate
 function starsOf(rep) { let s = 0; while (s < 5 && rep >= STAR_AT[s + 1]) s++; return s; }
 function starsF(rep) { const s = starsOf(rep); return s >= 5 ? 5 : s + (rep - STAR_AT[s]) / (STAR_AT[s + 1] - STAR_AT[s]); }
@@ -1302,6 +1310,200 @@ function tvOn(save, day) {
   if (big) g.n = g.what === "rugby" ? "Rugby: a big international" : ["The derby", "A cup final", "A title decider"][Math.floor(r() * 3)];
   return g;
 }
+/* ---------- Free layout (the place Lee Lee works in): everything stands anywhere on a half-unit grid ----------
+   S.L = {v: 1, st: [[x, y] or null per S.stations index], tb: [[x, y, rot] per S.tables index], bin, plates, pass: [6 x [x, y]],
+   bi: {id: [x, y]} (build-ins that take floor), fr: [[x, y] per fruit machine], walls: {"v:i:j" | "h:i:j": 1 wall | 2 door}}.
+   Positions are top-left corners in room units (multiples of .5). The room is 9 x 14.5; the strip below y = 13 (queue, door,
+   bar) stays clear. Walls sit on grid lines: "v:i:j" is the line x = i/2 beside cell row j, "h:i:j" the line y = j/2 above
+   cell column i. Old saves and campaign days are turned into a layout by defaultLayout (the old fixed spots). */
+const GW = 18, GH = 29, GU = .5, NOBUILD = 13;
+const CELL_CENTRE = [[1.5, 6], [4.5, 6], [7.5, 6], [1.5, 9], [4.5, 9], [7.5, 9], [1.5, 11.5], [4.5, 11.5], [7.5, 11.5]];
+const DOOR_CELL = [8, 28];
+function fpOf(k, a, rot) {
+  const f = k === "tb" ? (a >= 6 ? [3, 2] : a >= 4 ? [2, 2] : [2, 1]) : k === "bi" ? [3, 2] : k === "fr" ? [.5, 1] : [1, 1];
+  return rot ? [f[1], f[0]] : f;
+}
+function oldSlot(i) { if (i < 9) return [i, 0]; const k = i - 9; return [k % 2 ? 8 : 0, 1.5 + Math.floor(k / 2)]; }
+// every piece of a layout with its footprint: {k, i (or id), x, y, w, h}
+function piecesOf(save, L) {
+  const out = [], add = (k, i, p, w, h) => { if (p) out.push({ k, i, x: p[0], y: p[1], w, h }); };
+  (save.stations || []).forEach((t, i) => { if (t) add("st", i, L.st[i], 1, 1); });
+  add("bin", 0, L.bin, 1, 1); add("plates", 0, L.plates, 1, 1); L.pass.forEach((p, i) => add("pass", i, p, 1, 1));
+  (save.tables || []).forEach((n, i) => { const p = L.tb[i]; if (p) { const [w, h] = fpOf("tb", n, p[2]); add("tb", i, p, w, h); } });
+  for (const id in save.bi || {}) if (BI[id] && BI[id].cell && L.bi[id]) add("bi", id, L.bi[id], 3, 2);
+  const nf = save.bi && save.bi.fruit ? save.bi.fruit.n || 1 : 0;
+  for (let k = 0; k < nf; k++) add("fr", k, L.fr[k], .5, 1);
+  return out;
+}
+const overlap = (a, b) => a.x < b.x + b.w - 1e-6 && b.x < a.x + a.w - 1e-6 && a.y < b.y + b.h - 1e-6 && b.y < a.y + a.h - 1e-6;
+const inRoom = p => p.x >= 0 && p.y >= 0 && p.x + p.w <= 9 + 1e-6 && p.y + p.h <= NOBUILD + 1e-6;
+// blocked cells: furniture, plus the pub's bar counter
+function gridOf(save, L) {
+  const g = new Uint8Array(GW * GH);
+  const mark = (x, y, w, h) => { for (let j = Math.round(y / GU); j < Math.round((y + h) / GU); j++) for (let i = Math.round(x / GU); i < Math.round((x + w) / GU); i++) if (i >= 0 && j >= 0 && i < GW && j < GH) g[j * GW + i] = 1; };
+  for (const p of piecesOf(save, L)) mark(p.x, p.y, p.w, p.h);
+  if (save.venue === "pub" && save.bar) mark(5.5, 13.5, 3.5, .5);
+  return g;
+}
+// can you step from cell a to the next cell in direction (di, dj)? walls block, doors don't (open: doors block too, for noise)
+function stepOk(walls, i, j, di, dj, shut) {
+  const e = di ? "v:" + (di > 0 ? i + 1 : i) + ":" + j : "h:" + i + ":" + (dj > 0 ? j + 1 : j), v = walls[e];
+  return !v || (v === 2 && !shut);
+}
+function floodFrom(g, walls, starts, shut, ignoreFurniture) {
+  const seen = new Uint8Array(GW * GH), q = [];
+  for (const [i, j] of starts) { const k = j * GW + i; if (!seen[k]) { seen[k] = 1; q.push(k); } }
+  while (q.length) {
+    const k = q.pop(), i = k % GW, j = (k - i) / GW;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= GW || b >= GH) continue;
+      const n = b * GW + a; if (seen[n] || (!ignoreFurniture && g[n]) || !stepOk(walls, i, j, di, dj, shut)) continue;
+      seen[n] = 1; q.push(n);
+    }
+  }
+  return seen;
+}
+// free, reachable cells right next to a piece (where someone stands to use it)
+function accessOf(p, g, walls, reach) {
+  const out = [], i0 = Math.round(p.x / GU), j0 = Math.round(p.y / GU), i1 = Math.round((p.x + p.w) / GU) - 1, j1 = Math.round((p.y + p.h) / GU) - 1;
+  const tryCell = (i, j, fi, fj, di, dj) => { if (i < 0 || j < 0 || i >= GW || j >= GH) return; const k = j * GW + i; if (g[k] || !reach[k]) return; if (!stepOk(walls, fi, fj, di, dj, false)) return; out.push([(i + .5) * GU, (j + .5) * GU]); };
+  for (let i = i0; i <= i1; i++) { tryCell(i, j1 + 1, i, j1, 0, 1); tryCell(i, j0 - 1, i, j0, 0, -1); }
+  for (let j = j0; j <= j1; j++) { tryCell(i1 + 1, j, i1, j, 1, 0); tryCell(i0 - 1, j, i0, j, -1, 0); }
+  return out;
+}
+// "" if the layout works: everything inside the room, nothing overlapping, and everything reachable from the door
+function layoutProblem(save, L) {
+  const ps = piecesOf(save, L);
+  for (const p of ps) if (!inRoom(p)) return "That doesn't fit there.";
+  for (let a = 0; a < ps.length; a++) for (let b = a + 1; b < ps.length; b++) if (overlap(ps[a], ps[b])) return "Something's already there.";
+  const g = gridOf(save, L), reach = floodFrom(g, L.walls, [DOOR_CELL], false);
+  for (const p of ps) if (p.k !== "fr" && !accessOf(p, g, L.walls, reach).length) return "That would block something off: everything needs a way to it from the door.";
+  return "";
+}
+// find a free place for a new piece, near a preferred point
+function autoPlace(save, L, k, size, near) {
+  const [w, h] = fpOf(k, size, 0), cands = [];
+  for (let y = 0; y + h <= NOBUILD; y += GU) for (let x = 0; x + w <= 9; x += GU) cands.push([x, y, Math.hypot(x + w / 2 - near[0], y + h / 2 - near[1])]);
+  cands.sort((a, b) => a[2] - b[2]);
+  const ps = piecesOf(save, L);
+  for (const [x, y] of cands) {
+    const p = { x, y, w, h }; if (ps.some(q => overlap(p, q))) continue;
+    const T = JSON.parse(JSON.stringify(L)); setPiece(save, T, k, size, [x, y, 0]);
+    if (!layoutProblem(save, T)) return [x, y, 0];
+  }
+  return null;
+}
+// where a new piece's position is stored (k "st": size = station index; "tb": table index; "bi": id; "fr": machine number)
+function setPiece(save, L, k, key, pos) {
+  if (k === "st") L.st[key] = pos && [pos[0], pos[1]];
+  else if (k === "tb") L.tb[key] = pos;
+  else if (k === "bi") L.bi[key] = pos && [pos[0], pos[1]];
+  else if (k === "fr") L.fr[key] = pos && [pos[0], pos[1]];
+  else if (k === "pass") L.pass[key] = pos && [pos[0], pos[1]];
+  else L[k] = pos && [pos[0], pos[1]];
+}
+// the old fixed layout (and its 3x3 walls) as a free layout; anything that clashes is placed somewhere free
+function defaultLayout(save) {
+  const L = { v: 1, st: [], tb: [], bi: {}, fr: [], walls: {}, bin: [0, 3.5], plates: [1, 3.5], pass: [[2, 3.5], [3, 3.5], [5, 3.5], [6, 3.5], [7, 3.5], [8, 3.5]] };
+  (save.stations || []).forEach((t, i) => { L.st[i] = t && i < 13 ? oldSlot(i) : null; });
+  const used = new Set(Object.values(save.bi || {}).map(o => o && o.p).filter(p => p != null));
+  (save.tables || []).forEach((n, i) => {
+    let p = save.tpos && save.tpos[i] != null ? save.tpos[i] : i; if (used.has(p)) { p = 0; while (used.has(p) && p < 8) p++; } used.add(p);
+    const [cx, cy] = CELL_CENTRE[p] || CELL_CENTRE[0], [w, h] = fpOf("tb", n, 0); L.tb[i] = [cx - w / 2, cy - h / 2, 0];
+  });
+  for (const id in save.bi || {}) if (BI[id] && BI[id].cell) { const [cx, cy] = CELL_CENTRE[save.bi[id].p] || CELL_CENTRE[8]; L.bi[id] = [cx - 1.5, cy - 1]; }
+  const nf = save.bi && save.bi.fruit ? save.bi.fruit.n || 1 : 0; for (let k = 0; k < nf; k++) L.fr[k] = [8.5, k ? 10 : 7];
+  // walls from the old 3x3 edges, each as half-unit segments, with a one-unit door in the middle
+  const VX = [3, 6], RY = [[4.5, 7.5], [7.5, 10], [10, 12.5]], CX = [[0, 3], [3, 6], [6, 9]], HY = [7.5, 10, 12.5];
+  for (const [e, v] of Object.entries(save.walls || {})) {
+    if (!v || e[0] === "t") continue;
+    const r = +e[1], c = +e[2], seg = [];
+    if (e[0] === "v") { const i = VX[c] / GU; for (let y = RY[r][0]; y < RY[r][1]; y += GU) seg.push("v:" + i + ":" + (y / GU)); }
+    else { const j = HY[r] / GU; for (let x = CX[c][0]; x < CX[c][1]; x += GU) seg.push("h:" + (x / GU) + ":" + j); }
+    const m = Math.floor(seg.length / 2) - 1;
+    seg.forEach((s, k) => { L.walls[s] = v === 2 && (k === m || k === m + 1) ? 2 : 1; });
+  }
+  fixLayout(save, L);
+  return L;
+}
+// keep a layout in step with what's owned: drop what's gone, place what's new or clashing
+function fixLayout(save, L) {
+  L.st.length = Math.max(L.st.length, (save.stations || []).length);
+  (save.stations || []).forEach((t, i) => { if (!t) L.st[i] = null; });
+  L.tb.length = (save.tables || []).length;
+  for (const id in L.bi) if (!save.bi || !save.bi[id]) delete L.bi[id];
+  const nf = save.bi && save.bi.fruit ? save.bi.fruit.n || 1 : 0; L.fr.length = Math.min(L.fr.length, nf);
+  const want = [];
+  (save.stations || []).forEach((t, i) => { if (t) want.push(["st", i, 0, [4.5, 1]]); });
+  ["bin", "plates"].forEach(k => want.push([k, k, 0, [4.5, 3.5]])); L.pass.forEach((_, i) => want.push(["pass", i, 0, [4.5, 3.5]]));
+  (save.tables || []).forEach((n, i) => want.push(["tb", i, n, [4.5, 8]]));
+  for (const id in save.bi || {}) if (BI[id] && BI[id].cell) want.push(["bi", id, 0, [4.5, 9]]);
+  for (let k = 0; k < nf; k++) want.push(["fr", k, 0, [8.7, 9]]);
+  const get = (k, key) => k === "st" ? L.st[key] : k === "tb" ? L.tb[key] : k === "bi" ? L.bi[key] : k === "fr" ? L.fr[key] : k === "pass" ? L.pass[key] : L[k];
+  // take everything out, then put pieces back one by one: kept where they were if that still works, otherwise placed afresh
+  const keep = want.map(([k, key]) => get(k, key));
+  want.forEach(([k, key]) => setPiece(save, L, k, key, null));
+  const mini = { stations: [], tables: [], bi: {}, venue: save.venue, bar: save.bar };
+  want.forEach(([k, key, size, near], n) => {
+    if (k === "st") mini.stations[key] = save.stations[key]; else if (k === "tb") mini.tables[key] = save.tables[key];
+    else if (k === "bi") mini.bi[key] = save.bi[key]; else if (k === "fr") mini.bi.fruit = { n: key + 1 };
+    let p = keep[n]; if (p) { setPiece(mini, L, k, key, k === "tb" ? p : [p[0], p[1]]); if (!layoutProblem(mini, L)) return; setPiece(mini, L, k, key, null); }
+    const q = autoPlace(mini, L, k, size, near); setPiece(mini, L, k, key, q);
+  });
+  return L;
+}
+function ensureLayout(save) {
+  if (!save.L || save.L.v !== 1) save.L = defaultLayout(save);
+  else { const need = (save.stations || []).some((t, i) => t && !save.L.st[i]) || (save.tables || []).some((_, i) => !save.L.tb[i]) || Object.keys(save.bi || {}).some(id => BI[id] && BI[id].cell && !save.L.bi[id]) || (save.bi && save.bi.fruit && (save.L.fr.length < (save.bi.fruit.n || 1))); if (need) fixLayout(save, save.L); }
+  return save.L;
+}
+// path between two points: A* over free cells (a step into furniture only at the very end), then straightened
+function gridPath(g, walls, x0, y0, x1, y1) {
+  const ci = x => Math.max(0, Math.min(GW - 1, Math.floor(x / GU))), cj = y => Math.max(0, Math.min(GH - 1, Math.floor(y / GU)));
+  const s = cj(y0) * GW + ci(x0); let t = cj(y1) * GW + ci(x1);
+  if (s === t) return [[x1, y1]];
+  const free = k => !g[k] || k === s;
+  if (!free(t)) { // the nearest free cell to the target
+    let best = -1, bd = 1e9; for (let k = 0; k < GW * GH; k++) if (!g[k]) { const d = Math.hypot((k % GW + .5) * GU - x1, (Math.floor(k / GW) + .5) * GU - y1); if (d < bd) { bd = d; best = k; } }
+    if (best < 0) return [[x1, y1]]; t = best;
+  }
+  const gs = new Float32Array(GW * GH).fill(1e9), from = new Int32Array(GW * GH).fill(-1), open = [s]; gs[s] = 0;
+  const hh = k => Math.abs(k % GW - t % GW) + Math.abs(Math.floor(k / GW) - Math.floor(t / GW));
+  while (open.length) {
+    let bi = 0; for (let n = 1; n < open.length; n++) if (gs[open[n]] + hh(open[n]) < gs[open[bi]] + hh(open[bi])) bi = n;
+    const k = open.splice(bi, 1)[0]; if (k === t) break;
+    const i = k % GW, j = (k - i) / GW;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= GW || b >= GH) continue;
+      const n = b * GW + a; if (!free(n) || !stepOk(walls, i, j, di, dj, false)) continue;
+      if (gs[k] + 1 < gs[n]) { gs[n] = gs[k] + 1; from[n] = k; if (!open.includes(n)) open.push(n); }
+    }
+  }
+  if (from[t] < 0) return [[x1, y1]];
+  const cells = []; for (let k = t; k !== s && k >= 0; k = from[k]) cells.unshift(k);
+  // straighten: skip corners while the straight line stays on free cells and crosses no wall
+  const pt = k => [(k % GW + .5) * GU, (Math.floor(k / GW) + .5) * GU];
+  const clear = (ax, ay, bx, by) => { const n = Math.ceil(Math.hypot(bx - ax, by - ay) / (GU / 3)); let pi = ci(ax), pj = cj(ay); for (let m = 1; m <= n; m++) { const x = ax + (bx - ax) * m / n, y = ay + (by - ay) * m / n, i = ci(x), j = cj(y); if (i !== pi || j !== pj) { if (g[j * GW + i] && j * GW + i !== s) return false; if (i !== pi && j !== pj) return false; if (!stepOk(walls, pi, pj, i - pi, j - pj, false)) return false; pi = i; pj = j; } } return true; };
+  const out = []; let cx = x0, cy = y0, n = 0;
+  while (n < cells.length) { let far = n; for (let m = cells.length - 1; m > n; m--) { const [px, py] = pt(cells[m]); if (clear(cx, cy, px, py)) { far = m; break; } } const p = pt(cells[far]); out.push(p); cx = p[0]; cy = p[1]; n = far + 1; }
+  out.push([x1, y1]);
+  return out;
+}
+// noise rooms: cells joined without crossing a wall or a door; counters and appliances also stop noise (like a kitchen pass)
+function noiseBlock(save, L) { const g = new Uint8Array(GW * GH); for (const p of piecesOf(save, L)) if (p.k === "st" || p.k === "pass" || p.k === "bin" || p.k === "plates") for (let j = Math.round(p.y / GU); j < Math.round((p.y + p.h) / GU); j++) for (let i = Math.round(p.x / GU); i < Math.round((p.x + p.w) / GU); i++) g[j * GW + i] = 1; return g; }
+function roomGrid(walls, block) {
+  const room = new Int16Array(GW * GH).fill(-1); let id = 0; block = block || new Uint8Array(GW * GH);
+  for (let k = 0; k < GW * GH; k++) { if (room[k] >= 0 || block[k]) continue; const seen = floodFrom(block, walls, [[k % GW, Math.floor(k / GW)]], true, false); for (let n = 0; n < GW * GH; n++) if (seen[n]) room[n] = id; id++; }
+  return room;
+}
+const roomAt = (rooms, x, y) => rooms[Math.max(0, Math.min(GH - 1, Math.floor(y / GU))) * GW + Math.max(0, Math.min(GW - 1, Math.floor(x / GU)))];
+// a private room: walled off from the entrance, with a door in its walls
+function gridEnclosed(walls, x, y) {
+  const seen = floodFrom(new Uint8Array(GW * GH), walls, [[Math.floor(x / GU), Math.floor(y / GU)]], true, true);
+  if (seen[DOOR_CELL[1] * GW + DOOR_CELL[0]]) return false;
+  for (const [e, v] of Object.entries(walls)) if (v === 2) { const [o, a, b] = e.split(":"), i = +a, j = +b; const c1 = o === "v" ? [i - 1, j] : [i, j - 1], c2 = [i, j]; if ([c1, c2].some(([p, q]) => p >= 0 && q >= 0 && seen[q * GW + p])) return true; }
+  return false;
+}
 /*CORE-END*/
 
 const $ = id => document.getElementById(id);
@@ -1583,18 +1785,25 @@ function startDay() {
   G = { t: 0, len: DAY_LEN, open: true, ended: false, endT: 0,
     rev: 0, tips: 0, served: 0, angry: 0, happy: 0, turned: 0, burnt: 0, spills: 0, thrown: 0, people: 0, repD: 0, critic: null, perfect: 0, binned: 0,
     stock: Object.assign({}, S.stock), used: {},
-    tables: S.tables.map((seats, i) => { const p = TABLE_POS[(S.tpos || [])[i] != null ? S.tpos[i] : i]; return { i, x: p[0], y: p[1], seats, group: null, dirty: 0, claim: null }; }),
-    stations: S.stations.map((t, i) => t && Object.assign({ i, t, item: null, user: null, claim: null, load: 0, run: 0 }, slotPos(i))).filter(Boolean),
+    tables: S.tables.map((seats, i) => { const p = ensureLayout(S).tb[i], [w, h] = fpOf("tb", seats, p[2]); return { i, x: p[0] + w / 2, y: p[1] + h / 2, rot: p[2] || 0, fp: { x: p[0], y: p[1], w, h }, seats, group: null, dirty: 0, claim: null }; }),
+    stations: S.stations.map((t, i) => t && { i, t, item: null, user: null, claim: null, load: 0, run: 0, x: ensureLayout(S).st[i][0] + .5, y: S.L.st[i][1] + .5 }).filter(Boolean),
     spots: [null, null, null, null, null, null], party: null, taps: [], idle: 0, coach: null, slack: 0, outBy: { queue: 0, order: 0, food: 0 }, plateless: 0, streak: 0, bestStreak: 0, clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
   G.extra = {};
+  // the room: what blocks the way, the walls, where noise carries, and the counter's spots
+  G.L = S.L; G.grid = gridOf(S, S.L); G.reach = floodFrom(G.grid, S.L.walls, [DOOR_CELL], false);
+  G.cnt = { bin: { x: S.L.bin[0] + .5, y: S.L.bin[1] + .5 }, plates: { x: S.L.plates[0] + .5, y: S.L.plates[1] + .5 }, pass: S.L.pass.map(q => ({ x: q[0] + .5, y: q[1] + .5 })) };
+  G.acc = new Map();
   // build-ins that seat people: the reading corner, sports corner, pool table and private rooms; rooms for noise
   {
-    const cells = biCells(S);
-    for (const pos in cells) { const id = cells[pos], B = BI[id], [x, y] = TABLE_POS[+pos]; if (B.seats) G.tables.push({ i: G.tables.length, x, y, seats: id === "sports" && (S.bi.sports.lv || 1) > 1 ? 6 : B.seats, sp: id, room: B.room ? enclosed(S.walls || {}, +pos) : false, group: null, dirty: 0, claim: null }); }
-    G.rooms = roomsOf(S.walls || {}); G.biRoom = {}; for (const pos in cells) G.biRoom[cells[pos]] = G.rooms[pos];
+    G.rooms = roomGrid(S.L.walls, noiseBlock(S, S.L)); G.biRoom = {};
+    for (const id in S.bi || {}) {
+      const B = BI[id]; if (!B || !B.cell || !S.L.bi[id]) continue;
+      const [bx, by] = S.L.bi[id], x = bx + 1.5, y = by + 1; G.biRoom[id] = roomAt(G.rooms, x, y);
+      if (B.seats) G.tables.push({ i: G.tables.length, x, y, fp: { x: bx, y: by, w: 3, h: 2 }, seats: id === "sports" && (S.bi.sports.lv || 1) > 1 ? 6 : B.seats, sp: id, room: B.room ? gridEnclosed(S.L.walls, x, y) : false, group: null, dirty: 0, claim: null });
+    }
   }
   // the pub's standing area: bar spots behave like tables for drinkers only
-  if (LV == null && S.venue === "pub" && S.bar) BAR_SPOTS.slice(0, BAR[S.bar - 1].spots).forEach(([x, y], k) => G.tables.push({ i: G.tables.length, x, y, seats: 3, bar: true, group: null, dirty: 0, claim: null }));
+  if (LV == null && S.venue === "pub" && S.bar) BAR_SPOTS.slice(0, BAR[S.bar - 1].spots).forEach(([x, y], k) => G.tables.push({ i: G.tables.length, x, y, fp: { x: x - .5, y: y - .5, w: 1, h: .5 }, seats: 3, bar: true, group: null, dirty: 0, claim: null }));
   G.info = LV == null ? dayInfo(S, S.day) : null;
   G.tipM = LV == null ? siteTip(S) : 1;
   G.tvLive = hasBi(S, "sports") && (LV != null ? !!LEVELS[LV].fans : !!(G.info.tv || (G.info.match && S.venue === "pub")));
@@ -1662,12 +1871,13 @@ function startDay() {
   G.arr.sort((a, b) => a.t - b.t);
   if (critic) { const a = G.arr[Math.floor(G.arr.length * .4)]; if (a) { a.critic = 1; a.size = 1; a.rowdy = false; } }
   // actors
-  lee = mkActor({ id: "lee", name: "Lee Lee", role: "lee", look: LEE, x: 4.5, y: 2.5, speed: 3.1 * (1 + .12 * S.shoes) });
+  const ls = nearFree(4.5, 2.5);
+  lee = mkActor({ id: "lee", name: "Lee Lee", role: "lee", look: LEE, x: ls[0], y: ls[1], speed: 3.1 * (1 + .12 * S.shoes) });
   G.actors.push(lee);
   const crew = LV == null ? S.staff.concat((S.temps || []).filter(x => x.day === S.day).map((x, k) => ({ id: "temp" + k, name: x.name, role: x.role, lvl: 2, morale: 70, temp: 1 }))) : S.staff;
   for (const st of crew) {
     const look = Object.assign(randomLook(), STAFF_LOOK[st.role] || {}, st.look || {});
-    const home = staffHome(st.role);
+    const home = nearFree(...staffHome(st.role));
     const a = mkActor({ id: st.id, name: st.name, role: st.role, look, x: home[0], y: home[1], speed: 2.3 * (.85 + .1 * st.lvl) * (.85 + st.morale * .003), skill: (.8 + .12 * st.lvl) * (.85 + st.morale * .003) });
     G.actors.push(a);
   }
@@ -1733,23 +1943,22 @@ function staffHome(role) { return role === "waiter" ? [5.6, 5.2] : role === "flo
 function mkActor(o) { return Object.assign({ path: [], then: null, work: null, hand: null, wait: 0, watch: null, skill: 1, bob: 0, moving: false }, o); }
 
 /* ---------- movement & work ---------- */
-function route(a, x, y) {
-  const p = [], wp = (x0, y0, x1, y1) => S.walls ? wallPath(S.walls, x0, y0, x1, y1) : [];
-  if (zone(a.y) !== zone(y)) {
-    if (zone(a.y) === 0) p.push([GAPX, 3.45], [GAPX, 4.9], ...wp(GAPX, 4.9, x, y));
-    else p.push(...wp(a.x, a.y, GAPX, 4.9), [GAPX, 4.9], [GAPX, 3.45]);
-  } else if (zone(y) === 1) p.push(...wp(a.x, a.y, x, y));
-  p.push([x, y]); return p;
-}
-// customers walk round walls too, through the doors
-function walkTo(pp, x, y) { pp.tx = x; pp.ty = y; pp.wp = S.walls ? wallPath(S.walls, pp.x, pp.y, x, y) : []; }
+function route(a, x, y) { return gridPath(G.grid, G.L.walls, a.x, a.y, x, y); }
+// customers walk round furniture and walls too, through the doors
+function walkTo(pp, x, y) { pp.tx = x; pp.ty = y; const r = gridPath(G.grid, G.L.walls, pp.x, pp.y, x, y); r.pop(); pp.wp = r; }
+// the free spot nearest a point (where someone stands or starts)
+function nearFree(x, y) { let best = [x, y], bd = 1e9; for (let k = 0; k < GW * GH; k++) if (!G.grid[k] && G.reach[k]) { const cx = (k % GW + .5) * GU, cy = (Math.floor(k / GW) + .5) * GU, d = Math.hypot(cx - x, cy - y); if (d < bd) { bd = d; best = [cx, cy]; } } return best; }
+// where to stand to use something: the free cell beside it nearest the person
+function accessFor(key, rect) { if (!G.acc.has(key)) G.acc.set(key, accessOf(rect, G.grid, G.L.walls, G.reach)); return G.acc.get(key); }
+function nearestOf(list, a, fx, fy) { if (!list.length) return nearFree(fx, fy); let b = list[0], bd = 1e9; for (const q of list) { const d = Math.hypot(q[0] - a.x, q[1] - a.y); if (d < bd) { bd = d; b = q; } } return b; }
+function goStand(a, o, then) { const [x, y] = standFor(o, a); goTo(a, x, y, then); }
 function goTo(a, x, y, then) { a.path = route(a, x, y); a.then = then || null; }
 function work(a, dur, done, cancel, label) { a.work = { t: 0, dur, done, cancel, label }; }
 function interrupt(a) { if (a.work && a.work.cancel) a.work.cancel(); a.work = null; a.path = []; a.then = null; }
 function standFor(o, a) {
-  if (o.k === "st") return [o.s.sx, o.s.sy];
-  if (o.k === "counter") return [o.x, zone(a.y) === 0 ? 3.42 : 4.85];
-  if (o.k === "table") return [o.t.x + .5, o.t.y + 1.05];
+  if (o.k === "st") return nearestOf(accessFor("st" + o.s.i, { x: o.s.x - .5, y: o.s.y - .5, w: 1, h: 1 }), a, o.s.x, o.s.y + 1);
+  if (o.k === "counter") return nearestOf(accessFor("c" + o.what + (o.i || 0), { x: o.x - .5, y: o.y - .5, w: 1, h: 1 }), a, o.x, o.y + 1);
+  if (o.k === "table") { const r = o.t.fp || { x: o.t.x - .75, y: o.t.y - .5, w: 1.5, h: 1 }; return nearestOf(accessFor("t" + o.t.i, r), a, o.t.x + .5, o.t.y + 1.05); }
   if (o.k === "mess") return [o.m.x, o.m.y + .3];
   return [o.x, o.y];
 }
@@ -1898,9 +2107,9 @@ function patMul(g) {
   let m = (1 - .06 * S.decor) * (LV != null ? (EASY ? .6 : .78) : diffOf(S).pat);
   if (G.rooms) {
     if (g.kids && hasBi(S, "softplay")) m *= .85;
-    const t = g.table, pos = t && !t.sp && !t.bar ? S.tpos[t.i] : null;
-    if (pos != null && !g.fan && !g.watch && !g.drinker) { // noise from a room it shares: TV crowds on game days, children at the soft play
-      const r = G.rooms[pos];
+    const t = g.table;
+    if (t && !t.sp && !t.bar && !g.fan && !g.watch && !g.drinker) { // noise from a room it shares: TV crowds on game days, children at the soft play
+      const r = roomAt(G.rooms, t.x, t.y);
       if (G.tvLive && G.biRoom.sports === r) m *= 1.15;
       if (!g.kids && G.biRoom.softplay === r) m *= 1.1;
     }
@@ -2105,7 +2314,7 @@ function leeStation(s, pref) {
     }
     if (pref && opts2.includes(pref)) startDish(L, pref, s);
     else if (opts2.length === 1) startDish(L, opts2[0], s);
-    else chooser(opts2, r => { if (L.x === s.sx && L.y === s.sy && !L.hand && !s.item && (!s.user || s.user === L)) startDish(L, r, s); });
+    else chooser(opts2, r => { if (Math.hypot(L.x - s.x, L.y - s.y) < 1.4 && !L.hand && !s.item && (!s.user || s.user === L)) startDish(L, r, s); });
     return;
   }
   if (h.k !== "dish") { toastMsg("Take the dirty plates to the sink"); return; }
@@ -2172,7 +2381,8 @@ function leeTable(t) {
 
 /* ---------- the coach: what would a good player do next? ----------
    Returns { o: a tap target (same shape as hitTest gives), say: a short instruction }, or null. */
-const stObj = s => ({ k: "st", s }), spotObj = i => ({ k: "counter", what: "pass", i, x: COUNTER.pass[i] });
+const stObj = s => ({ k: "st", s }), spotObj = i => ({ k: "counter", what: "pass", i, x: G.cnt.pass[i].x, y: G.cnt.pass[i].y });
+const binObj = () => ({ k: "counter", what: "bin", x: G.cnt.bin.x, y: G.cnt.bin.y }), platesObj = () => ({ k: "counter", what: "plates", x: G.cnt.plates.x, y: G.cnt.plates.y });
 const sn = t => STATIONS[t].n.toLowerCase(), rn = r => RECIPES[r].n.toLowerCase();
 function wantedBy(r) { const o = openTickets(r).filter(x => x.g.state === "wait" && x.g.table).sort((a, b) => a.g.pat - b.g.pat)[0]; return o ? o.g : null; }
 const watched = s => G.actors.some(a => a !== lee && a.watch === s);
@@ -2189,16 +2399,16 @@ function coachNext() {
   const burning = st.filter(s => s.item && STATIONS[s.t].k === "pas" && s.item.ready && !s.item.burnt && s.item.burnAt - s.item.t < 4.5 && !watched(s));
   if (h) {
     if (h.k === "dirty") return dw ? { o: stObj(dw), say: "Load the dirty plates into the dishwasher" } : sink ? { o: stObj(sink), say: "Take the dirty plates to the sink" } : null;
-    if (h.burnt) return { o: { k: "counter", what: "bin", x: COUNTER.bin }, say: "That's burnt: throw it in the bin" };
+    if (h.burnt) return { o: binObj(), say: "That's burnt: throw it in the bin" };
     const R = RECIPES[h.r];
     if (burning.length && R.s[h.s] !== burning[0].t) { const p = putDown("Something's about to burn"); if (p) return p; }
     if (h.s >= R.s.length) {
       const g = wantedBy(h.r); if (g) return { o: { k: "table", t: g.table }, say: `Serve the ${rn(h.r)} to ${tname(g.table)}` };
-      if (G.clean <= 1 && need(h.r) < 0 && plated(h.r)) return { o: { k: "counter", what: "bin", x: COUNTER.bin }, say: "Nobody wants this now: bin it to free up the plate" };
+      if (G.clean <= 1 && need(h.r) < 0 && plated(h.r)) return { o: binObj(), say: "Nobody wants this now: bin it to free up the plate" };
       return putDown("Nobody needs this right now");
     }
     const nx = R.s[h.s];
-    if (nx === "plate") return G.clean > 0 ? { o: { k: "counter", what: "plates", x: COUNTER.plates }, say: `Plate up the ${rn(h.r)}` } : putDown("No clean plates");
+    if (nx === "plate") return G.clean > 0 ? { o: platesObj(), say: `Plate up the ${rn(h.r)}` } : putDown("No clean plates");
     const s = st.find(s => s.t === nx && !s.item && (!s.user || s.user === lee)) || st.find(s => s.t === nx && s.item && (s.item.ready || s.item.burnt) && !watched(s));
     if (s) return { o: stObj(s), say: `Next for the ${rn(h.r)}: the ${sn(nx)}` };
     return putDown(`The ${sn(nx)} is busy`);
@@ -2267,7 +2477,7 @@ function staffThink(a, dt) {
     : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null)
     : role === "drinks" ? tryCook(a, true)
     : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) : false;
-  if (!did) { const hm = staffHome(role); if (Math.hypot(a.x - hm[0], a.y - hm[1]) > .3) goTo(a, hm[0] + rnd(-.4, .4), hm[1]); a.wait = .4; }
+  if (!did) { const hm = nearFree(...staffHome(role)); if (Math.hypot(a.x - hm[0], a.y - hm[1]) > .3) goTo(a, hm[0] + rnd(-.4, .4), hm[1]); a.wait = .4; }
 }
 function tryOrder(a) {
   const g = G.groups.find(g => g.state === "order" && !g.claim); if (!g) return false;
@@ -2280,12 +2490,12 @@ function tryDeliver(a) {
   const d = G.spots.find(ok);
   if (d) {
     d.claim = a;
-    goTo(a, COUNTER.pass[G.spots.indexOf(d)], 4.85, () => { d.claim = null; const i = G.spots.indexOf(d); if (i >= 0 && !a.hand) { a.hand = d; G.spots[i] = null; } });
+    goStand(a, spotObj(G.spots.indexOf(d)), () => { d.claim = null; const i = G.spots.indexOf(d); if (i >= 0 && !a.hand) { a.hand = d; G.spots[i] = null; } });
     return true;
   }
   const top = G.stations.find(s => s.t === "top" && ok(s.item)); if (!top) return false;
   const t = top.item; t.claim = a;
-  goTo(a, top.sx, top.sy, () => { t.claim = null; if (top.item === t && !a.hand) { a.hand = t; top.item = null; } });
+  goStand(a, stObj(top), () => { t.claim = null; if (top.item === t && !a.hand) { a.hand = t; top.item = null; } });
   return true;
 }
 function tryClear(a) {
@@ -2299,7 +2509,7 @@ function staffDirty(a) {
   const s = dw || G.stations.find(s => s.t === "sink");
   if (!s) { a.wait = 1; return; }
   if (dw) dw.claim = a;
-  goTo(a, s.sx, s.sy, () => {
+  goStand(a, stObj(s), () => {
     if (dw) { dw.claim = null; if (loadDishwasher(a, dw)) return; }
     if (a.hand && a.hand.k === "dirty") { G.sink += a.hand.n; a.hand = null; }
     if (a.role === "porter" && !G.washer) startWash(a);
@@ -2309,7 +2519,7 @@ function tryWash(a) {
   if (G.sink <= 0 || G.washer) return false;
   const s = G.stations.find(s => s.t === "sink"); if (!s) return false;
   G.washer = a;
-  goTo(a, s.sx, s.sy, () => { if (G.washer === a) G.washer = null; if (!G.washer) startWash(a); });
+  goStand(a, stObj(s), () => { if (G.washer === a) G.washer = null; if (!G.washer) startWash(a); });
   return true;
 }
 function tryMop(a) {
@@ -2340,27 +2550,27 @@ function tryCook(a, drinks) {
 }
 function staffDish(a) {
   const d = a.hand, R = RECIPES[d.r];
-  if (d.burnt) { goTo(a, COUNTER.bin, 3.42, () => { a.hand = null; }); return; }
+  if (d.burnt) { goStand(a, binObj(), () => { a.hand = null; }); return; }
   if (d.s >= R.s.length) {
     if (a.role === "waiter") {
       const o = openTickets(d.r).find(x => x.g.table);
       if (o) { const [x, y] = standFor({ k: "table", t: o.g.table }, a); goTo(a, x, y, () => { const tk = o.g.table && o.g.state === "wait" && o.g.tickets.find(k => !k.done && k.r === d.r); if (tk && a.hand === d) { serve(o.g, tk, d); a.hand = null; } }); return; }
     }
-    const free = G.spots.map((x, i) => x ? -1 : i).filter(i => i >= 0).sort((p, q) => Math.abs(COUNTER.pass[p] - a.x) - Math.abs(COUNTER.pass[q] - a.x));
+    const free = G.spots.map((x, i) => x ? -1 : i).filter(i => i >= 0).sort((p, q) => Math.hypot(G.cnt.pass[p].x - a.x, G.cnt.pass[p].y - a.y) - Math.hypot(G.cnt.pass[q].x - a.x, G.cnt.pass[q].y - a.y));
     if (!free.length) { a.wait = .6; return; }
     const i = free[0];
-    goTo(a, COUNTER.pass[i], zone(a.y) === 0 ? 3.42 : 4.85, () => { if (a.hand !== d) return; const j = G.spots[i] ? G.spots.indexOf(null) : i; if (j >= 0) { G.spots[j] = d; a.hand = null; } });
+    goStand(a, spotObj(i), () => { if (a.hand !== d) return; const j = G.spots[i] ? G.spots.indexOf(null) : i; if (j >= 0) { G.spots[j] = d; a.hand = null; } });
     return;
   }
   const next = R.s[d.s];
   if (next === "plate") {
-    goTo(a, COUNTER.plates, 3.42, () => { if (G.clean > 0) work(a, .35, () => { if (G.clean > 0) { G.clean--; d.s++; } }); else a.wait = 1; });
+    goStand(a, platesObj(), () => { if (G.clean > 0) work(a, .35, () => { if (G.clean > 0) { G.clean--; d.s++; } }); else a.wait = 1; });
     return;
   }
-  const free = G.stations.filter(s => s.t === next && !s.item && !s.user && (!s.claim || s.claim === a)).sort((p, q) => Math.hypot(p.sx - a.x, p.sy - a.y) - Math.hypot(q.sx - a.x, q.sy - a.y));
+  const free = G.stations.filter(s => s.t === next && !s.item && !s.user && (!s.claim || s.claim === a)).sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y));
   if (!free.length) { a.wait = .5; return; }
   const s = free[0]; s.claim = a;
-  goTo(a, s.sx, s.sy, () => {
+  goStand(a, stObj(s), () => {
     s.claim = null;
     if (s.item || (s.user && s.user !== a) || a.hand !== d) return;
     doStep(a, s);
@@ -2477,31 +2687,36 @@ function draw() {
   c.fillStyle = S.venue === "pub" ? "#2A1E16" : "#E9D9C6"; c.fillRect(0, 0, r.width, r.height);
   // dining floor
   c.fillStyle = P.floor; c.fillRect(PX(0), PY(4.4), W * T, (H - 4.4) * T);
+  c.fillRect(PX(0), PY(0), W * T, 4.4 * T);
   c.fillStyle = P.floor2;
-  for (let y = 4.4; y < H; y += .7) for (let x = ((y - 4.4) / .7) % 2 ? .7 : 0; x < W; x += 1.4) c.fillRect(PX(x), PY(y), .7 * T, .7 * T);
-  // kitchen floor
-  c.fillStyle = P.kit; c.fillRect(PX(0), PY(0), W * T, 4.4 * T);
-  c.fillStyle = P.kit2; for (let y = 0; y < 4.4; y += .55) for (let x = ((y / .55) % 2) ? .55 : 0; x < W; x += 1.1) c.fillRect(PX(x), PY(y), .55 * T, .55 * T);
+  for (let y = 0; y < H; y += .7) for (let x = (Math.round(y / .7) % 2) ? .7 : 0; x < W; x += 1.4) c.fillRect(PX(x), PY(y), .7 * T, .7 * T);
+  // kitchen tiles round the appliances and counters, wherever they stand
+  if (G.L) {
+    const kt = new Uint8Array(GW * GH);
+    for (const p of piecesOf(S, G.L)) if (p.k === "st" || p.k === "pass" || p.k === "bin" || p.k === "plates")
+      for (let j = Math.round(p.y / GU) - 1; j <= Math.round((p.y + p.h) / GU); j++) for (let i = Math.round(p.x / GU) - 1; i <= Math.round((p.x + p.w) / GU); i++) if (i >= 0 && j >= 0 && i < GW && j < 26) kt[j * GW + i] = 1;
+    for (let k = 0; k < GW * GH; k++) if (kt[k]) { const i = k % GW, j = (k - i) / GW; c.fillStyle = (i + j) % 2 ? P.kit : P.kit2; c.fillRect(PX(i * GU), PY(j * GU), GU * T + .5, GU * T + .5); }
+  }
   // walls & door
   c.fillStyle = P.wall; c.fillRect(PX(0), PY(0), W * T, .12 * T); c.fillRect(PX(0), PY(0), .08 * T, H * T); c.fillRect(PX(W) - .08 * T, PY(0), .08 * T, H * T);
   c.fillRect(PX(0), PY(H) - .12 * T, (DOOR[0] - .7) * T, .12 * T); c.fillRect(PX(DOOR[0] + .7), PY(H) - .12 * T, (W - DOOR[0] - .7) * T, .12 * T);
   c.fillStyle = "#C9A15A"; c.fillRect(PX(DOOR[0] - .7), PY(H) - .08 * T, 1.4 * T, .08 * T);
-  // counter
-  for (const [a, b] of [[0, 3.92], [5.08, 9]]) {
-    c.fillStyle = P.counter; rr(c, PX(a), PY(3.75), (b - a) * T, .7 * T, .12 * T); c.fill();
-    c.fillStyle = P.top; rr(c, PX(a + .04), PY(3.78), (b - a - .08) * T, .5 * T, .1 * T); c.fill();
+  // counter pieces: the bin, the plate stack and the pass spots, wherever they stand
+  for (const q of [G.cnt.bin, G.cnt.plates, ...G.cnt.pass]) {
+    c.fillStyle = "rgba(0,0,0,.14)"; rr(c, PX(q.x - .5), PY(q.y - .5) + 3, T, T, 6); c.fill();
+    c.fillStyle = P.counter; rr(c, PX(q.x - .5), PY(q.y - .5), T, T, 6); c.fill();
+    c.fillStyle = P.top; rr(c, PX(q.x - .46), PY(q.y - .46), .92 * T, .78 * T, 5); c.fill();
   }
-  const need = nextNeed(), pulse = .55 + .45 * Math.sin(G.t * 6);
-  // bin, plates, pass
-  emoji("🗑️", PX(COUNTER.bin), PY(CY), T * .55);
+  const need = nextNeed(), pulse = .55 + .45 * Math.sin(G.t * 6), BN = G.cnt.bin, PL = G.cnt.plates;
+  emoji("🗑️", PX(BN.x), PY(BN.y), T * .55);
   const nPl = Math.min(G.clean, 8);
-  for (let i = 0; i < nPl; i++) { c.fillStyle = "#FFFFFF"; c.strokeStyle = "#BFB5A8"; c.lineWidth = 1; c.beginPath(); c.ellipse(PX(COUNTER.plates), PY(CY + .12) - i * T * .045, T * .3, T * .13, 0, 0, Math.PI * 2); c.fill(); c.stroke(); }
-  text(String(G.clean), PX(COUNTER.plates + .32), PY(CY - .2), T * .3, G.clean ? "#3A2A22" : "#D2483A", 800);
-  if (need === "plate") { c.strokeStyle = `rgba(232,102,74,${pulse})`; c.lineWidth = 3; rr(c, PX(COUNTER.plates - .45), PY(3.72), .9 * T, .76 * T, 8); c.stroke(); }
-  COUNTER.pass.forEach((x, i) => {
-    c.fillStyle = "rgba(255,255,255,.22)"; rr(c, PX(x - .42), PY(CY - .3), .84 * T, .52 * T, 6); c.fill();
-    c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = 1.5; c.setLineDash([3, 3]); rr(c, PX(x - .42), PY(CY - .3), .84 * T, .52 * T, 6); c.stroke(); c.setLineDash([]);
-    const d = G.spots[i]; if (d) drawItem(d, PX(x), PY(CY - .02), T);
+  for (let i = 0; i < nPl; i++) { c.fillStyle = "#FFFFFF"; c.strokeStyle = "#BFB5A8"; c.lineWidth = 1; c.beginPath(); c.ellipse(PX(PL.x), PY(PL.y + .12) - i * T * .045, T * .3, T * .13, 0, 0, Math.PI * 2); c.fill(); c.stroke(); }
+  text(String(G.clean), PX(PL.x + .32), PY(PL.y - .2), T * .3, G.clean ? "#3A2A22" : "#D2483A", 800);
+  if (need === "plate") { c.strokeStyle = `rgba(232,102,74,${pulse})`; c.lineWidth = 3; rr(c, PX(PL.x - .48), PY(PL.y - .48), .96 * T, .96 * T, 8); c.stroke(); }
+  G.cnt.pass.forEach((q, i) => {
+    c.fillStyle = "rgba(255,255,255,.22)"; rr(c, PX(q.x - .38), PY(q.y - .3), .76 * T, .52 * T, 6); c.fill();
+    c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = 1.5; c.setLineDash([3, 3]); rr(c, PX(q.x - .38), PY(q.y - .3), .76 * T, .52 * T, 6); c.stroke(); c.setLineDash([]);
+    const d = G.spots[i]; if (d) drawItem(d, PX(q.x), PY(q.y - .02), T);
   });
   // stations
   for (const s of G.stations) {
@@ -2532,8 +2747,8 @@ function draw() {
   // the pub bar along the bottom of the room
   if (G.tables.some(t => t.bar)) {
     const left = G.tables.filter(t => t.bar).reduce((a, t) => Math.min(a, t.x), 9) - .75;
-    c.fillStyle = P.counter; rr(c, PX(left), PY(13.4), (8.95 - left) * T, .45 * T, 6); c.fill();
-    c.fillStyle = P.top; rr(c, PX(left + .03), PY(13.42), (8.89 - left) * T, .22 * T, 4); c.fill();
+    c.fillStyle = P.counter; rr(c, PX(left), PY(13.55), (8.95 - left) * T, .45 * T, 6); c.fill();
+    c.fillStyle = P.top; rr(c, PX(left + .03), PY(13.57), (8.89 - left) * T, .22 * T, 4); c.fill();
     emoji("🍺", PX(8.6), PY(13.55), T * .32); text("BAR", PX(left + .35), PY(13.62), T * .2, "#F5E9DA", 800);
   }
   drawWallsBi(P);
@@ -2582,9 +2797,8 @@ function drawItem(d, x, y, s) {
 function drawWallsBi(P) {
   const c = ctx, th = Math.max(3, T * .16);
   // soft play: a padded mat with a ball pit and a little slide
-  const cells = biCells(S);
-  for (const pos in cells) if (cells[pos] === "softplay") {
-    const [x, y] = TABLE_POS[+pos], cl = ["#F28B82", "#FBC02D", "#81C784", "#64B5F6", "#BA68C8"];
+  if (hasBi(S, "softplay") && G.L && G.L.bi.softplay) {
+    const x = G.L.bi.softplay[0] + 1.5, y = G.L.bi.softplay[1] + 1, cl = ["#F28B82", "#FBC02D", "#81C784", "#64B5F6", "#BA68C8"];
     for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { c.fillStyle = cl[(i + j) % 5]; c.globalAlpha = .55; c.fillRect(PX(x - 1.25 + i * .625), PY(y - .95 + j * .63), .625 * T, .63 * T); }
     c.globalAlpha = 1; c.fillStyle = "#4FC3F7"; c.beginPath(); c.arc(PX(x + .55), PY(y + .2), T * .5, 0, 7); c.fill();
     for (let k = 0; k < 14; k++) { c.fillStyle = cl[k % 5]; c.beginPath(); c.arc(PX(x + .55 + Math.cos(k * 2.4) * .32 * ((k % 3) / 2 + .3)), PY(y + .2 + Math.sin(k * 2.4) * .3 * ((k % 3) / 2 + .3)), T * .08, 0, 7); c.fill(); }
@@ -2592,23 +2806,18 @@ function drawWallsBi(P) {
     emoji("🧸", PX(x - .7), PY(y + .55), T * .4);
     if (G.groups.some(g => g.kids && g.table && g.state !== "leave")) emoji("🧒", PX(x + .3 + Math.sin(G.t * 3) * .2), PY(y - .4), T * .38);
   }
-  for (const [k, v] of Object.entries(S.walls || {})) {
-    const L = LINKS.find(l => l.e === k); if (!L || !v) continue;
-    const vert = k[0] === "v", len = vert ? DY[+k[1] + 1] - DY[+k[1]] : DX[+k[2] + 1] - DX[+k[2]];
-    const x0 = vert ? L.x : L.x - len / 2, y0 = vert ? L.y - len / 2 : L.y;
+  // walls: half-unit segments on grid lines; a door segment is an open gap with the door swung back
+  for (const [k, v] of Object.entries(G.L ? G.L.walls : {})) {
+    if (!v) continue;
+    const [o, a, b] = k.split(":"), i = +a, j = +b, vert = o === "v", x0 = vert ? i * GU : i * GU, y0 = vert ? j * GU : j * GU;
+    if (v === 2) { c.strokeStyle = "#8C6A4E"; c.lineWidth = Math.max(2, T * .06); c.beginPath(); if (vert) { c.moveTo(PX(x0), PY(y0)); c.lineTo(PX(x0 + .35), PY(y0 + .2)); } else { c.moveTo(PX(x0), PY(y0)); c.lineTo(PX(x0 + .2), PY(y0 - .35)); } c.stroke(); continue; }
     c.fillStyle = P.wall;
-    const seg = (a, b) => vert ? c.fillRect(PX(x0) - th / 2, PY(y0 + a), th, (b - a) * T) : c.fillRect(PX(x0 + a), PY(y0) - th / 2, (b - a) * T, th);
-    if (v === 2) {
-      const g0 = len / 2 - .5, g1 = len / 2 + .5; seg(0, g0); seg(g1, len);
-      c.strokeStyle = "#8C6A4E"; c.lineWidth = Math.max(2, T * .07); c.beginPath();
-      if (vert) { c.moveTo(PX(x0), PY(y0 + g0)); c.lineTo(PX(x0 + .75), PY(y0 + g0 + .45)); } else { c.moveTo(PX(x0 + g0), PY(y0)); c.lineTo(PX(x0 + g0 + .45), PY(y0 - .75)); }
-      c.stroke();
-    } else seg(0, len);
+    if (vert) c.fillRect(PX(x0) - th / 2, PY(y0) - th / 2, th, GU * T + th); else c.fillRect(PX(x0) - th / 2, PY(y0) - th / 2, GU * T + th, th);
   }
   // fruit machines by the right-hand wall, the takeaway window by the front door
   const fm = S.bi && S.bi.fruit ? S.bi.fruit.n || 1 : 0;
   for (let i = 0; i < fm; i++) {
-    const x = PX(8.62), y = PY(12.15 - i * .8), w = T * .5, h = T * .62, on = Math.sin(G.t * 5 + i) > 0;
+    const fp = (G.L && G.L.fr[i]) || [8.5, 7 + i * 3], x = PX(fp[0] + .25), y = PY(fp[1] + .5), w = T * .46, h = T * .8, on = Math.sin(G.t * 5 + i) > 0;
     c.fillStyle = "#5E35B1"; rr(c, x - w / 2, y - h / 2, w, h, 5); c.fill();
     c.fillStyle = on ? "#FFEB3B" : "#FFA000"; c.fillRect(x - w * .35, y - h * .3, w * .7, h * .28);
     c.fillStyle = "#fff"; for (let k = 0; k < 3; k++) c.fillRect(x - w * .3 + k * w * .22, y - h * .26, w * .16, h * .2);
@@ -2836,13 +3045,10 @@ cv.addEventListener("pointerdown", e => {
    the nearest thing at all (there's nowhere useful to just stand), and in the dining room anything close. */
 function targets() {
   const out = [];
-  for (const s of G.stations) {
-    if (s.i < 9) out.push({ o: { k: "st", s }, x: s.x, y: s.y + .4, rx: .52, ry: .95 });
-    else out.push({ o: { k: "st", s }, x: s.x + (s.x < 4 ? .4 : -.4), y: s.y, rx: .95, ry: .5 });
-  }
-  out.push({ o: { k: "counter", what: "bin", x: COUNTER.bin }, x: COUNTER.bin, y: CY, rx: .52, ry: .8 });
-  out.push({ o: { k: "counter", what: "plates", x: COUNTER.plates }, x: COUNTER.plates, y: CY, rx: .52, ry: .8 });
-  COUNTER.pass.forEach((x, i) => out.push({ o: { k: "counter", what: "pass", i, x }, x, y: CY, rx: .5, ry: .8 }));
+  for (const s of G.stations) out.push({ o: { k: "st", s }, x: s.x, y: s.y, rx: .6, ry: .6 });
+  out.push({ o: binObj(), x: G.cnt.bin.x, y: G.cnt.bin.y, rx: .55, ry: .55 });
+  out.push({ o: platesObj(), x: G.cnt.plates.x, y: G.cnt.plates.y, rx: .55, ry: .55 });
+  G.cnt.pass.forEach((q, i) => out.push({ o: spotObj(i), x: q.x, y: q.y, rx: .55, ry: .55 }));
   for (const t of G.tables) out.push({ o: { k: "table", t }, x: t.x, y: t.y + .1, rx: t.bar ? .8 : t.seats >= 6 ? 1.7 : 1.35, ry: t.bar ? .7 : 1.25 });
   for (const m of G.messes) out.push({ o: { k: "mess", m }, x: m.x, y: m.y, rx: .7, ry: .55, bias: .3 });
   return out;
@@ -2852,19 +3058,13 @@ function hitTest(wx, wy) {
   let best = null, bd = 1e9;
   for (const t of all) { const d = Math.hypot((wx - t.x) / t.rx, (wy - t.y) / t.ry) - (t.bias || 0); if (d < 1 && d < bd) { bd = d; best = t.o; } }
   if (best) return best;
-  const kitchen = wy < CY + .3;
-  for (const t of all) {
-    const inK = t.o.k === "st" || t.o.k === "counter";
-    if (inK !== kitchen) continue;
-    const d = Math.hypot(wx - t.x, wy - t.y);
-    if ((kitchen || d < 2) && d < bd) { bd = d; best = t.o; }
-  }
+  for (const t of all) { const d = Math.hypot(wx - t.x, wy - t.y); if (d < 1.6 && d < bd) { bd = d; best = t.o; } }
   return best;
 }
 function goalBox(o) {
   if (!o) return null;
   if (o.k === "st") return [o.s.x - .5, o.s.y - .5, 1, 1];
-  if (o.k === "counter") return [o.x - .45, CY - .35, .9, .7];
+  if (o.k === "counter") return [o.x - .45, o.y - .45, .9, .9];
   if (o.k === "table") return [o.t.x - .75, o.t.y - .5, 1.5, 1];
   if (o.k === "mess") return [o.m.x - .5, o.m.y - .3, 1, .6];
   return null;
@@ -2980,7 +3180,7 @@ function newBookingRequest() {
     S.bookings.push(b); return b;
   }
   // a walled-in meeting room or function room brings its own bookings
-  const room = ["meet", "func"].find(id => S.bi && S.bi[id] && enclosed(S.walls || {}, S.bi[id].p));
+  const room = ["meet", "func"].find(id => { if (!S.bi || !S.bi[id]) return false; const Lb = ensureLayout(S).bi[id]; return !!Lb && gridEnclosed(S.L.walls, Lb[0] + 1.5, Lb[1] + 1); });
   if (room === "meet") {
     const m = siteMix(siteOf(S)), day = S.day + 1 + Math.floor(Math.random() * 3);
     if (dayInfo(S, day).wd < 5 && Math.random() < .2 + .6 * m.com && !S.bookings.some(b => b.day === day)) {
@@ -3326,16 +3526,16 @@ function freeSpot() { const used = new Set(S.tpos.concat(Object.keys(biCells(S))
 function biCan(B) {
   if (starsOf(S.rep) < B.st) return `Needs ${B.st}★.`;
   if (B.max ? ((S.bi[B.id] || {}).n || 0) >= B.max : S.bi[B.id]) return "";
-  if (B.cell && usedSpots() >= cellCap(S)) return "No free spot: sell a table or move somewhere bigger.";
+  if ((B.cell || B.max) && !roomFor(B.cell ? "bi" : "fr", 0)) return "No room on the floor: rearrange, or move somewhere bigger.";
   return "";
 }
 function biCard() {
   S.bi = S.bi || {};
-  let h = `<div class="card"><div class="row spread"><div class="grow"><h2>Build-ins</h2><p class="small muted">New ways to earn, built into the room. Spots for tables and build-ins: ${usedSpots()} of ${cellCap(S)} used.</p></div></div>`;
+  let h = `<div class="card"><div class="row spread"><div class="grow"><h2>Build-ins</h2><p class="small muted">New ways to earn, built into the room. They need floor space, like tables: move them with Layout → Rearrange.</p></div></div>`;
   for (const B of BUILDINS.filter(B => B.v === S.venue)) {
     const o = S.bi[B.id], n = B.max ? (o ? o.n || 1 : 0) : o ? 1 : 0, why = biCan(B), full = B.max ? n >= B.max : !!o;
     let note = esc(B.d);
-    if (o && B.room) { const ok = enclosed(S.walls || {}, o.p); note += ok ? ` <b class="pos">Walled in: ready for bookings.</b>` : ` <b class="neg">Not walled in yet: Layout → Rearrange.</b>`; }
+    if (o && B.room) { const Lb = ensureLayout(S).bi[B.id], ok = !!Lb && gridEnclosed(S.L.walls, Lb[0] + 1.5, Lb[1] + 1); note += ok ? ` <b class="pos">Walled in: ready for bookings.</b>` : ` <b class="neg">Not walled in yet: Layout → Rearrange.</b>`; }
     if (B.lv && o) note += ` <b>${esc(B.lv[(o.lv || 1) - 1].n)}</b>, ${money(B.lv[(o.lv || 1) - 1].fee)} a day for the channels.`;
     h += `<div class="item"><div class="ic">${B.e}</div><div class="grow"><b>${esc(B.n)}${B.max && n ? ` ×${n}` : ""}${n ? ` <span class="pill g">Built</span>` : ""}</b><span>${note}${why && !full ? ` <b>${esc(why)}</b>` : ""}</span>
       ${n ? `<span class="row" style="gap:6px;margin-top:6px">${B.lv && (o.lv || 1) < 2 ? `<button class="btn sm pri" data-act="biup" data-id="${B.id}" ${canAfford(B.lv[1].c) && starsOf(S.rep) >= B.lv[1].st ? "" : "disabled"}>Big screen ${money(B.lv[1].c)}${starsOf(S.rep) < B.lv[1].st ? ` (${B.lv[1].st}★)` : ""}</button>` : ""}<button class="btn sm" data-act="bisell" data-id="${B.id}">Sell ${money(Math.round(B.c / 2))}</button></span>` : ""}</div>
@@ -3371,8 +3571,8 @@ function tabUp() {
   if (kit().length) h += `<details class="small" id="sellBox"><summary class="muted">Sell equipment</summary>${S.stations.map((t, i) => !t ? "" : `<div class="item"><div class="ic">${STATIONS[t].e || "🟫"}</div><div class="grow"><b>${STATIONS[t].n}</b></div><button class="btn sm" data-act="sell" data-i="${i}">Sell ${money(Math.round(STATIONS[t].c / 2))}</button></div>`).join("")}</details>`;
   h += `</div><div class="card"><h2>Dining room</h2>`;
   const tc = 100 + 60 * S.tables.length, small = S.tables.indexOf(2), d = DECOR[S.decor];
-  const spotFree = usedSpots() < cellCap(S);
-  h += upRow("🪑", "Another table", `${S.tables.length} of ${siteTables(S)} here${!spotFree && S.tables.length < siteTables(S) ? ". No free spot: build-ins use them" : ""}`, "table", S.tables.length < siteTables(S) ? tc : null, S.tables.length < siteTables(S) && spotFree);
+  const spotFree = S.tables.length < siteTables(S) ? roomFor("tb", 2) : true;
+  h += upRow("🪑", "Another table", `${S.tables.length} of ${siteTables(S)} here${!spotFree && S.tables.length < siteTables(S) ? ". No room on the floor: rearrange first" : ""}`, "table", S.tables.length < siteTables(S) ? tc : null, S.tables.length < siteTables(S) && spotFree);
   h += upRow("🪧", "“Wait to be seated” sign", S.sign ? "Your waiters show each group to the table that fits them best, so big tables stay free for big groups." : "Without it, people pick their own table, sometimes a big one for two. With it, a waiter shows each group to the best fit. Needs a waiter on the team.", "sign", S.sign ? null : 250, !S.sign).replace(">Max<", ">Built<");
   h += upRow("🍽", "Make a table seat four", small >= 0 ? `${S.tables.filter(n => n < 4).length} tables seat two` : "Every table seats four", "bigtable", small >= 0 ? 150 : null, small >= 0, `data-i="${small}"`);
   const four = S.tables.indexOf(4);
@@ -3443,12 +3643,12 @@ $("mwrap").onclick = e => {
   if (a === "sell") { const t = S.stations[+b.dataset.i]; if (t) { S.stations[+b.dataset.i] = null; S.cash += Math.round(STATIONS[t].c / 2); } }
   if (a === "buyst") {
     const t = b.dataset.t, slots = PREMISES[S.prem].slots;
-    if (canAfford(STATIONS[t].c) && kit().length < slots) { spend(STATIONS[t].c); let i = S.stations.findIndex(x => !x); if (i < 0 || i >= slots) i = S.stations.length; S.stations[i] = t; }
+    if (canAfford(STATIONS[t].c) && kit().length < slots) { if (!roomFor("st", 0)) { toastOffice("No room on the floor for it. Rearrange first."); return; } spend(STATIONS[t].c); let i = S.stations.findIndex(x => !x); if (i < 0) i = S.stations.length; S.stations[i] = t; ensureLayout(S); }
   }
-  if (a === "layout") { laySel = null; layout(); return; }
+  if (a === "layout") { LG.sel = null; LG.mode = "move"; layoutGrid(); return; }
   if (a === "bibuy" || a === "biup" || a === "bisell") {
     const B = BI[b.dataset.id];
-    if (a === "bibuy" && canAfford(B.c) && biCan(B) === "") { spend(B.c); if (B.max) S.bi[B.id] = { n: ((S.bi[B.id] || {}).n || 0) + 1 }; else S.bi[B.id] = B.cell ? { p: freeSpot(), lv: 1 } : { lv: 1 }; }
+    if (a === "bibuy" && canAfford(B.c) && biCan(B) === "") { spend(B.c); if (B.max) S.bi[B.id] = { n: ((S.bi[B.id] || {}).n || 0) + 1 }; else S.bi[B.id] = B.cell ? { p: 0, lv: 1 } : { lv: 1 }; ensureLayout(S); }
     if (a === "biup") { const L = B.lv[1]; if (canAfford(L.c) && starsOf(S.rep) >= L.st) { spend(L.c); S.bi[B.id].lv = 2; } }
     if (a === "bisell") { const o = S.bi[B.id]; S.cash += Math.round(B.c / 2); if (B.max && o.n > 1) o.n--; else delete S.bi[B.id]; }
   }
@@ -3457,7 +3657,7 @@ $("mwrap").onclick = e => {
   if (a === "lvl") { const t = b.dataset.t, l = S.lvl[t] || 0, c = Math.round(STATIONS[t].c * [1, 2, 4][l]); if (l < 3 && canAfford(c)) { spend(c); S.lvl[t] = l + 1; } }
   if (a === "plates") { const pc = 30 + 10 * Math.max(0, S.plates - 6); if (canAfford(pc)) { spend(pc); S.plates += 2; } }
   if (a === "shoes") { const sh = SHOES[S.shoes]; if (sh && canAfford(sh.c)) { spend(sh.c); S.shoes++; } }
-  if (a === "table") { const tc = 100 + 60 * S.tables.length; if (canAfford(tc) && S.tables.length < siteTables(S) && usedSpots() < cellCap(S)) { spend(tc); S.tables.push(2); S.tpos.push(freeSpot()); } }
+  if (a === "table") { const tc = 100 + 60 * S.tables.length; if (canAfford(tc) && S.tables.length < siteTables(S) && roomFor("tb", 2)) { spend(tc); S.tables.push(2); S.tpos.push(S.tables.length - 1); ensureLayout(S); } }
   if (a === "sixtable") { const i = +b.dataset.i; if (S.tables[i] === 4 && canAfford(300)) { spend(300); S.tables[i] = 6; } }
   if (a === "bar") { const nb = BAR[S.bar || 0]; if (nb && canAfford(nb.c)) { spend(nb.c); S.bar = (S.bar || 0) + 1; } }
   if (a === "book" || a === "nobook") { const bk = (S.bookings || []).find(x => x.id === +b.dataset.id); if (bk) { if (a === "book") bk.ok = true; else S.bookings = S.bookings.filter(x => x !== bk); } }
@@ -3527,6 +3727,103 @@ $("ovc").addEventListener("click", e => {
   }
   layout(layP);
 });
+/* ---------- Rearrange (the main place): move anything anywhere, turn tables, draw walls and doors ---------- */
+const LG = { sel: null, mode: "move", msg: "" };
+const WALL_SEG = 20, DOOR_SEG = 80;
+// something new for the main place: is there floor for it?
+function roomFor(k, size) { const L = ensureLayout(S); return !!autoPlace(S, L, k, size, k === "st" ? [4.5, 1] : [4.5, 8]); }
+function pieceHtml(p) {
+  if (p.k === "st") { const t = S.stations[p.i]; return `${STATIONS[t].e || "🟫"}<small>${esc(STATIONS[t].n.split(" ")[0])}</small>`; }
+  if (p.k === "bin") return "🗑️"; if (p.k === "plates") return "🍽️"; if (p.k === "pass") return `<small>pass</small>`;
+  if (p.k === "tb") return `${+p.i + 1}<small>${S.tables[p.i]} seats</small>`;
+  if (p.k === "bi") return `${BI[p.i].e}<small>${esc(BI[p.i].n.split(" ")[0])}</small>`;
+  return "🎰";
+}
+function layoutGrid() {
+  const L = ensureLayout(S), u = Math.max(22, Math.min(40, Math.floor((Math.min(400, innerWidth - 52)) / 9)));
+  let m = `<div class="lg" id="lgFloor" style="width:${9 * u}px;height:${14.5 * u}px;background-size:${u / 2}px ${u / 2}px">`;
+  m += `<div class="lg-strip" style="top:${13 * u}px;height:${1.5 * u}px">Entrance, queue${S.venue === "pub" && S.bar ? " and bar" : ""} 🚪</div>`;
+  for (const p of piecesOf(S, L)) {
+    const sel = LG.sel && LG.sel.k === p.k && String(LG.sel.i) === String(p.i);
+    m += `<div class="lg-p k-${p.k}${sel ? " sel" : ""}" style="left:${p.x * u}px;top:${p.y * u}px;width:${p.w * u}px;height:${p.h * u}px">${pieceHtml(p)}</div>`;
+  }
+  for (const [e, v] of Object.entries(L.walls)) {
+    const [o, a, b] = e.split(":"), x = +a * GU, y = +b * GU, th = Math.max(4, u * .16);
+    m += o === "v" ? `<div class="lg-w w${v}" style="left:${x * u - th / 2}px;top:${y * u}px;width:${th}px;height:${GU * u}px"></div>` : `<div class="lg-w w${v}" style="left:${x * u}px;top:${y * u - th / 2}px;width:${GU * u}px;height:${th}px"></div>`;
+  }
+  m += `</div>`;
+  const selP = LG.sel && piecesOf(S, L).find(p => p.k === LG.sel.k && String(p.i) === String(LG.sel.i));
+  const what = LG.msg || (LG.mode === "walls" ? `Drag along the floor to build a wall (${money(WALL_SEG)} per half square). Tap a wall to make it a door (${money(DOOR_SEG)}), tap again to take it down.`
+    : selP ? "Tap the floor where it should go (or drag it there). Tap another thing to swap." : "Tap or drag anything to move it: appliances, counters, tables and build-ins can go anywhere.");
+  LG.msg = "";
+  dialog(`<h3>Rearrange</h3>
+    <div class="row" style="justify-content:center;gap:6px"><button class="btn sm ${LG.mode === "move" ? "pri" : ""}" data-a="m-move">✋ Move things</button><button class="btn sm ${LG.mode === "walls" ? "pri" : ""}" data-a="m-walls">🧱 Walls & doors</button>${selP && selP.k === "tb" ? `<button class="btn sm" data-a="turn">↻ Turn table</button>` : ""}</div>
+    <p class="small muted" style="text-align:center" id="lgMsg">${what}</p>${m}
+    <p class="small muted">Tips: keep each dish's appliances close together and near the pass; give staff room to walk. Walls stop noise from a TV or soft play reaching other tables, and meeting and function rooms need walls all round with a door.</p>
+    <div class="acts"><button class="btn pri" data-a="done">Done</button></div>`, a => {
+    if (a === "m-move" || a === "m-walls") { LG.mode = a.slice(2); LG.sel = null; layoutGrid(); return; }
+    if (a === "turn" && selP) { const T = JSON.parse(JSON.stringify(L)), p = T.tb[selP.i]; p[2] = p[2] ? 0 : 1; const why = layoutProblem(S, T); if (why) LG.msg = "⚠️ No room to turn it here."; else S.L = T; saveGame(); layoutGrid(); return; }
+    LG.sel = null; LG.mode = "move"; saveGame(); renderManage();
+  });
+  const fl = $("lgFloor"); if (!fl) return;
+  let down = null;
+  const at = e => { const r = fl.getBoundingClientRect(); return [(e.clientX - r.left) / u, (e.clientY - r.top) / u]; };
+  const pieceAt = (x, y) => piecesOf(S, L).find(p => x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h);
+  fl.onpointerdown = e => { e.preventDefault(); fl.setPointerCapture(e.pointerId); down = { p: at(e), sx: e.clientX, sy: e.clientY, piece: pieceAt(...at(e)) }; };
+  fl.onpointerup = e => {
+    if (!down) return; const [x, y] = at(e), moved = Math.hypot(e.clientX - down.sx, e.clientY - down.sy) > 10, d = down; down = null;
+    if (LG.mode === "walls") return moved ? drawWall(d.p, [x, y]) : tapWall(x, y);
+    const hit = pieceAt(x, y);
+    if (moved && d.piece) { LG.sel = { k: d.piece.k, i: d.piece.i }; return movePiece(x, y); }
+    if (!LG.sel) { if (hit) LG.sel = { k: hit.k, i: hit.i }; return layoutGrid(); }
+    if (hit && hit.k === LG.sel.k && String(hit.i) === String(LG.sel.i)) { LG.sel = null; return layoutGrid(); }
+    if (hit) return swapPieces(hit);
+    movePiece(x, y);
+  };
+}
+function getPos(L, k, i) { return k === "st" ? L.st[i] : k === "tb" ? L.tb[i] : k === "bi" ? L.bi[i] : k === "fr" ? L.fr[i] : k === "pass" ? L.pass[i] : L[k]; }
+function movePiece(x, y) {
+  const L = S.L, p = piecesOf(S, L).find(q => q.k === LG.sel.k && String(q.i) === String(LG.sel.i)); if (!p) return layoutGrid();
+  const T = JSON.parse(JSON.stringify(L)), nx = Math.round((x - p.w / 2) / GU) * GU, ny = Math.round((y - p.h / 2) / GU) * GU, old = getPos(T, p.k, p.i);
+  setPiece(S, T, p.k, p.i, p.k === "tb" ? [nx, ny, old[2] || 0] : [nx, ny]);
+  const why = layoutProblem(S, T);
+  if (why) LG.msg = "⚠️ " + why; else { S.L = T; LG.sel = null; saveGame(); }
+  layoutGrid();
+}
+function swapPieces(hit) {
+  const L = S.L, a = piecesOf(S, L).find(q => q.k === LG.sel.k && String(q.i) === String(LG.sel.i)); if (!a) return layoutGrid();
+  const T = JSON.parse(JSON.stringify(L)), pa = getPos(T, a.k, a.i), pb = getPos(T, hit.k, hit.i);
+  // swap by centres, so different sizes trade places sensibly
+  const ca = [a.x + a.w / 2, a.y + a.h / 2], cb = [hit.x + hit.w / 2, hit.y + hit.h / 2], snap = v => Math.round(v / GU) * GU;
+  setPiece(S, T, a.k, a.i, a.k === "tb" ? [snap(cb[0] - a.w / 2), snap(cb[1] - a.h / 2), pa[2] || 0] : [snap(cb[0] - a.w / 2), snap(cb[1] - a.h / 2)]);
+  setPiece(S, T, hit.k, hit.i, hit.k === "tb" ? [snap(ca[0] - hit.w / 2), snap(ca[1] - hit.h / 2), pb[2] || 0] : [snap(ca[0] - hit.w / 2), snap(ca[1] - hit.h / 2)]);
+  const why = layoutProblem(S, T);
+  if (why) { LG.sel = { k: hit.k, i: hit.i }; } else { S.L = T; LG.sel = null; saveGame(); }
+  layoutGrid();
+}
+function drawWall(a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], segs = [];
+  if (Math.abs(dx) >= Math.abs(dy)) { const j = Math.round(a[1] / GU), i0 = Math.round(Math.min(a[0], b[0]) / GU), i1 = Math.round(Math.max(a[0], b[0]) / GU); for (let i = i0; i < i1; i++) segs.push("h:" + i + ":" + j); }
+  else { const i = Math.round(a[0] / GU), j0 = Math.round(Math.min(a[1], b[1]) / GU), j1 = Math.round(Math.max(a[1], b[1]) / GU); for (let j = j0; j < j1; j++) segs.push("v:" + i + ":" + j); }
+  const ok = segs.filter(e => { const [o, p, q] = e.split(":").map((v, n) => n ? +v : v); return o === "h" ? q > 0 && q < 26 && p >= 0 && p < GW : p > 0 && p < GW && q >= 0 && q < 26; }).filter(e => !S.L.walls[e]);
+  if (!ok.length) { LG.msg = "Drag along the floor between squares to build a wall."; return layoutGrid(); }
+  const cost = ok.length * WALL_SEG; if (!canAfford(cost)) { LG.msg = `⚠️ That wall costs ${money(cost)}.`; return layoutGrid(); }
+  const T = JSON.parse(JSON.stringify(S.L)); for (const e of ok) T.walls[e] = 1;
+  const why = layoutProblem(S, T);
+  if (why) LG.msg = "⚠️ " + why + " Leave a gap or add a door."; else { spend(cost); S.L = T; saveGame(); }
+  layoutGrid();
+}
+function tapWall(x, y) {
+  let best = null, bd = .3;
+  for (const e of Object.keys(S.L.walls)) { const [o, a, b] = e.split(":"), mx = o === "v" ? +a * GU : (+a + .5) * GU, my = o === "v" ? (+b + .5) * GU : +b * GU, d = Math.hypot(mx - x, my - y); if (d < bd) { bd = d; best = e; } }
+  if (!best) { LG.msg = "Drag along the floor to build a wall; tap a wall to change it."; return layoutGrid(); }
+  const T = JSON.parse(JSON.stringify(S.L)), v = T.walls[best];
+  if (v === 1) { if (!canAfford(DOOR_SEG)) { LG.msg = `⚠️ A door costs ${money(DOOR_SEG)}.`; return layoutGrid(); } T.walls[best] = 2; spend(DOOR_SEG); }
+  else delete T.walls[best];
+  const why = layoutProblem(S, T);
+  if (why) { LG.msg = "⚠️ " + why; if (v === 1) S.cash += DOOR_SEG; } else { S.L = T; saveGame(); }
+  layoutGrid();
+}
 function toastOffice(m) { dialog(`<h3>${esc(m)}</h3><div class="acts"><button class="btn pri" data-a="ok">Great</button></div>`); }
 
 /* ======================================================================
@@ -3953,6 +4250,7 @@ function fitTo(sv, keep) {
   const cells = Object.entries(biCells(sv));
   while (cells.length && sv.tables.length + cells.length > cellCap(sv)) { const [, id] = cells.pop(); delete sv.bi[id]; sv.cash += Math.round(BI[id].c / 2); out.push(BI[id].n.toLowerCase()); }
   if (!keep) { sv.tpos = sv.tables.map((_, i) => i); cells.forEach(([, id], k) => { sv.bi[id].p = sv.tables.length + k; }); }
+  sv.L = null; // the new building starts with the standard layout, rearranged as you like
   sv.cash = Math.round(sv.cash * 100) / 100;
   return out;
 }
@@ -4128,8 +4426,9 @@ function placeDesign(P) {
 function swapMain(P) {
   const old = { site: S.site, dep: S.dep, name: S.name }, ns = SITE[P.site], d = pDesign(P);
   // each building keeps its own tables, build-ins and walls
-  const mine = { tables: S.tables, tpos: S.tpos, bi: S.bi || {}, walls: S.walls || {} };
-  S.tables = d.tables.slice(); S.tpos = d.tpos.slice(); S.bi = d.bi; S.walls = d.walls;
+  const mine = { tables: S.tables, tpos: S.tables.map((_, i) => i), bi: JSON.parse(JSON.stringify(S.bi || {})), walls: {} };
+  let q = S.tables.length; for (const id in mine.bi) if (BI[id] && BI[id].cell) mine.bi[id].p = Math.min(8, q++);
+  S.tables = d.tables.slice(); S.tpos = d.tpos.slice(); S.bi = d.bi; S.walls = d.walls; S.L = null;
   Object.assign(d, mine);
   S.site = ns.id; S.prem = ns.t; S.dep = P.dep || 0; S.name = P.name;
   P.site = old.site; P.dep = old.dep; P.name = old.name;
