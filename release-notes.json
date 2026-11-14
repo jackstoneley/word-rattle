@@ -842,6 +842,17 @@
         "An inspector calls now and then without warning and gives a rating from 0 to 5. Good ratings win customers from rivals; poor ones put people off until the next visit. Places your managers run are inspected too.",
         "Every area now has a natural limit of local customers. Quiet suburbs level off as you gain stars, while busy streets, and above all the city centre once its rivals are beaten, can grow far busier."
       ]
+    },
+    {
+      "id": 73,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: balance tweaks",
+      "details": [
+        "The city centre's extra pull now comes with fame: it stays a tough place until you have 3 or more stars, and it fills right up once its rivals are beaten. Managed places there no longer make easy money early on.",
+        "The hand basin hangs on the wall now, so it doesn't use up a kitchen space.",
+        "Televised games follow the real kick-off time: open earlier on a Sunday and fans arrive before the 4:30 game.",
+        "The busy-day 👥 warning now counts the crowd your event will bring, so you can book agency staff in time."
+      ]
     }
   ]
 }

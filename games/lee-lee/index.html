@@ -1143,8 +1143,8 @@ function localPrice(s) { return Math.round((.93 + 1.05 * wealthOf(s) - .08 * sit
 const priceTol = s => { const w = wealthOf(s); return w < .25 ? 1 : w < .6 ? 2 : 3; };
 function sitePrice(save) { return localPrice(siteOf(save)) * priceOf(save).p; }
 // customers: the size of the place times the people passing times the share the place wins from its rivals
-// busy streets (footfall over 1: the centre, the station) draw people from far and wide, so demand grows faster than footfall there
-const siteDemand = save => PREMISES[save.prem].demand * siteFoot(siteOf(save), save.venue) * Math.pow(Math.max(1, siteFoot(siteOf(save), save.venue)), 1.2) * compInfo(save).share * SHARE_K * Math.pow(.55, Math.max(0, (save.pl != null ? save.pl : 1) - priceTol(siteOf(save))));
+// busy streets (footfall over 1: the centre, the station) draw people from far and wide once you're famous (3 stars and up)
+const siteDemand = save => PREMISES[save.prem].demand * siteFoot(siteOf(save), save.venue) * (1 + Math.max(0, siteFoot(siteOf(save), save.venue) - 1) * .6 * Math.max(0, starsF(save.rep || 0) - 3) / 2) * compInfo(save).share * SHARE_K * Math.pow(.55, Math.max(0, (save.pl != null ? save.pl : 1) - priceTol(siteOf(save))));
 // tips: visitors and office workers tip more; listed buildings and river views help too
 function siteTip(save) { const s = siteOf(save), m = siteMix(s); return priceOf(save).tip * (1 + .15 * m.tour + .08 * m.com) * (hasPk(s, "listed") ? 1.12 : 1) * (hasPk(s, "river") ? 1.06 : 1); }
 /* ---------- Competition: other cafés, pubs and curry houses ----------
@@ -1457,12 +1457,13 @@ function tvOn(save, day) {
   const c = calOf(day), wd = (day - 1) % 7, r = seeded(seedOf(save) * 11 + day * 29), x = r(), big = r() < .15;
   let g = null;
   if (c.se !== 1) {
-    if (wd === 2 && x < .6) g = { what: "football", kick: "8pm", u: .43, n: "European football" };
-    if (wd === 5 && x < .7) g = { what: "football", kick: "5:30pm", u: .07, n: "Saturday's big game" };
-    if (wd === 6 && x < .7) g = { what: "football", kick: "4:30pm", u: 0, n: "Super Sunday" };
-    if (c.se === 3 && wd === 5 && r() < .6) g = { what: "rugby", kick: "4:45pm", u: 0, n: "Rugby international" };
-  } else if (c.year % 2 === 0 && wd >= 1 && x < .55) g = { what: "football", kick: "8pm", u: .43, n: "Summer tournament" };
+    if (wd === 2 && x < .6) g = { what: "football", kick: "8pm", h: 20, n: "European football" };
+    if (wd === 5 && x < .7) g = { what: "football", kick: "5:30pm", h: 17.5, n: "Saturday's big game" };
+    if (wd === 6 && x < .7) g = { what: "football", kick: "4:30pm", h: 16.5, n: "Super Sunday" };
+    if (c.se === 3 && wd === 5 && r() < .6) g = { what: "rugby", kick: "4:45pm", h: 16.75, n: "Rugby international" };
+  } else if (c.year % 2 === 0 && wd >= 1 && x < .55) g = { what: "football", kick: "8pm", h: 20, n: "Summer tournament" };
   if (!g) return null;
+  g.u = (g.h - STD_H.pub[0]) / (STD_H.pub[1] - STD_H.pub[0]); // as a share of the usual pub day (can be before opening)
   const L = BI.sports.lv[Math.min(1, (save.bi.sports.lv || 1) - 1)], m = siteMix(siteOf(save));
   g.big = big; g.sh = L.sh * (big ? 1.4 : 1) * (.7 + .6 * Math.min(1, m.pop + m.night));
   if (big) g.n = g.what === "rugby" ? "Rugby: a big international" : ["The derby", "A cup final", "A title decider"][Math.floor(r() * 3)];
@@ -1991,7 +1992,9 @@ function startDay() {
   for (let i = 0; i < n; i++) {
     let u;
     if (TV && Math.random() < tvP) {
-      u = clamp(Math.max(.01, TV.u - .03) + .04 * gauss(), .01, .7); const tt = stdT(u); if (!inDay(tt)) continue; // closed while it's on
+      u = clamp(TV.u - .07 + .04 * gauss(), -1, .7); let tt = stdT(u);
+      if (tt <= 0 && TV.h + 1.6 > G.O) tt = rnd(.05, .4) * G.sph; // the game's already on when you open: they come in then
+      if (!inDay(tt)) continue; // closed while it's on
       G.arr.push({ t: tt, size: Math.min(big, 2 + Math.floor(Math.random() * 3)), fan: "tv", watch: true, sp: sportsSp, rowdy: Math.random() < (TV.big ? .25 : .12), late: lateAt(tt) });
       continue;
     }
@@ -2095,6 +2098,7 @@ function dailyGoals() {
   return out;
 }
 function kit() { return S.stations.filter(Boolean); }
+const slotsUsed = sv => sv.stations.filter(t => t && t !== "basin").length; // the hand basin hangs on the wall
 // money from build-ins (soft play entry, desk fees, pool, fruit machines), shown at the end of the day
 function addExtra(k, v, t) { G.extra[k] = Math.round(((G.extra[k] || 0) + v) * 100) / 100; if (t && v >= 1) fx(t.x, t.y - 1.3, `+${money(Math.round(v * 10) / 10)} ${EXTRA_N[k].e}`, "#7A5FC2"); }
 const EXTRA_N = { meet: { n: "Meeting room", e: "🤝" }, func: { n: "Function room", e: "🎉" }, soft: { n: "Soft play", e: "🧸" }, nook: { n: "Desk fees", e: "📚" }, pool: { n: "Pool table", e: "🎱" }, fruit: { n: "Fruit machines", e: "🎰" }, hatch: { n: "Takeaway window", e: "🥤" }, tv: { n: "Sports channels", e: "📺" } };
@@ -3846,7 +3850,7 @@ function crewCap(day) {
   for (const t of S.temps || []) if (t.day === day) c += ROLE_CAP[t.role];
   return c * hoursMul(S, day); // a longer day spreads the same people over more hours
 }
-const groupsOn = day => expectedGroups(Object.assign({}, S, { day }));
+const groupsOn = day => { const sv = Object.assign({}, S, { day }), hp = hostPlan(sv, day); return expectedGroups(sv) + (hp && !hp.closed ? hp.n : 0); };
 const loadWord = (g, c) => g > c * 1.15 ? ["Too busy", "neg"] : g > c * .9 ? ["Tight", ""] : ["Fine", "pos"];
 function tempsCard() {
   let h = `<div class="card"><h2>Help for busy days</h2><p class="small muted">Match days, events and sunny weekends can bring more people than Lee Lee and the team can serve: they wait, get cross and walk out. Book agency staff for a single day: dearer than your own team, but only when you need them.</p>`;
@@ -3886,7 +3890,7 @@ function upRow(ic, name, desc, act, cost, ok, extra) {
 }
 function tabUp() {
   const prem = PREMISES[S.prem], V = VENUES[S.venue], st = starsOf(S.rep);
-  const free = prem.slots - kit().length;
+  const free = prem.slots - slotsUsed(S);
   let h = `<div class="card"><div class="row spread"><div class="grow"><h2>Layout</h2><p class="small muted">Move equipment and tables around so Lee Lee walks less. Free.</p></div><button class="btn sm pri" data-act="layout">Rearrange</button></div></div>`;
   h += `<div class="card"><div class="row spread"><h2>Kitchen</h2><span class="muted small">${free} free space${free === 1 ? "" : "s"}</span></div>`;
   // equipment the menu (or a learnable recipe) needs comes first
@@ -3895,7 +3899,7 @@ function tabUp() {
   for (const t of list) {
     const D = STATIONS[t], have = S.stations.filter(x => x === t).length;
     const desc = (have ? `You have ${have}. ` : "") + (D.k === "pas" ? `Cooks on its own${D.b ? ", burns if left" : ""}` : D.k === "act" ? "Hands-on" : D.k === "dw" ? `Washes ${DW_CAP} plates by itself` : D.k === "sink" ? "Wash plates by hand" : D.k === "top" ? "Somewhere to put things down" : "Ingredients");
-    h += upRow(D.e || "🟫", have ? "Another " + D.n.toLowerCase() : D.n, desc, "buyst", D.c, free > 0, `data-t="${t}"`);
+    h += upRow(D.e || "🟫", have ? "Another " + D.n.toLowerCase() : D.n, t === "basin" ? "On the wall: doesn't use a kitchen space. Wash hands here before handling food, quicker than the sink, and inspectors expect one." : desc, "buyst", t === "basin" && have ? null : D.c, free > 0 || (t === "basin" && !have), `data-t="${t}"`);
   }
   const types = [...new Set(kit())].filter(t => ["pas", "act", "sink", "dw"].includes(STATIONS[t].k));
   for (const t of types) {
@@ -4005,7 +4009,7 @@ $("mwrap").onclick = e => {
   if (a === "sell") { const t = S.stations[+b.dataset.i]; if (t) { S.stations[+b.dataset.i] = null; S.cash += Math.round(STATIONS[t].c / 2); } }
   if (a === "buyst") {
     const t = b.dataset.t, slots = PREMISES[S.prem].slots;
-    if (canAfford(STATIONS[t].c) && kit().length < slots) { if (!roomFor("st", 0)) { toastOffice("No room on the floor for it. Rearrange first."); return; } spend(STATIONS[t].c); let i = S.stations.findIndex(x => !x); if (i < 0) i = S.stations.length; S.stations[i] = t; ensureLayout(S); }
+    if (canAfford(STATIONS[t].c) && (slotsUsed(S) < slots || (t === "basin" && !S.stations.includes("basin")))) { if (!roomFor("st", 0)) { toastOffice("No room on the floor for it. Rearrange first."); return; } spend(STATIONS[t].c); let i = S.stations.findIndex(x => !x); if (i < 0) i = S.stations.length; S.stations[i] = t; ensureLayout(S); }
   }
   if (a === "layout") { openLayout(null); return; }
   if (a === "bibuy" || a === "biup" || a === "bisell") {
@@ -4601,7 +4605,7 @@ function fitTo(sv, keep) {
   if (!keep) sv.walls = {}; sv.bi = sv.bi || {};
   while (sv.tables.length > maxT) { sv.tables.pop(); sv.tpos.pop(); sv.cash += 50; out.push("a table"); }
   // the kitchen keeps one of everything the menu needs (and a fridge, worktop and somewhere to wash up) first, then the dearest things
-  const have = sv.stations.map((t, i) => ({ t, i })).filter(x => x.t);
+  const have = sv.stations.map((t, i) => ({ t, i })).filter(x => x.t && x.t !== "basin");
   if (have.length > P.slots) {
     const needed = new Set(["fridge", "top", "sink", "dishwasher"]); for (const r of sv.owned) for (const t of RECIPES[r].s) needed.add(t);
     have.sort((a, b) => STATIONS[b.t].c - STATIONS[a.t].c);

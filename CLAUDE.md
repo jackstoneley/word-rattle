@@ -199,7 +199,7 @@ Managed places run the same: `P.hours`, `P.fat`, `P.sick`, `P.bon`, `P.lic` and 
 through `placeSv` (a stand-in save with the layout made); `runPlace` scales crew, wages and bills by the hours, has late fights and the
 licence, and uses `roomShare` / `biWalled` for noise and private rooms. `swapMain` swaps the two buildings' floor plans.
 **Catchment**: `catchment(save)` (6 + 14 × footfall²) softens `expectedGroups` past it (`CATCH_OVER`); `siteDemand` also grows faster than
-footfall on busy streets (footfall over 1). **Events** (`HOSTS`, keyed by id: append only): `S.host[weekday]` / `P.host`, `hostPlan(save, day)`
+footfall on busy streets (footfall over 1) from 3★ (fame draws people in; below that the centre is tough). The hand basin doesn't use a kitchen slot (`slotsUsed`). `tvOn` games carry a clock kick-off `h`. **Events** (`HOSTS`, keyed by id: append only): `S.host[weekday]` / `P.host`, `hostPlan(save, day)`
 gives the groups and window inside the opening hours; guests carry `g.host` (patient, `spend`), other diners mind the `noise`, `nightRisk` /
 `licenceNight` take a `noise` term, regulars build in `S.hostN`; page `hostCard(P)` (selects `data-hev`). **Food hygiene** (free play, `hygOn`):
 station `s.dirt` grows by `DIRT` per step (+.2 when food burns), carries 60% overnight in `S.kd`, slows work (`dirtSlow`); `cleanStation`
@@ -267,7 +267,7 @@ reachable from `DOOR_CELL`); `autoPlace` finds room for new things; in a day `G.
 (1.6x past the usual); `crampOf`/`crampAt` (0-1, from how close other tables, seated build-ins and the nearest kitchen piece are) sets
 `t.cramp` in free play: faster patience loss (`patMul`) and smaller tips; `autoPlace` puts tables where `crampAt` is lowest. Managed
 places: `placeComfT` / `placeMaxT`, average cramp lowers served and happy. `ensureLayout` also re-fits a plan that no longer works (a table made bigger).
-Balance scripts: compare suburbs and centre with `expectedGroups` on stand-in saves (the centre should lose money before ~5★ and
+Balance scripts: a whole-career bot (play each day with `coachNext` plus nightly decisions: recipes, kit, tables, staff, promotions, decor, moving) over several seeds is the way to compare versions; also compare suburbs and centre with `expectedGroups` on stand-in saves (the centre should lose money before ~5★ and
 earn 2-3× the suburbs once its nearest rivals are beaten).
 
 ### Gravity Well (`games/gravity-well`)
