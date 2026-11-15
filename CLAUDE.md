@@ -264,7 +264,7 @@ queue, door and bar strip). `ensureLayout` makes it from the old slots, `tpos`, 
 step with what is owned; `S.L = null` regenerates it (moves, swaps). `layoutProblem` is the one check (inside the room, no overlaps, everything
 reachable from `DOOR_CELL`); `autoPlace` finds room for new things; in a day `G.grid`, `gridPath` (A*), `goStand`, `roomGrid`/`roomAt` (noise) and
 `gridEnclosed` (meeting and function rooms). Editor: `openLayout(P)` → `layoutGrid` (`LG.sv` the save or a place's stand-in,
-`LG.set`), walls cost `WALL_SEG` / `DOOR_SEG`; the walls mode has tools `LG.tool` (wall: drag with a live preview `wallDrag` or tap one piece; door; rm: tap or drag, half refund) and an undo stack `LG.undo` (layout and cash), all through `wallChange`. Tables: `siteTables` is the usual number, `maxTables` adds `SQUEEZE` (3) at `tableCost`
+`LG.set`), walls cost `WALL_SEG` / `DOOR_SEG`; the walls mode has tools `LG.tool` (wall: drag with a live preview `wallDrag` or tap one piece; door; rm: tap or drag; money paid since the last day played, `L.fresh` for day `L.fd`, comes back in full, the rest at half: `wallBack`) and an undo stack `LG.undo` (layout and cash), all through `wallChange`. Tables: `siteTables` is the usual number, `maxTables` adds `SQUEEZE` (3) at `tableCost`
 (1.6x past the usual); `crampOf`/`crampAt` (0-1, from how close other tables, seated build-ins and the nearest kitchen piece are) sets
 `t.cramp` in free play: faster patience loss (`patMul`) and smaller tips; `autoPlace` puts tables where `crampAt` is lowest. Managed
 places: `placeComfT` / `placeMaxT`, average cramp lowers served and happy. `ensureLayout` also re-fits a plan that no longer works (a table made bigger).

@@ -872,7 +872,7 @@
       "details": [
         "Walls & doors now has three tools: Wall, Door and Remove",
         "Drag to draw a wall and you see it before it's built, with the price",
-        "Tap a wall with Remove (or drag across several) to take it down, and get half the money back",
+        "Tap a wall with Remove (or drag across several) to take it down: all your money back if you built it today, half if it's been there since an earlier day",
         "An Undo button puts back your last change"
       ]
     }
