@@ -2513,17 +2513,16 @@ function leeStation(s, pref) {
   const L = lee, h = L.hand, def = STATIONS[s.t];
   if (def.k === "basin") { if (!L.dh) { toastMsg("Your hands are clean"); return; } work(L, .7, () => { L.dh = false; }, null, "wash"); return; }
   if (hygOn() && def.k !== "sink" && def.k !== "dw" && def.k !== "top") {
-    // a grubby appliance gets a wipe first (or any time there's nothing to start)
-    if (!h && !s.item && !s.user && !s.scrub && ((s.dirt || 0) > .55 || ((s.dirt || 0) > .2 && !startable(s.t).length))) { toastMsg("Cleaning the " + def.n.toLowerCase() + " 🧽"); cleanStation(L, s); return; }
-    // food standards: wash your hands before handling food after a dirty job
+    // food standards: no handling food with dirty hands (wash them at the sink or the hand basin)
     const r = h && h.k === "dish" ? (RECIPES[h.r].s[h.s] === s.t ? h.r : null) : !h && !s.item ? (pref && startable(s.t).includes(pref) ? pref : startable(s.t)[0]) : null;
-    if (L.dh && r && foodStep(r, s.t) && washer(L)) { toastMsg("🧼 Wash your hands first: food safety"); washThen(L, () => leeTap(Object.assign(stObj(s), { pref }))); return; }
+    if (L.dh && r && foodStep(r, s.t) && washer(L)) { toastMsg("🧼 Wash your hands first: tap the sink or the hand basin"); snd("warn"); return; }
   }
   if (def.k === "sink") {
     if (h && h.k === "dirty") { G.sink += h.n; L.hand = null; }
-    else if (h) { toastMsg("The sink is for washing plates"); return; }
+    else if (h) { if (hygOn() && L.dh) { work(L, 1.1, () => { L.dh = false; }, null, "wash"); return; } toastMsg("The sink is for washing plates"); return; }
     if (G.sink > 0) { if (G.washer && G.washer !== L) { toastMsg(G.washer.name + " is washing up"); return; } startWash(L); }
-    else toastMsg("Nothing to wash");
+    else if (hygOn() && L.dh) work(L, 1.1, () => { L.dh = false; }, null, "wash");
+    else toastMsg(hygOn() ? "Nothing to wash, and your hands are clean" : "Nothing to wash");
     return;
   }
   if (def.k === "dw") {
@@ -2552,6 +2551,7 @@ function leeStation(s, pref) {
   if (s.user && s.user !== L) { toastMsg(s.user.name + " is using this"); return; }
   if (!h) {
     const opts2 = startable(s.t);
+    if (!opts2.length && hygOn() && (s.dirt || 0) > .05 && !s.scrub) { cleanStation(L, s); return; }
     if (!opts2.length) {
       const any = openTickets().filter(x => need(x.k.r) > 0);
       if (!any.length) toastMsg(G.groups.some(g => g.state === "order") ? "Take an order first: tap a table with a 📝" : "No orders to make right now");
@@ -2635,6 +2635,13 @@ function wantedBy(r) { const o = openTickets(r).filter(x => x.g.state === "wait"
 const watched = s => G.actors.some(a => a !== lee && a.watch === s);
 const cookTime = r => RECIPES[r].s.reduce((a, t) => a + (t === "plate" ? .4 : STATIONS[t].d || 1), 0);
 function coachNext() {
+  const c = coachCore(); if (!c || !hygOn() || !lee.dh || !c.o || c.o.k !== "st") return c;
+  const s = c.o.s, h = lee.hand, k = STATIONS[s.t].k; if (k === "sink" || k === "dw" || k === "top" || k === "basin") return c;
+  const r = h && h.k === "dish" ? (RECIPES[h.r].s[h.s] === s.t ? h.r : null) : !h && !s.item ? (c.o.pref || startable(s.t)[0]) : null;
+  const w = washer(lee);
+  return r && foodStep(r, s.t) && w ? { o: stObj(w), say: "Wash your hands before handling food 🧼" } : c;
+}
+function coachCore() {
   if (!G || mg || G.ended) return null;
   const h = lee.hand, st = G.stations, staffHas = role => G.actors.some(a => a.role === role);
   const sink = st.find(s => s.t === "sink"), dw = st.find(s => s.t === "dishwasher" && s.run <= 0 && s.load < DW_CAP);
@@ -2699,7 +2706,7 @@ function coachNext() {
   const dt = G.tables.find(t => t.dirty && !t.claim);
   if (dt && !staffHas("porter") && !staffHas("waiter")) return { o: { k: "table", t: dt }, say: `Clear the plates from ${tname(dt)}` };
   if (G.sink > 0 && !G.washer && sink && !staffHas("porter")) return { o: stObj(sink), say: "Wash up while it's quiet" };
-  if (hygOn() && !staffHas("porter") && !staffHas("floor")) { const g2 = st.filter(s => DIRT[s.t] && (s.dirt || 0) > .55 && !s.item && !s.user && !s.scrub).sort((p, q) => q.dirt - p.dirt)[0]; if (g2) return { o: stObj(g2), say: `Give the ${sn(g2.t)} a clean` }; }
+  if (hygOn() && !staffHas("porter") && !staffHas("floor")) { const g2 = st.filter(s => DIRT[s.t] && (s.dirt || 0) > .55 && !s.item && !s.user && !s.scrub && !startable(s.t).length).sort((p, q) => q.dirt - p.dirt)[0]; if (g2) return { o: stObj(g2), say: `Give the ${sn(g2.t)} a clean` }; }
   const m = G.messes.find(m => !m.claim); if (m && !staffHas("floor")) return { o: { k: "mess", m }, say: "Mop up the spill" };
   return null;
 }

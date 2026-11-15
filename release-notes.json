@@ -853,6 +853,17 @@
         "Televised games follow the real kick-off time: open earlier on a Sunday and fans arrive before the 4:30 game.",
         "The busy-day 👥 warning now counts the crowd your event will bring, so you can book agency staff in time."
       ]
+    },
+    {
+      "id": 74,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: washing and cleaning are up to you",
+      "details": [
+        "Lee Lee no longer nips off to wash her hands by herself. With dirty hands (🦠) she won't touch food: tap the sink or the hand basin to wash them.",
+        "The sink washes up if there are dirty plates waiting, and washes your hands if not (or if you're holding something).",
+        "Tap an appliance to cook as usual; if there's nothing to make there, Lee Lee cleans it instead.",
+        "The green helper arrow reminds you when to wash. Your staff still wash and clean by themselves."
+      ]
     }
   ]
 }
