@@ -1311,6 +1311,7 @@ function runPlace(save, P, r, news) {
   if (hasBi(sv, "hatch")) add("hatch", siteFoot(s, "cafe") * (18 + 22 * m.com + 10 * m.stu) * localPrice(s) * (info.w === 2 || info.w === 5 ? .75 : 1) * .65 * (.9 + .2 * r()));
   if (hasBi(sv, "sports")) add("tv", -BI.sports.lv[Math.min(1, (d.bi.sports.lv || 1) - 1)].fee);
   if (hasBi(sv, "fruit")) add("fruit", (d.bi.fruit.n || 1) * served * .45 * .85);
+  if (hasBi(sv, "drinks")) { const k = Math.min(8, Math.round(groups * .16 * (1 + m.night + .5 * m.stu))); add("drinks", k * 2 * 1.5 * 4.8 * pr * .6 * (.85 + .04 * lv)); }
   if (hasBi(sv, "pool")) { const k = Math.min(6, Math.round(groups * .12 + 1)); add("pool", k * 6 + k * 6 * 4.5 * pr * .7); }
   if (hasBi(sv, "func") && biWalled(sv, "func") && r() < .3) add("func", 6 * (6 + 2 * starsOf(P.rep)) + 40 + 6 * 12 * pr * .7);
   const extra = Object.values(ex).reduce((a, v) => a + v, 0);
@@ -1395,7 +1396,8 @@ const BUILDINS = [
     lv: [{ n: "Sports TV", fee: 4, sh: .15 }, { n: "Big screen & all the sports channels", c: 2500, st: 2, fee: 12, sh: .3 }] },
   { id: "fruit", v: "pub", n: "Fruit machine", e: "🎰", c: 400, st: 0, max: 2, d: "Drinkers feed it coins: steady money every night, more when it's busy and late." },
   { id: "pool", v: "pub", n: "Pool table", e: "🎱", c: 1100, st: 1, cell: 1, seats: 4, d: "Groups of friends come to play, stay for more rounds and pay £1 a game each." },
-  { id: "func", v: "pub", n: "Function room", e: "🎉", c: 3000, st: 2, cell: 1, seats: 6, room: 1, d: "A private room for booked parties: more party bookings, and they pay for the room. Needs walls and a door all round." }
+  { id: "func", v: "pub", n: "Function room", e: "🎉", c: 3000, st: 2, cell: 1, seats: 6, room: 1, d: "A private room for booked parties: more party bookings, and they pay for the room. Needs walls and a door all round." },
+  { id: "drinks", v: "pub", n: "Drinkers' tables", e: "🍻", c: 900, st: 1, cell: 1, seats: 3, d: "Three high tables just for drinking. More people drop in for a drink: they order and collect at the bar, so a bartender keeps them happy, and they leave empty glasses to clear." }
 ];
 const BI = {}; for (const B of BUILDINS) BI[B.id] = B;
 const WALL_C = 120, DOOR_C = 80;
@@ -1943,7 +1945,8 @@ const GUIDE = [
     "Happy customers tip and raise your reputation. Reputation earns <b>stars</b>: 1★ at 60, 2★ at 250, 3★ at 700, 4★ at 1,600 and 5★ at 3,200. More stars bring more people, new recipes and bigger things to buy.",
     "If guests sit down and can't find anything to order, they say what's missing (\"Out of beer?\") and leave. Drinkers and pool players only order drinks, and people in a reading corner only drinks or cake.",
     "Families with children want something from the kids' menu, and children can spill drinks: mop spills up.",
-    "In a pub, drinkers order rounds, and late nights bring <b>rowdy</b> customers (red faces). Tap their table to calm them; if they keep shouting a fight can break out, breaking things and drawing complaints.",
+    "In a pub, people who only want a drink go up to the <b>bar</b>: one of them queues at the counter by the beer taps, orders, collects the round and carries it back. Serve them by tapping the person at the bar (or put their drinks down on the counter in front of them). They leave empty glasses: collect them before anyone else can sit there.",
+    "Drinkers order rounds, and late nights bring <b>rowdy</b> customers (red faces). Tap their table to calm them; if they keep shouting a fight can break out, breaking things and drawing complaints.",
     "Booked parties arrive at their time and need a table free for them: accept bookings in the office.",
     "A food critic (from Advertising) visits the next day: a happy critic is a big boost, an unhappy one hurts."] },
   { id: "stock", e: "📦", t: "Stock", p: [
@@ -1952,7 +1955,7 @@ const GUIDE = [
     "Turn automatic stock off in the Stock section to buy everything yourself.",
     "Fresh food partly goes off overnight (half, usually; some premises have a better or worse store room)."] },
   { id: "staff", e: "👥", t: "Staff", p: [
-    "<b>Waiters</b> take orders, carry food and clear tables. <b>Cooks</b> make food (and drinks if there's no barista). <b>Baristas</b> make drinks. <b>Kitchen porters</b> wash up and clear. <b>Cleaners</b> mop, clear and calm rowdy customers.",
+    "<b>Waiters</b> take orders, carry food and clear tables. <b>Cooks</b> make food (and drinks if there's no barista). <b>Baristas</b> make drinks. In a pub the <b>bartender</b> serves at the bar, pours every drink and collects glasses; without one, waiters pour drinks and serve at the bar, and cooks only pour when there's nobody else. <b>Kitchen porters</b> wash up and clear. <b>Cleaners</b> mop, clear and calm rowdy customers.",
     "Higher <b>levels</b> walk faster and work better. Promote someone once they've worked enough days; their fair wage rises about 12% a level.",
     "Paying below a fair wage, and very busy days, lower <b>morale</b>. Unhappy staff can quit.",
     "Long opening hours make staff <b>tired</b>: tired staff are slower, lose morale, can phone in <b>sick</b> for a day, and at the limit burn out and quit. A <b>bonus</b> (once a week) lifts morale and eases tiredness.",
@@ -1970,7 +1973,7 @@ const GUIDE = [
     "<b>Walls & doors</b>: pick 🧱 Wall and drag a line (you see it and its price before it's built), 🚪 Door to put a door in a wall or gap, 🗑️ Remove to take pieces down. Removing gives all your money back on the day you built it, half after that. ↶ Undo puts back your last change.",
     "Walls keep noise (TV, soft play, music) away from other tables. Meeting and function rooms need walls all round and a door. Everything must still be reachable from the entrance."] },
   { id: "extras", e: "🎱", t: "Build-ins and events", p: [
-    "Cafés can add a soft play corner, a reading & work corner, a meeting room and a takeaway window; pubs a sports TV corner, fruit machines, a pool table and a function room. Each brings its own customers or money; some are noisy.",
+    "Cafés can add a soft play corner, a reading & work corner, a meeting room and a takeaway window; pubs a sports TV corner, fruit machines, a pool table, a function room and <b>drinkers' tables</b> (three high tables that bring in more people just for a drink, served at the bar). Each brings its own customers or money; some are noisy.",
     "A sports TV corner brings fans for televised games anywhere in the city (the channels cost a little every day).",
     "<b>Events</b> (quiz, live music, karaoke, supper club, kids' craft morning, book club) run on the weekdays you choose: they cost a fee and bring extra groups who spend more. Regulars build up the more often you hold one. Noisy events can upset other diners and neighbours."] },
   { id: "city", e: "🗺️", t: "The city", p: [
@@ -2051,12 +2054,19 @@ function startDay() {
   G.L = S.L; G.grid = gridOf(S, S.L); G.reach = floodFrom(G.grid, S.L.walls, [DOOR_CELL], false);
   G.cnt = { bin: { x: S.L.bin[0] + .5, y: S.L.bin[1] + .5 }, plates: { x: S.L.plates[0] + .5, y: S.L.plates[1] + .5 }, pass: S.L.pass.map(q => ({ x: q[0] + .5, y: q[1] + .5 })) };
   G.acc = new Map();
+  // pub drinkers order at the bar: the counter spot nearest the beer taps, and the floor in front of it
+  if (barMode() && G.cnt.pass.length) {
+    const tap = G.stations.find(x => x.t === "tap") || G.stations.find(x => x.t === "fridge") || { x: 4.5, y: 3 };
+    G.barI = G.cnt.pass.map((q, i) => i).sort((p, q) => Math.hypot(G.cnt.pass[p].x - tap.x, G.cnt.pass[p].y - tap.y) - Math.hypot(G.cnt.pass[q].x - tap.x, G.cnt.pass[q].y - tap.y))[0];
+    const q = G.cnt.pass[G.barI]; G.barP = standFor(spotObj(G.barI), { x: q.x, y: q.y + 3 });
+  }
   // build-ins that seat people: the reading corner, sports corner, pool table and private rooms; rooms for noise
   {
     G.rooms = roomGrid(S.L.walls, noiseBlock(S, S.L)); G.biRoom = {};
     for (const id in S.bi || {}) {
       const B = BI[id]; if (!B || !B.cell || !S.L.bi[id]) continue;
       const [bx, by] = S.L.bi[id], x = bx + 1.5, y = by + 1; G.biRoom[id] = roomAt(G.rooms, x, y);
+      if (id === "drinks") { for (const [dx, dy] of [[.55, .7], [1.5, 1.3], [2.45, .7]]) G.tables.push({ i: G.tables.length, x: bx + dx, y: by + dy, fp: { x: bx, y: by, w: 3, h: 2 }, seats: 3, dk: true, group: null, dirty: 0, claim: null }); continue; }
       if (B.seats) G.tables.push({ i: G.tables.length, x, y, fp: { x: bx, y: by, w: 3, h: 2 }, seats: id === "sports" && (S.bi.sports.lv || 1) > 1 ? 6 : B.seats, sp: id, room: B.room ? gridEnclosed(S.L.walls, x, y) : false, group: null, dirty: 0, claim: null });
     }
   }
@@ -2102,7 +2112,7 @@ function startDay() {
       const a = { t: tt, size: kids ? Math.min(big, 3 + (Math.random() < .5 ? 1 : 0)) : Math.min(big, F.size[0] + Math.floor(Math.random() * (F.size[1] - F.size[0] + 1))), fan: STADIUMS[info.mi].what, late: lateAt(tt), sp: S.venue === "pub" ? sportsSp : null, watch: false };
       if (kids) a.kids = a.size - 2;
       a.rowdy = !kids && a.size <= 4 && Math.random() < F.rowdy;
-      if (S.bar && a.size <= 3 && Math.random() < F.drink) a.drinker = true;
+      if (drinkRoom() && a.size <= 3 && Math.random() < F.drink) a.drinker = true;
       G.arr.push(a); continue;
     }
     // regulars come when people are about: the hour's footfall in this area on this day
@@ -2118,7 +2128,7 @@ function startDay() {
     const late = S.venue === "pub" && hr >= 21;
     const a = { t: u * G.len, size, rowdy: late && size <= 3 && Math.random() < .33 + .03 * starsOf(S.rep) + (hr > 24 ? .25 * (hr - 24) : 0), late };
     if (big >= 3 && !late && Math.random() < .1 + (info.wd >= 5 ? .15 : 0) + (S.venue === "cafe" && info.w === 0 ? .05 : 0) + (info.wd >= 5 && hasPk(siteOf(S), "parking") ? .05 : 0) + (info.ev.some(o => o.E.kids) ? .1 : 0)) { a.size = big >= 4 && Math.random() < .5 ? 4 : 3; a.kids = a.size - 2; a.rowdy = false; }
-    else if (S.bar && late && a.size <= 3 && Math.random() < .25) a.drinker = true;
+    else if (drinkRoom() && late && a.size <= 3 && Math.random() < .25) a.drinker = true;
     G.arr.push(a);
   }
   // the reading corner fills with students and laptop workers; the pool table brings groups of friends
@@ -2131,6 +2141,11 @@ function startDay() {
     const extra = Math.min(Math.round(n * .22 * S.bar * (info.match ? 1.4 : 1)), BAR[S.bar - 1].spots * 2);
     for (let i = 0; i < extra; i++) { const u = rnd(.2, .92); G.arr.push({ t: u * G.len, size: 1 + Math.floor(Math.random() * 3), drinker: true, late: lateAt(u * G.len), rowdy: lateAt(u * G.len) && Math.random() < .15 + (info.match ? .08 : 0) }); }
   }
+  // the drinkers' tables bring people in just for a drink, more in the evening and where there's nightlife
+  if (LV == null && S.venue === "pub" && hasBi(S, "drinks")) {
+    const m = siteMix(siteOf(S)), k = Math.min(8, Math.round(n * .16 * (1 + m.night + .5 * m.stu) * (info.wd >= 4 ? 1.2 : 1)));
+    for (let i = 0; i < k; i++) { const u = Math.max(rnd(.1, .92), rnd(.1, .92)), late = lateAt(u * G.len); G.arr.push({ t: u * G.len, size: 1 + Math.floor(Math.random() * 3), drinker: true, late, rowdy: late && Math.random() < .12 }); }
+  }
   // tonight's event: its guests mostly arrive round the start
   G.host = null;
   if (LV == null) { const hp = hostPlan(S, S.day); if (hp && !hp.closed) {
@@ -2138,13 +2153,13 @@ function startDay() {
     for (let k = 0, n = Math.round(hp.n * rnd(.85, 1.15)); k < n; k++) {
       const hr = hp.from - .3 + Math.random() * Math.min(1.2, hp.to - hp.from) * (Math.random() < .7 ? .5 : 1), t = (hr - G.O) * G.sph; if (t <= 0 || t > G.len * .92) continue;
       const size = Math.min(big, H.size[0] + Math.floor(Math.random() * (H.size[1] - H.size[0] + 1)));
-      G.arr.push({ t, size, host: H.id, rowdy: Math.random() < H.rowdy, late: lateAt(t), kids: H.kids && size >= 3 ? size - 2 : 0, drinker: S.venue === "pub" && S.bar && size <= 3 && Math.random() < .3 });
+      G.arr.push({ t, size, host: H.id, rowdy: Math.random() < H.rowdy, late: lateAt(t), kids: H.kids && size >= 3 ? size - 2 : 0, drinker: S.venue === "pub" && drinkRoom() && size <= 3 && Math.random() < .3 });
     }
   } else if (hp && hp.closed) G.hostClosed = hp.H.id; }
   // booked parties: their table is reserved from opening time
   if (LV == null) for (const b of (S.bookings || []).filter(b => b.ok && b.day === S.day)) {
-    const t = G.tables.filter(t => !t.bar && !t.res && t.seats >= b.size && (b.room ? t.room : !t.sp)).sort((p, q) => p.seats - q.seats)[0]
-      || G.tables.filter(t => !t.bar && !t.res && !t.sp && t.seats >= b.size).sort((p, q) => p.seats - q.seats)[0];
+    const t = G.tables.filter(t => !t.bar && !t.dk && !t.res && t.seats >= b.size && (b.room ? t.room : !t.sp)).sort((p, q) => p.seats - q.seats)[0]
+      || G.tables.filter(t => !t.bar && !t.dk && !t.res && !t.sp && t.seats >= b.size).sort((p, q) => p.seats - q.seats)[0];
     if (t) t.res = b;
     G.arr.push({ t: clamp(stdT(b.at), .05 * G.len, .8 * G.len), size: b.size, party: b, kids: b.kids || 0, fan: OCCASIONS[b.occ].m || null });
   }
@@ -2198,7 +2213,7 @@ function kit() { return S.stations.filter(Boolean); }
 const slotsUsed = sv => sv.stations.filter(t => t && t !== "basin").length; // the hand basin hangs on the wall
 // money from build-ins (soft play entry, desk fees, pool, fruit machines), shown at the end of the day
 function addExtra(k, v, t) { G.extra[k] = Math.round(((G.extra[k] || 0) + v) * 100) / 100; if (t && v >= 1) fx(t.x, t.y - 1.3, `+${money(Math.round(v * 10) / 10)} ${EXTRA_N[k].e}`, "#7A5FC2"); }
-const EXTRA_N = { meet: { n: "Meeting room", e: "🤝" }, func: { n: "Function room", e: "🎉" }, soft: { n: "Soft play", e: "🧸" }, nook: { n: "Desk fees", e: "📚" }, pool: { n: "Pool table", e: "🎱" }, fruit: { n: "Fruit machines", e: "🎰" }, hatch: { n: "Takeaway window", e: "🥤" }, tv: { n: "Sports channels", e: "📺" } };
+const EXTRA_N = { meet: { n: "Meeting room", e: "🤝" }, func: { n: "Function room", e: "🎉" }, soft: { n: "Soft play", e: "🧸" }, nook: { n: "Desk fees", e: "📚" }, pool: { n: "Pool table", e: "🎱" }, fruit: { n: "Fruit machines", e: "🎰" }, hatch: { n: "Takeaway window", e: "🥤" }, tv: { n: "Sports channels", e: "📺" }, drinks: { n: "Drinkers' tables", e: "🍻" } };
 // a dish's price here: town-centre customers pay more (campaign days use the plain price)
 function lp(r) { return LV != null || !S ? RECIPES[r].p : Math.round(RECIPES[r].p * sitePrice(S) * 10) / 10; }
 function canMakeS(r) { return RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t)); }
@@ -2253,6 +2268,7 @@ function standFor(o, a) {
   if (o.k === "counter") return nearestOf(accessFor("c" + o.what + (o.i || 0), { x: o.x - .5, y: o.y - .5, w: 1, h: 1 }), a, o.x, o.y + 1);
   if (o.k === "table") { const r = o.t.fp || { x: o.t.x - .75, y: o.t.y - .5, w: 1.5, h: 1 }; return nearestOf(accessFor("t" + o.t.i, r), a, o.t.x + .5, o.t.y + 1.05); }
   if (o.k === "mess") return [o.m.x, o.m.y + .3];
+  if (o.k === "barq") return standFor(spotObj(G.barI), a);
   return [o.x, o.y];
 }
 function actorStep(a, dt) {
@@ -2343,15 +2359,18 @@ function serve(g, tk, dish) {
   if (dish.perfect) g.bonus += .6;
   if (dish.germ && hygOn() && Math.random() < GERM_P) G.ill = (G.ill || 0) + 1; // nobody knows yet: it shows up tonight
   snd("serve");
-  fx(g.table.x, g.table.y - .9, RECIPES[dish.r].e + " ✓", "#3E9B6B");
-  if (g.tickets.every(k => k.done)) { g.state = "eat"; g.timer = g.watch || (g.sp === "nook" && g.table && g.table.sp === "nook") ? rnd(12, 17) : g.drinker ? rnd(5, 8) : rnd(7, 10) + (g.party ? 4 : 0); }
+  if (g.atBar) fx(g.people[0].x, g.people[0].y - 1, RECIPES[dish.r].e + " ✓", "#3E9B6B"); else fx(g.table.x, g.table.y - .9, RECIPES[dish.r].e + " ✓", "#3E9B6B");
+  if (g.tickets.every(k => k.done)) {
+    g.state = "eat"; g.timer = g.watch || (g.sp === "nook" && g.table && g.table.sp === "nook") ? rnd(12, 17) : g.drinker ? rnd(5, 8) : rnd(7, 10) + (g.party ? 4 : 0);
+    if (g.atBar) { g.atBar = false; g.state = "back"; const o = seatsOf(g.table)[0]; walkTo(g.people[0], g.table.x + o[0], g.table.y + o[1]); }
+  }
 }
 
 /* ---------- customers ---------- */
 const hrI = () => Math.max(0, Math.min(G.hr.arr.length - 1, Math.floor(G.t / G.sph)));
 function spawnGroup(a) {
   if (G.hr) G.hr.arr[hrI()] += a.size;
-  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, kids: a.kids || 0, drinker: !!a.drinker, fan: a.fan || null, sp: a.sp || null, watch: !!a.watch, party: a.party || null, rounds: 0, spilt: false, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
+  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, kids: a.kids || 0, drinker: !!a.drinker, bar: !!a.drinker && barMode() && !!G.barP, fan: a.fan || null, sp: a.sp || null, watch: !!a.watch, party: a.party || null, rounds: 0, spilt: false, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
     host: a.host || null, claim: null, calmClaim: null, shout: 0, rt: rnd(6, 12), calmed: 0, people: [] };
   for (let i = 0; i < a.size; i++) g.people.push({ x: DOOR[0] + (i - (a.size - 1) / 2) * .4, y: DOOR[1], look: randomLook(), tx: 0, ty: 0, kid: i >= a.size - (a.kids || 0) });
   if (g.party) fx(4.5, 13, `${OCCASIONS[g.party.occ].e} The ${OCCASIONS[g.party.occ].n.toLowerCase()} has arrived!`, "#E8664A");
@@ -2360,20 +2379,21 @@ function spawnGroup(a) {
 function seatOffsets(seats) { return seats >= 6 ? [[-1.12, 0], [1.12, 0], [-.45, -.72], [.45, -.72], [-.45, .72], [.45, .72]] : seats >= 4 ? [[-.8, 0], [.8, 0], [0, -.72], [0, .72]] : [[-.8, 0], [.8, 0]]; }
 function seatsOf(t) {
   if (t.bar) return [[-.48, 0], [.02, .12], [.5, 0]];
+  if (t.dk) return [[-.42, .08], [.42, .08], [0, .4]];
   if (t.sp === "nook") return [[-.85, .15], [0, .35], [.85, .15]];
   if (t.sp === "sports") return [[-.9, .1], [-.3, .45], [.3, .45], [.9, .1], [-.6, .85], [.6, .85]];
   if (t.sp === "pool") return [[-1.15, 0], [1.15, 0], [-.45, .62], [.45, .62]];
   return seatOffsets(t.seats);
 }
 const SP_N = { nook: "the reading corner", sports: "the sports corner", pool: "the pool table", meet: "the meeting room", func: "the function room" };
-const tname = t => t.bar ? "the bar" : t.sp ? SP_N[t.sp] : "table " + (t.i + 1);
+const tname = t => t.bar ? "the bar" : t.dk ? "the drinks table" : t.sp ? SP_N[t.sp] : "table " + (t.i + 1);
 /* Where a group sits. Bookings, build-in spots and the bar come first, as before. Otherwise people pick for themselves:
    the right number of seats most of the time, one spare seat just as happily, a table with room to spread out now and then,
    and not always the first free table. With a "Wait to be seated" sign and a waiter, they're shown to the best fit. */
 function pickTable(g, free) {
   const top = free[0];
-  if ((top.res && top.res === g.party) || (g.sp && top.sp === g.sp) || (g.drinker && top.bar)) return top;
-  const plain = free.filter(t => !t.sp && !t.bar); if (!plain.length) return top;
+  if ((top.res && top.res === g.party) || (g.sp && top.sp === g.sp) || (g.drinker && (top.bar || top.dk))) return top;
+  const plain = free.filter(t => !t.sp && !t.bar && !t.dk); if (!plain.length) return top;
   if (S.sign && G.actors.some(a => a.role === "waiter")) {
     const t = plain.slice().sort((a, b) => a.seats - b.seats)[0];
     g.pat = Math.min(1, g.pat + .05); fx(t.x, t.y - 1.1, "This way, please 🪧", "#3E9B6B");
@@ -2387,10 +2407,10 @@ function pickTable(g, free) {
 function trySeat() {
   for (let qi = 0; qi < G.queue.length; qi++) {
     const g = G.queue[qi];
-    let free = G.tables.filter(t => !t.group && !t.dirty && t.seats >= g.size && (!t.res || t.res === g.party) && (!t.bar || g.drinker || g.sp === "sports" || g.sp === "pool") && (!t.sp || t.sp === g.sp || (t.res && t.res === g.party)))
-      .sort((a, b) => (b.res === g.party && g.party ? 1 : 0) - (a.res === g.party && g.party ? 1 : 0) || (g.sp ? (b.sp === g.sp) - (a.sp === g.sp) : 0) || (g.drinker ? (b.bar ? 1 : 0) - (a.bar ? 1 : 0) : 0) || a.seats - b.seats);
+    let free = G.tables.filter(t => !t.group && !t.dirty && !t.gl && t.seats >= g.size && (!t.res || t.res === g.party) && (!t.bar || g.drinker || g.sp === "sports" || g.sp === "pool") && (!t.dk || g.drinker) && (!t.sp || t.sp === g.sp || (t.res && t.res === g.party)))
+      .sort((a, b) => (b.res === g.party && g.party ? 1 : 0) - (a.res === g.party && g.party ? 1 : 0) || (g.sp ? (b.sp === g.sp) - (a.sp === g.sp) : 0) || (g.drinker ? (b.bar || b.dk ? 1 : 0) - (a.bar || a.dk ? 1 : 0) : 0) || a.seats - b.seats);
     if (!free.length) {
-      if (g.party && !G.tables.some(t => !t.bar && t.seats >= g.size)) { angryLeave(g, "No table big enough for us! 😞"); qi--; }
+      if (g.party && !G.tables.some(t => !t.bar && !t.dk && t.seats >= g.size)) { angryLeave(g, "No table big enough for us! 😞"); qi--; }
       continue;
     }
     const t = pickTable(g, free); t.group = g; t.res = null; g.table = t; g.state = "walk"; g.pat = Math.max(g.pat, .9);
@@ -2422,8 +2442,8 @@ function patMul(g) {
 }
 function groupLeave(g, happy) {
   const t = g.table;
-  if (t) { t.dirty += g.plates || 0; t.group = null; }
-  g.table = null; g.state = "leave"; g.shout = 0;
+  if (t) { t.dirty += g.plates || 0; t.group = null; if (g.bar) t.gl = Math.min(6, (t.gl || 0) + g.tickets.filter(k => k.done).length); }
+  g.table = null; g.state = "leave"; g.shout = 0; g.atBar = false;
   const qi = G.queue.indexOf(g); if (qi >= 0) G.queue.splice(qi, 1);
   g.people.forEach((p, i) => walkTo(p, DOOR[0] + (i - 1) * .3, DOOR[1] + .4));
 }
@@ -2467,6 +2487,27 @@ function angryLeave(g, why) {
   fx(x, y - 1, why || "Too slow! 😠", "#D2483A");
   groupLeave(g, false);
 }
+// pub drinkers: one of them goes up to the bar, orders, collects the drinks and carries them back
+const barMode = () => LV == null && !!S && S.venue === "pub";
+const drinkRoom = () => !!(S.bar || hasBi(S, "drinks"));
+const hasRole = r => G.actors.some(x => x.role === r);
+function toBar(g) {
+  const k = G.groups.filter(o => o !== g && (o.atBar || o.state === "toBar")).length, off = [0, -.6, .6, -1.2, 1.2, -1.8, 1.8][k % 7];
+  g.state = "toBar"; g.atBar = false;
+  walkTo(g.people[0], clamp(G.barP[0] + off, .5, 8.5), G.barP[1] + (k >= 7 ? .6 : 0));
+}
+// drinks left on the bar for them are picked up straight away
+function barCollect(g) {
+  const r0 = g.people[0];
+  for (const tk of g.tickets) {
+    if (tk.done) continue;
+    const j = G.spots.findIndex((d, i) => d && !d.claim && !d.burnt && d.r === tk.r && d.s >= RECIPES[d.r].s.length && Math.hypot(G.cnt.pass[i].x - r0.x, G.cnt.pass[i].y - r0.y) < 2.8);
+    if (j < 0) continue;
+    const d = G.spots[j]; G.spots[j] = null; serve(g, tk, d); if (g.state !== "wait") return;
+  }
+}
+const barWant = r => { const o = openTickets(r).filter(x => x.g.atBar && x.g.state === "wait").sort((a, b) => a.g.pat - b.g.pat)[0]; return o || null; };
+const barObj = () => ({ k: "barq", x: G.barP[0], y: G.barP[1] });
 function addMess(x, y) { x = clamp(x, .6, 8.4); y = clamp(y, 5.2, 13.6); G.messes.push({ id: nextId++, x, y, claim: null }); }
 function shout(g) {
   g.nsh = (g.nsh || 0) + 1;
@@ -2501,15 +2542,19 @@ function groupsStep(dt) {
     switch (g.state) {
       case "queue": g.pat -= dt / 75 * pm; if (g.pat <= 0) angryLeave(g, "No tables! 😠"); break;
       case "walk": if (!moving) { g.state = "think"; g.timer = rnd(2, 3.5); } break;
-      case "think": g.timer -= dt; if (g.timer <= 0) { g.state = "order"; snd("order"); } break;
-      case "order": g.pat -= dt / 60 * pm; if (g.pat <= 0) angryLeave(g, "Nobody took our order! 😠"); break;
-      case "wait": { const left = g.tickets.filter(k => !k.done).length; g.pat -= dt / (85 + 10 * left) * pm; if (g.pat <= 0) angryLeave(g); break; }
+      case "think": g.timer -= dt; if (g.timer <= 0) { if (g.bar) toBar(g); else { g.state = "order"; snd("order"); } } break;
+      case "toBar": if (!moving) { g.state = "order"; g.atBar = true; snd("order"); } break;
+      case "back": if (!moving) g.state = "eat"; break;
+      case "order": g.pat -= dt / 60 * pm; if (g.pat <= 0) angryLeave(g, g.atBar ? "Nobody's serving at the bar! 😠" : "Nobody took our order! 😠"); break;
+      case "wait": {
+        if (g.atBar) barCollect(g); if (g.state !== "wait") break;
+        const left = g.tickets.filter(k => !k.done).length; g.pat -= dt / (85 + 10 * left) * pm; if (g.pat <= 0) angryLeave(g); break; }
       case "eat":
         g.timer -= dt;
         if (g.kids && !g.spilt && g.timer < 4) { g.spilt = true; if (Math.random() < .35) { addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.5, 1)); fx(g.table.x, g.table.y - 1, "Oops! 🥤", "#5B8DB8"); } }
         if (g.timer <= 0) {
           const more = g.watch || g.sp === "pool" || (g.sp === "nook" && g.table && g.table.sp === "nook"); // workers only settle in at the reading corner
-          if ((g.drinker || more) && g.rounds < (more ? 3 : 2) && G.open && G.t < G.len - 30 && Math.random() < (more ? .75 : .5)) { g.rounds++; if (g.sp === "pool") addExtra("pool", g.size, g.table); g.state = "order"; g.pat = Math.max(g.pat, .8); fx(g.table.x, g.table.y - 1, g.sp === "nook" ? "Another coffee, please ☕" : "Same again! 🍻", "#B07A10"); snd("order"); }
+          if ((g.drinker || more) && g.rounds < (more ? 3 : 2) && G.open && G.t < G.len - 30 && Math.random() < (more ? .75 : .5)) { g.rounds++; if (g.sp === "pool") addExtra("pool", g.size, g.table); g.pat = Math.max(g.pat, .8); if (g.bar) toBar(g); else g.state = "order"; fx(g.table.x, g.table.y - 1, g.sp === "nook" ? "Another coffee, please ☕" : "Same again! 🍻", "#B07A10"); snd("order"); }
           else payAndLeave(g);
         }
         break;
@@ -2566,6 +2611,7 @@ function startWash(a) {
 }
 function loadDishwasher(a, s) {
   if (!a.hand || a.hand.k !== "dirty") return false;
+  if (!a.hand.n) { a.hand = null; return true; } // just glasses: they go in the glass washer
   if (s.run > 0 || s.load >= DW_CAP) return false;
   const n = Math.min(a.hand.n, DW_CAP - s.load); s.load += n; a.hand.n -= n; if (!a.hand.n) a.hand = null;
   s.run = DW_TIME; return true;
@@ -2623,6 +2669,16 @@ function leeArrive(o) {
   }
   if (o.k === "counter") return leeCounter(o);
   if (o.k === "table") return leeTable(o.t);
+  if (o.k === "barq") return leeBar();
+}
+function leeBar() {
+  const L = lee, h = L.hand;
+  if (h && h.k === "dirty" && !h.n) { L.hand = null; return; }
+  if (h && h.k === "dish" && !h.burnt && h.s >= RECIPES[h.r].s.length) { const o = barWant(h.r); if (o) { serve(o.g, o.k, h); L.hand = null; return; } }
+  const g = G.groups.filter(g => g.atBar && g.state === "order").sort((p, q) => p.pat - q.pat)[0];
+  if (g) { work(L, .6, () => takeOrder(g), null, "order"); return; }
+  const w = G.groups.filter(g => g.atBar && g.state === "wait");
+  toastMsg(w.length ? "Waiting at the bar for " + w.flatMap(g => g.tickets.filter(k => !k.done).map(k => RECIPES[k.r].e)).slice(0, 5).join(" ") : "Nobody's waiting at the bar");
 }
 function leeStation(s, pref) {
   const L = lee, h = L.hand, def = STATIONS[s.t];
@@ -2682,6 +2738,7 @@ function leeStation(s, pref) {
 }
 function leeCounter(o) {
   const L = lee, h = L.hand;
+  if (h && h.k === "dirty" && !h.n) { L.hand = null; toastMsg("Glasses into the glass washer 🍺"); return; }
   if (o.what === "bin") {
     if (!h) { toastMsg("Nothing to throw away"); return; }
     if (h.k === "dirty") { toastMsg("Dirty plates go to the sink"); return; }
@@ -2717,6 +2774,7 @@ function leeCounter(o) {
 function leeTable(t) {
   const L = lee, h = L.hand, g = t.group;
   if (g && g.rowdy && g.shout > 0) { work(L, .9, () => calm(g), null, "calm"); return; }
+  if (g && g.bar && (g.atBar || g.state === "toBar")) { toastMsg("They're at the bar 🍺"); return; }
   if (g && g.state === "order") { work(L, .8, () => takeOrder(g), null, "order"); return; }
   if (h && h.k === "dish") {
     if (h.burnt) { toastMsg("You can't serve burnt food!"); return; }
@@ -2726,10 +2784,10 @@ function leeTable(t) {
     if (!tk) { toastMsg(tname(t).replace(/^./, c => c.toUpperCase()) + " didn't order " + RECIPES[h.r].n.toLowerCase()); return; }
     serve(g, tk, h); L.hand = null; return;
   }
-  if (t.dirty > 0) {
-    if (h && h.k === "dirty") { h.n += t.dirty; t.dirty = 0; return; }
+  if (t.dirty > 0 || t.gl > 0) {
+    if (h && h.k === "dirty") { h.n += t.dirty; h.gl = (h.gl || 0) + (t.gl || 0); t.dirty = 0; t.gl = 0; return; }
     if (h) { toastMsg("Your hands are full"); return; }
-    L.hand = { k: "dirty", n: t.dirty }; t.dirty = 0; t.claim = null; return;
+    L.hand = { k: "dirty", n: t.dirty, gl: t.gl || 0 }; t.dirty = 0; t.gl = 0; t.claim = null; return;
   }
   if (g && g.state === "wait") toastMsg("Waiting for " + g.tickets.filter(k => !k.done).map(k => RECIPES[k.r].e).join(" "));
   else if (g && (g.state === "think" || g.state === "walk")) toastMsg("Still reading the menu");
@@ -2741,7 +2799,7 @@ function leeTable(t) {
 const stObj = s => ({ k: "st", s }), spotObj = i => ({ k: "counter", what: "pass", i, x: G.cnt.pass[i].x, y: G.cnt.pass[i].y });
 const binObj = () => ({ k: "counter", what: "bin", x: G.cnt.bin.x, y: G.cnt.bin.y }), platesObj = () => ({ k: "counter", what: "plates", x: G.cnt.plates.x, y: G.cnt.plates.y });
 const sn = t => STATIONS[t].n.toLowerCase(), rn = r => RECIPES[r].n.toLowerCase();
-function wantedBy(r) { const o = openTickets(r).filter(x => x.g.state === "wait" && x.g.table).sort((a, b) => a.g.pat - b.g.pat)[0]; return o ? o.g : null; }
+function wantedBy(r) { const o = openTickets(r).filter(x => x.g.state === "wait" && x.g.table && !x.g.atBar).sort((a, b) => a.g.pat - b.g.pat)[0]; return o ? o.g : null; }
 const watched = s => G.actors.some(a => a !== lee && a.watch === s);
 const cookTime = r => RECIPES[r].s.reduce((a, t) => a + (t === "plate" ? .4 : STATIONS[t].d || 1), 0);
 function coachNext() {
@@ -2762,11 +2820,13 @@ function coachCore() {
   };
   const burning = st.filter(s => s.item && STATIONS[s.t].k === "pas" && s.item.ready && !s.item.burnt && s.item.burnAt - s.item.t < 4.5 && !watched(s));
   if (h) {
+    if (h.k === "dirty" && !h.n) return { o: G.barI != null ? spotObj(G.barI) : binObj(), say: "Put the empty glasses in the glass washer" };
     if (h.k === "dirty") return dw ? { o: stObj(dw), say: "Load the dirty plates into the dishwasher" } : sink ? { o: stObj(sink), say: "Take the dirty plates to the sink" } : null;
     if (h.burnt) return { o: binObj(), say: "That's burnt: throw it in the bin" };
     const R = RECIPES[h.r];
     if (burning.length && R.s[h.s] !== burning[0].t) { const p = putDown("Something's about to burn"); if (p) return p; }
     if (h.s >= R.s.length) {
+      if (barWant(h.r)) return { o: barObj(), say: `Hand the ${rn(h.r)} over at the bar` };
       const g = wantedBy(h.r); if (g) return { o: { k: "table", t: g.table }, say: `Serve the ${rn(h.r)} to ${tname(g.table)}` };
       if (G.clean <= 1 && need(h.r) < 0 && plated(h.r)) return { o: binObj(), say: "Nobody wants this now: bin it to free up the plate" };
       return putDown("Nobody needs this right now");
@@ -2781,6 +2841,7 @@ function coachCore() {
   const rowdy = G.groups.find(g => g.rowdy && g.shout > 0 && g.table && !g.calmClaim);
   if (rowdy) return { o: { k: "table", t: rowdy.table }, say: `Calm down ${tname(rowdy.table)}` };
   const ord = G.groups.filter(g => g.state === "order" && g.table && !g.claim).sort((a, b) => a.pat - b.pat)[0];
+  if (ord && ord.atBar) return { o: barObj(), say: "Serve the customer waiting at the bar" };
   if (ord) return { o: { k: "table", t: ord.table }, say: `Take ${tname(ord.table)}'s order` };
   const ready = st.find(s => s.item && STATIONS[s.t].k === "pas" && s.item.ready && !s.item.burnt && !watched(s));
   if (ready) return { o: stObj(ready), say: `The ${rn(ready.item.r)} is ready: pick it up` };
@@ -2795,6 +2856,7 @@ function coachCore() {
     if (done) {
       const g = wantedBy(d.r);
       if (g && !freeWaiter) return { o, say: `Pick up the ${rn(d.r)} for ${tname(g.table)}` };
+      if (!g && barWant(d.r)) continue; // it's on the bar: they'll pick it up
       if (!g && need(d.r) < 0 && G.clean === 0 && plated(d.r)) return { o, say: `Nobody wants that ${rn(d.r)} now: bin it to free up the plate` };
       continue;
     }
@@ -2807,7 +2869,7 @@ function coachCore() {
   }
   // start a dish: the most impatient table first, and the slowest dish first
   const cands = openTickets().filter(x => x.g.state === "wait" && need(x.k.r) > 0 && stockOk(x.k.r) && canMake(x.k.r))
-    .filter(x => !(staffHas("cook") && !RECIPES[x.k.r].d && G.actors.some(a => a.role === "cook" && !a.hand)) && !(staffHas("drinks") && RECIPES[x.k.r].d))
+    .filter(x => !(staffHas("cook") && !RECIPES[x.k.r].d && G.actors.some(a => a.role === "cook" && !a.hand)) && !(staffHas("drinks") && RECIPES[x.k.r].d && !(barMode() && barBacklog())))
     .sort((a, b) => (a.g.pat - b.g.pat) * 2 + (cookTime(b.k.r) - cookTime(a.k.r)) / 20);
   for (const { k } of cands) {
     const t = RECIPES[k.r].s[0], s = st.find(s => s.t === t && !s.item && !s.user);
@@ -2815,6 +2877,8 @@ function coachCore() {
   }
   const dt = G.tables.find(t => t.dirty && !t.claim);
   if (dt && !staffHas("porter") && !staffHas("waiter")) return { o: { k: "table", t: dt }, say: `Clear the plates from ${tname(dt)}` };
+  const gt = G.tables.find(t => t.gl && !t.claim);
+  if (gt && !staffHas("waiter") && !staffHas("drinks") && !staffHas("porter") && !staffHas("floor")) return { o: { k: "table", t: gt }, say: `Collect the empty glasses from ${tname(gt)}` };
   if (G.sink > 0 && !G.washer && sink && !staffHas("porter")) return { o: stObj(sink), say: "Wash up while it's quiet" };
   if (hygOn() && !staffHas("porter") && !staffHas("floor")) { const g2 = st.filter(s => DIRT[s.t] && (s.dirt || 0) > .55 && !s.item && !s.user && !s.scrub && !startable(s.t).length).sort((p, q) => q.dirt - p.dirt)[0]; if (g2) return { o: stObj(g2), say: `Give the ${sn(g2.t)} a clean` }; }
   const m = G.messes.find(m => !m.claim); if (m && !staffHas("floor")) return { o: { k: "mess", m }, say: "Mop up the spill" };
@@ -2842,24 +2906,38 @@ function staffThink(a, dt) {
   if (h && h.k === "dirty") return staffDirty(a);
   if (h && h.k === "dish") return staffDish(a);
   const role = a.role;
-  const did = role === "waiter" ? tryOrder(a) || tryDeliver(a) || tryClear(a)
+  const did = role === "waiter" ? tryOrder(a) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryBarOrder(a)) || tryDeliver(a) || (G.queue.length > 0 && tryClear(a)) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryCook(a, true)) || tryClear(a)
     : role === "porter" ? tryWash(a) || tryClear(a) || tryScrub(a)
-    : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null) || ((a.idle || 0) >= 3 && tryScrub(a, .3))
-    : role === "drinks" ? tryCook(a, true)
+    : role === "cook" ? tryCook(a, cookDrinks()) || ((a.idle || 0) >= 3 && tryScrub(a, .3))
+    : role === "drinks" ? (barMode() && tryBarOrder(a)) || (barMode() && G.queue.some(g => g.drinker) && tryClear(a, true)) || tryCook(a, true) || (barMode() && tryClear(a, true))
     : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) || tryScrub(a) : false;
   if (did) { a.idle = 0; return; }
   // nothing to do: stay put for a moment (more plates are often on the way), then wander back to their usual spot
   a.idle = (a.idle || 0) + .4; a.wait = .4;
   if (a.idle >= (role === "waiter" ? 3 : 1.2)) { const hm = nearFree(...staffHome(role)); if (Math.hypot(a.x - hm[0], a.y - hm[1]) > .6) goTo(a, hm[0] + rnd(-.3, .3), hm[1]); }
 }
+// in a pub the bartender pours, waiters help when there isn't one, and cooks only when nobody else can
+function cookDrinks() { if (barMode()) return hasRole("drinks") || hasRole("waiter") ? false : null; return hasRole("drinks") ? false : null; }
+// the bar is backed up: someone has waited a while to order, or more drinks are wanted than the bartenders can pour
+function barBacklog() {
+  if (G.groups.some(g => g.atBar && g.state === "order" && !g.claim && g.pat < .7)) return true;
+  let n = 0; for (const { k } of openTickets()) if (RECIPES[k.r].d && need(k.r) > 0) n++;
+  return n > 3 * G.actors.filter(x => x.role === "drinks").length;
+}
+function tryBarOrder(a) {
+  const g = G.groups.filter(g => g.atBar && g.state === "order" && !g.claim).sort((p, q) => p.pat - q.pat)[0]; if (!g) return false;
+  g.claim = a;
+  goStand(a, spotObj(G.barI), () => { g.claim = null; if (g.state === "order" && g.atBar) work(a, .6, () => takeOrder(g)); });
+  return true;
+}
 function tryOrder(a) {
-  const g = G.groups.find(g => g.state === "order" && !g.claim); if (!g) return false;
+  const g = G.groups.find(g => g.state === "order" && !g.claim && !g.atBar); if (!g) return false;
   g.claim = a; const [x, y] = standFor({ k: "table", t: g.table }, a);
   goTo(a, x, y, () => { g.claim = null; if (g.state === "order") work(a, .9, () => takeOrder(g)); });
   return true;
 }
 function tryDeliver(a) {
-  const ok = d => d && !d.claim && !d.burnt && d.s >= RECIPES[d.r].s.length && openTickets(d.r).length;
+  const ok = d => d && !d.claim && !d.burnt && d.s >= RECIPES[d.r].s.length && openTickets(d.r).some(x => !x.g.atBar);
   const d = G.spots.find(ok);
   if (d) {
     d.claim = a;
@@ -2869,7 +2947,7 @@ function tryDeliver(a) {
       if (a.role !== "waiter") return; a.extra = a.extra || [];
       for (let j = 0; j < G.spots.length && a.extra.length < 2; j++) { const e = G.spots[j], c = G.cnt.pass[j];
         if (!ok(e) || Math.hypot(c.x - a.x, c.y - a.y) > 2.6) continue;
-        const carried = [a.hand, ...a.extra].filter(x => x.r === e.r).length; if (openTickets(e.r).length <= carried) continue;
+        const carried = [a.hand, ...a.extra].filter(x => x.r === e.r).length; if (openTickets(e.r).filter(x => !x.g.atBar).length <= carried) continue;
         a.extra.push(e); G.spots[j] = null; }
     });
     return true;
@@ -2879,13 +2957,14 @@ function tryDeliver(a) {
   goStand(a, stObj(top), () => { t.claim = null; if (top.item === t && !a.hand) { a.hand = t; top.item = null; } });
   return true;
 }
-function tryClear(a) {
-  const t = G.tables.find(t => t.dirty > 0 && !t.claim); if (!t) return false;
+function tryClear(a, glasses) {
+  const t = G.tables.find(t => (glasses ? t.gl > 0 : t.dirty > 0 || t.gl > 0) && !t.claim); if (!t) return false;
   t.claim = a; const [x, y] = standFor({ k: "table", t }, a);
-  goTo(a, x, y, () => { t.claim = null; if (t.dirty > 0 && !a.hand) { a.hand = { k: "dirty", n: t.dirty }; t.dirty = 0; } });
+  goTo(a, x, y, () => { t.claim = null; if ((t.dirty > 0 || t.gl > 0) && !a.hand) { a.hand = { k: "dirty", n: t.dirty, gl: t.gl || 0 }; t.dirty = 0; t.gl = 0; } });
   return true;
 }
 function staffDirty(a) {
+  if (!a.hand.n) { goStand(a, G.barI != null ? spotObj(G.barI) : binObj(), () => { if (a.hand && a.hand.k === "dirty" && !a.hand.n) a.hand = null; }); return; } // just glasses: into the glass washer behind the bar
   const dw = G.stations.find(s => s.t === "dishwasher" && s.run <= 0 && s.load < DW_CAP && !s.claim);
   const s = dw || G.stations.find(s => s.t === "sink");
   if (!s) { a.wait = 1; return; }
@@ -2922,7 +3001,7 @@ function tryCalm(a) {
   return true;
 }
 function cookWanted(a) {
-  const noDrinks = G.actors.some(x => x.role === "drinks");
+  const noDrinks = cookDrinks() === false;
   return openTickets().some(({ k }) => !(noDrinks && RECIPES[k.r].d) && need(k.r) > 0 && stockOk(k.r) && canMake(k.r));
 }
 function tryCook(a, drinks) {
@@ -2943,8 +3022,12 @@ function staffDish(a) {
   const d = a.hand, R = RECIPES[d.r];
   if (d.burnt) { goStand(a, binObj(), () => { a.hand = null; a.dh = true; }); return; }
   if (d.s >= R.s.length) {
-    if (a.role === "waiter") {
-      const o = openTickets(d.r).find(x => x.g.table);
+    if (barWant(d.r)) { // a drink for someone at the bar: hand it over
+      goStand(a, spotObj(G.barI), () => { const o = barWant(d.r); if (o && a.hand === d) { serve(o.g, o.k, d); a.hand = null; } });
+      return;
+    }
+    if (a.role === "waiter" || (a.role === "drinks" && barMode() && !hasRole("waiter"))) {
+      const o = openTickets(d.r).find(x => x.g.table && !x.g.atBar);
       if (o) { const [x, y] = standFor({ k: "table", t: o.g.table }, a); goTo(a, x, y, () => { const tk = o.g.table && o.g.state === "wait" && o.g.tickets.find(k => !k.done && k.r === d.r); if (tk && a.hand === d) { serve(o.g, tk, d); a.hand = null; } }); return; }
     }
     const free = G.spots.map((x, i) => x ? -1 : i).filter(i => i >= 0).sort((p, q) => Math.hypot(G.cnt.pass[p].x - a.x, G.cnt.pass[p].y - a.y) - Math.hypot(G.cnt.pass[q].x - a.x, G.cnt.pass[q].y - a.y));
@@ -3147,8 +3230,8 @@ function draw() {
   drawWallsBi(P);
   // sorted scene: tables, people, actors
   const items = [];
-  for (const t of G.tables) items.push({ y: t.y, f: () => drawTable(t, P) });
-  for (const g of G.groups) for (const p of g.people) { const seated = g.table && !g.table.bar && g.table.sp !== "sports" && g.table.sp !== "pool" && (g.state !== "walk" && g.state !== "leave") && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T * (p.kid ? .72 : 1), { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
+  for (const t of G.tables) items.push({ y: t.y, f: () => { drawTable(t, P); if (t.gl) drawGlasses(t); } });
+  for (const g of G.groups) for (const p of g.people) { const seated = g.table && !g.table.bar && !g.table.dk && g.table.sp !== "sports" && g.table.sp !== "pool" && (g.state !== "walk" && g.state !== "leave" && g.state !== "toBar" && g.state !== "back") && !(g.atBar && p === g.people[0]) && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T * (p.kid ? .72 : 1), { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
   for (const a of G.actors) items.push({ y: a.y, f: () => drawActor(a) });
   items.sort((p, q) => p.y - q.y).forEach(i => i.f());
   // bubbles
@@ -3199,6 +3282,7 @@ function drawWallsBi(P) {
     emoji("🧸", PX(x - .7), PY(y + .55), T * .4);
     if (G.groups.some(g => g.kids && g.table && g.state !== "leave")) emoji("🧒", PX(x + .3 + Math.sin(G.t * 3) * .2), PY(y - .4), T * .38);
   }
+  if (hasBi(S, "drinks") && G.L && G.L.bi.drinks) { const [bx, by] = G.L.bi.drinks; c.fillStyle = "rgba(90,55,30,.22)"; rr(c, PX(bx + .08), PY(by + .08), 2.84 * T, 1.84 * T, 8); c.fill(); emoji("🍻", PX(bx + 2.65), PY(by + 1.65), T * .26); }
   // walls: half-unit segments on grid lines; a door segment is an open gap with the door swung back
   for (const [k, v] of Object.entries(G.L ? G.L.walls : {})) {
     if (!v) continue;
@@ -3371,7 +3455,7 @@ function drawAppliance(s, x, y, w, on) {
 function drawTable(t, P) {
   if (t.sp) return drawSpecial(t, P);
   const c = ctx, x = PX(t.x), y = PY(t.y), g = t.group;
-  if (t.bar) { // a high round table at the standing area
+  if (t.bar || t.dk) { // a high round table at the standing area, or one of the drinkers' tables
     c.fillStyle = "rgba(0,0,0,.18)"; c.beginPath(); c.ellipse(x, y + T * .1, T * .26, T * .1, 0, 0, Math.PI * 2); c.fill();
     c.fillStyle = P.chair; c.fillRect(x - T * .03, y - T * .2, T * .06, T * .3);
     c.fillStyle = P.table; c.beginPath(); c.ellipse(x, y - T * .22, T * .26, T * .15, 0, 0, Math.PI * 2); c.fill();
@@ -3395,9 +3479,14 @@ function drawTable(t, P) {
   for (let i = 0; i < Math.min(t.dirty, 4); i++) { c.fillStyle = "#F4EFE6"; c.strokeStyle = "#A99C8A"; c.lineWidth = 1; c.beginPath(); c.ellipse(x + (i - 1.5) * T * .22, y, T * .14, T * .08, 0, 0, Math.PI * 2); c.fill(); c.stroke(); c.fillStyle = "#B48A5A"; circ(c, x + (i - 1.5) * T * .22, y, T * .04); c.fill(); }
   if (t.dirty && !g) emoji("🧽", x + T * .55, y - T * .45, T * .28);
 }
+function drawGlasses(t) {
+  const c = ctx; c.globalAlpha = .7;
+  for (let i = 0; i < Math.min(3, t.gl); i++) emoji("🍺", PX(t.x + (i - 1) * .22), PY(t.y - .3 - (i % 2) * .08), T * .22);
+  c.globalAlpha = 1; if (!t.group) emoji("🫧", PX(t.x + .45), PY(t.y - .55), T * .22);
+}
 function drawBubble(g) {
   if (!g.table || g.state === "leave" || g.state === "walk") return;
-  const c = ctx, x = PX(g.table.x), y = PY(g.table.y - 1.25);
+  const c = ctx, x = PX(g.atBar ? g.people[0].x : g.table.x), y = PY(g.atBar ? g.people[0].y - 1.15 : g.table.y - 1.25);
   let content = null;
   if (g.state === "order") content = ["📝"];
   else if (g.state === "wait") content = g.tickets.filter(k => !k.done).map(k => RECIPES[k.r].e).slice(0, 4);
@@ -3452,6 +3541,7 @@ function targets() {
   G.cnt.pass.forEach((q, i) => out.push({ o: spotObj(i), x: q.x, y: q.y, rx: .55, ry: .55 }));
   for (const t of G.tables) out.push({ o: { k: "table", t }, x: t.x, y: t.y + .1, rx: t.bar ? .8 : t.seats >= 6 ? 1.7 : 1.35, ry: t.bar ? .7 : 1.25 });
   for (const m of G.messes) out.push({ o: { k: "mess", m }, x: m.x, y: m.y, rx: .7, ry: .55, bias: .3 });
+  if (G.barP && G.groups.some(g => g.atBar)) out.push({ o: barObj(), x: G.barP[0], y: G.barP[1] - .3, rx: 1, ry: .7, bias: .2 });
   return out;
 }
 function hitTest(wx, wy) {
@@ -3468,6 +3558,7 @@ function goalBox(o) {
   if (o.k === "counter") return [o.x - .45, o.y - .45, .9, .9];
   if (o.k === "table") return [o.t.x - .75, o.t.y - .5, 1.5, 1];
   if (o.k === "mess") return [o.m.x - .5, o.m.y - .3, 1, .6];
+  if (o.k === "barq") return [o.x - .6, o.y - .5, 1.2, 1];
   return null;
 }
 

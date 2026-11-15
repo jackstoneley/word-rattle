@@ -906,6 +906,18 @@
         "Cleaning an appliance now takes a few seconds and it can't be used meanwhile, so choose your moment. Stop part way and the part you cleaned stays clean",
         "Cooks only clean when the kitchen has been quiet for a while, and stop as soon as food comes in"
       ]
+    },
+    {
+      "id": 79,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: a proper pub bar",
+      "details": [
+        "In a pub, people who just want a drink now go up to the bar: one of them orders, collects the round and carries it back to their table.",
+        "Bartenders now pour every drink and serve at the bar. Waiters help out when the bar gets busy, and cooks stick to the food.",
+        "New build-in for pubs: drinkers' tables, three high tables that bring in more people for a drink.",
+        "Drinkers leave empty glasses behind: clear them before anyone else can sit there.",
+        "The guide explains how the bar works."
+      ]
     }
   ]
 }
