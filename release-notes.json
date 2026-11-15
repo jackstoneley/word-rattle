@@ -864,6 +864,17 @@
         "Tap an appliance to cook as usual; if there's nothing to make there, Lee Lee cleans it instead.",
         "The green helper arrow reminds you when to wash. Your staff still wash and clean by themselves."
       ]
+    },
+    {
+      "id": 75,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: easier walls and doors",
+      "details": [
+        "Walls & doors now has three tools: Wall, Door and Remove",
+        "Drag to draw a wall and you see it before it's built, with the price",
+        "Tap a wall with Remove (or drag across several) to take it down, and get half the money back",
+        "An Undo button puts back your last change"
+      ]
     }
   ]
 }
