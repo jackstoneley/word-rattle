@@ -181,7 +181,9 @@ missing fields, so new fields need a default in `newSave`), plus `ll.opts` (`min
 like `RECIPES`, `STATIONS`, `CAMPAIGNS`, `DECOR` are keyed by id or index in saves (`owned`, `stations`, `decor` level):
 append, never reorder or rename ids. `window.LL` exposes the day for Playwright bots (`step(dt)`, `leeTap(target)`,
 `playLevel(i)`). The counter has six put-down spots (`G.spots`) and `top` (worktop) stations hold one item; free play tops up
-stock automatically (`autoStock`). **Campaign**: `CHAPTERS` and `LEVELS` (in CORE) define fixed days (menu, stations, tables,
+stock automatically (`autoStock` before opening from `suggested`, which counts event crowds plus 10%; during the day `deliveryStep` orders
+`G.deliv` of anything normally stocked that runs low, at `DELIV_MUL` price, billed in `endDay` as `deliv`). Guests who can't order say what's out.
+Cooks scrub (`tryScrub(a, .3)`) whenever they have nothing to cook. **Campaign**: `CHAPTERS` and `LEVELS` (in CORE) define fixed days (menu, stations, tables,
 staff, `people`, goals `[kind, n]`, the first must be met); arrivals come from `levelArrivals(i)` with a seeded random, so a
 level is the same every time. Progress is `ll.camp` `{s: {level index: stars}}`, so append levels only. A campaign day uses a
 throwaway save (`slot = -1`, `LV` set) and never touches the free-play slots. Chapters 5-6 (Leicester café and pub, days 26-35) teach the free-play systems: a level may also set `bi` and `walls` (build-ins and walls, used as in free play), `waves` (extra groups `{u, sd, n, size, kids, fan, sp, watch, drinker, rowdy}` added by `levelArrivals`), `fans` (sets `G.mplan` food for fan groups), `likes` (dishes that sell 2.5x) and `book` (a booked party `{occ name, size, at, dep, room}`, which gets the walled room). Goal kind `extra` = money from build-ins.

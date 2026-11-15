@@ -885,6 +885,17 @@
         "Food touched with unwashed hands (🦠) or cooked on a filthy appliance can make a customer ill. It's fairly rare, but it costs compensation and reputation, and the hygiene inspector comes round soon after",
         "The inspector also marks you down if they catch unwashed hands that day, or if someone fell ill in the last three weeks"
       ]
+    },
+    {
+      "id": 77,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: stock deliveries and tidier cooks",
+      "details": [
+        "With automatic stock on, a supplier now drops off more of anything running low during the day, so you shouldn't run out. Deliveries cost a bit more than buying ahead and show on the day's money",
+        "Automatic stock now plans for your hosted events too",
+        "If guests still can't order, they now say what's missing (\"Out of beer?\")",
+        "Cooks wipe down the appliances whenever they have a spare moment, instead of waiting until they're filthy"
+      ]
     }
   ]
 }

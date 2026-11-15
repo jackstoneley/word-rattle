@@ -1945,7 +1945,7 @@ function startDay() {
   if (!S.cands || !S.cands.length) S.cands = makeCands();
   G = { t: 0, len: DAY_LEN, open: true, ended: false, endT: 0,
     rev: 0, tips: 0, served: 0, angry: 0, happy: 0, turned: 0, burnt: 0, spills: 0, thrown: 0, people: 0, repD: 0, critic: null, perfect: 0, binned: 0,
-    stock: Object.assign({}, S.stock), used: {},
+    stock: Object.assign({}, S.stock), stock0: Object.assign({}, S.stock), deliv: [], delivC: 0, used: {},
     tables: S.tables.map((seats, i) => { const p = ensureLayout(S).tb[i], [w, h] = fpOf("tb", seats, p[2]); return { i, x: p[0] + w / 2, y: p[1] + h / 2, rot: p[2] || 0, fp: { x: p[0], y: p[1], w, h }, seats, group: null, dirty: 0, claim: null, cramp: LV == null ? crampOf(S, S.L)[i] || 0 : 0 }; }),
     stations: S.stations.map((t, i) => t && { i, t, item: null, user: null, claim: null, load: 0, run: 0, dirt: LV == null && S.kd ? (S.kd[i] || 0) * .6 : 0, x: ensureLayout(S).st[i][0] + .5, y: S.L.st[i][1] + .5 }).filter(Boolean),
     spots: [null, null, null, null, null, null], party: null, taps: [], idle: 0, coach: null, slack: 0, outBy: { queue: 0, order: 0, food: 0 }, plateless: 0, streak: 0, bestStreak: 0, clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
@@ -2233,7 +2233,9 @@ function takeOrder(g) {
   }
   if (!tickets.length) {
     if (g.tickets.length) { g.state = "eat"; g.timer = 1; return; }
-    fx(g.table.x, g.table.y - 1, "Nothing we fancy is left 😞", "#D2483A");
+    { const want = onMenu().filter(r => canMake(r) && (g.drinker || g.sp === "pool" ? RECIPES[r].d : g.sp === "nook" ? RECIPES[r].d || RCATS[r] === "cake" : true));
+      const outK = [...new Set(want.flatMap(r => Object.keys(RECIPES[r].i).filter(k => (G.stock[k] || 0) - reserved(k) < RECIPES[r].i[k])))];
+      fx(g.table.x, g.table.y - 1, !want.length ? (g.drinker || g.sp === "pool" ? "No drinks on the menu? 😞" : "Nothing for us here 😞") : outK.length ? `Out of ${outK.slice(0, 2).map(k => INGS[k].n.toLowerCase()).join(" and ")}? 😞` : "Nothing we fancy is left 😞", "#D2483A"); }
     G.turned += g.size; G.repD -= 2 * g.size; groupLeave(g, false); return;
   }
   if (g.kids && !onMenu().some(r => RECIPES[r].kid)) fx(g.table.x, g.table.y - 1.2, "Nothing for the kids? 🧒", "#8C7563");
@@ -2738,7 +2740,7 @@ function staffThink(a, dt) {
   const role = a.role;
   const did = role === "waiter" ? tryOrder(a) || tryDeliver(a) || tryClear(a)
     : role === "porter" ? tryWash(a) || tryClear(a) || tryScrub(a)
-    : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null) || tryScrub(a, .7)
+    : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null) || tryScrub(a, .3)
     : role === "drinks" ? tryCook(a, true)
     : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) || tryScrub(a) : false;
   if (did) { a.idle = 0; return; }
@@ -2938,7 +2940,7 @@ function step(dt) {
   if (G.open && G.t >= G.len) { G.open = false; toastMsg("Closing time! Finish serving everyone.", 2.5); snd("bell"); }
   if (G.rush.length && G.t >= G.rush[0].t) { toastMsg(G.rush.shift().say, 2.6); snd("bell"); }
   if (G.clean === 0 && G.groups.some(g => g.state === "wait")) G.plateless += dt;
-  groupsStep(dt); stationsStep(dt); mgStep(dt); if (G.insp && !G.insp.done && G.t >= G.insp.t) inspect();
+  groupsStep(dt); stationsStep(dt); mgStep(dt); deliveryStep(dt); if (G.insp && !G.insp.done && G.t >= G.insp.t) inspect();
   for (const a of G.actors) { actorStep(a, dt); if (a !== lee) staffThink(a, dt); }
   for (const f of G.fx) f.t += dt; G.fx = G.fx.filter(f => f.t < 1.8);
   for (const tp of G.taps) tp.t += dt; G.taps = G.taps.filter(tp => tp.t < .45);
@@ -3522,7 +3524,8 @@ function endDay() {
     G.repD -= ill * ILL_REP; S.hyg = Object.assign({}, S.hyg || { r: null, day: 0 }, { ill: S.day, next: Math.min((S.hyg && S.hyg.next) || S.day + 2, S.day + 1 + Math.floor(Math.random() * 2)) });
     lnews.push(`🤢 ${ill > 1 ? ill + " customers" : "A customer"} who ate here today fell ill${G.germN ? ": food was handled with unwashed hands" : ""}. You paid ${money(illPay)} in compensation, word is getting round, and the hygiene inspector will call soon.`);
   }
-  const net = income - wages - rent - fee - repairs - bills - breaks - fine - hostc - illPay;
+  const deliv = Math.round((G.delivC || 0) * 100) / 100;
+  const net = income - wages - rent - fee - repairs - bills - breaks - fine - hostc - illPay - deliv;
   const repBefore = S.rep, starsBefore = starsOf(S.rep);
   S.rep = Math.max(0, Math.round(S.rep + G.repD * (G.repD > 0 && hasPk(site, "listed") ? 1.1 : 1)));
   S.cash = Math.round((S.cash + net) * 100) / 100;
@@ -3597,7 +3600,7 @@ function endDay() {
   if (repairs) news.push(`Repairs today: ${money(repairs)}${hasPk(site, "listed") && info.wd === 6 ? " (the weekly upkeep of a listed building)" : " (the leaky roof)"}.`);
   if (S.day % 7 === 0 && S.day < 36) news.push("🕘 A new week starts tomorrow. Your opening hours are on the Today tab.");
   if (G.hr) { G.hr.cost = Math.round((wages / Math.max(1, hc - ho) + billsHour(S)) * 100) / 100; S.hh = S.hh || {}; S.hh[info.wd] = Object.assign({ day: S.day }, G.hr); }
-  const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, bills, breaks, fine, hostc, ill: illPay, host: G.host && G.host.id, fights: G.fights || 0, hr: G.hr, hours: [ho, hc], fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
+  const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, bills, breaks, fine, hostc, ill: illPay, deliv, host: G.host && G.host.id, fights: G.fights || 0, hr: G.hr, hours: [ho, hc], fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
     messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G), repairs };
   S.last = last;
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
@@ -3649,7 +3652,8 @@ function openManage(t) { show("manage"); renderManage(t || "day"); }
 function canAfford(c) { return S.cash >= c; }
 function spend(c) { S.cash = Math.round((S.cash - c) * 100) / 100; }
 function suggested() {
-  const groups = expectedGroups(S) * (S.venue === "pub" && S.bar ? 1 + .3 * S.bar : 1), items = groups * 1.75 * (1.12 + .07 * starsOf(S.rep));
+  const hp = LV == null && typeof hostPlan === "function" ? hostPlan(S, S.day) : null;
+  const groups = (expectedGroups(S) + (hp && !hp.closed ? hp.n : 0)) * (S.venue === "pub" && S.bar ? 1 + .3 * S.bar : 1) * 1.1, items = groups * 1.75 * (1.12 + .07 * starsOf(S.rep));
   const menu = onMenuS().filter(r => r && RECIPES[r].s.every(t => t === "plate" || S.stations.includes(t))), info = dayInfo(S, S.day);
   const MP = planOf(S, info), fs = MP ? MP.waves.reduce((a, w) => a + w.sh, 0) / planMul(MP) : 0, mS = r => MP ? Math.max(.2, 1 + fs * (MP.food.includes(r) ? 2 : -.6)) : 1;
   const out = {};
@@ -3688,6 +3692,27 @@ function renderManage(t) {
 }
 $("tabs").onclick = e => { const b = e.target.closest("[data-tab]"); if (b) { renderManage(b.dataset.tab); $("mbody").scrollTop = 0; } };
 function topUpCost() { const sug = suggested(); let c = 0; for (const k in sug) c += Math.max(0, sug[k] - (S.stock[k] || 0)) * INGS[k].c; return Math.round(c * 100) / 100; }
+// with automatic stock on, a supplier tops up anything running low during the day (at a call-out premium), so it doesn't run out
+const DELIV_T = 25, DELIV_MUL = 1.4;
+function deliveryStep(dt) {
+  if (LV != null || S.autoStock === false || !G.deliv) return;
+  for (const d of G.deliv.filter(d => G.t >= d.at)) {
+    G.stock[d.k] = (G.stock[d.k] || 0) + d.n; G.delivC += d.c; G.deliv.splice(G.deliv.indexOf(d), 1);
+    fx(4.5, 4.6, `🚚 Delivery: ${d.n} ${INGS[d.k].n.toLowerCase()}`, "#5B8DB8");
+  }
+  if ((G.dT = (G.dT || 0) - dt) > 0) return; G.dT = 2;
+  if (!G.open || G.t > G.len - 40) return;
+  const used = new Set(); for (const r of onMenu()) for (const k in RECIPES[r].i) used.add(k);
+  for (const k of used) {
+    if (G.deliv.some(d => d.k === k)) continue;
+    if (!(G.stock0[k] > 0)) continue; // only what you normally keep
+    const base = Math.max(4, G.stock0[k]), free = (G.stock[k] || 0) - reserved(k);
+    if (free > Math.max(2, base * .2)) continue;
+    const n = Math.max(3, Math.ceil(base * .4)), c = Math.round(n * INGS[k].c * DELIV_MUL * 100) / 100;
+    if (S.cash - G.delivC - c < -200) continue; // the supplier wants paying
+    G.deliv.push({ k, n, c, at: G.t + DELIV_T * G.len / 210 });
+  }
+}
 function autoStock() {
   const sug = suggested();
   for (const k in sug) { const want = sug[k] - (S.stock[k] || 0); if (want <= 0) continue; const can = Math.min(want, Math.floor((S.cash + 150) / INGS[k].c)); if (can <= 0) continue; spend(can * INGS[k].c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
@@ -3711,7 +3736,7 @@ function tabDay() {
       <p class="small">${L.served} of ${L.people} customers served${L.angry ? `, <b class="neg">${L.angry} walked out</b>` : ""}${L.turned ? `, <b class="neg">${L.turned} found nothing in stock</b>` : ""}${L.burnt ? `, ${L.burnt} burnt` : ""}.</p>
       <details class="small" id="moneyBox"><summary class="muted">Money in and out</summary><div class="lines" style="margin-top:6px">
       <div><span>Takings</span><b>${money(L.rev)}</b></div>${Object.entries(L.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].n}</span><b>${money(Math.round(v))}</b></div>`).join("")}<div><span>Tips</span><b>${money(L.tips)}</b></div>
-      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.bills ? `<div><span>${L.bills > 0 ? "Bills for the extra hours" : "Bills saved by shorter hours"}</span><b>${L.bills > 0 ? "−" : "+"}${money(Math.abs(L.bills))}</b></div>` : ""}${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.breaks ? `<div><span>Broken in fights</span><b>−${money(L.breaks)}</b></div>` : ""}${L.fine ? `<div><span>Council fine</span><b>−${money(L.fine)}</b></div>` : ""}${L.hostc ? `<div><span>${HOST[L.host].e} ${HOST[L.host].n}</span><b>−${money(L.hostc)}</b></div>` : ""}${L.ill ? `<div><span>🤢 Compensation</span><b>−${money(L.ill)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
+      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.bills ? `<div><span>${L.bills > 0 ? "Bills for the extra hours" : "Bills saved by shorter hours"}</span><b>${L.bills > 0 ? "−" : "+"}${money(Math.abs(L.bills))}</b></div>` : ""}${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.breaks ? `<div><span>Broken in fights</span><b>−${money(L.breaks)}</b></div>` : ""}${L.fine ? `<div><span>Council fine</span><b>−${money(L.fine)}</b></div>` : ""}${L.hostc ? `<div><span>${HOST[L.host].e} ${HOST[L.host].n}</span><b>−${money(L.hostc)}</b></div>` : ""}${L.deliv ? `<div><span>🚚 Deliveries during the day</span><b>−${money(L.deliv)}</b></div>` : ""}${L.ill ? `<div><span>🤢 Compensation</span><b>−${money(L.ill)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
       ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
     if (L.hr) h = h.replace(/<\/details><\/div>$/, `</details>${hourChart(L.hr)}</div>`);
     if (L.advice) h += `<div class="news small"><b>💡 Next time</b><br>${L.advice.map(esc).join("<br>")}</div>`;
