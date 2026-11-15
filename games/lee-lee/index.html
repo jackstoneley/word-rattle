@@ -181,7 +181,7 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
 .lg-p.k-bi{background:#7A5FC2;color:#fff}.lg-p.k-fr{background:#5E35B1}
 .lg-p.k-tb.cr1{background:#C9925A;box-shadow:inset 0 0 0 3px #E8A23A}.lg-p.k-tb.cr2{background:#B5654A;box-shadow:inset 0 0 0 3px #D2483A}
 .lg-p.sel{border:3px solid var(--accent);box-shadow:0 0 0 3px rgba(232,102,74,.35);z-index:2}
-.lg-w{position:absolute;background:#5E4636;border-radius:2px;pointer-events:none}.lg-w.w2{background:repeating-linear-gradient(45deg,#C9A15A 0 3px,#8C6A4E 3px 6px)}
+.lg-w{position:absolute;background:#5E4636;border-radius:2px;pointer-events:none}.lg-w.rm{background:#D2483A;opacity:.55}.lg-pre{position:absolute;background:rgba(94,70,54,.6);border-radius:3px;pointer-events:none;z-index:3;outline:2px dashed #5E4636}.lg-pre.bad{background:rgba(210,72,58,.5);outline-color:#D2483A}.lg-w.w2{background:repeating-linear-gradient(45deg,#C9A15A 0 3px,#8C6A4E 3px 6px)}
 .lay-tb.bi{border-radius:10px;background:#7A5FC2;font-size:1.05rem}
 .lay-wall{position:absolute;padding:0;border:2px dashed rgba(0,0,0,.18);background:transparent;border-radius:4px;font-size:.7rem;display:grid;place-items:center;z-index:2}
 .lay-wall.w1{background:#5E4636;border:none}.lay-wall.w2{background:repeating-linear-gradient(90deg,#5E4636 0 30%,transparent 30% 70%,#5E4636 70%);border:none}
@@ -4101,9 +4101,9 @@ $("ovc").addEventListener("click", e => {
   layout(layP);
 });
 /* ---------- Rearrange (the main place): move anything anywhere, turn tables, draw walls and doors ---------- */
-const LG = { sel: null, mode: "move", msg: "", sv: null, P: null, set(T) { LG.sv.L = T; if (LG.P) pDesign(LG.P).L = T; } };
+const LG = { sel: null, mode: "move", tool: "wall", undo: [], msg: "", sv: null, P: null, set(T) { LG.sv.L = T; if (LG.P) pDesign(LG.P).L = T; } };
 // open the floor plan for the main place (no P) or a managed place
-function openLayout(P) { LG.sel = null; LG.mode = "move"; LG.P = P || null; LG.sv = P ? placeSv(S, P) : S; layoutGrid(); }
+function openLayout(P) { LG.sel = null; LG.mode = "move"; LG.tool = "wall"; LG.undo = []; LG.P = P || null; LG.sv = P ? placeSv(S, P) : S; layoutGrid(); }
 const WALL_SEG = 20, DOOR_SEG = 80;
 // something new for the main place: is there floor for it?
 function roomFor(k, size) { const L = ensureLayout(S); return !!autoPlace(S, L, k, size, k === "st" ? [4.5, 1] : [4.5, 8]); }
@@ -4125,31 +4125,36 @@ function layoutGrid() {
     m += `<div class="lg-p k-${p.k}${sel ? " sel" : ""}${c >= .55 ? " cr2" : c > .25 ? " cr1" : ""}" style="left:${p.x * u}px;top:${p.y * u}px;width:${p.w * u}px;height:${p.h * u}px">${pieceHtml(p)}</div>`;
   }
   for (const [e, v] of Object.entries(L.walls)) {
-    const [o, a, b] = e.split(":"), x = +a * GU, y = +b * GU, th = Math.max(4, u * .16);
-    m += o === "v" ? `<div class="lg-w w${v}" style="left:${x * u - th / 2}px;top:${y * u}px;width:${th}px;height:${GU * u}px"></div>` : `<div class="lg-w w${v}" style="left:${x * u}px;top:${y * u - th / 2}px;width:${GU * u}px;height:${th}px"></div>`;
+    const [o, a, b] = e.split(":"), x = +a * GU, y = +b * GU, th = Math.max(5, u * .22);
+    m += o === "v" ? `<div class="lg-w w${v}" data-e="${e}" style="left:${x * u - th / 2}px;top:${y * u}px;width:${th}px;height:${GU * u}px"></div>` : `<div class="lg-w w${v}" data-e="${e}" style="left:${x * u}px;top:${y * u - th / 2}px;width:${GU * u}px;height:${th}px"></div>`;
   }
-  m += `</div>`;
+  m += `<div class="lg-pre" id="lgPre" hidden></div></div>`;
   const selP = LG.sel && piecesOf(LG.sv, L).find(p => p.k === LG.sel.k && String(p.i) === String(LG.sel.i));
-  const what = LG.msg || (LG.mode === "walls" ? `Drag along the floor to build a wall (${money(WALL_SEG)} per half square). Tap a wall to make it a door (${money(DOOR_SEG)}), tap again to take it down.`
+  const what = LG.msg || (LG.mode === "walls" ? WALL_HELP[LG.tool]()
     : selP ? "Tap the floor where it should go (or drag it there). Tap another thing to swap." : `Tap or drag anything to move it: ${LG.P ? "tables, build-ins and the counter" : "appliances, counters, tables and build-ins"} can go anywhere.`);
   LG.msg = "";
   dialog(`<h3>Rearrange</h3>
     <div class="row" style="justify-content:center;gap:6px"><button class="btn sm ${LG.mode === "move" ? "pri" : ""}" data-a="m-move">✋ Move things</button><button class="btn sm ${LG.mode === "walls" ? "pri" : ""}" data-a="m-walls">🧱 Walls & doors</button>${selP && selP.k === "tb" ? `<button class="btn sm" data-a="turn">↻ Turn table</button>` : ""}</div>
-    <p class="small muted" style="text-align:center" id="lgMsg">${what}</p>${m}
+    ${LG.mode === "walls" ? `<div class="row lg-tools" style="justify-content:center;gap:6px;margin-top:6px">${[["wall", "🧱 Wall"], ["door", "🚪 Door"], ["rm", "🗑️ Remove"]].map(([k, n]) => `<button class="btn sm ${LG.tool === k ? "pri" : ""}" data-a="t-${k}">${n}</button>`).join("")}<button class="btn sm" data-a="undo" ${LG.undo.length ? "" : "disabled"}>↶ Undo</button></div>` : ""}
+    <p class="small muted" style="text-align:center;min-height:3.2em;display:flex;align-items:center;justify-content:center;margin:6px 0" id="lgMsg">${what}</p>${m}
     <p class="small muted">Tables close to other tables, seating or the kitchen are cramped (orange: a bit tight, red: cramped): those customers lose patience sooner and tip less. Keep each dish's appliances close together and near the pass; give staff room to walk. Walls stop noise from a TV or soft play reaching other tables, and meeting and function rooms need walls all round with a door.</p>
     <div class="acts"><button class="btn pri" data-a="done">Done</button></div>`, a => {
     if (a === "m-move" || a === "m-walls") { LG.mode = a.slice(2); LG.sel = null; layoutGrid(); return; }
+    if (a && a.startsWith("t-")) { LG.tool = a.slice(2); layoutGrid(); return; }
+    if (a === "undo") { const u0 = LG.undo.pop(); if (u0) { LG.set(u0.L); S.cash = u0.cash; saveGame(); } layoutGrid(); return; }
     if (a === "turn" && selP) { const T = JSON.parse(JSON.stringify(L)), p = T.tb[selP.i]; p[2] = p[2] ? 0 : 1; const why = layoutProblem(LG.sv, T); if (why) LG.msg = "⚠️ No room to turn it here."; else LG.set(T); saveGame(); layoutGrid(); return; }
-    const P = LG.P; LG.sel = null; LG.mode = "move"; LG.P = null; LG.sv = null; saveGame(); if (P) placeDesign(P); else renderManage();
+    const P = LG.P; LG.sel = null; LG.mode = "move"; LG.undo = []; LG.P = null; LG.sv = null; saveGame(); if (P) placeDesign(P); else renderManage();
   });
   const fl = $("lgFloor"); if (!fl) return;
   let down = null;
   const at = e => { const r = fl.getBoundingClientRect(); return [(e.clientX - r.left) / u, (e.clientY - r.top) / u]; };
   const pieceAt = (x, y) => piecesOf(LG.sv, L).find(p => x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h);
-  fl.onpointerdown = e => { e.preventDefault(); fl.setPointerCapture(e.pointerId); down = { p: at(e), sx: e.clientX, sy: e.clientY, piece: pieceAt(...at(e)) }; };
+  fl.onpointerdown = e => { e.preventDefault(); fl.setPointerCapture(e.pointerId); down = { p: at(e), sx: e.clientX, sy: e.clientY, piece: pieceAt(...at(e)), rm: new Set() }; if (LG.mode === "walls") wallDrag(down, at(e), u, false); };
+  fl.onpointermove = e => { if (down && LG.mode === "walls") wallDrag(down, at(e), u, Math.hypot(e.clientX - down.sx, e.clientY - down.sy) > 10); };
+  fl.onpointercancel = () => { down = null; layoutGrid(); };
   fl.onpointerup = e => {
     if (!down) return; const [x, y] = at(e), moved = Math.hypot(e.clientX - down.sx, e.clientY - down.sy) > 10, d = down; down = null;
-    if (LG.mode === "walls") return moved ? drawWall(d.p, [x, y]) : tapWall(x, y);
+    if (LG.mode === "walls") return LG.tool === "rm" ? removeWalls(d.rm) : moved && LG.tool === "wall" ? drawWall(d.p, [x, y]) : tapWall(x, y);
     const hit = pieceAt(x, y);
     if (moved && d.piece) { LG.sel = { k: d.piece.k, i: d.piece.i }; return movePiece(x, y); }
     if (!LG.sel) { if (hit) LG.sel = { k: hit.k, i: hit.i }; return layoutGrid(); }
@@ -4178,28 +4183,82 @@ function swapPieces(hit) {
   if (why) { LG.sel = { k: hit.k, i: hit.i }; } else { LG.set(T); LG.sel = null; saveGame(); }
   layoutGrid();
 }
-function drawWall(a, b) {
+// Walls & doors: three tools. Wall: drag a line (or tap one gap). Door: tap a wall or a gap. Remove: tap or drag across walls.
+const WALL_HELP = {
+  wall: () => `Drag along the floor to draw a wall (${money(WALL_SEG)} per half square), or tap to put up one short piece.`,
+  door: () => `Tap a wall (or a gap) to put a door there (${money(DOOR_SEG)}). Tap a door to make it a wall again.`,
+  rm: () => "Tap a wall or door, or drag across several, to take them down (half the money back).",
+};
+const edgeOk = e => { const [o, p, q] = e.split(":").map((v, n) => n ? +v : v); return o === "h" ? q > 0 && q < 26 && p >= 0 && p < GW : p > 0 && p < GW && q >= 0 && q < 26; };
+const edgeMid = e => { const [o, a, b] = e.split(":"); return o === "v" ? [+a * GU, (+b + .5) * GU] : [(+a + .5) * GU, +b * GU]; };
+// the grid line nearest a point (for a tap)
+function nearEdge(x, y) {
+  const h = "h:" + Math.floor(x / GU) + ":" + Math.round(y / GU), v = "v:" + Math.round(x / GU) + ":" + Math.floor(y / GU);
+  const dh = Math.abs(y - Math.round(y / GU) * GU), dv = Math.abs(x - Math.round(x / GU) * GU);
+  return dh <= dv ? h : v;
+}
+// the built wall nearest a point, within a finger's reach
+function wallNear(x, y, r = .5) {
+  let best = null, bd = r;
+  for (const e of Object.keys(LG.sv.L.walls)) { const [mx, my] = edgeMid(e), d = Math.hypot(mx - x, my - y); if (d < bd) { bd = d; best = e; } }
+  return best;
+}
+function wallSegs(a, b) {
   const dx = b[0] - a[0], dy = b[1] - a[1], segs = [];
   if (Math.abs(dx) >= Math.abs(dy)) { const j = Math.round(a[1] / GU), i0 = Math.round(Math.min(a[0], b[0]) / GU), i1 = Math.round(Math.max(a[0], b[0]) / GU); for (let i = i0; i < i1; i++) segs.push("h:" + i + ":" + j); }
   else { const i = Math.round(a[0] / GU), j0 = Math.round(Math.min(a[1], b[1]) / GU), j1 = Math.round(Math.max(a[1], b[1]) / GU); for (let j = j0; j < j1; j++) segs.push("v:" + i + ":" + j); }
-  const ok = segs.filter(e => { const [o, p, q] = e.split(":").map((v, n) => n ? +v : v); return o === "h" ? q > 0 && q < 26 && p >= 0 && p < GW : p > 0 && p < GW && q >= 0 && q < 26; }).filter(e => !LG.sv.L.walls[e]);
-  if (!ok.length) { LG.msg = "Drag along the floor between squares to build a wall."; return layoutGrid(); }
-  const cost = ok.length * WALL_SEG; if (!canAfford(cost)) { LG.msg = `⚠️ That wall costs ${money(cost)}.`; return layoutGrid(); }
-  const T = JSON.parse(JSON.stringify(LG.sv.L)); for (const e of ok) T.walls[e] = 1;
+  return segs.filter(edgeOk);
+}
+// live feedback while a finger is down: the wall being drawn, or the walls about to go
+function wallDrag(d, p, u, moved) {
+  const pre = $("lgPre"), msg = $("lgMsg"); if (!pre) return;
+  if (LG.tool === "rm") {
+    const pts = [p]; if (d.last) { const n = Math.ceil(Math.hypot(p[0] - d.last[0], p[1] - d.last[1]) / .2); for (let k = 1; k < n; k++) pts.push([d.last[0] + (p[0] - d.last[0]) * k / n, d.last[1] + (p[1] - d.last[1]) * k / n]); }
+    d.last = p;
+    for (const q of pts) { const e = wallNear(q[0], q[1], .45); if (e && !d.rm.has(e)) { d.rm.add(e); const el = document.querySelector(`.lg-w[data-e="${e}"]`); if (el) el.classList.add("rm"); } }
+    if (msg) msg.textContent = d.rm.size ? `Taking down ${d.rm.size} piece${d.rm.size > 1 ? "s" : ""}: lift your finger.` : WALL_HELP.rm();
+    return;
+  }
+  if (LG.tool !== "wall" || !moved) { pre.hidden = true; return; }
+  const segs = wallSegs(d.p, p), add = segs.filter(e => !LG.sv.L.walls[e]);
+  if (!segs.length) { pre.hidden = true; return; }
+  const th = Math.max(6, u * .24), m0 = edgeMid(segs[0]), m1 = edgeMid(segs[segs.length - 1]);
+  if (segs[0][0] === "h") Object.assign(pre.style, { left: (m0[0] - GU / 2) * u + "px", top: m0[1] * u - th / 2 + "px", width: (m1[0] - m0[0] + GU) * u + "px", height: th + "px" });
+  else Object.assign(pre.style, { left: m0[0] * u - th / 2 + "px", top: (m0[1] - GU / 2) * u + "px", width: th + "px", height: (m1[1] - m0[1] + GU) * u + "px" });
+  pre.hidden = false; pre.classList.toggle("bad", !canAfford(add.length * WALL_SEG));
+  if (msg) msg.textContent = add.length ? `New wall: ${add.length} piece${add.length > 1 ? "s" : ""}, ${money(add.length * WALL_SEG)}. Lift your finger to build it.` : "There's a wall there already.";
+}
+// try a change to the walls; keep it (with an undo step) if everything can still be reached
+function wallChange(T, cost, refund) {
+  if (cost > 0 && !canAfford(cost)) { LG.msg = `⚠️ That costs ${money(cost)}.`; return layoutGrid(); }
   const why = layoutProblem(LG.sv, T);
-  if (why) LG.msg = "⚠️ " + why + " Leave a gap or add a door."; else { spend(cost); LG.set(T); saveGame(); }
-  layoutGrid();
+  if (why) { LG.msg = "⚠️ " + why + (LG.tool === "rm" ? "" : " Leave a gap or add a door."); return layoutGrid(); }
+  LG.undo.push({ L: JSON.parse(JSON.stringify(LG.sv.L)), cash: S.cash }); if (LG.undo.length > 30) LG.undo.shift();
+  if (cost > 0) spend(cost); if (refund > 0) S.cash += refund;
+  LG.set(T); saveGame(); layoutGrid();
+}
+function drawWall(a, b) {
+  const ok = wallSegs(a, b).filter(e => !LG.sv.L.walls[e]);
+  if (!ok.length) { LG.msg = "Drag along the floor to draw a wall."; return layoutGrid(); }
+  const T = JSON.parse(JSON.stringify(LG.sv.L)); for (const e of ok) T.walls[e] = 1;
+  wallChange(T, ok.length * WALL_SEG, 0);
+}
+function removeWalls(set) {
+  if (!set.size) { LG.msg = "Tap right on a wall or door to take it down."; return layoutGrid(); }
+  const T = JSON.parse(JSON.stringify(LG.sv.L)); let back = 0;
+  for (const e of set) { back += (T.walls[e] === 2 ? DOOR_SEG : WALL_SEG) / 2; delete T.walls[e]; }
+  wallChange(T, 0, Math.round(back));
 }
 function tapWall(x, y) {
-  let best = null, bd = .3;
-  for (const e of Object.keys(LG.sv.L.walls)) { const [o, a, b] = e.split(":"), mx = o === "v" ? +a * GU : (+a + .5) * GU, my = o === "v" ? (+b + .5) * GU : +b * GU, d = Math.hypot(mx - x, my - y); if (d < bd) { bd = d; best = e; } }
-  if (!best) { LG.msg = "Drag along the floor to build a wall; tap a wall to change it."; return layoutGrid(); }
-  const T = JSON.parse(JSON.stringify(LG.sv.L)), v = T.walls[best];
-  if (v === 1) { if (!canAfford(DOOR_SEG)) { LG.msg = `⚠️ A door costs ${money(DOOR_SEG)}.`; return layoutGrid(); } T.walls[best] = 2; spend(DOOR_SEG); }
-  else delete T.walls[best];
-  const why = layoutProblem(LG.sv, T);
-  if (why) { LG.msg = "⚠️ " + why; if (v === 1) S.cash += DOOR_SEG; } else { LG.set(T); saveGame(); }
-  layoutGrid();
+  const T = JSON.parse(JSON.stringify(LG.sv.L)), hit = wallNear(x, y);
+  if (LG.tool === "door") {
+    if (hit && T.walls[hit] === 2) { T.walls[hit] = 1; return wallChange(T, 0, (DOOR_SEG - WALL_SEG) / 2); }
+    const e = hit || nearEdge(x, y); if (!edgeOk(e)) return layoutGrid();
+    const was = T.walls[e]; T.walls[e] = 2; return wallChange(T, was ? DOOR_SEG - WALL_SEG : DOOR_SEG, 0);
+  }
+  const e = nearEdge(x, y);
+  if (!edgeOk(e) || T.walls[e]) { LG.msg = T.walls[e] ? "There's a wall there already. Use 🗑️ Remove to take it down." : WALL_HELP.wall(); return layoutGrid(); }
+  T.walls[e] = 1; wallChange(T, WALL_SEG, 0);
 }
 function toastOffice(m) { dialog(`<h3>${esc(m)}</h3><div class="acts"><button class="btn pri" data-a="ok">Great</button></div>`); }
 
