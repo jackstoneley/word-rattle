@@ -896,6 +896,16 @@
         "If guests still can't order, they now say what's missing (\"Out of beer?\")",
         "Cooks wipe down the appliances whenever they have a spare moment, instead of waiting until they're filthy"
       ]
+    },
+    {
+      "id": 78,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: a guide, and cleaning takes proper time",
+      "details": [
+        "New 📖 Guide: how to play and all the things that aren't obvious (hygiene, staff, opening hours, layout, the city and more). Open it from the title screen, the pause menu or the 📖 button in the office",
+        "Cleaning an appliance now takes a few seconds and it can't be used meanwhile, so choose your moment. Stop part way and the part you cleaned stays clean",
+        "Cooks only clean when the kitchen has been quiet for a while, and stop as soon as food comes in"
+      ]
     }
   ]
 }

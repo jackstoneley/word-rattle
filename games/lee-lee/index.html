@@ -70,6 +70,8 @@ p{margin:0;line-height:1.45}
 .goals div{display:flex;gap:8px;align-items:flex-start}
 .tips{margin:0;padding-left:18px;font-size:.92rem;line-height:1.45;display:flex;flex-direction:column;gap:4px}
 .howto{font-size:.92rem;line-height:1.5}
+.gchips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:6px 0 10px}.gchips .btn{font-size:.78rem;padding:5px 9px}
+.gpage{font-size:.92rem;line-height:1.5;text-align:left}.gpage h4{margin:4px 0 6px;font-family:var(--display);font-size:1.05rem}.gpage ul{padding-left:18px;margin:0}.gpage li{margin-bottom:6px}
 .howto summary{font-family:var(--display);font-weight:700;font-size:1.05rem;cursor:pointer}
 .howto ul{padding-left:18px;margin:8px 0 0}
 .howto li{margin-bottom:6px}
@@ -245,8 +247,10 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
       <h2>Free play</h2>
       <p class="small muted" style="margin-top:-6px">Run your own place, day after day. Five save slots.</p>
       <div id="slots" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div class="card"><div class="row spread"><div class="grow"><h2>📖 Guide</h2><p class="small muted">How to play, and the things that aren't obvious: hygiene, staff, hours, layout, the city and more.</p></div>
+        <button class="btn" id="guideBtn">Open</button></div></div>
       <details class="card howto">
-        <summary>How to play</summary>
+        <summary>How to play (quick)</summary>
         <ul>
           <li><b>Tap</b> anything and Lee Lee walks over and uses it. She carries one thing at a time.</li>
           <li>Not sure what to do? Follow the <b>green arrow</b>: it points at the next useful thing (change it in Settings).</li>
@@ -349,7 +353,7 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
   <section id="manage" class="screen" hidden>
     <div class="mhead">
       <div class="row spread"><div class="grow"><b id="mName" style="font-family:var(--display);font-size:1.25rem">Office</b><div class="small muted" id="mSub"></div></div>
-        <div class="cashbox"><b id="mCash">£0</b><span id="mStars"></span></div></div>
+        <button class="btn sm" id="mGuide" aria-label="Guide">📖</button><div class="cashbox"><b id="mCash">£0</b><span id="mStars"></span></div></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div id="mbody" class="scroll"><div class="wrap" id="mwrap"></div></div>
@@ -1905,6 +1909,99 @@ function levelEnd() {
     a => { if (a === "next") levelIntro(i + 1); else if (a === "again") levelIntro(i); else if (a === "easy") playLevel(i, true); });
 }
 
+
+/* ---------- the guide: how to play, and the things that aren't obvious (keep it up to date with every new feature) ---------- */
+const GUIDE = [
+  { id: "basics", e: "🍳", t: "The basics", p: [
+    "<b>Tap</b> anything and Lee Lee walks over and uses it. She carries one thing at a time.",
+    "Customers sit down and show a <b>📝 notepad</b> when they're ready: tap the table to take the order. Orders appear on the strip at the top; tap one and Lee Lee goes to start it (or serves it, if she's holding it).",
+    "Hands full? Put anything down on a <b>counter spot</b> or a <b>worktop</b>, and tap it again to pick it up.",
+    "Not sure what to do next? The <b>green arrow</b> points at the next useful thing. Settings: always, auto (while you're learning, then when you seem stuck) or off.",
+    "Every happy table in a row builds a <b>🔥 streak</b>, which raises the tips. One unhappy table ends it.",
+    "In free play each day has <b>two goals</b> worth a bonus (shown when you pause)."] },
+  { id: "cook", e: "🔥", t: "Cooking", p: [
+    "Most dishes start at the <b>fridge</b>. Then follow the glowing appliances: chop, mix, cook, and finally <b>plate up</b> at the 🍽 plates on the counter.",
+    "The toaster, grill, hob, fryer and oven cook on their own while you do something else, but food <b>burns</b> if it's left too long. A warning sound plays just before.",
+    "Holding the next dish for a busy cooker whose food is done? Tap it: Lee Lee swaps them, taking the finished one off and putting the new one on.",
+    "Burnt food goes in the <b>bin</b> at the end of the counter.",
+    "Cooking mini-games (chop, stir, pour) can be turned off in Settings: Lee Lee then does them on her own, a little slower.",
+    "Drinks need no plate."] },
+  { id: "plates", e: "🍽️", t: "Plates and washing up", p: [
+    "No clean plates, no food. When people leave, tap their table to collect the dirty plates and take them to the <b>sink</b>.",
+    "Tap the sink and Lee Lee washes everything waiting there. A <b>dishwasher</b> does a load on its own; a <b>kitchen porter</b> washes up for you.",
+    "More plates can be bought in the office. Waiters clear tables too, and can carry a couple of plates at once."] },
+  { id: "hygiene", e: "🧼", t: "Food hygiene", p: [
+    "Dirty jobs (clearing plates, washing up, the bin, mopping, cleaning) leave Lee Lee's hands dirty: a <b>🦠</b> shows by her. Tap the <b>hand basin</b>, or the sink when no plates are waiting, to wash them.",
+    "Nothing stops you cooking with dirty hands, but it's a gamble: roughly <b>1 in 10</b> dishes touched with unwashed hands makes someone ill. You hear about it that evening: <b>£40</b> compensation, a hit to your reputation, and the inspector comes within a day or two.",
+    "Appliances get <b>grubby</b> with use (more when food burns). Grubby ones work slower, and very dirty ones can taint food too.",
+    "To clean one, tap it when there's nothing for it to make. A proper clean takes a few seconds and nobody can use it meanwhile. Tap something else to stop early: the part already cleaned stays clean. Cleaning makes your hands dirty.",
+    "Staff help: cooks clean only when the kitchen has been quiet for a while (and drop it as soon as food comes in), porters and cleaners when they have nothing else to do. Your staff always wash their own hands.",
+    "Kitchens only get about half clean overnight, so grime builds up over the week if you never clean.",
+    "The <b>hygiene inspector</b> calls unannounced and rates you 0 to 5. They mark you down for: dirty appliances, spills on the floor, dirty plates piling up, burnt food, no hand basin, food handled with unwashed hands that day, and anyone falling ill in the last three weeks. A low rating puts customers off, and they come back within the week to check."] },
+  { id: "customers", e: "😊", t: "Customers and reputation", p: [
+    "Every customer has <b>patience</b>. Wait too long to take an order or bring the food and they walk out without paying, and your reputation drops.",
+    "Happy customers tip and raise your reputation. Reputation earns <b>stars</b>: 1★ at 60, 2★ at 250, 3★ at 700, 4★ at 1,600 and 5★ at 3,200. More stars bring more people, new recipes and bigger things to buy.",
+    "If guests sit down and can't find anything to order, they say what's missing (\"Out of beer?\") and leave. Drinkers and pool players only order drinks, and people in a reading corner only drinks or cake.",
+    "Families with children want something from the kids' menu, and children can spill drinks: mop spills up.",
+    "In a pub, drinkers order rounds, and late nights bring <b>rowdy</b> customers (red faces). Tap their table to calm them; if they keep shouting a fight can break out, breaking things and drawing complaints.",
+    "Booked parties arrive at their time and need a table free for them: accept bookings in the office.",
+    "A food critic (from Advertising) visits the next day: a happy critic is a big boost, an unhappy one hurts."] },
+  { id: "stock", e: "📦", t: "Stock", p: [
+    "With <b>automatic stock</b> on, the office buys what the day should need before you open (it counts hosted events too).",
+    "If something still runs low during the day, a supplier drops more off a little later (🚚). Deliveries cost about 40% more than buying ahead, and show on the day's money.",
+    "Turn automatic stock off in the Stock section to buy everything yourself.",
+    "Fresh food partly goes off overnight (half, usually; some premises have a better or worse store room)."] },
+  { id: "staff", e: "👥", t: "Staff", p: [
+    "<b>Waiters</b> take orders, carry food and clear tables. <b>Cooks</b> make food (and drinks if there's no barista). <b>Baristas</b> make drinks. <b>Kitchen porters</b> wash up and clear. <b>Cleaners</b> mop, clear and calm rowdy customers.",
+    "Higher <b>levels</b> walk faster and work better. Promote someone once they've worked enough days; their fair wage rises about 12% a level.",
+    "Paying below a fair wage, and very busy days, lower <b>morale</b>. Unhappy staff can quit.",
+    "Long opening hours make staff <b>tired</b>: tired staff are slower, lose morale, can phone in <b>sick</b> for a day, and at the limit burn out and quit. A <b>bonus</b> (once a week) lifts morale and eases tiredness.",
+    "Letting someone go costs <b>redundancy pay</b>, more the longer they've worked for you. For one busy day, book <b>agency staff</b> instead (dearer, but no strings).",
+    "A 👥 on the forecast means more customers than you and your team can serve."] },
+  { id: "hours", e: "⏰", t: "Opening hours and late nights", p: [
+    "Set the hours for each weekday in the office. Longer hours catch more customers if people are about then; the chart of business through the day shows when they come.",
+    "Every hour beyond the usual costs more wages and bills (and shorter days save some). Staff get tired on long weeks.",
+    "Pubs can stay open until 2am. After midnight customers get rowdier, and noise or fights can bring <b>complaints</b>. Three complaints within three weeks: a £150 fine and you must close by midnight for two weeks.",
+    "Events and noisy build-ins add to the noise."] },
+  { id: "layout", e: "🪑", t: "Layout, tables and walls", p: [
+    "<b>Rearrange</b> (office) lets you move anything: tap or drag it, tap a table then ↻ to turn it.",
+    "Tables packed close to other tables, seating or the kitchen are <b>cramped</b> (orange: a bit tight, red: cramped): those customers lose patience faster and tip less. You can squeeze in a few more tables than usual, at a higher price.",
+    "Keep each dish's appliances close together and near the counter, and leave room to walk.",
+    "<b>Walls & doors</b>: pick 🧱 Wall and drag a line (you see it and its price before it's built), 🚪 Door to put a door in a wall or gap, 🗑️ Remove to take pieces down. Removing gives all your money back on the day you built it, half after that. ↶ Undo puts back your last change.",
+    "Walls keep noise (TV, soft play, music) away from other tables. Meeting and function rooms need walls all round and a door. Everything must still be reachable from the entrance."] },
+  { id: "extras", e: "🎱", t: "Build-ins and events", p: [
+    "Cafés can add a soft play corner, a reading & work corner, a meeting room and a takeaway window; pubs a sports TV corner, fruit machines, a pool table and a function room. Each brings its own customers or money; some are noisy.",
+    "A sports TV corner brings fans for televised games anywhere in the city (the channels cost a little every day).",
+    "<b>Events</b> (quiz, live music, karaoke, supper club, kids' craft morning, book club) run on the weekdays you choose: they cost a fee and bring extra groups who spend more. Regulars build up the more often you hold one. Noisy events can upset other diners and neighbours."] },
+  { id: "city", e: "🗺️", t: "The city", p: [
+    "The office forecast shows the weather, match days, televised sport and city events for the week ahead. Hot days sell cold food and drinks, cold days warm food.",
+    "Match days bring crowds round the kick-off: cafés before a day game, pubs after (and before an evening one). Fans want match food; your usual customers stay away.",
+    "Places to let differ in size, rent, how many people walk past, who they are, and perks or snags. Moving costs a fit-out plus a deposit of four weeks' rent, which you get back when you leave. Things that don't fit the new place are sold.",
+    "<b>Rivals</b> nearby take a share of the customers. Fill a gap in what's on offer locally, raise your stars and decor, and you win customers from them; outdo them for long enough and they close. You can also challenge a rival to a <b>taste-off</b> (tap them on the city map): win the next day's goal and you take a big bite out of them.",
+    "<b>Price level</b>: Bargain pulls customers from rivals but earns less each; Premium and Luxury earn more each but put people off, so they suit a place that's always full.",
+    "The city centre is tough until you're well known (about 3★ and up), then it can be far busier than the suburbs."] },
+  { id: "places", e: "🏢", t: "More places", p: [
+    "At 2★ you can open a second place, at 3★ a third. A manager runs it every night; you set its design, team, hours, events and prices.",
+    "Swap your main place with another to run that one yourself."] },
+  { id: "money", e: "💷", t: "Money and difficulty", p: [
+    "<b>Peaceful</b>: lower rent, no overdraft charges, you can't go bust. <b>Normal</b>: a nightly overdraft fee, and a week overdrawn ends your lease (you move somewhere cheap). <b>Hard</b>: higher rent, and five days overdrawn is game over. You can only make it easier later.",
+    "How busy the days are is separate: <b>Relaxed</b>, <b>Normal</b> or <b>Busy</b> (more customers, less patience, bigger tips and faster fame).",
+    "Advertising, decor and new recipes all draw more customers."] },
+  { id: "saving", e: "💾", t: "Saving", p: [
+    "The game saves at the end of each day. Leaving in the middle of a day starts that day again.",
+    "Free play has five save slots. The campaign is separate and never touches them; finishing a campaign chapter earns a certificate worth £75 in free play.",
+    "Stuck on a campaign day? After two tries you're offered an easier go (at most two stars)."] },
+];
+function openGuide(id, onClose) {
+  const T = GUIDE.find(x => x.id === id);
+  const chips = `<div class="gchips">${GUIDE.map(x => `<button class="btn sm${x.id === id ? " pri" : ""}" data-a="g-${x.id}">${x.e} ${x.t}</button>`).join("")}</div>`;
+  dialog(`<h3>📖 Guide</h3>${chips}${T ? `<div class="gpage"><h4>${T.e} ${T.t}</h4><ul>${T.p.map(x => `<li>${x}</li>`).join("")}</ul></div>` : `<p class="small muted" style="text-align:center">Pick a topic.</p>`}
+    <div class="acts"><button class="btn pri" data-a="close">Close</button></div>`, a => {
+    if (a && a.startsWith("g-")) { openGuide(a.slice(2), onClose); const o = $("ovc"); if (o) o.scrollTop = 0; return; }
+    if (onClose) onClose();
+  });
+}
+
 /* ---------- dialogs ---------- */
 let dlgCb = null;
 function dialog(html, cb) { $("ovc").innerHTML = html; $("ov").hidden = false; dlgCb = cb || null; }
@@ -2122,7 +2219,7 @@ function briefing() {
     ${(S.bookings || []).filter(b => b.ok && b.day === S.day).map(b => `<p class="news small">${OCCASIONS[b.occ].e} <b>${OCCASIONS[b.occ].n}</b> for ${b.size} at ${clockAt(b.at)}. Their table is reserved.</p>`).join("")}
     <div class="goals">${G.goals.map(g => `<div><span>☆</span><span>${GOAL_TEXT[g.k](g.n)} ${g.cash ? `<span class="muted small">+${money(g.cash)}</span>` : ""}</span></div>`).join("")}</div>
     <p class="small muted">About ${Math.round(expectedGroups(S))} groups expected. Open ${clockH(G.O)} to ${clockH(G.C)}${G.rush.some(r => r.h) ? `, busiest around ${G.rush.filter(r => r.h).map(r => clockH(r.h)).join(" and ")}` : ""}.</p>
-    ${tip ? `<p class="news small">💡 ${esc(tip)}</p>` : S.day === 1 ? `<p class="news small">💡 New here? Follow the green arrow: it shows what to do next.</p>` : ""}
+    ${tip ? `<p class="news small">💡 ${esc(tip)}</p>` : S.day === 1 ? `<p class="news small">💡 New here? Follow the green arrow: it shows what to do next. The 📖 Guide (in the pause menu and the office) explains everything else.</p>` : ""}
     <div class="acts"><button class="btn pri" data-a="open">Open the doors</button></div>`, () => { paused = false; lastT = performance.now(); });
 }
 function staffHome(role) {
@@ -2485,7 +2582,13 @@ function washThen(a, then) {
   const b = washer(a); if (!b) { a.dh = false; then(); return; }
   goStand(a, stObj(b), () => work(a, b.t === "basin" ? .7 : 1.2, () => { a.dh = false; then(); }, null, "wash"));
 }
-function cleanStation(a, s) { s.scrub = a; work(a, 1.6, () => { s.dirt = 0; s.scrub = null; a.dh = true; if (a === lee) fx(s.x, s.y - .6, "Sparkling ✨", "#3E9B6B"); }, () => { s.scrub = null; }, "clean"); }
+// a proper clean takes a while (the appliance can't be used meanwhile); stopping part way keeps what's been done
+const CLEAN_T = 4.5;
+function cleanStation(a, s) {
+  s.scrub = a;
+  work(a, CLEAN_T * (.4 + .6 * Math.min(1, (s.dirt || 0) / .6)), () => { s.dirt = 0; s.scrub = null; a.dh = true; if (a === lee) fx(s.x, s.y - .6, "Sparkling ✨", "#3E9B6B"); },
+    () => { const w = a.work; if (w && w.dur) { s.dirt = (s.dirt || 0) * (1 - Math.min(1, w.t / w.dur)); a.dh = true; } s.scrub = null; }, "clean");
+}
 function inspect() {
   G.insp.done = true;
   const food = G.stations.filter(s => DIRT[s.t]), avg = food.length ? food.reduce((a, s) => a + (s.dirt || 0), 0) / food.length : 0, why = [];
@@ -2727,6 +2830,7 @@ function coachShown() {
 
 /* ---------- staff: what they do when they're free ---------- */
 function staffThink(a, dt) {
+  if (a.role === "cook" && a.work && a.work.label === "clean" && cookWanted(a)) interrupt(a); // cleaning is the lowest priority
   if (a.path.length || a.work) return;
   if (a.wait > 0) { a.wait -= dt; return; }
   if (a.watch) { const s = a.watch; if (s.item && s.item.id === a.watchId) { if (s.item.ready || s.item.burnt) { a.hand = s.item; s.item = null; a.watch = null; } return; } a.watch = null; }
@@ -2740,7 +2844,7 @@ function staffThink(a, dt) {
   const role = a.role;
   const did = role === "waiter" ? tryOrder(a) || tryDeliver(a) || tryClear(a)
     : role === "porter" ? tryWash(a) || tryClear(a) || tryScrub(a)
-    : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null) || tryScrub(a, .3)
+    : role === "cook" ? tryCook(a, G.actors.some(x => x.role === "drinks") ? false : null) || ((a.idle || 0) >= 3 && tryScrub(a, .3))
     : role === "drinks" ? tryCook(a, true)
     : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) || tryScrub(a) : false;
   if (did) { a.idle = 0; return; }
@@ -2816,6 +2920,10 @@ function tryCalm(a) {
   g.calmClaim = a; const [x, y] = standFor({ k: "table", t: g.table }, a);
   goTo(a, x, y, () => { g.calmClaim = null; work(a, .8, () => calm(g)); });
   return true;
+}
+function cookWanted(a) {
+  const noDrinks = G.actors.some(x => x.role === "drinks");
+  return openTickets().some(({ k }) => !(noDrinks && RECIPES[k.r].d) && need(k.r) > 0 && stockOk(k.r) && canMake(k.r));
 }
 function tryCook(a, drinks) {
   // drinks: true = only drinks, false = only food, null = anything
@@ -3420,6 +3528,8 @@ function ticketTap(g, r) {
 }
 document.addEventListener("visibilitychange", () => { if (document.hidden && view === "play" && G && !G.ended) pauseMenu(); });
 $("pauseBtn").onclick = () => pauseMenu();
+$("guideBtn").onclick = () => openGuide("basics");
+$("mGuide").onclick = () => openGuide(null, () => {});
 function pauseMenu() {
   if (paused) return;
   paused = true;
@@ -3428,10 +3538,12 @@ function pauseMenu() {
     ${(LV != null ? LEVELS[LV].goals.map(([k, n]) => ({ k, n })) : G.goals).length ? `<div class="goals">${(LV != null ? LEVELS[LV].goals.map(([k, n]) => ({ k, n })) : G.goals).map(g => `<div><span>${goalMet(g.k, g.n, pr) ? "✅" : "☆"}</span><span>${GOAL_TEXT[g.k](g.n)}</span></div>`).join("")}</div>` : ""}
     <div class="acts"><button class="btn pri" data-a="go">Carry on</button><button class="btn" data-a="mini">Cooking mini-games: ${opts.mini ? "on" : "off"}</button>
     <button class="btn" data-a="help">Helper arrow: ${{ auto: "auto", on: "always", off: "off" }[helpMode()]}</button><button class="btn" data-a="sound">Sounds: ${opts.sound ? "on" : "off"}</button>
+    <button class="btn" data-a="guide">📖 Guide</button>
     <button class="btn" data-a="restart">${LV != null ? "Start this day again" : "Leave (this day starts again next time)"}</button></div>`, a => {
     if (a === "mini") { opts.mini = !opts.mini; store("ll.opts", opts); paused = false; pauseMenu(); return; }
     if (a === "help") { opts.help = HELP_NEXT[helpMode()]; store("ll.opts", opts); paused = false; pauseMenu(); return; }
     if (a === "sound") { opts.sound = !opts.sound; store("ll.opts", opts); paused = false; pauseMenu(); return; }
+    if (a === "guide") { openGuide("basics", () => { paused = false; pauseMenu(); }); return; }
     if (a === "restart") { paused = false; G = null; closeMini(); if (LV != null) { const i = LV; LV = null; EASY = false; S = null; renderCamp(); show("camp"); levelIntro(i); } else { renderTitle(); show("title"); } return; }
     paused = false; lastT = performance.now();
   });
