@@ -875,6 +875,16 @@
         "Tap a wall with Remove (or drag across several) to take it down: all your money back if you built it today, half if it's been there since an earlier day",
         "An Undo button puts back your last change"
       ]
+    },
+    {
+      "id": 76,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: hand washing is your call",
+      "details": [
+        "Lee Lee will now handle food with dirty hands if you let her: nothing stops you",
+        "Food touched with unwashed hands (🦠) or cooked on a filthy appliance can make a customer ill. It's fairly rare, but it costs compensation and reputation, and the hygiene inspector comes round soon after",
+        "The inspector also marks you down if they catch unwashed hands that day, or if someone fell ill in the last three weeks"
+      ]
     }
   ]
 }

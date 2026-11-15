@@ -204,8 +204,10 @@ gives the groups and window inside the opening hours; guests carry `g.host` (pat
 `licenceNight` take a `noise` term, regulars build in `S.hostN`; page `hostCard(P)` (selects `data-hev`). **Food hygiene** (free play, `hygOn`):
 station `s.dirt` grows by `DIRT` per step (+.2 when food burns), carries 60% overnight in `S.kd`, slows work (`dirtSlow`); `cleanStation`
 (Lee Lee: tapping an appliance with nothing to make there cleans it; `tryScrub` for porters, cleaners and idle cooks). Dirty jobs set `a.dh`;
-food steps (`foodStep`: not drinks, not plating) are refused for Lee Lee until she washes (tap the `basin`, or the sink when no plates wait or
-while holding something); staff use `washThen`. `coachNext` wraps `coachCore` to point at the sink/basin first. Inspections: `S.hyg {r, day, next, why}`, `G.insp`, `inspect()`; the rating
+nothing forces Lee Lee to wash (tap the `basin`, or the sink when no plates wait or while holding something): a food step (`foodStep`: not drinks,
+not plating) with dirty hands, or on an appliance over .85 dirt (25%), sets `d.germ` (`G.germN`, `G.germT`); `serve` rolls `GERM_P` per tainted dish into
+`G.ill`, and `endDay` charges `ILL_PAY` and `ILL_REP` each, sets `S.hyg.ill` and brings the inspector forward (who docks a point for unwashed hands
+late that day or an illness within 21 days); staff use `washThen`. `coachNext` wraps `coachCore` to point at the sink/basin first. Inspections: `S.hyg {r, day, next, why}`, `G.insp`, `inspect()`; the rating
 scales appeal (`HYG_A`, `hygA`); managed places get `P.hyg` / `P.hygN` from the manager and team.
 Staff levels: `lvlWalk`, `lvlSkill`, `fairWage` (+12% a level), `promoCost`, `promoDays`; letting go costs `redundancy(st)` (`st.td` total
 days worked). Idle staff wait a moment, then go to `staffHome` (worked out from the layout); waiters carry up to two more plates in `a.extra`.

@@ -2242,6 +2242,7 @@ function takeOrder(g) {
 function serve(g, tk, dish) {
   tk.done = true; g.servedN++; if (plated(dish.r)) g.plates = (g.plates || 0) + 1; g.pat = Math.min(1, g.pat + .12);
   if (dish.perfect) g.bonus += .6;
+  if (dish.germ && hygOn() && Math.random() < GERM_P) G.ill = (G.ill || 0) + 1; // nobody knows yet: it shows up tonight
   snd("serve");
   fx(g.table.x, g.table.y - .9, RECIPES[dish.r].e + " ✓", "#3E9B6B");
   if (g.tickets.every(k => k.done)) { g.state = "eat"; g.timer = g.watch || (g.sp === "nook" && g.table && g.table.sp === "nook") ? rnd(12, 17) : g.drinker ? rnd(5, 8) : rnd(7, 10) + (g.party ? 4 : 0); }
@@ -2426,6 +2427,11 @@ function groupsStep(dt) {
 function speedOf(t) { return 1 + .2 * (S.lvl[t] || 0); }
 function doStep(a, s) {
   const def = STATIONS[s.t], d = a.hand;
+  // food handled with unwashed hands (or on a filthy appliance) may make someone ill later: nothing stops you, but it's a risk
+  if (hygOn() && d && d.k === "dish" && foodStep(d.r, s.t) && !d.germ && ((a.dh && washer(a)) || ((s.dirt || 0) > .85 && Math.random() < .25))) {
+    d.germ = true; G.germT = G.t; G.germN = (G.germN || 0) + 1;
+    if (a === lee) fx(s.x, s.y - .7, a.dh ? "🦠 Unwashed hands" : "🦠 Filthy " + def.n.toLowerCase(), "#8C6A2A");
+  }
   if (hygOn() && DIRT[s.t]) s.dirt = Math.min(1, (s.dirt || 0) + DIRT[s.t]);
   if (def.k === "get") { s.user = a; work(a, def.d, () => { s.user = null; d.s++; }, () => { s.user = null; }); }
   else if (def.k === "act") {
@@ -2468,6 +2474,8 @@ function loadDishwasher(a, s) {
 
 /* ---------- food hygiene ---------- */
 const hygOn = () => LV == null && !window.NOHYG;
+// chance a dish touched with dirty hands makes the customer ill; what one case costs (rep, compensation)
+const GERM_P = .1, ILL_REP = 8, ILL_PAY = 40;
 const foodStep = (r, t) => !RECIPES[r].d && t !== "plate";
 const washer = a => { const bs = G.stations.filter(x => x.t === "basin"); return bs.length ? bs.sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y))[0] : G.stations.find(x => x.t === "sink"); };
 // clean hands before food: walk to the hand basin (or the sink), wash, then carry on
@@ -2486,8 +2494,10 @@ function inspect() {
   if (G.sink >= 8) { r -= 1; why.push("dirty plates piling up"); }
   if (G.burnt >= 3) { r -= 1; why.push("burnt food"); }
   if (!G.stations.some(s => s.t === "basin")) { r -= 1; why.push("no hand basin"); }
+  if (G.germT != null && G.t - G.germT < G.len * .15) { r -= 1; why.push("food handled with unwashed hands"); }
+  if (S.hyg && S.hyg.ill && S.day - S.hyg.ill <= 21) { r -= 1; why.push("a customer fell ill"); }
   r = Math.max(0, r);
-  S.hyg = { r, day: S.day, next: S.day + (r <= 2 ? 4 + Math.floor(Math.random() * 3) : 12 + Math.floor(Math.random() * 10)), why };
+  S.hyg = { r, day: S.day, ill: S.hyg && S.hyg.ill, next: S.day + (r <= 2 ? 4 + Math.floor(Math.random() * 3) : 12 + Math.floor(Math.random() * 10)), why };
   G.inspR = r; fx(4.5, 7, `🧾 Hygiene inspector: ${r} out of 5`, r >= 4 ? "#3E9B6B" : r >= 3 ? "#B07A10" : "#D2483A"); snd(r >= 4 ? "coin" : "warn");
 }
 
@@ -2512,11 +2522,6 @@ function leeArrive(o) {
 function leeStation(s, pref) {
   const L = lee, h = L.hand, def = STATIONS[s.t];
   if (def.k === "basin") { if (!L.dh) { toastMsg("Your hands are clean"); return; } work(L, .7, () => { L.dh = false; }, null, "wash"); return; }
-  if (hygOn() && def.k !== "sink" && def.k !== "dw" && def.k !== "top") {
-    // food standards: no handling food with dirty hands (wash them at the sink or the hand basin)
-    const r = h && h.k === "dish" ? (RECIPES[h.r].s[h.s] === s.t ? h.r : null) : !h && !s.item ? (pref && startable(s.t).includes(pref) ? pref : startable(s.t)[0]) : null;
-    if (L.dh && r && foodStep(r, s.t) && washer(L)) { toastMsg("🧼 Wash your hands first: tap the sink or the hand basin"); snd("warn"); return; }
-  }
   if (def.k === "sink") {
     if (h && h.k === "dirty") { G.sink += h.n; L.hand = null; }
     else if (h) { if (hygOn() && L.dh) { work(L, 1.1, () => { L.dh = false; }, null, "wash"); return; } toastMsg("The sink is for washing plates"); return; }
@@ -3511,7 +3516,13 @@ function endDay() {
   const hostc = G.host ? HOST[G.host.id].c : 0;
   if (G.host) { S.hostN = S.hostN || {}; S.hostN[G.host.id] = (S.hostN[G.host.id] || 0) + 1; }
   if (G.hostClosed) lnews.push(`${HOST[G.hostClosed].e} Your ${HOST[G.hostClosed].n.toLowerCase()} couldn't happen: you weren't open at ${clockH(HOST[G.hostClosed].at[0])}.`);
-  const net = income - wages - rent - fee - repairs - bills - breaks - fine - hostc;
+  // food poisoning: a rare case from food handled with unwashed hands comes to light tonight
+  const ill = G.ill || 0, illPay = ill * ILL_PAY;
+  if (ill) {
+    G.repD -= ill * ILL_REP; S.hyg = Object.assign({}, S.hyg || { r: null, day: 0 }, { ill: S.day, next: Math.min((S.hyg && S.hyg.next) || S.day + 2, S.day + 1 + Math.floor(Math.random() * 2)) });
+    lnews.push(`🤢 ${ill > 1 ? ill + " customers" : "A customer"} who ate here today fell ill${G.germN ? ": food was handled with unwashed hands" : ""}. You paid ${money(illPay)} in compensation, word is getting round, and the hygiene inspector will call soon.`);
+  }
+  const net = income - wages - rent - fee - repairs - bills - breaks - fine - hostc - illPay;
   const repBefore = S.rep, starsBefore = starsOf(S.rep);
   S.rep = Math.max(0, Math.round(S.rep + G.repD * (G.repD > 0 && hasPk(site, "listed") ? 1.1 : 1)));
   S.cash = Math.round((S.cash + net) * 100) / 100;
@@ -3586,7 +3597,7 @@ function endDay() {
   if (repairs) news.push(`Repairs today: ${money(repairs)}${hasPk(site, "listed") && info.wd === 6 ? " (the weekly upkeep of a listed building)" : " (the leaky roof)"}.`);
   if (S.day % 7 === 0 && S.day < 36) news.push("🕘 A new week starts tomorrow. Your opening hours are on the Today tab.");
   if (G.hr) { G.hr.cost = Math.round((wages / Math.max(1, hc - ho) + billsHour(S)) * 100) / 100; S.hh = S.hh || {}; S.hh[info.wd] = Object.assign({ day: S.day }, G.hr); }
-  const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, bills, breaks, fine, hostc, host: G.host && G.host.id, fights: G.fights || 0, hr: G.hr, hours: [ho, hc], fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
+  const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, bills, breaks, fine, hostc, ill: illPay, host: G.host && G.host.id, fights: G.fights || 0, hr: G.hr, hours: [ho, hc], fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
     messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G), repairs };
   S.last = last;
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
@@ -3700,7 +3711,7 @@ function tabDay() {
       <p class="small">${L.served} of ${L.people} customers served${L.angry ? `, <b class="neg">${L.angry} walked out</b>` : ""}${L.turned ? `, <b class="neg">${L.turned} found nothing in stock</b>` : ""}${L.burnt ? `, ${L.burnt} burnt` : ""}.</p>
       <details class="small" id="moneyBox"><summary class="muted">Money in and out</summary><div class="lines" style="margin-top:6px">
       <div><span>Takings</span><b>${money(L.rev)}</b></div>${Object.entries(L.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].n}</span><b>${money(Math.round(v))}</b></div>`).join("")}<div><span>Tips</span><b>${money(L.tips)}</b></div>
-      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.bills ? `<div><span>${L.bills > 0 ? "Bills for the extra hours" : "Bills saved by shorter hours"}</span><b>${L.bills > 0 ? "−" : "+"}${money(Math.abs(L.bills))}</b></div>` : ""}${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.breaks ? `<div><span>Broken in fights</span><b>−${money(L.breaks)}</b></div>` : ""}${L.fine ? `<div><span>Council fine</span><b>−${money(L.fine)}</b></div>` : ""}${L.hostc ? `<div><span>${HOST[L.host].e} ${HOST[L.host].n}</span><b>−${money(L.hostc)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
+      <div><span>Rent</span><b>−${money(L.rent)}</b></div>${L.bills ? `<div><span>${L.bills > 0 ? "Bills for the extra hours" : "Bills saved by shorter hours"}</span><b>${L.bills > 0 ? "−" : "+"}${money(Math.abs(L.bills))}</b></div>` : ""}${L.others ? `<div><span>Your other places</span><b>${money(L.others)}</b></div>` : ""}${L.repairs ? `<div><span>Repairs</span><b>−${money(L.repairs)}</b></div>` : ""}${L.breaks ? `<div><span>Broken in fights</span><b>−${money(L.breaks)}</b></div>` : ""}${L.fine ? `<div><span>Council fine</span><b>−${money(L.fine)}</b></div>` : ""}${L.hostc ? `<div><span>${HOST[L.host].e} ${HOST[L.host].n}</span><b>−${money(L.hostc)}</b></div>` : ""}${L.ill ? `<div><span>🤢 Compensation</span><b>−${money(L.ill)}</b></div>` : ""}${L.wages ? `<div><span>Wages</span><b>−${money(L.wages)}</b></div>` : ""}${L.fee ? `<div><span>Overdraft fee</span><b>−${money(L.fee)}</b></div>` : ""}
       ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
     if (L.hr) h = h.replace(/<\/details><\/div>$/, `</details>${hourChart(L.hr)}</div>`);
     if (L.advice) h += `<div class="news small"><b>💡 Next time</b><br>${L.advice.map(esc).join("<br>")}</div>`;
