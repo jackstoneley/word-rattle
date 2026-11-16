@@ -1402,7 +1402,7 @@ function runPlace(save, P, r, news) {
   const repD = Math.round(mgrRep(happy, served, people) * diffOf(save).rep) - 15 * fights;
   sv.rep = Math.max(0, sv.rep + repD);
   const net = Math.round((rev + tips + extra - payroll - rent - stock - bills - breaks - fine - hostc) * 100) / 100;
-  return done(net, { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages: payroll, rent, stock, bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0, kit: kcap < placeCrewOf(sv, save.day) && groups > kcap * 1.05 ? neck.t : 0, mgr: M.name, menu: menu.length });
+  return done(net, { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages: payroll, rent, stock, bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0, kit: kcap < placeCrewOf(sv, save.day) && groups > kcap * 1.05 ? neck.t : 0, full: staffN(sv) >= PREMISES[sv.prem].staff ? 1 : 0, mgr: M.name, menu: menu.length });
 }
 // what a buyer pays: the deposit back, half the fit-out, the kitchen and build-ins, and goodwill from recent profits and reputation
 function placeValue(P) {
@@ -4066,7 +4066,7 @@ function mlastCard(L) {
     <div><span>Stock used</span><b>−${money(L.stock)}</b></div>`}<div><span>Wages</span><b>−${money(L.wages)}</b></div><div><span>Rent${L.bills ? " and bills" : ""}</span><b>−${money(L.rent + (L.bills || 0))}</b></div>
     ${L.fights ? `<div><span>💥 Fights</span><b class="neg">${L.fights}</b></div>` : ""}${L.fine ? `<div><span>🏛️ Council fine</span><b class="neg">−${money(L.fine)}</b></div>` : ""}
     <div><span>Reputation</span><b class="${L.repD >= 0 ? "pos" : "neg"}">${L.repD >= 0 ? "+" : ""}${L.repD}</b></div></div>
-    ${L.short ? `<p class="small neg">About ${L.short} groups more than the place could look after walked away${L.kit && STATIONS[L.kit] ? `: the kitchen couldn't keep up. Another ${STATIONS[L.kit].n.toLowerCase()} would help (Upgrades), or fewer dishes that need one` : `: hire more staff here, or a better manager`}. Unserved customers cost reputation.</p>` : ""}${L.menu === 0 ? `<p class="small neg">The kitchen here can't make anything on the menu: check the Menu and Upgrades tabs.</p>` : ""}</div>`;
+    ${L.short ? `<p class="small neg">About ${L.short} groups more than the place could look after walked away${L.kit && STATIONS[L.kit] ? `: the kitchen couldn't keep up. Another ${STATIONS[L.kit].n.toLowerCase()} would help (Upgrades), or fewer dishes that need one` : L.full ? `: the team here is full (a bigger building holds more staff), so book agency staff for busy days (Team tab), shorten the quietest hours, or train the manager` : `: hire more staff here, or a better manager`}. Unserved customers cost reputation.</p>` : ""}${L.menu === 0 ? `<p class="small neg">The kitchen here can't make anything on the menu: check the Menu and Upgrades tabs.</p>` : ""}</div>`;
 }
 function tabDay() {
   const M0 = S.mlast && (!S.last || S.mlast.day > S.last.day) ? S.mlast : null;
