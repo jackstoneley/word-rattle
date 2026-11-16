@@ -966,6 +966,16 @@
         "Managers were too hard on busy places: a level 1 manager could only serve about half the customers, so a good pub lost reputation and money while Lee Lee worked elsewhere.",
         "Now a level 1 manager gets about three quarters of what the team and kitchen can do, rising to all of it at level 5."
       ]
+    },
+    {
+      "id": 85,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: a Managers screen",
+      "details": [
+        "See every manager and choose where each one works, from the Team tab or Your places in the City tab. Moving one to a place that already has a manager swaps the two.",
+        "Managers can be left unallocated, on a retainer of half their pay, ready to cover a place.",
+        "A tick box decides whether a manager goes to cover the place Lee Lee leaves when it has none. An unallocated manager goes first."
+      ]
     }
   ]
 }

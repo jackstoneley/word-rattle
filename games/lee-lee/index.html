@@ -813,7 +813,7 @@ function newSave(venue, name, site) {
   return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
     owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], tpos: [0, 1, 2], plates: 6,
     decor: 0, shoes: 0, prem: 0, autoStock: true, diff: 1, bookings: [], bar: 0, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
-    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0, bi: {}, walls: {}, temps: [], sign: 0, pl: 1, rv: {}, chains: [], places: [], duel: null, buzz: 0, pid: 1, cur: "p1", lee: "p1" };
+    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0, bi: {}, walls: {}, temps: [], sign: 0, pl: 1, rv: {}, chains: [], places: [], duel: null, buzz: 0, pid: 1, cur: "p1", lee: "p1", bench: [], mfollow: true };
 }
 /* ---------- The city (free play only) ----------
    Leicester, drawn by hand from a rough knowledge of the real city (not a survey): roads, river, parks, districts with
@@ -2082,7 +2082,8 @@ const GUIDE = [
     "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu. A manager's level is how well they organise: on a quiet day any of them serves nearly everyone, but on a busy day a level 1 manager gets about three quarters of what the team and kitchen could manage, a level 5 all of it. Managers are paid every day, including days Lee Lee works there (they wait on tables). Train them in the Team tab.",
     "Customers a managed place can't serve cost it reputation, just as walk-outs do on your own days, so an over-stretched place loses stars and custom. Its Today tab says what held it back: more staff, a better manager, or another appliance (the kitchen is often the limit). Lee Lee can also go back and work there for a few days to win its name back.",
     "When Lee Lee goes to a place, if the place she left has no manager of its own, this place's manager goes over to run it (and comes back when she does). If both have managers, the one here waits on tables with her. A place with neither stays shut, but rent and wages are still paid.",
-    "Staff belong to a place. In the Team tab you can move anyone to another place (managers don't take up a staff place), or make an experienced member of staff a manager."] },
+    "Staff belong to a place. In the Team tab you can move anyone to another place (managers don't take up a staff place), or make an experienced member of staff a manager.",
+    "<b>The Managers screen</b> (Team tab, or Your places in the City tab) shows every manager and where they work. Move any of them to another place (if it already has one, the two swap), or leave them unallocated: they wait on a retainer of half their pay. A tick box decides whether a manager is sent to cover the place Lee Lee leaves when it has none (an unallocated one goes first)."] },
   { id: "money", e: "💷", t: "Money and difficulty", p: [
     "<b>Peaceful</b>: lower rent, no overdraft charges, you can't go bust. <b>Normal</b>: a nightly overdraft fee, and a week overdrawn ends your lease (you move somewhere cheap). <b>Hard</b>: higher rent, and five days overdrawn is game over. You can only make it easier later.",
     "How busy the days are is separate: <b>Relaxed</b>, <b>Normal</b> or <b>Busy</b> (more customers, less patience, bigger tips and faster fame).",
@@ -3857,7 +3858,10 @@ function endDay() {
   // the other places, run by their managers
   const prr = seeded(seedOf(S) * 7 + S.day * 53);
   let others = 0; const pnews = []; for (const P of S.places || []) others += runPlace(S, P, prr, pnews);
-  others = Math.round(others * 100) / 100; S.cash = Math.round((S.cash + others) * 100) / 100;
+  // managers waiting unallocated: half pay, and a rest
+  const retainer = Math.round((S.bench || []).reduce((a, m) => a + m.wage * MGR_RET, 0));
+  for (const m of S.bench || []) { m.fat = Math.max(0, (m.fat || 0) - 15); m.days = (m.days || 0) + 1; m.td = (m.td || 0) + 1; }
+  others = Math.round((others - retainer) * 100) / 100; S.cash = Math.round((S.cash + others) * 100) / 100;
   // stock: what's left, fresh food half goes off
   const spoiled = {};
   for (const k in G.stock) { let v = G.stock[k]; if (INGS[k].f && v > 0) { const lost = Math.floor(v * (hasPk(site, "store") ? .25 : hasPk(site, "tiny") ? .75 : .5)); if (lost) spoiled[k] = lost; v -= lost; } G.stock[k] = v; }
@@ -3953,7 +3957,7 @@ function endDay() {
     ${bonus ? `<div><span>Goal rewards</span><b class="pos">${money(bonus)}</b></div>` : ""}
     <div><span>Rent${bills > 0 ? " + bills" : bills < 0 ? " (less bills saved)" : ""}${wages ? " + wages" : ""}${repairs ? " + repairs" : ""}</span><b>−${money(rent + bills + wages + fee + repairs)}</b></div>
     <div class="tot"><span>Profit</span><b class="${net >= 0 ? "pos" : "neg"}">${money(net)}</b></div>
-    ${(S.places || []).length ? `<div><span>Your other places</span><b class="${others >= 0 ? "pos" : "neg"}">${others >= 0 ? "+" : ""}${money(others)}</b></div>` : ""}
+    ${retainer ? `<div><span>Unallocated managers (retainer, in the line below)</span><b class="neg">−${money(retainer)}</b></div>` : ""}${(S.places || []).length ? `<div><span>Your other places</span><b class="${others >= 0 ? "pos" : "neg"}">${others >= 0 ? "+" : ""}${money(others)}</b></div>` : ""}
     <div><span>Reputation</span><b class="${last.repD >= 0 ? "pos" : "neg"}">${last.repD >= 0 ? "+" : ""}${last.repD}</b></div></div>
     ${goals.length ? `<div class="goals">${goals.map(x => `<div><span>${x.ok ? "⭐" : "✖️"}</span><span>${GOAL_TEXT[x.k](x.n)}${x.ok && x.cash ? ` <b class="pos">+${money(x.cash)}</b>` : ""}</span></div>`).join("")}</div>` : ""}
     ${last.streak >= 3 ? `<p class="small" style="text-align:center">🔥 Best streak: <b>${last.streak}</b> happy tables in a row</p>` : ""}
@@ -4206,7 +4210,7 @@ function tabMenu() {
 function tabStaff() {
   const prem = PREMISES[S.prem];
   const others = S.places || [], Mg = mgrOf(S);
-  let h = `<div class="card"><div class="row spread"><h2>${others.length ? `Team at ${esc(S.name)}` : "Your team"}</h2><span class="muted small">${staffN(S)} of ${prem.staff} places${Mg ? " + manager" : ""}</span></div>`;
+  let h = (others.length ? `<button class="btn" data-act="mgrs" style="width:100%;margin-bottom:10px">🧑‍💼 Managers: who runs where</button>` : "") + `<div class="card"><div class="row spread"><h2>${others.length ? `Team at ${esc(S.name)}` : "Your team"}</h2><span class="muted small">${staffN(S)} of ${prem.staff} places${Mg ? " + manager" : ""}</span></div>`;
   if (!S.staff.length) h += `<p class="muted small">${others.length ? "Nobody works here yet." : "It's just Lee Lee for now."} Staff get on with their job by themselves and are paid each night.</p>`;
   if (others.length && !Mg) h += `<p class="small neg">No manager here: when Lee Lee works at another place, this one stays shut. Hire one below, or make someone a manager.</p>`;
   for (const s of S.staff) {
@@ -4362,6 +4366,7 @@ $("mwrap").onclick = e => {
   if (a === "map") { openCity("browse"); return; }
   if (a === "place") { const P = b.dataset.id === S.cur ? S : (S.places || []).find(x => x.id === b.dataset.id); if (P) placeDlg(P); return; }
   if (a === "view") { showPlace(b.dataset.id); return; }
+  if (a === "mgrs") { e.preventDefault && e.preventDefault(); mgrDlg(); return; }
   if (a === "duel") {
     const R = allRivals(S).find(x => x.id === b.dataset.id); if (!R || duelOk(S, R) || !canAfford(duelFee(R))) return;
     dialog(`<h3>Taste-off with ${esc(R.n)}?</h3><p class="muted" style="text-align:center">Entry ${money(duelFee(R))}. Tomorrow, keep at least <b>${duelNeed(R)}%</b> of your customers happy (and serve at least 6).
@@ -5153,6 +5158,7 @@ function placesCard() {
   let h = `<div class="card"><div class="row spread"><h2>Your places</h2><span class="small muted">${1 + n} of ${1 + MAX_PLACES}</span></div>
     ${n ? `<p class="small muted">The office shows one place at a time: switch with the buttons at the top. Lee Lee works wherever you open the doors; managers run the others.</p>` : ""}`;
   for (const P of allPlaces(S)) h += placeRow(P);
+  if (n) h += `<button class="btn" data-act="mgrs" style="margin-top:8px">🧑‍💼 Managers: who runs where</button>`;
   if (n < MAX_PLACES) h += st >= next ? `<p class="small">You can open a ${n ? "third" : "second"} place. Find one on the map and tap <b>Open another place here</b>.</p>`
     : `<p class="small muted">With ${next}★ at one of your places you can open a ${n ? "third" : "second"}, run by a manager while Lee Lee works elsewhere.</p>`;
   return h + `</div>`;
@@ -5168,21 +5174,65 @@ function showPlace(id) {
   const P = (S.places || []).find(x => x.id === id); if (!P) return;
   viewPlace(S, P); shareBook(S); saveGame(); renderManage(tab === "city" ? "city" : tab); $("mbody").scrollTop = 0;
 }
-// the doors open at the place shown: Lee Lee works here today. If the place she left has no manager, this place's manager goes
-// over to run it (and comes back when she does); if it has its own, this one stays and waits on tables with her.
+/* Managers: every manager works at a place (in its staff) or waits unallocated in S.bench on a retainer (MGR_RET of their wage).
+   The Managers screen (mgrDlg) moves them; one manager a place at most (moving one onto a place swaps the two). With S.mfollow on
+   (the default), opening the doors somewhere new sends a manager to cover the place Lee Lee left if it has none: an unallocated one
+   first, otherwise the manager of the place she's going to. */
+const MGR_RET = .5;
+const benchOf = () => (S.bench = S.bench || []);
+function allMgrs() { const out = []; for (const P of allPlaces(S)) for (const m of P.staff || []) if (m.role === "manager") out.push({ m, P }); for (const m of benchOf()) out.push({ m, P: null }); return out; }
+function mgrMove(m, from, to) {
+  if (from === to) return;
+  const take = (P, x) => { const a = P ? P.staff : benchOf(); a.splice(a.indexOf(x), 1); }, put = (P, x) => { if (P) P.staff = (P.staff || []).concat([x]); else benchOf().push(x); };
+  const other = to ? mgrOf(to) : null;
+  take(from, m); if (other) { take(to, other); put(from, other); }
+  put(to, m); m.sick = null;
+}
+// who would cover the place Lee Lee is leaving, if she opens the doors at the place shown
+function coverPlan() {
+  if (S.lee === S.cur || S.mfollow === false) return null;
+  const from = (S.places || []).find(p => p.id === S.lee); if (!from || mgrOf(from)) return null;
+  const b = benchOf().slice().sort((p, q) => q.lvl - p.lvl)[0];
+  return b ? { m: b, src: null, from } : mgrOf(S) ? { m: mgrOf(S), src: S, from } : { m: null, from };
+}
 function leeArrives() {
   if (S.lee === S.cur) return "";
-  const from = (S.places || []).find(p => p.id === S.lee); S.lee = S.cur;
+  const c = coverPlan(), from = (S.places || []).find(p => p.id === S.lee); S.lee = S.cur;
   if (!from || mgrOf(from)) return "";
-  const M = mgrOf(S); if (!M) return `${from.name} has no manager, so it stays shut today.`;
-  S.staff.splice(S.staff.indexOf(M), 1); from.staff = (from.staff || []).concat([M]);
-  return `${M.name} has gone over to run ${from.name} while Lee Lee is here.`;
+  if (!c || !c.m) return `${from.name} has no manager, so it stays shut today.`;
+  mgrMove(c.m, c.src, from);
+  return `${c.m.name} has gone to run ${from.name} while Lee Lee is here.`;
 }
 function leeNote() {
   if (S.lee === S.cur || !(S.places || []).length) return "";
-  const from = (S.places || []).find(p => p.id === S.lee), M = mgrOf(S);
-  const what = !from ? "" : mgrOf(from) ? `${esc(mgrOf(from).name)} keeps running ${esc(from.name)}${M ? `, and ${esc(M.name)} waits on tables here with her` : ""}.` : M ? `${esc(M.name)} goes over to run ${esc(from.name)}.` : `<b class="neg">${esc(from.name)} has no manager, so it will stay shut.</b>`;
-  return `<div class="news small">👩🏽‍🍳 Lee Lee works at ${esc(from ? from.name : "another place")} at the moment. Open the doors here and she works here tomorrow: ${what}</div>`;
+  const from = (S.places || []).find(p => p.id === S.lee), M = mgrOf(S), c = coverPlan();
+  const what = !from ? "" : mgrOf(from) ? `${esc(mgrOf(from).name)} keeps running ${esc(from.name)}${M ? `, and ${esc(M.name)} waits on tables here with her` : ""}.`
+    : c && c.m ? `${esc(c.m.name)} goes to run ${esc(from.name)}${c.src ? "" : " (from the unallocated managers)"}.` : `<b class="neg">${esc(from.name)} has no manager, so it will stay shut.</b>`;
+  return `<div class="news small">👩🏽‍🍳 Lee Lee works at ${esc(from ? from.name : "another place")} at the moment. Open the doors here and she works here tomorrow: ${what} <a href="#" data-act="mgrs">Managers</a></div>`;
+}
+function mgrDlg() {
+  const list = allMgrs(), ps = allPlaces(S);
+  let h = `<h3>Managers</h3><p class="small muted" style="text-align:center">Each place can have one manager, who runs it while Lee Lee works elsewhere. When Lee Lee works there too, they wait on tables. Unallocated managers wait on a retainer of half their pay.</p>`;
+  for (const P of ps) if (!mgrOf(P)) h += `<p class="small ${placeId(S, P) === S.lee ? "muted" : "neg"}">${esc(P.name)} has no manager${placeId(S, P) === S.lee ? " (Lee Lee works there)" : ": it stays shut unless Lee Lee works there"}.</p>`;
+  if (!list.length) h += `<p class="small">No managers yet. Hire one in a place's Team tab, or make an experienced member of staff a manager there.</p>`;
+  list.forEach(({ m, P }, i) => {
+    const at = P ? (placeId(S, P) === S.lee ? `At ${esc(P.name)}, working alongside Lee Lee` : `Runs ${esc(P.name)}`) : `Unallocated: retainer ${money(Math.round(m.wage * MGR_RET))} a day`, tc = mgrTrain(m);
+    h += `<div class="item"><div class="ic">${ROLES.manager.e}</div><div class="grow"><b>${esc(m.name)} <span class="muted small">level ${m.lvl} · ${money(m.wage)} a day</span></b><span>${at}</span>
+      <span class="row" style="gap:4px;margin-top:6px;flex-wrap:wrap">${ps.map(Q => Q === P ? "" : `<button class="btn sm" data-a="to:${i}:${placeId(S, Q)}">${Q.venue === "pub" ? "🍺" : "🧁"} ${esc(Q.name)}${mgrOf(Q) ? " (swap)" : ""}</button>`).join("")}
+      ${P ? `<button class="btn sm" data-a="to:${i}:-">Unallocate</button>` : `<button class="btn sm" data-a="fire:${i}">Let go (${money(redundancy(m))})</button>`}
+      ${tc ? `<button class="btn sm" data-a="tr:${i}" ${canAfford(tc) ? "" : "disabled"}>Train ${money(tc)}</button>` : ""}</span></div></div>`;
+  });
+  h += `<label class="small" style="display:flex;gap:8px;align-items:flex-start;margin:10px 0;text-align:left"><input type="checkbox" style="margin-top:3px;flex:none" data-a="follow" ${S.mfollow === false ? "" : "checked"}> When Lee Lee moves to another place, send a manager to cover the place she left if it has none (an unallocated one first)</label>
+    <div class="acts"><button class="btn pri" data-a="">Done</button></div>`;
+  dialog(h, a => {
+    if (!a) { saveGame(); renderManage(); return; }
+    const [k, i, to] = a.split(":"), e = list[+i];
+    if (k === "follow") S.mfollow = S.mfollow === false;
+    if (k === "to" && e) mgrMove(e.m, e.P, to === "-" ? null : ps.find(Q => placeId(S, Q) === to));
+    if (k === "tr" && e) { const c = mgrTrain(e.m); if (c && canAfford(c)) { spend(c); e.m.lvl++; e.m.wage = Math.max(e.m.wage + 10, fairWage("manager", e.m.lvl)); } }
+    if (k === "fire" && e && !e.P) { const fee = redundancy(e.m); spend(fee); benchOf().splice(benchOf().indexOf(e.m), 1); }
+    saveGame(); mgrDlg();
+  });
 }
 /* a place's own window: how it did, what it's worth, selling or closing it */
 function placeDlg(P) {
