@@ -261,9 +261,10 @@ Managers are staff with role `manager` (wait on tables in a played day; `fairWag
 promote; they don't count against `PREMISES[].staff`, see `staffN`). Recipes are shared per kind (`shareBook` keeps every place's
 `owned` equal; recipe unlocks and `PLACE_ST` use `bestRep`); stars are per place. `runPlace` (nightly, places Lee Lee isn't at)
 uses the place's real team (`placeCrewOf`: `MGR_CAP` × level plus `ROLE_CAP`, fatigue, sick, temps), kitchen (`kitchenCap`: appliance
-time per order against `KIT_U` of the day), menu and layout, then `mgrEff(level)`; per-person nights via `staffNight`; no manager =
-shut (rent and wages still paid). Calibrated against the coachNext bot playing the same place (a level 1 manager about two thirds of
-the bot's takings, level 5 about 90%). `migratePlaces` turns old managed places (`P.mgr`, `P.design`) into full records with a
+time per order against `KIT_U` of the day; the bottleneck appliance goes in `mlast.kit`), menu and layout. A manager's level is
+organisation only: served = min(groups × `MGR_Q`, capacity × `mgrCapE(level)`); spend per customer is as Lee Lee's. Reputation uses
+`mgrRep` (the played-day scale: +3 happy, +1 served, −4 not served), so an over-stretched place loses stars and custom until it is
+staffed, equipped or Lee Lee plays it again. Per-person nights via `staffNight`; no manager = shut (rent and wages still paid). `migratePlaces` turns old managed places (`P.mgr`, `P.design`) into full records with a
 starter kitchen and named staff. New places: `newPlaceRec` (starter kitchen `VENUES[].start` + basin, the venue's starter recipes,
 `openPlaceDlg`). `placeValue` / `closeValue` when sold or closed (not the one shown). `placeDlg` is a place's summary window.
 **Build-ins and walls** (free play): `BUILDINS` (keyed by id, append only; café: softplay, nook, meet, hatch; pub: sports, fruit, pool, func)

@@ -1299,10 +1299,13 @@ function makeMgrs(r) {
   return [1, 2, 3].map(lvl => ({ name: MGR_FIRST[(k + lvl * 7) % MGR_FIRST.length], role: "manager", lvl, wage: 26 + 14 * lvl + Math.round(r() * 6), morale: 70, days: 0, td: 0 }));
 }
 const mgrTrain = M => M.lvl < 5 ? 350 * M.lvl : null, MGR_MAKE = 150;
-/* What a manager gets out of a place compared with Lee Lee herself (measured with the coachNext bot on the same place and team):
-   on a quiet day they serve nearly everyone (mgrQ), on a busy one they get less out of the team and kitchen (mgrCapE), and
-   customers spend a little less (mgrSpend). A level 1 manager takes about two thirds of what a good player would, level 5 about 90%. */
-const MGR_CAP = 6, mgrQ = lv => .85 + .02 * lv, mgrCapE = lv => .75 + .04 * lv, mgrSpend = lv => .76 + .025 * lv;
+/* A manager's level is how well they organise: on a quiet day any of them serves nearly everyone (MGR_Q), but on a busy one a
+   level 1 manager gets about two thirds of what the team and kitchen could do, a level 5 all of it (mgrCapE). Customers they can't
+   serve cost reputation the same way as on a day Lee Lee plays (mgrRep), so an over-stretched place loses stars and custom until
+   it is better staffed or organised, or Lee Lee goes back to win its name back. */
+const MGR_CAP = 6, MGR_Q = .96, mgrCapE = lv => .6 + .08 * lv;
+// reputation from a managed day, on the scale of a played one: +3 a happy customer, +1 a served one, −4 one not served
+const mgrRep = (happy, served, people) => Math.round(3 * happy + (served - happy) - 4 * Math.max(0, people - served));
 // how many groups a day the manager and the team can look after (staff off sick don't count; agency staff do)
 function placeCrewOf(sv, day) {
   const M = mgrOf(sv); let c = M ? MGR_CAP * (.6 + .08 * M.lvl) * fatSlow(M.fat) : 0;
@@ -1313,12 +1316,12 @@ function placeCrewOf(sv, day) {
 /* how many groups a day the kitchen can feed: for each kind of appliance, the time an average order spends on it (the menu's
    steps, drinks weighted as customers order them, upgrades faster) against the time the appliances of that kind are free */
 const KIT_U = .5;
-function kitchenCap(sv, menu, day) {
+function kitchenCap(sv, menu, day, out) {
   if (!menu.length) return 0;
   const dw = sv.venue === "pub" ? 1.6 : .8, w = r => RECIPES[r].d ? dw : 1, W = menu.reduce((a, r) => a + w(r), 0), load = {};
   for (const r of menu) for (const t of RECIPES[r].s) if (STATIONS[t] && STATIONS[t].d) load[t] = (load[t] || 0) + w(r) / W * STATIONS[t].d / (1 + .2 * ((sv.lvl || {})[t] || 0));
   const items = 1.75 * (1.12 + .07 * starsOf(sv.rep)), T = DAY_LEN * hoursMul(sv, day) * KIT_U;
-  let cap = Infinity; for (const t in load) cap = Math.min(cap, sv.stations.filter(x => x === t).length * T / load[t] / items);
+  let cap = Infinity; for (const t in load) { const c = sv.stations.filter(x => x === t).length * T / load[t] / items; if (c < cap) { cap = c; if (out) out.t = t; } }
   return cap;
 }
 // a night for a place's own team: days worked, tiredness, morale, sick days and quitting (as at Lee Lee's place)
@@ -1360,16 +1363,16 @@ function runPlace(save, P, r, news) {
   // the menu: too short, or no drinks or no food, and some people go elsewhere
   const fit = menu.length ? Math.min(1, .5 + .1 * menu.length) * (drinks ? 1 : .8) * (food ? 1 : .75) : 0;
   const hp = hostPlan(sv, save.day), hn = hp && !hp.closed ? hp.n : 0, booked = (sv.bookings || []).filter(b => b.ok && b.day === save.day).length;
-  const groups = (expectedGroups(sv) + hn + booked) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), kcap = kitchenCap(sv, menu, save.day), crew = Math.min(placeCrewOf(sv, save.day), kcap);
+  const groups = (expectedGroups(sv) + hn + booked) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), neck = {}, kcap = kitchenCap(sv, menu, save.day, neck), crew = Math.min(placeCrewOf(sv, save.day), kcap);
   const cr = crampOf(sv, sv.L), cramp = cr.length ? cr.reduce((a, v) => a + (v || 0), 0) / cr.length : 0;
   const waiters = sv.staff.some(x => x.role === "waiter") || temps.some(x => x.role === "waiter");
-  const servedG = Math.min(groups * mgrQ(lv), crew * mgrCapE(lv)) * (1 - .1 * cramp) * fit * (sv.sign && waiters ? 1 : .94), people = groups * 2, served = servedG * 2;
+  const servedG = Math.min(groups * MGR_Q, crew * mgrCapE(lv)) * (1 - .1 * cramp) * fit * (sv.sign && waiters ? 1 : .94), people = groups * 2, served = servedG * 2;
   // noise: tables in the same room as the sports TV on game days, or the soft play
   const share = id => roomShare(sv, id);
   const noise = 1 - (hasBi(sv, "sports") && (info.tv || (info.match && pub)) ? .14 * share("sports") : 0) - (hasBi(sv, "softplay") ? .06 * share("softplay") : 0);
-  const happy = served * (.6 + .07 * lv) * noise * (1 - .3 * cramp) * hygA(sv) ** .3;
+  const happy = served * (.75 + .04 * lv) * noise * (1 - .3 * cramp) * hygA(sv) ** .3;
   const wsum = menu.reduce((a, x) => a + prefW(info, x), 0) || 1, avg = menu.reduce((a, x) => a + RECIPES[x].p * prefW(info, x), 0) / wsum || 5;
-  const pr = sitePrice(sv), disc = sv.disc ? 1 - sv.disc.pct * .25 : 1, rev = served * 1.55 * avg * pr * disc * mgrSpend(lv), tips = rev * .08 * siteTip(sv);
+  const pr = sitePrice(sv), disc = sv.disc ? 1 - sv.disc.pct * .25 : 1, rev = served * 1.55 * avg * pr * disc, tips = rev * .08 * siteTip(sv);
   // build-ins, worked out for the day
   const ex = {}, add = (k, v) => { ex[k] = Math.round(((ex[k] || 0) + v) * 100) / 100; };
   if (hasBi(sv, "softplay")) add("soft", served * .12 * 2.5);
@@ -1395,11 +1398,11 @@ function runPlace(save, P, r, news) {
   const fights = pub && hc > 24 && r() < .08 * (hc - 24) * (1.6 - .15 * team) ? 1 : 0, breaks = fights ? 25 : 0;
   const fine = licenceNight(sv, hc, fights, r, nm, sv.name, hn ? hp.H.noise : 0);
   const hostc = hn ? hp.H.c + hn * 2 * avg * (hp.H.spend - 1) * -1 : 0; if (hn) { sv.hostN = sv.hostN || {}; sv.hostN[hp.H.id] = (sv.hostN[hp.H.id] || 0) + 1; }
-  staffNight(sv, hm, groups > crew, people - served > served, r, nm, ` at ${sv.name}`);
-  const repD = Math.round(happy * .9 - (people - served) * 2.2 + (happy / Math.max(1, served) - .7) * 20) - 10 * fights;
+  staffNight(sv, hm, people / (sv.staff.length + 1) > 12, people - served > served, r, nm, ` at ${sv.name}`);
+  const repD = Math.round(mgrRep(happy, served, people) * diffOf(save).rep) - 15 * fights;
   sv.rep = Math.max(0, sv.rep + repD);
   const net = Math.round((rev + tips + extra - payroll - rent - stock - bills - breaks - fine - hostc) * 100) / 100;
-  return done(net, { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages: payroll, rent, stock, bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0, kit: kcap < placeCrewOf(sv, save.day) && groups > kcap * 1.05 ? 1 : 0, mgr: M.name, menu: menu.length });
+  return done(net, { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages: payroll, rent, stock, bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0, kit: kcap < placeCrewOf(sv, save.day) && groups > kcap * 1.05 ? neck.t : 0, mgr: M.name, menu: menu.length });
 }
 // what a buyer pays: the deposit back, half the fit-out, the kitchen and build-ins, and goodwill from recent profits and reputation
 function placeValue(P) {
@@ -2076,7 +2079,8 @@ const GUIDE = [
     "At 2★ (at any of your places) you can open a second place, at 3★ a third. Find one on the City map. The fit-out comes with a starter kitchen for a café or a pub; then you hire its staff and grow it like your own.",
     "Every place is a whole venue with its own menu, kitchen, tables, team, stock, hours, events, prices, hygiene rating and stars. The buttons at the top of the office switch between them, and the tabs work the same for each.",
     "<b>Lee Lee works wherever you open the doors.</b> Show a place in the office and tap Open: she works there that day. Recipes are shared: learn one once and every place of that kind knows it (new recipes unlock with your best place's stars).",
-    "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu: too few staff or a kitchen that can't keep up, and customers walk out. A level 1 manager makes about two thirds of what you would; a level 5 about 90%. Train them in the Team tab.",
+    "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu. A manager's level is how well they organise: on a quiet day any of them serves nearly everyone, but on a busy day a level 1 manager gets about two thirds of what the team and kitchen could manage, a level 5 all of it. Train them in the Team tab.",
+    "Customers a managed place can't serve cost it reputation, just as walk-outs do on your own days, so an over-stretched place loses stars and custom. Its Today tab says what held it back: more staff, a better manager, or another appliance (the kitchen is often the limit). Lee Lee can also go back and work there for a few days to win its name back.",
     "When Lee Lee goes to a place, if the place she left has no manager of its own, this place's manager goes over to run it (and comes back when she does). If both have managers, the one here waits on tables with her. A place with neither stays shut, but rent and wages are still paid.",
     "Staff belong to a place. In the Team tab you can move anyone to another place (managers don't take up a staff place), or make an experienced member of staff a manager."] },
   { id: "money", e: "💷", t: "Money and difficulty", p: [
@@ -4058,7 +4062,7 @@ function mlastCard(L) {
     <div><span>Stock used</span><b>−${money(L.stock)}</b></div>`}<div><span>Wages</span><b>−${money(L.wages)}</b></div><div><span>Rent${L.bills ? " and bills" : ""}</span><b>−${money(L.rent + (L.bills || 0))}</b></div>
     ${L.fights ? `<div><span>💥 Fights</span><b class="neg">${L.fights}</b></div>` : ""}${L.fine ? `<div><span>🏛️ Council fine</span><b class="neg">−${money(L.fine)}</b></div>` : ""}
     <div><span>Reputation</span><b class="${L.repD >= 0 ? "pos" : "neg"}">${L.repD >= 0 ? "+" : ""}${L.repD}</b></div></div>
-    ${L.short ? `<p class="small neg">About ${L.short} groups more than the team could look after walked away: hire more staff here.</p>` : ""}${L.menu === 0 ? `<p class="small neg">The kitchen here can't make anything on the menu: check the Menu and Upgrades tabs.</p>` : ""}</div>`;
+    ${L.short ? `<p class="small neg">About ${L.short} groups more than the place could look after walked away${L.kit && STATIONS[L.kit] ? `: the kitchen couldn't keep up. Another ${STATIONS[L.kit].n.toLowerCase()} would help (Upgrades), or fewer dishes that need one` : `: hire more staff here, or a better manager`}. Unserved customers cost reputation.</p>` : ""}${L.menu === 0 ? `<p class="small neg">The kitchen here can't make anything on the menu: check the Menu and Upgrades tabs.</p>` : ""}</div>`;
 }
 function tabDay() {
   const M0 = S.mlast && (!S.last || S.mlast.day > S.last.day) ? S.mlast : null;
@@ -5187,7 +5191,7 @@ function placeDlg(P) {
     ${L && !lee ? `<div class="lines small"><div><span>Day ${L.day} under ${L.mgr ? esc(L.mgr) : "nobody"}: customers</span><b>${L.shut ? "shut" : `${L.served} served of ${L.people}`}</b></div>${L.shut ? "" : `<div><span>Takings</span><b>${money(L.rev)}</b></div>${Object.entries(L.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].e} ${EXTRA_N[k].n}</span><b>${v >= 0 ? "+" : "−"}${money(Math.abs(Math.round(v)))}</b></div>`).join("")}<div><span>Stock used</span><b>−${money(L.stock)}</b></div>`}
       <div><span>Wages and rent${L.bills ? " and bills" : ""}</span><b>−${money(L.wages + L.rent + (L.bills || 0))}</b></div><div class="tot"><span>Profit</span><b class="${L.net >= 0 ? "pos" : "neg"}">${money(L.net)}</b></div>
       <div><span>Reputation</span><b class="${L.repD >= 0 ? "pos" : "neg"}">${L.repD >= 0 ? "+" : ""}${L.repD}</b></div></div>
-      ${L.short ? `<p class="small neg">About ${L.short} groups more than the team could look after: hire staff for it in the Team tab.</p>` : ""}${L.menu === 0 ? `<p class="small neg">Its kitchen can't make anything on its menu.</p>` : ""}` : ""}
+      ${L.short ? `<p class="small neg">About ${L.short} groups more than it could look after${L.kit && STATIONS[L.kit] ? ` (the kitchen: another ${STATIONS[L.kit].n.toLowerCase()} would help)` : ": more staff or a better manager would help"}.</p>` : ""}${L.menu === 0 ? `<p class="small neg">Its kitchen can't make anything on its menu.</p>` : ""}` : ""}
     <p class="small">Last 7 days: <b class="${week >= 0 ? "pos" : "neg"}">${week >= 0 ? "+" : ""}${money(Math.round(week))}</b></p>
     <div class="news small"><b>Who comes here</b><br>${clienteleTips(s, P.venue).map(esc).join("<br>")}</div>
     <div class="acts">${here ? "" : `<button class="btn pri" data-a="view">Look after this place</button>`}
