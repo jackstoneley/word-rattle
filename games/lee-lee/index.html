@@ -456,7 +456,7 @@ const RECIPES = {
 };
 const ROLES = {
   waiter: { n: "Waiter", w: 22, e: "🧾", job: "Takes orders, carries food from the counter to tables, clears tables." },
-  porter: { n: "Kitchen porter", w: 18, e: "🧽", job: "Washes up and clears tables. Without one, waiters and cooks wash a few plates when clean ones run out." },
+  porter: { n: "Kitchen porter", w: 18, e: "🧽", job: "Washes up and clears tables." },
   cook: { n: "Cook", w: 30, e: "👩‍🍳", job: "Cooks food orders and leaves them on the counter (drinks too, if there's no one for those)." },
   drinks: { n: "Barista", w: 24, e: "☕", job: "Makes drink orders and leaves them on the counter." },
   floor: { n: "Cleaner", w: 20, e: "🧹", job: "Mops spills, clears tables, and calms down rowdy customers." },
@@ -2047,7 +2047,7 @@ const GUIDE = [
     "Turn automatic stock off in the Stock section to buy everything yourself.",
     "Fresh food partly goes off overnight (half, usually; some premises have a better or worse store room)."] },
   { id: "staff", e: "👥", t: "Staff", p: [
-    "No kitchen porter? When clean plates run out, a waiter or the cook washes a few, so the team copes without Lee Lee. A porter still keeps things running much better on busy days.",
+    "Only a <b>kitchen porter</b> washes up: without one, the washing-up is Lee Lee's job.",
     "<b>Waiters</b> take orders, carry food and clear tables. <b>Cooks</b> make food (and drinks if there's no barista). <b>Baristas</b> make drinks. In a pub the <b>bartender</b> serves at the bar, pours every drink and collects glasses; without one, waiters pour drinks and serve at the bar, and cooks only pour when there's nobody else. <b>Kitchen porters</b> wash up and clear. <b>Cleaners</b> mop, clear and calm rowdy customers.",
     "Higher <b>levels</b> walk faster and work better. Promote someone once they've worked enough days; their fair wage rises about 12% a level.",
     "Paying below a fair wage, and very busy days, lower <b>morale</b>. Unhappy staff can quit.",
@@ -2728,14 +2728,10 @@ function stationsStep(dt) {
     if (s.t === "dishwasher" && s.run > 0) { s.run -= dt * speedOf("dishwasher"); if (s.run <= 0) { s.run = 0; G.clean += s.load; s.load = 0; } }
   }
 }
-const WASH_TO = 4;
-// no kitchen porter: when clean plates run out, a waiter or the cook washes some (so the team copes without Lee Lee)
-const washHelp = a => !hasRole("porter") && G.clean <= 1 && G.sink > 0 && tryWash(a);
 function startWash(a) {
   const s = G.stations.find(x => x.t === "sink"); if (!s || G.sink <= 0) { G.washer = G.washer === a ? null : G.washer; return; }
   G.washer = a; a.dh = true;
-  // porters and Lee Lee wash the lot; anyone else stepping in (no porter) washes until there are a few clean plates again
-  work(a, 1.05 / speedOf("sink"), () => { G.sink--; G.clean++; if (G.sink > 0 && (a.role === "porter" || a.role === "lee" || G.clean < WASH_TO)) startWash(a); else G.washer = null; }, () => { if (G.washer === a) G.washer = null; }, "wash");
+  work(a, 1.05 / speedOf("sink"), () => { G.sink--; G.clean++; if (G.sink > 0) startWash(a); else G.washer = null; }, () => { if (G.washer === a) G.washer = null; }, "wash");
 }
 function loadDishwasher(a, s) {
   if (!a.hand || a.hand.k !== "dirty") return false;
@@ -3034,9 +3030,9 @@ function staffThink(a, dt) {
   if (h && h.k === "dirty") return staffDirty(a);
   if (h && h.k === "dish") return staffDish(a);
   const role = a.role;
-  const did = role === "waiter" ? tryOrder(a) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryBarOrder(a)) || tryDeliver(a) || washHelp(a) || (G.queue.length > 0 && tryClear(a)) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryCook(a, true)) || tryClear(a)
+  const did = role === "waiter" ? tryOrder(a) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryBarOrder(a)) || tryDeliver(a) || (G.queue.length > 0 && tryClear(a)) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryCook(a, true)) || tryClear(a)
     : role === "porter" ? tryWash(a) || tryClear(a) || tryScrub(a)
-    : role === "cook" ? tryCook(a, cookDrinks()) || washHelp(a) || ((a.idle || 0) >= 3 && tryScrub(a, .3))
+    : role === "cook" ? tryCook(a, cookDrinks()) || ((a.idle || 0) >= 3 && tryScrub(a, .3))
     : role === "drinks" ? (barMode() && tryBarOrder(a)) || (barMode() && G.queue.some(g => g.drinker) && tryClear(a, true)) || tryCook(a, true) || (barMode() && tryClear(a, true))
     : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) || tryScrub(a) : false;
   if (did) { a.idle = 0; return; }

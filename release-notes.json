@@ -985,6 +985,15 @@
         "Without a kitchen porter, nobody washed up unless Lee Lee did, so plates ran out and customers walked out. Waiters and cooks now wash a few plates when clean ones run out.",
         "Managers now serve about as many customers as the same team does with Lee Lee standing by: level 3 gets everything out of the team, level 5 a little more."
       ]
+    },
+    {
+      "id": 87,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: washing-up back to porters",
+      "details": [
+        "Only kitchen porters (and Lee Lee) wash up again. Waiters and cooks stick to their own jobs.",
+        "Managers keep the fairer numbers from the last update on the days they run a place."
+      ]
     }
   ]
 }
