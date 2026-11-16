@@ -145,6 +145,7 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padd
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:7px 13px;font-weight:700;font-size:.88rem}
 .tabs button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ptabs button{font-size:.8rem;padding:5px 11px}.ptabs button.on{background:var(--accent,#E8664A);border-color:var(--accent,#E8664A)}
 #mbody{flex:1;min-height:0}
 .mfoot{flex:none;padding:10px 16px max(10px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--bg)}
 .mfoot .btn{width:100%;max-width:528px;display:block;margin:0 auto;min-height:48px;font-size:1.05rem}
@@ -354,6 +355,7 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
     <div class="mhead">
       <div class="row spread"><div class="grow"><b id="mName" style="font-family:var(--display);font-size:1.25rem">Office</b><div class="small muted" id="mSub"></div></div>
         <button class="btn sm" id="mGuide" aria-label="Guide">📖</button><div class="cashbox"><b id="mCash">£0</b><span id="mStars"></span></div></div>
+      <div class="tabs ptabs" id="ptabs" hidden></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div id="mbody" class="scroll"><div class="wrap" id="mwrap"></div></div>
@@ -457,7 +459,8 @@ const ROLES = {
   porter: { n: "Kitchen porter", w: 18, e: "🧽", job: "Washes up and clears tables." },
   cook: { n: "Cook", w: 30, e: "👩‍🍳", job: "Cooks food orders and leaves them on the counter (drinks too, if there's no one for those)." },
   drinks: { n: "Barista", w: 24, e: "☕", job: "Makes drink orders and leaves them on the counter." },
-  floor: { n: "Cleaner", w: 20, e: "🧹", job: "Mops spills, clears tables, and calms down rowdy customers." }
+  floor: { n: "Cleaner", w: 20, e: "🧹", job: "Mops spills, clears tables, and calms down rowdy customers." },
+  manager: { n: "Manager", w: 40, e: "🧑‍💼", job: "Runs the place when Lee Lee works somewhere else. When she's here, they wait on tables like a waiter." }
 };
 const CAMPAIGNS = [
   { id: "leaf", n: "Leaflets through doors", e: "📄", c: 35, days: 2, b: .2, st: 0 },
@@ -786,7 +789,7 @@ const plated = r => RECIPES[r].s[RECIPES[r].s.length - 1] === "plate"; // drinks
 function starsOf(rep) { let s = 0; while (s < 5 && rep >= STAR_AT[s + 1]) s++; return s; }
 function starsF(rep) { const s = starsOf(rep); return s >= 5 ? 5 : s + (rep - STAR_AT[s]) / (STAR_AT[s + 1] - STAR_AT[s]); }
 function roleName(save, r) { return r === "drinks" ? VENUES[save.venue].drinks : r === "floor" ? VENUES[save.venue].floor : ROLES[r].n; }
-function fairWage(role, lvl) { return Math.round(ROLES[role].w * (1 + .12 * (lvl - 1))); }
+function fairWage(role, lvl) { return role === "manager" ? 26 + 14 * lvl : Math.round(ROLES[role].w * (1 + .12 * (lvl - 1))); }
 // what a level does: each level is 15% quicker at work and 10% quicker on foot than level 1, for 12% more pay
 const lvlWalk = l => .9 + .1 * l, lvlSkill = l => .85 + .15 * l;
 const promoCost = l => 40 * l * l, promoDays = l => 3 * l;
@@ -810,7 +813,7 @@ function newSave(venue, name, site) {
   return { v: 1, venue, name: name || V.names[0], day: 1, cash: 250, rep: 0, created: Date.now(), at: Date.now(),
     owned: V.menu.slice(), off: [], stock, bt: {}, stations: V.start.slice(), lvl: {}, tables: [2, 2, 2], tpos: [0, 1, 2], plates: 6,
     decor: 0, shoes: 0, prem: 0, autoStock: true, diff: 1, bookings: [], bar: 0, staff: [], cands: [], sid: 1, camp: [], disc: null, last: null, hist: [],
-    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0, bi: {}, walls: {}, temps: [], sign: 0, pl: 1, rv: {}, chains: [], places: [], duel: null, buzz: 0, pid: 1 };
+    stats: { served: 0, angry: 0, earned: 0, best: 0 }, site: site || OLD_SITE[venue][0], biz: 1, dep: 0, od: 0, bi: {}, walls: {}, temps: [], sign: 0, pl: 1, rv: {}, chains: [], places: [], duel: null, buzz: 0, pid: 1, cur: "p1", lee: "p1" };
 }
 /* ---------- The city (free play only) ----------
    Leicester, drawn by hand from a rough knowledge of the real city (not a survey): roads, river, parks, districts with
@@ -1251,27 +1254,38 @@ function areaPref(info, r) {
   for (const o of info.ev || []) if (o.E.like.includes(r)) w *= 1 + 1.2 * o.k;
   return w;
 }
-/* ---------- More places: Lee Lee plays her main place, managers run up to two more ----------
-   save.places [{id, site, venue, name, rep, mgr {name, lvl 1-5, wage}, decor, pl, dep, fit, opened, buzz, hist [{d, net}], last}].
-   Each night runPlace works out a managed place's day from the same footfall, weather, events and rivals as the main one. */
-const MAX_PLACES = 2, PLACE_ST = [2, 3]; // stars Lee Lee needs for a second and a third place
+/* ---------- More places: every place is a whole venue ----------
+   The place shown in the office is "swapped in" at the top of the save (S.venue, S.staff, S.stations, ...: the keys in PK);
+   the others wait in save.places as records with the same keys plus an id. save.cur is the id of the place on top and save.lee
+   the place Lee Lee works at (she works wherever the doors are opened). Each night the places she isn't at are run by their
+   manager (a member of staff with role "manager") through runPlace, from their real staff, kitchen, menu and layout.
+   Recipes are shared: each place keeps its own owned list, kept the same for all places of a kind by shareBook. */
+const MAX_PLACES = 2, PLACE_ST = [2, 3]; // stars (at your best place) needed for a second and a third place
 const MGR_FIRST = ["Alex", "Bea", "Chris", "Deepa", "Eddie", "Fern", "Gus", "Harpreet", "Imogen", "Jas", "Kev", "Lola", "Mo", "Nadia", "Ollie", "Pam", "Quinn", "Ravi", "Sian", "Tariq"];
 const autoMenu = (venue, rep) => Object.keys(RECIPES).filter(r => RECIPES[r].v === venue && RECIPES[r].st <= starsOf(rep));
-/* Each managed place's fit-out, chosen by the player (P.design): tables and where they stand (tpos), build-ins (bi), walls, dishes
-   left off the menu (off), and how many staff work under the manager (team). Places from before get every table as a four. */
+const PK = ["venue", "name", "rep", "site", "prem", "dep", "owned", "off", "stock", "bt", "stations", "lvl", "tables", "tpos", "plates", "decor", "bookings", "bar",
+  "staff", "cands", "temps", "sign", "pl", "buzz", "bi", "walls", "L", "hours", "host", "hostN", "hyg", "kd", "hh", "last", "lic", "hist", "disc", "camp", "fit", "opened", "mlast"];
+function placeRec(save) { const o = { id: save.cur || "p1" }; for (const k of PK) if (save[k] !== undefined) o[k] = save[k]; return o; }
+function placeLoad(save, P) { const d = newSave(P.venue, P.name, P.site); for (const k of PK) save[k] = P[k] !== undefined ? P[k] : d[k]; save.cur = P.id; }
+// show another place in the office (opening the doors there means Lee Lee works there that day)
+function viewPlace(save, P) { const i = save.places.indexOf(P); if (i < 0) return; save.places[i] = placeRec(save); placeLoad(save, P); }
+const allPlaces = save => [save].concat(save.places || []);
+const placeId = (save, P) => P === save ? save.cur : P.id;
+const bestRep = save => Math.max(...allPlaces(save).map(p => p.rep || 0));
+const mgrOf = P => (P.staff || []).find(x => x.role === "manager");
+const staffN = P => (P.staff || []).filter(x => x.role !== "manager").length; // the manager doesn't take a staff place
+// one recipe book for the business: every place of a kind knows the same recipes
+function shareBook(save) {
+  for (const v of ["cafe", "pub"]) {
+    const ps = allPlaces(save).filter(p => p.venue === v), u = [];
+    for (const p of ps) for (const r of p.owned || []) if (!u.includes(r) && RECIPES[r] && RECIPES[r].v === v) u.push(r);
+    for (const p of ps) { p.owned = u.slice(); p.stock = p.stock || {}; for (const r of u) for (const k in RECIPES[r].i) if (p.stock[k] == null) p.stock[k] = 0; }
+  }
+}
+// a stand-in save for a place in save.places (the same demand, layout and money code runs on it)
+function placeSave(save, P) { const sv = Object.assign({}, save, { places: [] }); for (const k of PK) sv[k] = P[k]; sv.cur = P.id; return sv; }
+function placeSv(save, P) { const sv = placeSave(save, P); ensureLayout(sv); P.L = sv.L; return sv; }
 const placeComfT = s => Math.min(9, PREMISES[s.t].tables + (hasPk(s, "seats") ? 1 : 0)), placeMaxT = s => Math.min(12, placeComfT(s) + SQUEEZE);
-function pDesign(P) {
-  if (!P.design) { const s = SITE[P.site], n = placeMaxT(s); P.design = { tables: Array(n).fill(4), tpos: Array.from({ length: n }, (_, i) => i), bi: {}, walls: {}, off: [], team: Math.max(1, Math.round(PREMISES[s.t].staff / 2)) }; }
-  return P.design;
-}
-function placeSave(save, P) {
-  const s = SITE[P.site], d = pDesign(P);
-  return { venue: P.venue, site: P.site, prem: s.t, created: save.created, day: save.day, rep: P.rep, tables: d.tables.length ? d.tables : [2],
-    disc: null, camp: save.camp || [], diff: save.diff, biz: save.biz, owned: autoMenu(P.venue, P.rep), off: d.off || [], decor: P.decor || 0, pl: P.pl != null ? P.pl : 1,
-    buzz: P.buzz || 0, host: P.host, hostN: P.hostN, hyg: P.hyg != null ? { r: P.hyg } : null, rv: save.rv, chains: save.chains, places: [], bi: d.bi, walls: d.walls, tpos: d.tpos, stations: [], L: d.L, hours: P.hours, lic: P.lic };
-}
-// a managed place's stand-in save with its free layout made (or brought up to date) and kept in the design
-function placeSv(save, P) { const sv = placeSave(save, P); ensureLayout(sv); pDesign(P).L = sv.L; return sv; }
 // share of a place's tables in the same room as a build-in (for noise)
 function roomShare(sv, id) {
   const L = sv.L, p = L.bi[id]; if (!p || !L.tb.length) return 0;
@@ -1279,70 +1293,118 @@ function roomShare(sv, id) {
   const tb = L.tb.filter(Boolean); return tb.filter((q, i) => { const [w, h] = fpOf("tb", sv.tables[i], q[2]); return roomAt(rooms, q[0] + w / 2, q[1] + h / 2) === r0; }).length / tb.length;
 }
 const biWalled = (sv, id) => { const p = sv.L && sv.L.bi[id]; return !!p && gridEnclosed(sv.L.walls, p[0] + 1.5, p[1] + 1); };
+// managers: hired for a place, or promoted from the team; level 1-5 (wage 26 + 14 a level), trained with mgrTrain
 function makeMgrs(r) {
   const k = Math.floor(r() * MGR_FIRST.length);
-  return [1, 2, 3].map(lvl => ({ name: MGR_FIRST[(k + lvl * 7) % MGR_FIRST.length], lvl, wage: 26 + 14 * lvl + Math.round(r() * 6) }));
+  return [1, 2, 3].map(lvl => ({ name: MGR_FIRST[(k + lvl * 7) % MGR_FIRST.length], role: "manager", lvl, wage: 26 + 14 * lvl + Math.round(r() * 6), morale: 70, days: 0, td: 0 }));
 }
-const mgrTrain = M => M.lvl < 5 ? 350 * M.lvl : null;
-// how many groups a day the manager and their team can look after
-const placeCrew = (P, d) => 4 + 1.5 * P.mgr.lvl + 2.6 * (d.team || 0);
+const mgrTrain = M => M.lvl < 5 ? 350 * M.lvl : null, MGR_MAKE = 150;
+/* What a manager gets out of a place compared with Lee Lee herself (measured with the coachNext bot on the same place and team):
+   on a quiet day they serve nearly everyone (mgrQ), on a busy one they get less out of the team and kitchen (mgrCapE), and
+   customers spend a little less (mgrSpend). A level 1 manager takes about two thirds of what a good player would, level 5 about 90%. */
+const MGR_CAP = 6, mgrQ = lv => .85 + .02 * lv, mgrCapE = lv => .75 + .04 * lv, mgrSpend = lv => .78 + .03 * lv;
+// how many groups a day the manager and the team can look after (staff off sick don't count; agency staff do)
+function placeCrewOf(sv, day) {
+  const M = mgrOf(sv); let c = M ? MGR_CAP * (.6 + .08 * M.lvl) * fatSlow(M.fat) : 0;
+  for (const st of sv.staff || []) if (st !== M && st.sick !== day) c += ROLE_CAP[st.role] * (.75 + .15 * st.lvl) * fatSlow(st.fat);
+  for (const t of sv.temps || []) if (t.day === day) c += ROLE_CAP[t.role];
+  return c * hoursMul(sv, day);
+}
+/* how many groups a day the kitchen can feed: for each kind of appliance, the time an average order spends on it (the menu's
+   steps, drinks weighted as customers order them, upgrades faster) against the time the appliances of that kind are free */
+const KIT_U = .5;
+function kitchenCap(sv, menu, day) {
+  if (!menu.length) return 0;
+  const dw = sv.venue === "pub" ? 1.6 : .8, w = r => RECIPES[r].d ? dw : 1, W = menu.reduce((a, r) => a + w(r), 0), load = {};
+  for (const r of menu) for (const t of RECIPES[r].s) if (STATIONS[t] && STATIONS[t].d) load[t] = (load[t] || 0) + w(r) / W * STATIONS[t].d / (1 + .2 * ((sv.lvl || {})[t] || 0));
+  const items = 1.75 * (1.12 + .07 * starsOf(sv.rep)), T = DAY_LEN * hoursMul(sv, day) * KIT_U;
+  let cap = Infinity; for (const t in load) cap = Math.min(cap, sv.stations.filter(x => x === t).length * T / load[t] / items);
+  return cap;
+}
+// a night for a place's own team: days worked, tiredness, morale, sick days and quitting (as at Lee Lee's place)
+function staffNight(sv, hm, busy, angryMost, r, news, where) {
+  for (const st of sv.staff.slice()) {
+    st.days = (st.days || 0) + 1; st.td = (st.td != null ? st.td : st.days - 1) + 1;
+    const fair = fairWage(st.role, st.lvl);
+    st.morale = (st.morale == null ? 70 : st.morale) + (st.wage >= fair * 1.15 ? 3 : st.wage >= fair ? 1 : -4) - (busy ? 2 : 0) - (angryMost ? 2 : 0);
+    if (st.sick !== sv.day) st.fat = clamp((st.fat || 0) + fatDelta(hm, busy, st.wage >= fair * 1.15), 0, 100); else st.fat = Math.max(0, (st.fat || 0) - 15);
+    if (st.fat > 50) st.morale -= (st.fat - 50) / 10;
+    st.morale = clamp(st.morale, 0, 100);
+    if (st.fat >= 95 && st.morale < 45) { sv.staff.splice(sv.staff.indexOf(st), 1); news.push(`🔥 ${st.name}${where} has burnt out and quit: too many long shifts.`); }
+    else if (st.morale < 15) { sv.staff.splice(sv.staff.indexOf(st), 1); news.push(`${st.name}${where} has quit: they felt underpaid and overworked.`); }
+    else if (st.fat > 75 && r() < (st.fat - 70) / 100) { st.sick = sv.day + 1; st.fat -= 10; news.push(`🤒 ${st.name}${where} is off sick tomorrow, worn out from long shifts.`); }
+    else if (st.fat > 70) news.push(`😴 ${st.name}${where} is exhausted. Shorter days, a bonus or better pay would help.`);
+    else if (st.morale < 30) news.push(`${st.name}${where} is unhappy. A pay rise would help.`);
+  }
+}
+// ingredients as a share of the price, across a menu (managers buy what they use, with a little waste)
+function ingShare(menu) { if (!menu.length) return .3; let a = 0; for (const x of menu) { let c = 0; for (const [k, q] of Object.entries(RECIPES[x].i)) c += q * INGS[k].c; a += c / RECIPES[x].p; } return a / menu.length; }
 function runPlace(save, P, r, news) {
-  const d = pDesign(P), sv = placeSv(save, P), s = SITE[P.site], lv = P.mgr.lvl, info = dayInfo(sv, save.day), m = siteMix(s), pub = P.venue === "pub";
-  const menu = menuOf(sv).filter(x => RECIPES[x].st <= starsOf(P.rep)), drinks = menu.some(x => RECIPES[x].d), food = menu.some(x => !RECIPES[x].d);
-  // the menu: too short, or no drinks or no food, and some people go elsewhere; dishes that suit the area and the day sell more
-  const fit = Math.min(1, .5 + .1 * menu.length) * (drinks ? 1 : .8) * (food ? 1 : .75);
-  // opening hours: the crowd follows the hours (expectedGroups), the team covers the hours, tired teams are slower, a sick day leaves them short
-  const hm = hoursMul(sv, save.day), [ho, hc] = hoursOn(sv, save.day), sick = P.sick === save.day;
-  const hp = hostPlan(sv, save.day), hn = hp && !hp.closed ? hp.n : 0;
-  const groups = (expectedGroups(sv) + hn) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), crew = placeCrew(P, d) * hm * fatSlow(P.fat) * (sick ? .7 : 1);
+  const sv = placeSv(save, P), s = siteOf(sv), info = dayInfo(sv, save.day), m = siteMix(s), pub = sv.venue === "pub", nm = news || [], M = mgrOf(sv);
+  sv.staff = sv.staff || []; sv.temps = sv.temps || [];
+  const hm = hoursMul(sv, save.day), [ho, hc] = hoursOn(sv, save.day), rent = siteRent(s, sv.venue, save.biz);
+  const temps = sv.temps.filter(x => x.day === save.day), payroll = Math.round((sv.staff.reduce((a, x) => a + x.wage, 0) + temps.reduce((a, x) => a + x.wage, 0)) * hm);
+  const done = (net, last) => {
+    sv.temps = sv.temps.filter(x => x.day > save.day); sv.camp = (sv.camp || []).map(c => ({ id: c.id, days: c.days - 1 })).filter(c => c.days > 0); sv.disc = null; sv.cands = makeCands();
+    sv.mlast = last; sv.hist = (sv.hist || []).concat([{ d: save.day, net: Math.round(net) }]).slice(-60);
+    for (const k of PK) P[k] = sv[k];
+    return net;
+  };
+  if (!M) { // nobody to run it: shut for the day, but the rent and the team still have to be paid
+    sv.rep = Math.max(0, sv.rep - 4); nm.push(`🔒 ${sv.name} stayed shut today: no manager, and Lee Lee was working elsewhere. Rent and wages were still paid.`);
+    const net = -(rent + payroll); staffNight(sv, 0, false, false, r, nm, ` at ${sv.name}`);
+    return done(net, { day: save.day, shut: 1, people: 0, served: 0, happy: 0, rev: 0, wages: payroll, rent, stock: 0, bills: 0, fights: 0, fine: 0, host: null, hours: [ho, hc], net, repD: -4, extra: {}, short: 0, mgr: null });
+  }
+  const lv = M.lvl, kitOk = x => RECIPES[x].s.every(t => t === "plate" || sv.stations.includes(t));
+  const menu = menuOf(sv).filter(x => RECIPES[x] && RECIPES[x].v === sv.venue && kitOk(x)), drinks = menu.some(x => RECIPES[x].d), food = menu.some(x => !RECIPES[x].d);
+  // the menu: too short, or no drinks or no food, and some people go elsewhere
+  const fit = menu.length ? Math.min(1, .5 + .1 * menu.length) * (drinks ? 1 : .8) * (food ? 1 : .75) : 0;
+  const hp = hostPlan(sv, save.day), hn = hp && !hp.closed ? hp.n : 0, booked = (sv.bookings || []).filter(b => b.ok && b.day === save.day).length;
+  const groups = (expectedGroups(sv) + hn + booked) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), kcap = kitchenCap(sv, menu, save.day), crew = Math.min(placeCrewOf(sv, save.day), kcap);
   const cr = crampOf(sv, sv.L), cramp = cr.length ? cr.reduce((a, v) => a + (v || 0), 0) / cr.length : 0;
-  const servedG = Math.min(groups, crew) * (.86 + .025 * lv) * (1 - .1 * cramp) * fit * (d.sign && d.team > 0 ? 1 : .94), people = groups * 2, served = servedG * 2;
+  const waiters = sv.staff.some(x => x.role === "waiter") || temps.some(x => x.role === "waiter");
+  const servedG = Math.min(groups * mgrQ(lv), crew * mgrCapE(lv)) * (1 - .1 * cramp) * fit * (sv.sign && waiters ? 1 : .94), people = groups * 2, served = servedG * 2;
   // noise: tables in the same room as the sports TV on game days, or the soft play
   const share = id => roomShare(sv, id);
   const noise = 1 - (hasBi(sv, "sports") && (info.tv || (info.match && pub)) ? .14 * share("sports") : 0) - (hasBi(sv, "softplay") ? .06 * share("softplay") : 0);
-  const happy = served * (.6 + .07 * lv) * noise * (1 - .3 * cramp);
+  const happy = served * (.6 + .07 * lv) * noise * (1 - .3 * cramp) * hygA(sv) ** .3;
   const wsum = menu.reduce((a, x) => a + prefW(info, x), 0) || 1, avg = menu.reduce((a, x) => a + RECIPES[x].p * prefW(info, x), 0) / wsum || 5;
-  const pr = sitePrice(sv), rev = served * 1.55 * avg * pr, tips = rev * .08 * siteTip(sv);
+  const pr = sitePrice(sv), disc = sv.disc ? 1 - sv.disc.pct * .25 : 1, rev = served * 1.55 * avg * pr * disc * mgrSpend(lv), tips = rev * .08 * siteTip(sv);
   // build-ins, worked out for the day
   const ex = {}, add = (k, v) => { ex[k] = Math.round(((ex[k] || 0) + v) * 100) / 100; };
   if (hasBi(sv, "softplay")) add("soft", served * .12 * 2.5);
   if (hasBi(sv, "nook")) { const k = Math.min(8, Math.round(groups * .16 * (1 + 1.5 * m.com + 1.5 * m.stu) * (info.wd >= 5 ? .6 : 1))); add("nook", k * 2 + k * 2.4 * 3.4 * pr * .7); }
   if (hasBi(sv, "meet") && biWalled(sv, "meet") && info.wd < 5 && r() < .2 + .6 * m.com) add("meet", 25 + 50 * m.com + 15 + 5 * 9 * pr * .7);
   if (hasBi(sv, "hatch")) add("hatch", siteFoot(s, "cafe") * (18 + 22 * m.com + 10 * m.stu) * localPrice(s) * (info.w === 2 || info.w === 5 ? .75 : 1) * .65 * (.9 + .2 * r()));
-  if (hasBi(sv, "sports")) add("tv", -BI.sports.lv[Math.min(1, (d.bi.sports.lv || 1) - 1)].fee);
-  if (hasBi(sv, "fruit")) add("fruit", (d.bi.fruit.n || 1) * served * .45 * .85);
+  if (hasBi(sv, "sports")) add("tv", -BI.sports.lv[Math.min(1, (sv.bi.sports.lv || 1) - 1)].fee);
+  if (hasBi(sv, "fruit")) add("fruit", (sv.bi.fruit.n || 1) * served * .45 * .85);
   if (hasBi(sv, "drinks")) { const k = Math.min(8, Math.round(groups * .16 * (1 + m.night + .5 * m.stu))); add("drinks", k * 2 * 1.5 * 4.8 * pr * .6 * (.85 + .04 * lv)); }
   if (hasBi(sv, "pool")) { const k = Math.min(6, Math.round(groups * .12 + 1)); add("pool", k * 6 + k * 6 * 4.5 * pr * .7); }
-  if (hasBi(sv, "func") && biWalled(sv, "func") && r() < .3) add("func", 6 * (6 + 2 * starsOf(P.rep)) + 40 + 6 * 12 * pr * .7);
+  if (hasBi(sv, "func") && biWalled(sv, "func") && r() < .3) add("func", 6 * (6 + 2 * starsOf(sv.rep)) + 40 + 6 * 12 * pr * .7);
   const extra = Object.values(ex).reduce((a, v) => a + v, 0);
-  const wages = Math.round((P.mgr.wage + (d.team || 0) * 22) * hm), rent = siteRent(s, P.venue, save.biz), stock = rev * .3;
-  const bills = Math.round(billsHour(sv) * ((hc - ho) - (STD_H[P.venue][1] - STD_H[P.venue][0])));
-  // late nights at a pub: the odd fight (fewer with more staff about), and the neighbours
-  if (!P.hygN) P.hygN = save.day + 4 + Math.floor(r() * 10);
-  if (save.day >= P.hygN) {
-    P.hyg = clamp(Math.round(1.6 + .6 * lv + ((d.team || 0) >= 2 ? .5 : 0) - (P.fat || 0) / 40 + r() - .5), 0, 5);
-    P.hygN = save.day + (P.hyg <= 2 ? 4 : 14 + Math.floor(r() * 10));
-    (news || []).push(`🧾 Food hygiene inspection at ${P.name}: rated ${P.hyg} out of 5.${P.hyg <= 2 ? " A better manager or more staff would help; they'll be back soon." : ""}`);
+  const stock = Math.round(rev / pr * ingShare(menu) * 1.15), bills = Math.round(billsHour(sv) * ((hc - ho) - (STD_H[sv.venue][1] - STD_H[sv.venue][0])));
+  // food hygiene: the inspector calls now and then; a good manager and enough staff keep the rating up
+  const team = staffN(sv), avgFat = sv.staff.reduce((a, x) => a + (x.fat || 0), 0) / Math.max(1, sv.staff.length);
+  if (!sv.hyg || !sv.hyg.next) sv.hyg = Object.assign({ r: null, day: 0 }, sv.hyg || {}, { next: save.day + 4 + Math.floor(r() * 10) });
+  if (save.day >= sv.hyg.next) {
+    const hr = clamp(Math.round(1.6 + .6 * lv + (team >= 2 ? .5 : 0) - avgFat / 40 + r() - .5), 0, 5);
+    sv.hyg = { r: hr, day: save.day, next: save.day + (hr <= 2 ? 4 : 14 + Math.floor(r() * 10)), why: [] };
+    nm.push(`🧾 Food hygiene inspection at ${sv.name}: rated ${hr} out of 5.${hr <= 2 ? " A better manager or more staff would help; they'll be back soon." : ""}`);
   }
-  const nm = news || [], fights = pub && hc > 24 && r() < .08 * (hc - 24) * (1.6 - .15 * (d.team || 0)) ? 1 : 0, breaks = fights ? 25 : 0;
-  const fine = licenceNight(sv, hc, fights, r, nm, P.name, hn ? hp.H.noise : 0); P.lic = sv.lic;
-  const hostc = hn ? hp.H.c + hn * 2 * avg * (hp.H.spend - 1) * -1 : 0; if (hn) { P.hostN = P.hostN || {}; P.hostN[hp.H.id] = (P.hostN[hp.H.id] || 0) + 1; }
-  // the team tires on long days (P.fat), goes off sick, and in the end someone walks out
-  P.fat = clamp((P.fat || 0) + fatDelta(hm, groups > crew, false), 0, 100);
-  if (P.fat > 75 && r() < (P.fat - 70) / 100) { P.sick = save.day + 1; P.fat -= 10; nm.push(`🤒 Someone at ${P.name} is off sick tomorrow, worn out from long shifts.`); }
-  else if (P.fat >= 95 && d.team > 0 && r() < .35) { d.team--; nm.push(`🔥 One of the team at ${P.name} has burnt out and quit: too many long shifts.`); }
-  else if (P.fat > 70) nm.push(`😴 The team at ${P.name} is exhausted. Shorter days or a bonus would help.`);
+  // late nights at a pub: the odd fight (fewer with more staff about), and the neighbours
+  const fights = pub && hc > 24 && r() < .08 * (hc - 24) * (1.6 - .15 * team) ? 1 : 0, breaks = fights ? 25 : 0;
+  const fine = licenceNight(sv, hc, fights, r, nm, sv.name, hn ? hp.H.noise : 0);
+  const hostc = hn ? hp.H.c + hn * 2 * avg * (hp.H.spend - 1) * -1 : 0; if (hn) { sv.hostN = sv.hostN || {}; sv.hostN[hp.H.id] = (sv.hostN[hp.H.id] || 0) + 1; }
+  staffNight(sv, hm, groups > crew, people - served > served, r, nm, ` at ${sv.name}`);
   const repD = Math.round(happy * .9 - (people - served) * 2.2 + (happy / Math.max(1, served) - .7) * 20) - 10 * fights;
-  P.rep = Math.max(0, P.rep + repD);
-  const net = Math.round((rev + tips + extra - wages - rent - stock - bills - breaks - fine - hostc) * 100) / 100;
-  P.last = { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages, rent, stock: Math.round(stock), bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0 };
-  P.hist = (P.hist || []).concat([{ d: save.day, net: Math.round(net) }]).slice(-28);
-  return net;
+  sv.rep = Math.max(0, sv.rep + repD);
+  const net = Math.round((rev + tips + extra - payroll - rent - stock - bills - breaks - fine - hostc) * 100) / 100;
+  return done(net, { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages: payroll, rent, stock, bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0, kit: kcap < placeCrewOf(sv, save.day) && groups > kcap * 1.05 ? 1 : 0, mgr: M.name, menu: menu.length });
 }
-// what a buyer pays: the deposit back, half the fit-out, and goodwill from recent profits and reputation
+// what a buyer pays: the deposit back, half the fit-out, the kitchen and build-ins, and goodwill from recent profits and reputation
 function placeValue(P) {
   const h = (P.hist || []).slice(-14), avg = h.length ? h.reduce((a, x) => a + x.net, 0) / h.length : 0;
-  const fitted = Object.keys(pDesign(P).bi).reduce((a, id) => a + (BI[id] ? BI[id].c * ((pDesign(P).bi[id].n) || 1) : 0), 0);
+  const fitted = Object.keys(P.bi || {}).reduce((a, id) => a + (BI[id] ? BI[id].c * ((P.bi[id].n) || 1) : 0), 0) + (P.stations || []).reduce((a, t) => a + (t && STATIONS[t] ? STATIONS[t].c : 0), 0) * .5;
   return Math.round((P.dep || 0) + (P.fit || 0) * .5 + fitted * .4 + Math.max(0, avg) * 20 + P.rep);
 }
 const closeValue = P => Math.round((P.dep || 0) + (P.fit || 0) * .15);
@@ -1378,7 +1440,7 @@ function duelOk(save, R) {
   const s = siteOf(save);
   if (rvHp(save, R) <= 0) return "It has closed down.";
   if (R.k !== save.venue) return save.venue === "pub" ? "Only another pub or restaurant will take on a pub." : "Only another café will take on a café.";
-  if (Math.hypot(R.x - s.x, R.y - s.y) > 1.5) return "Too far from your main place (1.5 km at most).";
+  if (Math.hypot(R.x - s.x, R.y - s.y) > 1.5) return "Too far from this place (1.5 km at most).";
   if (save.duel) return "You already have a taste-off booked.";
   return "";
 }
@@ -1694,7 +1756,34 @@ function migrate(s) {
   const d = newSave(s.venue, s.name);
   if (!Array.isArray(s.tpos) && Array.isArray(s.tables)) s.tpos = s.tables.map((_, i) => i);
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
+  migratePlaces(s);
   return s;
+}
+/* Saves from before every place was a whole venue: a managed place had a manager (P.mgr), a number of staff (design.team) and
+   a fit-out (P.design) but no kitchen, staff of its own or stock. Turn each into a full place record (keys PK) with a starter kitchen
+   for the dishes it served, named staff, and its recipes added to the shared book. */
+function migratePlaces(s) {
+  if (!s.cur) s.cur = "p1";
+  if (!s.lee) s.lee = s.cur;
+  s.places = s.places || [];
+  for (const P of s.places) {
+    if (P.stations) continue;
+    const d = P.design || {}, site = SITE[P.site] || SITE[OLD_SITE[P.venue][0]], prem = PREMISES[site.t], V = VENUES[P.venue];
+    const menu = autoMenu(P.venue, P.rep || 0), need = [];
+    for (const r of menu) for (const t of RECIPES[r].s) if (t !== "plate" && !need.includes(t)) need.push(t);
+    let kit = V.start.filter(t => t !== "sink"); for (const t of need) if (!kit.includes(t) && t !== "sink") kit.push(t);
+    kit = kit.slice(0, prem.slots - 1); kit.push("sink", "basin");
+    const n = d.team != null ? d.team : 1, roles = P.venue === "pub" ? ["waiter", "cook", "drinks", "porter", "floor", "waiter", "cook"] : ["waiter", "cook", "drinks", "porter", "floor", "waiter", "cook"];
+    const staff = [];
+    if (P.mgr) staff.push({ id: "s" + (s.sid = (s.sid || 1) + 1), name: P.mgr.name, role: "manager", lvl: P.mgr.lvl || 1, wage: P.mgr.wage || 40, morale: 70, days: 0, td: 0, fat: P.fat || 0 });
+    for (let i = 0; i < Math.min(n, prem.staff); i++) { const role = roles[i % roles.length]; staff.push({ id: "s" + (s.sid = (s.sid || 1) + 1), name: MGR_FIRST[(i * 7 + (P.site || "").length * 3 + 5) % MGR_FIRST.length], role, lvl: 2, wage: fairWage(role, 2), morale: 70, days: 0, td: 0, fat: P.fat || 0 }); }
+    const stock = {}; for (const r of menu) for (const k in RECIPES[r].i) stock[k] = 10;
+    Object.assign(P, { prem: site.t, owned: menu.slice(), off: (d.off || []).slice(), stock, bt: {}, stations: kit, lvl: {}, tables: d.tables || [4, 4], tpos: d.tpos || [0, 1],
+      plates: 6 + 4 * site.t, bookings: [], bar: 0, staff, cands: [], temps: [], sign: d.sign || 0, bi: d.bi || {}, walls: d.walls || {}, L: null,
+      hyg: P.hyg != null ? { r: P.hyg, day: 0, next: P.hygN || s.day + 7 } : null, hist: (P.hist || []).slice(), mlast: P.last || null, last: null, camp: [], disc: null });
+    for (const k of ["mgr", "design", "fat", "bon", "sick", "hygN"]) delete P[k];
+  }
+  shareBook(s);
 }
 function saveGame() { if (S && slot >= 0) { S.at = Date.now(); store(slotKey(slot), S); } }
 function show(id) { for (const s of ["title", "camp", "newgame", "play", "manage", "city"]) $(s).hidden = s !== id; view = id; }
@@ -1707,7 +1796,7 @@ const LEE = { skin: "#C68A5E", hair: "#22140E", style: "bun", shirt: "#E8664A", 
 function randomLook() {
   return { skin: pickOne(SKINS), hair: pickOne(HAIRS), style: pickOne(["short", "short", "long", "bun", "curly", "bald"]), shirt: pickOne(SHIRTS), legs: pickOne(["#3B4252", "#2F3B54", "#5A4636", "#2A2A2A"]), slim: Math.random() < .5 };
 }
-const STAFF_LOOK = { waiter: { shirt: "#2F5D7C", apron: "#1F2328" }, porter: { shirt: "#6A8F3A", apron: "#DDE8C8" }, cook: { shirt: "#F4F1EA", apron: "#F4F1EA", hat: 1 }, drinks: { shirt: "#7A3E8F", apron: "#2A1F2E" }, floor: { shirt: "#2B2B2B" } };
+const STAFF_LOOK = { waiter: { shirt: "#2F5D7C", apron: "#1F2328" }, porter: { shirt: "#6A8F3A", apron: "#DDE8C8" }, cook: { shirt: "#F4F1EA", apron: "#F4F1EA", hat: 1 }, drinks: { shirt: "#7A3E8F", apron: "#2A1F2E" }, floor: { shirt: "#2B2B2B" }, manager: { shirt: "#3A3F58", apron: "#3A3F58" } };
 
 function rr(c, x, y, w, h, r) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
 function circ(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); }
@@ -1984,8 +2073,12 @@ const GUIDE = [
     "<b>Price level</b>: Bargain pulls customers from rivals but earns less each; Premium and Luxury earn more each but put people off, so they suit a place that's always full.",
     "The city centre is tough until you're well known (about 3★ and up), then it can be far busier than the suburbs."] },
   { id: "places", e: "🏢", t: "More places", p: [
-    "At 2★ you can open a second place, at 3★ a third. A manager runs it every night; you set its design, team, hours, events and prices.",
-    "Swap your main place with another to run that one yourself."] },
+    "At 2★ (at any of your places) you can open a second place, at 3★ a third. Find one on the City map. The fit-out comes with a starter kitchen for a café or a pub; then you hire its staff and grow it like your own.",
+    "Every place is a whole venue with its own menu, kitchen, tables, team, stock, hours, events, prices, hygiene rating and stars. The buttons at the top of the office switch between them, and the tabs work the same for each.",
+    "<b>Lee Lee works wherever you open the doors.</b> Show a place in the office and tap Open: she works there that day. Recipes are shared: learn one once and every place of that kind knows it (new recipes unlock with your best place's stars).",
+    "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu: too few staff or a kitchen that can't keep up, and customers walk out. A level 1 manager makes about two thirds of what you would; a level 5 about 90%. Train them in the Team tab.",
+    "When Lee Lee goes to a place, if the place she left has no manager of its own, this place's manager goes over to run it (and comes back when she does). If both have managers, the one here waits on tables with her. A place with neither stays shut, but rent and wages are still paid.",
+    "Staff belong to a place. In the Team tab you can move anyone to another place (managers don't take up a staff place), or make an experienced member of staff a manager."] },
   { id: "money", e: "💷", t: "Money and difficulty", p: [
     "<b>Peaceful</b>: lower rent, no overdraft charges, you can't go bust. <b>Normal</b>: a nightly overdraft fee, and a week overdrawn ends your lease (you move somewhere cheap). <b>Hard</b>: higher rent, and five days overdrawn is game over. You can only make it easier later.",
     "How busy the days are is separate: <b>Relaxed</b>, <b>Normal</b> or <b>Busy</b> (more customers, less patience, bigger tips and faster fame).",
@@ -2172,8 +2265,9 @@ function startDay() {
   const crew = LV == null ? S.staff.filter(x => x.sick !== S.day).concat((S.temps || []).filter(x => x.day === S.day).map((x, k) => ({ id: "temp" + k, name: x.name, role: x.role, lvl: 2, morale: 70, temp: 1 }))) : S.staff;
   for (const st of crew) {
     const look = Object.assign(randomLook(), STAFF_LOOK[st.role] || {}, st.look || {});
-    const home = nearFree(...staffHome(st.role));
-    const a = mkActor({ id: st.id, name: st.name, role: st.role, look, x: home[0], y: home[1], speed: 2.3 * lvlWalk(st.lvl) * (.85 + st.morale * .003) * fatSlow(st.fat), skill: lvlSkill(st.lvl) * (.85 + st.morale * .003) * fatSlow(st.fat) });
+    const role = st.role === "manager" ? "waiter" : st.role; // a manager waits on tables when Lee Lee is in
+    const home = nearFree(...staffHome(role));
+    const a = mkActor({ id: st.id, name: st.name, role, look, x: home[0], y: home[1], speed: 2.3 * lvlWalk(st.lvl) * (.85 + st.morale * .003) * fatSlow(st.fat), skill: lvlSkill(st.lvl) * (.85 + st.morale * .003) * fatSlow(st.fat) });
     G.actors.push(a);
   }
   paused = false; closeDialog(); closeMini();
@@ -3798,7 +3892,7 @@ function endDay() {
   // rivals lose trade to places that are better than them
   const mineC = [Object.assign(compInfo(S), { venue: S.venue })].concat((S.places || []).map(P => Object.assign(compInfo(placeSave(S, P)), { venue: P.venue })));
   for (const R of rivalsTick(S, mineC)) news.push(`${R.e} ${R.n} has closed down: their customers are looking for somewhere new.`);
-  for (const P of S.places || []) if (P.last && P.last.net < -50) news.push(`🏪 ${P.name} lost ${money(-Math.round(P.last.net))} yesterday. Check it in the City tab.`);
+  for (const P of S.places || []) if (P.mlast && P.mlast.day === S.day && P.mlast.net < -50 && !P.mlast.shut) news.push(`🏪 ${P.name} lost ${money(-Math.round(P.mlast.net))} today. Tap it at the top of the office to look after it.`);
   // campaigns and specials
   S.camp = (S.camp || []).map(c => ({ id: c.id, days: c.days - 1 })).filter(c => c.days > 0);
   const disc = S.disc; S.disc = null;
@@ -3829,7 +3923,7 @@ function endDay() {
   if (G.hr) { G.hr.cost = Math.round((wages / Math.max(1, hc - ho) + billsHour(S)) * 100) / 100; S.hh = S.hh || {}; S.hh[info.wd] = Object.assign({ day: S.day }, G.hr); }
   const last = { extra: G.extra, others, day: S.day, rev: G.rev, tips: G.tips, wages, rent, bills, breaks, fine, hostc, ill: illPay, deliv, host: G.host && G.host.id, fights: G.fights || 0, hr: G.hr, hours: [ho, hc], fee, net, served: G.served, angry: G.angry, turned: G.turned, happy: G.happy, burnt: G.burnt, spills: G.spills, thrown: G.thrown, perfect: G.perfect,
     messes, repD: S.rep - repBefore, spoiled, news, people: G.people, disc, goals, bonus, streak: G.bestStreak, advice: dayTips(G), repairs };
-  S.last = last;
+  S.last = last; S.lnews = { day: S.day, n: news };
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
   S.stats.served += G.served; S.stats.angry += G.angry; S.stats.earned += income; S.stats.best = Math.max(S.stats.best, Math.round(net));
   S.day++;
@@ -3904,7 +3998,8 @@ function renderManage(t) {
   tab = t || tab;
   const V = VENUES[S.venue], st = starsOf(S.rep);
   $("mName").textContent = S.name;
-  $("mSub").textContent = `${siteOf(S).n} · ${SEASONS[calOf(S.day).se].e} day ${S.day} next`;
+  const Mg = mgrOf(S); placeTabs();
+  $("mSub").textContent = `${siteOf(S).n} · ${SEASONS[calOf(S.day).se].e} day ${S.day} next${(S.places || []).length ? S.cur === S.lee ? " · Lee Lee works here" : Mg ? ` · ${Mg.name} manages` : " · no manager" : ""}`;
   $("mCash").textContent = money(Math.round(S.cash * 100) / 100); $("mCash").className = S.cash < 0 ? "neg" : "";
   $("mStars").innerHTML = `<span class="stars" style="font-size:.85rem">${starStr(st)}</span>`;
   $("tabs").innerHTML = TABS.map(([id, n]) => `<button class="${id === tab ? "on" : ""}" data-tab="${id}">${n}</button>`).join("");
@@ -3917,6 +4012,7 @@ function renderManage(t) {
   if (stockOpen && $("stockBox")) { $("stockBox").open = true; stockOpen = false; }
   $("mbody").scrollTop = sc;
 }
+$("ptabs").onclick = e => { const b = e.target.closest("[data-pv]"); if (b && b.dataset.pv !== S.cur) showPlace(b.dataset.pv); };
 $("tabs").onclick = e => { const b = e.target.closest("[data-tab]"); if (b) { renderManage(b.dataset.tab); $("mbody").scrollTop = 0; } };
 function topUpCost() { const sug = suggested(); let c = 0; for (const k in sug) c += Math.max(0, sug[k] - (S.stock[k] || 0)) * INGS[k].c; return Math.round(c * 100) / 100; }
 // with automatic stock on, a supplier tops up anything running low during the day (at a call-out premium), so it doesn't run out
@@ -3946,6 +4042,7 @@ function autoStock() {
 }
 $("openBtn").onclick = () => {
   if (S.bust) { bustDialog(); return; }
+  { const say = leeArrives(); if (say) { saveGame(); toastOffice(say); } }
   if (S.autoStock !== false) { autoStock(); saveGame(); }
   const sug = suggested(), short = Object.keys(sug).filter(k => (S.stock[k] || 0) < sug[k] * .5);
   if (short.length) {
@@ -3953,11 +4050,24 @@ $("openBtn").onclick = () => {
       <div class="acts"><button class="btn pri" data-a="stock">Buy stock</button><button class="btn" data-a="go">Open anyway</button></div>`, a => { if (a === "go") startDay(); else { stockOpen = true; renderManage("day"); } });
   } else startDay();
 };
+// how a day under a manager went (the Today tab of a place Lee Lee wasn't at)
+function mlastCard(L) {
+  return `<div class="card"><div class="row spread"><h2>Day ${L.day}${L.mgr ? `, run by ${esc(L.mgr)}` : ""}</h2><b class="${L.net >= 0 ? "pos" : "neg"}">${L.net >= 0 ? "+" : ""}${money(L.net)}</b></div>
+    <div class="lines small">${L.shut ? `<div><span>Shut all day: no manager</span><b></b></div>` : `<div><span>Customers served</span><b>${L.served} of ${L.people}</b></div><div><span>Takings + tips</span><b>${money(L.rev)}</b></div>
+    ${Object.entries(L.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].e} ${EXTRA_N[k].n}</span><b class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : "−"}${money(Math.abs(Math.round(v)))}</b></div>`).join("")}
+    <div><span>Stock used</span><b>−${money(L.stock)}</b></div>`}<div><span>Wages</span><b>−${money(L.wages)}</b></div><div><span>Rent${L.bills ? " and bills" : ""}</span><b>−${money(L.rent + (L.bills || 0))}</b></div>
+    ${L.fights ? `<div><span>💥 Fights</span><b class="neg">${L.fights}</b></div>` : ""}${L.fine ? `<div><span>🏛️ Council fine</span><b class="neg">−${money(L.fine)}</b></div>` : ""}
+    <div><span>Reputation</span><b class="${L.repD >= 0 ? "pos" : "neg"}">${L.repD >= 0 ? "+" : ""}${L.repD}</b></div></div>
+    ${L.short ? `<p class="small neg">About ${L.short} groups more than the team could look after walked away: hire more staff here.</p>` : ""}${L.menu === 0 ? `<p class="small neg">The kitchen here can't make anything on the menu: check the Menu and Upgrades tabs.</p>` : ""}</div>`;
+}
 function tabDay() {
-  const L = S.last, st = starsOf(S.rep), next = st < 5 ? STAR_AT[st + 1] : null;
+  const M0 = S.mlast && (!S.last || S.mlast.day > S.last.day) ? S.mlast : null;
+  const L = M0 ? null : S.last, st = starsOf(S.rep), next = st < 5 ? STAR_AT[st + 1] : null;
   const prog = next ? (S.rep - STAR_AT[st]) / (next - STAR_AT[st]) : 1;
-  let h = "";
-  if (L && L.news.length) h += `<div class="news">${L.news.map(esc).join("<br>")}</div>`;
+  const NW = S.lnews && S.lnews.day === S.day - 1 ? S.lnews.n : L ? L.news : [];
+  let h = leeNote();
+  if (NW && NW.length) h += `<div class="news">${NW.map(esc).join("<br>")}</div>`;
+  if (M0) h += mlastCard(M0);
   if (L) {
     h += `<div class="card"><div class="row spread"><h2>Day ${L.day}</h2><b class="${L.net >= 0 ? "pos" : "neg"}">${L.net >= 0 ? "+" : ""}${money(L.net)}</b></div>
       <p class="small">${L.served} of ${L.people} customers served${L.angry ? `, <b class="neg">${L.angry} walked out</b>` : ""}${L.turned ? `, <b class="neg">${L.turned} found nothing in stock</b>` : ""}${L.burnt ? `, ${L.burnt} burnt` : ""}.</p>
@@ -3967,7 +4077,7 @@ function tabDay() {
       ${Object.keys(L.spoiled).length ? `<div><span>Went off overnight</span><b>${Object.entries(L.spoiled).map(([k, n]) => n + " " + INGS[k].e).join(" ")}</b></div>` : ""}</div></details></div>`;
     if (L.hr) h = h.replace(/<\/details><\/div>$/, `</details>${hourChart(L.hr)}</div>`);
     if (L.advice) h += `<div class="news small"><b>💡 Next time</b><br>${L.advice.map(esc).join("<br>")}</div>`;
-  } else h += `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
+  } else if (!M0) h += (S.places || []).length ? `<div class="card"><h2>New place</h2><p>${esc(S.name)} hasn't opened yet. Set it up like your own: menu, team, kitchen and tables. ${mgrOf(S) ? `${esc(mgrOf(S).name)} runs it from tomorrow` : "It needs a manager (Team tab) to open"} unless Lee Lee works here.</p></div>` : `<div class="card"><h2>Welcome!</h2><p>Lee Lee has the keys to her first place. Open the doors when you're ready.</p></div>`;
   if (S.hyg && S.hyg.r != null) h += `<div class="card"><div class="row spread"><div class="grow"><h2>Food hygiene</h2><p class="small muted">Inspected on day ${S.hyg.day}${S.hyg.why && S.hyg.why.length ? ": " + esc(S.hyg.why.join(", ")) : ""}. The next visit is unannounced. Keep appliances clean, spills mopped, plates washed and a hand basin in the kitchen.</p></div><span class="hyg h${S.hyg.r}">${S.hyg.r}</span></div></div>`;
   h += `<div class="card"><div class="row spread"><h2>Reputation</h2><span class="stars">${starStr(st)}</span></div><div class="meter"><i style="width:${prog * 100}%"></i></div>
     <p class="small muted">${next ? `${Math.round(S.rep)} of ${next} for the next star.` : "Five stars: the best in town!"} About <b>${Math.round(expectedGroups(S))}</b> groups expected tomorrow.</p></div>`;
@@ -4014,7 +4124,7 @@ function hourChart(hr, title) {
 }
 function hoursCard(P) {
   const sv = P ? placeSv(S, P) : S, [lo, hi] = HOUR_LIM[sv.venue], [sa, sz] = STD_H[sv.venue], m = siteMix(siteOf(sv));
-  const pay = P ? P.mgr.wage + (pDesign(P).team || 0) * 22 : S.staff.reduce((a, x) => a + x.wage, 0), pub = sv.venue === "pub";
+  const pay = (P || S).staff.reduce((a, x) => a + x.wage, 0), pub = sv.venue === "pub";
   const gOn = day => P ? expectedGroups(Object.assign({}, sv, { day })) : groupsOn(day);
   let rows = "", mx = 0;
   for (let wd = 0; wd < 7; wd++) for (let h = lo; h < hi; h++) mx = Math.max(mx, footRate(sv.venue, wd, h + .5, m));
@@ -4066,7 +4176,7 @@ function stockList() {
   return h;
 }
 function tabMenu() {
-  const st = starsOf(S.rep), V = S.venue;
+  const st = starsOf(bestRep(S)), V = S.venue; // recipes are for the whole business: your best place's stars unlock them
   let h = `<div class="card"><h2>On the menu</h2>`;
   for (const r of S.owned) {
     const R = RECIPES[r], on = !S.off.includes(r), missing = R.s.filter(t => t !== "plate" && !S.stations.includes(t));
@@ -4091,19 +4201,28 @@ function tabMenu() {
 }
 function tabStaff() {
   const prem = PREMISES[S.prem];
-  let h = `<div class="card"><div class="row spread"><h2>Your team</h2><span class="muted small">${S.staff.length} of ${prem.staff} places</span></div>`;
-  if (!S.staff.length) h += `<p class="muted small">It's just Lee Lee for now. Staff get on with their job by themselves and are paid each night.</p>`;
+  const others = S.places || [], Mg = mgrOf(S);
+  let h = `<div class="card"><div class="row spread"><h2>${others.length ? `Team at ${esc(S.name)}` : "Your team"}</h2><span class="muted small">${staffN(S)} of ${prem.staff} places${Mg ? " + manager" : ""}</span></div>`;
+  if (!S.staff.length) h += `<p class="muted small">${others.length ? "Nobody works here yet." : "It's just Lee Lee for now."} Staff get on with their job by themselves and are paid each night.</p>`;
+  if (others.length && !Mg) h += `<p class="small neg">No manager here: when Lee Lee works at another place, this one stays shut. Hire one below, or make someone a manager.</p>`;
   for (const s of S.staff) {
-    const canPromote = s.lvl < 5 && (s.days || 0) >= promoDays(s.lvl), pcost = promoCost(s.lvl);
+    const mgr = s.role === "manager", canPromote = s.lvl < 5 && (mgr || (s.days || 0) >= promoDays(s.lvl)), pcost = mgr ? mgrTrain(s) : promoCost(s.lvl);
+    const moves = others.map(P => { const ok = mgr ? !mgrOf(P) : staffN(P) < PREMISES[P.prem].staff; return `<button class="btn sm" data-act="smove" data-id="${s.id}" data-to="${P.id}" ${ok ? "" : "disabled"} title="${ok ? "" : mgr ? "It already has a manager" : "No room in its team"}">Move to ${esc(P.name)}</button>`; }).join("");
     const mood = s.morale > 60 ? "😊 happy" : s.morale > 30 ? "😐 okay" : "☹️ unhappy";
     h += `<div class="item"><div class="ic">${ROLES[s.role].e}</div><div class="grow"><b>${esc(s.name)} <span class="muted small">${roleName(S, s.role)} · level ${s.lvl}</span></b>
       <span>${money(s.wage)} for a usual day (${money(Math.round(s.wage / (STD_H[S.venue][1] - STD_H[S.venue][0]) * 100) / 100)} an hour) · ${mood}${(s.fat || 0) > 20 ? ` · <b class="${s.fat > 70 ? "neg" : ""}">😴 ${Math.round(s.fat)}% tired</b>` : ""}${s.sick === S.day ? ` · <b class="neg">🤒 off sick tomorrow</b>` : ""}${s.lvl > 1 ? ` · ${15 * (s.lvl - 1)}% quicker at work, ${10 * (s.lvl - 1)}% on foot` : ""}</span>
       <span class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-act="raise" data-id="${s.id}">Pay rise</button><button class="btn sm" data-act="bonus" data-id="${s.id}" ${canAfford(bonusCost(s.wage)) && !(s.bon && S.day - s.bon < 7) ? "" : "disabled"} title="A thank-you: cheers them up and takes the edge off tiredness. Once a week.">Bonus ${money(bonusCost(s.wage))}</button>
-      ${s.lvl < 5 ? `<button class="btn sm" data-act="promote" data-id="${s.id}" ${canPromote && canAfford(pcost) ? "" : "disabled"}>${canPromote ? `Promote ${money(pcost)}` : `Promote in ${promoDays(s.lvl) - (s.days || 0)}d`}</button>` : ""}
-      <button class="btn sm" data-act="fire" data-id="${s.id}">Let go (${money(redundancy(s))})</button></span></div></div>`;
+      ${s.lvl < 5 ? `<button class="btn sm" data-act="promote" data-id="${s.id}" ${canPromote && canAfford(pcost) ? "" : "disabled"}>${canPromote ? `${mgr ? "Train" : "Promote"} ${money(pcost)}` : `Promote in ${promoDays(s.lvl) - (s.days || 0)}d`}</button>` : ""}
+      ${!mgr && !Mg && (others.length || S.lee !== S.cur) ? `<button class="btn sm" data-act="mkmgr" data-id="${s.id}" ${canAfford(MGR_MAKE) ? "" : "disabled"} title="They run this place when Lee Lee works elsewhere">Make manager ${money(MGR_MAKE)}</button>` : ""}
+      ${moves}<button class="btn sm" data-act="fire" data-id="${s.id}">Let go (${money(redundancy(s))})</button></span>${mgr ? `<span class="small muted">Runs ${esc(S.name)} when Lee Lee works elsewhere: better managers serve more people and keep them happier. When she's here, they wait on tables.</span>` : ""}</div></div>`;
   }
   h += `</div><div class="card"><h2>Looking for work</h2>`;
-  const full = S.staff.length >= prem.staff;
+  const full = staffN(S) >= prem.staff;
+  if (others.length && !Mg) {
+    const mg = makeMgrs(seeded(seedOf(S) * 5 + S.day * 11 + S.cur.length * 17 + (S.site || "").length));
+    h += `<p class="small"><b>Managers looking for work</b></p>` + mg.map((m, i) => `<div class="item"><div class="ic">${ROLES.manager.e}</div><div class="grow"><b>${esc(m.name)} <span class="muted small">Manager · level ${m.lvl}</span></b><span>Runs this place while Lee Lee works elsewhere. ${money(m.wage)} a day.</span></div>
+      <button class="btn sm pri" data-act="hiremgr" data-i="${i}">Hire</button></div>`).join("") + `<p class="small"><b>Other staff</b></p>`;
+  }
   if (full) h += `<p class="small muted">No room for more staff here. A bigger place holds more (City tab).</p>`;
   S.cands.forEach((c, i) => {
     h += `<div class="item"><div class="ic">${ROLES[c.role].e}</div><div class="grow"><b>${esc(c.name)} <span class="muted small">${roleName(S, c.role)} · level ${c.lvl}</span></b><span>${esc(ROLES[c.role].job)} ${money(c.wage)} a day.</span></div>
@@ -4113,7 +4232,7 @@ function tabStaff() {
 }
 /* Busy days: roughly how many groups Lee Lee and the team can look after in a day, and agency staff for a single day */
 // measured with a bot that follows the helper arrow: Lee Lee alone keeps about 6 groups a day happy, a waiter and a cook double it
-const ROLE_CAP = { waiter: 3, cook: 3, porter: 1.5, drinks: 2, floor: 1 };
+const ROLE_CAP = { waiter: 3, cook: 3, porter: 1.5, drinks: 2, floor: 1, manager: 3 };
 const tempWage = r => Math.round(fairWage(r, 2) * 1.9);
 function crewCap(day) {
   let c = 6; for (const st of S.staff) c += ROLE_CAP[st.role] * (.75 + .15 * st.lvl);
@@ -4236,7 +4355,8 @@ $("mwrap").onclick = e => {
   const a = b.dataset.act, V = VENUES[S.venue];
   if (a === "title") { renderTitle(); show("title"); return; }
   if (a === "map") { openCity("browse"); return; }
-  if (a === "place") { const P = (S.places || []).find(x => x.id === b.dataset.id); if (P) placeDlg(P); return; }
+  if (a === "place") { const P = b.dataset.id === S.cur ? S : (S.places || []).find(x => x.id === b.dataset.id); if (P) placeDlg(P); return; }
+  if (a === "view") { showPlace(b.dataset.id); return; }
   if (a === "duel") {
     const R = allRivals(S).find(x => x.id === b.dataset.id); if (!R || duelOk(S, R) || !canAfford(duelFee(R))) return;
     dialog(`<h3>Taste-off with ${esc(R.n)}?</h3><p class="muted" style="text-align:center">Entry ${money(duelFee(R))}. Tomorrow, keep at least <b>${duelNeed(R)}%</b> of your customers happy (and serve at least 6).
@@ -4265,11 +4385,17 @@ $("mwrap").onclick = e => {
     for (const k in sug) { const want = sug[k] - (S.stock[k] || 0); if (want <= 0) continue; const can = Math.min(want, Math.floor((S.cash + 150) / INGS[k].c)); if (can <= 0) continue; spend(can * INGS[k].c); S.stock[k] = (S.stock[k] || 0) + can; S.bt[k] = (S.bt[k] || 0) + can; }
   }
   if (a === "toggle") { const r = b.dataset.r; if (S.off.includes(r)) S.off = S.off.filter(x => x !== r); else if (onMenuS().length > 1) S.off.push(r); }
-  if (a === "learn") { const R = RECIPES[b.dataset.r]; if (canAfford(R.c)) { spend(R.c); S.owned.push(b.dataset.r); for (const k in R.i) if (S.stock[k] == null) S.stock[k] = 0; } }
-  if (a === "hire") { const c = S.cands[+b.dataset.i]; if (c && S.staff.length < PREMISES[S.prem].staff) { S.staff.push({ id: "s" + (S.sid++), name: c.name, role: c.role, lvl: c.lvl, wage: c.wage, morale: 70, days: 0, look: c.look }); S.cands.splice(+b.dataset.i, 1); } }
+  if (a === "learn") { const R = RECIPES[b.dataset.r]; if (canAfford(R.c)) { spend(R.c); S.owned.push(b.dataset.r); for (const k in R.i) if (S.stock[k] == null) S.stock[k] = 0; shareBook(S); } }
+  if (a === "hiremgr" && !mgrOf(S)) { const m = makeMgrs(seeded(seedOf(S) * 5 + S.day * 11 + S.cur.length * 17 + (S.site || "").length))[+b.dataset.i]; if (m) S.staff.push(Object.assign({ id: "s" + (S.sid++), look: randomLook() }, m)); }
+  if (a === "mkmgr" && !mgrOf(S)) { const s = S.staff.find(x => x.id === b.dataset.id); if (s && canAfford(MGR_MAKE)) { spend(MGR_MAKE); s.role = "manager"; s.wage = Math.max(s.wage, fairWage("manager", s.lvl)); s.morale = Math.min(100, s.morale + 15); s.days = 0; } }
+  if (a === "smove") {
+    const s = S.staff.find(x => x.id === b.dataset.id), P = (S.places || []).find(x => x.id === b.dataset.to);
+    if (s && P && (s.role === "manager" ? !mgrOf(P) : staffN(P) < PREMISES[P.prem].staff)) { S.staff.splice(S.staff.indexOf(s), 1); P.staff = (P.staff || []).concat([s]); s.sick = null; toastOffice(`${s.name} now works at ${P.name}.`); }
+  }
+  if (a === "hire") { const c = S.cands[+b.dataset.i]; if (c && staffN(S) < PREMISES[S.prem].staff) { S.staff.push({ id: "s" + (S.sid++), name: c.name, role: c.role, lvl: c.lvl, wage: c.wage, morale: 70, days: 0, look: c.look }); S.cands.splice(+b.dataset.i, 1); } }
   if (a === "bonus") { const s = S.staff.find(x => x.id === b.dataset.id), c = s && bonusCost(s.wage); if (s && canAfford(c) && !(s.bon && S.day - s.bon < 7)) { spend(c); s.bon = S.day; s.morale = Math.min(100, s.morale + 15); s.fat = Math.max(0, (s.fat || 0) - 20); } }
   if (a === "raise") { const s = S.staff.find(x => x.id === b.dataset.id); if (s) { s.wage += Math.max(2, Math.round(s.wage * .1)); s.morale = Math.min(100, s.morale + 15); } }
-  if (a === "promote") { const s = S.staff.find(x => x.id === b.dataset.id), c = s && promoCost(s.lvl); if (s && canAfford(c)) { spend(c); s.lvl++; s.wage = Math.max(s.wage, fairWage(s.role, s.lvl)); s.morale = Math.min(100, s.morale + 12); s.days = 0; } }
+  if (a === "promote") { const s = S.staff.find(x => x.id === b.dataset.id), c = s && (s.role === "manager" ? mgrTrain(s) : promoCost(s.lvl)); if (s && c && canAfford(c)) { spend(c); s.lvl++; s.wage = s.role === "manager" ? Math.max(s.wage + 10, fairWage(s.role, s.lvl)) : Math.max(s.wage, fairWage(s.role, s.lvl)); s.morale = Math.min(100, s.morale + 12); s.days = 0; } }
   if (a === "fire") {
     const s = S.staff.find(x => x.id === b.dataset.id);
     const fee = redundancy(s);
@@ -4307,7 +4433,7 @@ let laySel = null, layMsg = "", layP = null;
 // Rearrange: the main place (kitchen too), or a managed place's dining room (P)
 function layout(P) {
   layP = P || null;
-  const T = P ? pDesign(P) : S, prem = PREMISES[P ? SITE[P.site].t : S.prem], u = Math.max(26, Math.min(34, Math.floor((Math.min(380, innerWidth - 32) - 40) / 9))), Hm = 12.9, kitHas = i => S.stations[i];
+  const T = P ? P : S, prem = PREMISES[P ? SITE[P.site].t : S.prem], u = Math.max(26, Math.min(34, Math.floor((Math.min(380, innerWidth - 32) - 40) / 9))), Hm = 12.9, kitHas = i => S.stations[i];
   const posTable = p => T.tpos.indexOf(p);
   const sel = (k, i) => laySel && laySel.k === k && laySel.i === i ? " sel" : "";
   let m = `<div class="lay" style="width:${9 * u}px;height:${Hm * u}px">`;
@@ -4336,11 +4462,11 @@ function layout(P) {
   layMsg = "";
   dialog(`<h3>${P ? esc(P.name) + ": layout" : "Rearrange"}</h3><p class="small muted" style="text-align:center">${what}</p>${m}
     ${P ? "" : `<p class="small muted">Tip: keep each dish's stations next to each other, and the busiest ones near the middle gap in the counter and the plates. Walls keep noise from a TV or soft play away from other tables, and meeting and function rooms need walls all round with a door.</p>`}
-    <div class="acts"><button class="btn pri" data-a="done">Done</button></div>`, () => { laySel = null; if (P) placeDesign(P); else renderManage(); });
+    <div class="acts"><button class="btn pri" data-a="done">Done</button></div>`, () => { laySel = null; renderManage(); });
 }
 $("ovc").addEventListener("click", e => {
   const b = e.target.closest("[data-lay]"); if (!b || view !== "manage") return;
-  const k = b.dataset.lay, i = +b.dataset.i, T = layP ? pDesign(layP) : S;
+  const k = b.dataset.lay, i = +b.dataset.i, T = layP ? layP : S;
   if (k === "st") {
     if (laySel && laySel.k === "st") {
       if (laySel.i !== i) { const a = S.stations[laySel.i] || null; S.stations[laySel.i] = S.stations[i] || null; S.stations[i] = a; while (S.stations.length && !S.stations[S.stations.length - 1]) S.stations.pop(); saveGame(); }
@@ -4364,7 +4490,7 @@ $("ovc").addEventListener("click", e => {
   layout(layP);
 });
 /* ---------- Rearrange (the main place): move anything anywhere, turn tables, draw walls and doors ---------- */
-const LG = { sel: null, mode: "move", tool: "wall", undo: [], msg: "", sv: null, P: null, set(T) { LG.sv.L = T; if (LG.P) pDesign(LG.P).L = T; } };
+const LG = { sel: null, mode: "move", tool: "wall", undo: [], msg: "", sv: null, P: null, set(T) { LG.sv.L = T; if (LG.P) LG.P.L = T; } };
 // open the floor plan for the main place (no P) or a managed place
 function openLayout(P) { LG.sel = null; LG.mode = "move"; LG.tool = "wall"; LG.undo = []; LG.P = P || null; LG.sv = P ? placeSv(S, P) : S; layoutGrid(); }
 const WALL_SEG = 20, DOOR_SEG = 80;
@@ -4406,7 +4532,7 @@ function layoutGrid() {
     if (a && a.startsWith("t-")) { LG.tool = a.slice(2); layoutGrid(); return; }
     if (a === "undo") { const u0 = LG.undo.pop(); if (u0) { LG.set(u0.L); S.cash = u0.cash; saveGame(); } layoutGrid(); return; }
     if (a === "turn" && selP) { const T = JSON.parse(JSON.stringify(L)), p = T.tb[selP.i]; p[2] = p[2] ? 0 : 1; const why = layoutProblem(LG.sv, T); if (why) LG.msg = "⚠️ No room to turn it here."; else LG.set(T); saveGame(); layoutGrid(); return; }
-    const P = LG.P; LG.sel = null; LG.mode = "move"; LG.undo = []; LG.P = null; LG.sv = null; saveGame(); if (P) placeDesign(P); else renderManage();
+    const P = LG.P; LG.sel = null; LG.mode = "move"; LG.undo = []; LG.P = null; LG.sv = null; saveGame(); renderManage();
   });
   const fl = $("lgFloor"); if (!fl) return;
   let down = null;
@@ -4870,7 +4996,7 @@ function renderSheet0() {
   if (sel.k === "rv") {
     const R = sel.o, hp = rvHp(sv, R), ms = siteOf(sv), d = Math.hypot(R.x - ms.x, R.y - ms.y), why = duelOk(sv, R);
     el.innerHTML = head(`${R.e} ${esc(R.n)}`, `${R.k === "pub" ? (R.e === "🍛" ? "Curry house" : "Pub & restaurant") : "Café"}${R.chain ? " (a chain)" : ""} · ${"★".repeat(R.s)}${"☆".repeat(5 - R.s)}`) +
-      `<p class="small">Known for ${R.c.map(c => CAT_N[c]).join(", ")}. Right now it's <b>${hpWord(hp)}</b>. It's ${d.toFixed(1)} km from your main place.</p>
+      `<p class="small">Known for ${R.c.map(c => CAT_N[c]).join(", ")}. Right now it's <b>${hpWord(hp)}</b>. It's ${d.toFixed(1)} km from this place.</p>
       <p class="small muted">Rivals lose customers to you when you're better than them (reputation, decor, dishes nobody else does, prices). A taste-off is the quick way to knock a strong one down.</p>
       ${hp > 0 ? (why ? `<button class="btn" disabled>${esc(why)}</button>` : `<button class="btn pri" data-cs="duel" ${canAfford(duelFee(R)) ? "" : "disabled"}>Challenge to a taste-off · ${money(duelFee(R))}</button><p class="small muted">Tomorrow, keep ${duelNeed(R)}% of your customers happy to win.</p>`) : ""}`;
     return;
@@ -4897,14 +5023,14 @@ function renderSheet0() {
   const need = Math.max(0, fit + dep - (sv.dep || 0));
   let act = "";
   if (start) act = stt === "ok" ? `<button class="btn pri" data-cs="start">Open here</button>` : `<button class="btn" disabled>${siteFits(s, venue) ? "Start somewhere small first" : `Not licensed as a ${venue === "pub" ? "pub" : "café"}`}</button>`;
-  else if (stt === "here") act = `<button class="btn" disabled>Lee Lee is here</button>`;
-  else if (stt === "mine") act = `<button class="btn pri" data-cs="place">Manage ${esc(sv.places.find(q => q.site === s.id).name)}</button>`;
+  else if (stt === "here") act = `<button class="btn" disabled>${sv.cur === sv.lee ? "Lee Lee is here" : "Shown in the office"}</button>`;
+  else if (stt === "mine") act = `<button class="btn pri" data-cs="place">${esc(sv.places.find(q => q.site === s.id).name)}: details</button>`;
   else if (stt === "lock") act = `<button class="btn" disabled>Needs ${P.st}★ (you have ${starsOf(sv.rep)}★)</button>`;
   else if (!siteFits(s, venue)) act = `<button class="btn" disabled>Not licensed as a ${venue === "pub" ? "pub" : "café"}, so Lee Lee can't move here</button>`;
   else act = `<button class="btn pri" data-cs="move" ${sv.cash >= need ? "" : "disabled"}>Move here · ${money(need)}</button>${sv.cash < need ? `<p class="small neg">You need ${money(need - Math.round(sv.cash))} more.</p>` : ""}`;
   if (!start && stt === "ok") {
     const n = (sv.places || []).length, need2 = PLACE_ST[n];
-    act += n >= MAX_PLACES ? `<p class="small muted">You run ${1 + MAX_PLACES} places already: the most for now.</p>` : starsOf(sv.rep) < need2 ? `<p class="small muted">With ${need2}★ you could open this as another place, run by a manager.</p>`
+    act += n >= MAX_PLACES ? `<p class="small muted">You run ${1 + MAX_PLACES} places already: the most for now.</p>` : starsOf(bestRep(sv)) < need2 ? `<p class="small muted">With ${need2}★ you could open this as another place, run by a manager.</p>`
       : `<button class="btn" data-cs="open">Open another place here · ${money(siteFit(s, s.v === "both" ? venue : s.v) + siteRent(s, s.v === "both" ? venue : s.v, sv.biz) * 28)}</button>`;
   }
   el.innerHTML = head(esc(s.n), `${esc(s.a)} · ${s.v === "both" ? "Café or pub" : s.v === "pub" ? "Pub" : "Café"} · ${sizeText(s)}`) +
@@ -4954,7 +5080,7 @@ function fitTo(sv, keep) {
   // anything beyond the new kitchen's spaces moves into a free space
   for (let i = P.slots; i < sv.stations.length; i++) if (sv.stations[i]) { const j = sv.stations.findIndex((x, k) => !x && k < P.slots); sv.stations[j] = sv.stations[i]; sv.stations[i] = null; }
   sv.stations = sv.stations.slice(0, P.slots); while (sv.stations.length && !sv.stations[sv.stations.length - 1]) sv.stations.pop();
-  while (sv.staff.length > P.staff) { const x = sv.staff.pop(); out.push(`${x.name} (had to leave)`); }
+  while (staffN(sv) > P.staff) { const x = sv.staff.filter(y => y.role !== "manager").pop(); sv.staff.splice(sv.staff.indexOf(x), 1); out.push(`${x.name} (had to leave)`); }
   const cells = Object.entries(biCells(sv));
   while (cells.length && sv.tables.length + cells.length > cellCap(sv)) { const [, id] = cells.pop(); delete sv.bi[id]; sv.cash += Math.round(BI[id].c / 2); out.push(BI[id].n.toLowerCase()); }
   if (!keep) { sv.tpos = sv.tables.map((_, i) => i); cells.forEach(([, id], k) => { sv.bi[id].p = sv.tables.length + k; }); }
@@ -5008,62 +5134,75 @@ function compCard() {
   }
   return h + `</div>`;
 }
+// the latest day at a place, whether Lee Lee played it (last) or its manager ran it (mlast)
+function lastOf(P) { const a = P.last, b = P.mlast; return a && (!b || a.day >= b.day) ? { day: a.day, net: a.net, lee: 1 } : b ? { day: b.day, net: b.net, shut: b.shut } : null; }
+function placeRow(P) {
+  const id = placeId(S, P), here = P === S, lee = id === S.lee, M = mgrOf(P), L = lastOf(P);
+  return `<div class="item"><div class="ic">${lee ? "👩🏽‍🍳" : M ? "🧑‍💼" : "🔒"}</div><div class="grow"><b>${esc(P.name)} <span class="stars" style="font-size:.75rem">${starStr(starsOf(P.rep))}</span></b>
+    <span>${esc(SITE[P.site].n)} · ${lee ? "Lee Lee works here" : M ? `${esc(M.name)} manages` : `<b class="neg">no manager: it stays shut</b>`}${L ? ` · day ${L.day}: <b class="${L.net >= 0 ? "pos" : "neg"}">${L.net >= 0 ? "+" : ""}${money(Math.round(L.net))}</b>` : " · opens tomorrow"}${here ? " · <b>shown in the office</b>" : ""}</span>
+    <span class="row" style="gap:6px;margin-top:6px">${here ? "" : `<button class="btn sm pri" data-act="view" data-id="${P.id}">Look after this place</button>`}<button class="btn sm" data-act="place" data-id="${id}">Details</button></span></div></div>`;
+}
 function placesCard() {
-  const list = S.places || [], st = starsOf(S.rep), next = PLACE_ST[list.length];
-  let h = `<div class="card"><div class="row spread"><h2>Your places</h2><span class="small muted">${1 + list.length} of ${1 + MAX_PLACES}</span></div>
-    <div class="item"><div class="ic">👩🏽‍🍳</div><div class="grow"><b>${esc(S.name)}</b><span>${esc(siteOf(S).n)} · Lee Lee works here</span></div></div>`;
-  for (const P of list) {
-    const L = P.last, s = SITE[P.site];
-    h += `<div class="item"><div class="ic">🏪</div><div class="grow"><b>${esc(P.name)} <span class="stars" style="font-size:.75rem">${starStr(starsOf(P.rep))}</span></b>
-      <span>${esc(s.n)} · ${esc(P.mgr.name)} manages${L ? ` · yesterday <b class="${L.net >= 0 ? "pos" : "neg"}">${L.net >= 0 ? "+" : ""}${money(Math.round(L.net))}</b>` : " · opens tomorrow"}</span></div>
-      <button class="btn sm" data-act="place" data-id="${P.id}">Manage</button></div>`;
-  }
-  if (list.length < MAX_PLACES) h += st >= next ? `<p class="small">You can open a ${list.length ? "third" : "second"} place, run by a manager. Find one on the map and tap <b>Open another place here</b>.</p>`
-    : `<p class="small muted">With ${next}★ you can open a ${list.length ? "third" : "second"} place, run by a manager while Lee Lee works here.</p>`;
+  const n = (S.places || []).length, st = starsOf(bestRep(S)), next = PLACE_ST[n];
+  let h = `<div class="card"><div class="row spread"><h2>Your places</h2><span class="small muted">${1 + n} of ${1 + MAX_PLACES}</span></div>
+    ${n ? `<p class="small muted">The office shows one place at a time: switch with the buttons at the top. Lee Lee works wherever you open the doors; managers run the others.</p>` : ""}`;
+  for (const P of allPlaces(S)) h += placeRow(P);
+  if (n < MAX_PLACES) h += st >= next ? `<p class="small">You can open a ${n ? "third" : "second"} place. Find one on the map and tap <b>Open another place here</b>.</p>`
+    : `<p class="small muted">With ${next}★ at one of your places you can open a ${n ? "third" : "second"}, run by a manager while Lee Lee works elsewhere.</p>`;
   return h + `</div>`;
 }
-/* a managed place's own dialog */
+// the place switcher at the top of the office
+function placeTabs() {
+  const el = $("ptabs"); if (!el) return;
+  if (!(S.places || []).length) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = allPlaces(S).map(P => { const id = placeId(S, P); return `<button class="${P === S ? "on" : ""}" data-pv="${id}">${id === S.lee ? "👩🏽‍🍳" : P.venue === "pub" ? "🍺" : "🧁"} ${esc(P.name)}</button>`; }).join("");
+}
+function showPlace(id) {
+  const P = (S.places || []).find(x => x.id === id); if (!P) return;
+  viewPlace(S, P); shareBook(S); saveGame(); renderManage(tab === "city" ? "city" : tab); $("mbody").scrollTop = 0;
+}
+// the doors open at the place shown: Lee Lee works here today. If the place she left has no manager, this place's manager goes
+// over to run it (and comes back when she does); if it has its own, this one stays and waits on tables with her.
+function leeArrives() {
+  if (S.lee === S.cur) return "";
+  const from = (S.places || []).find(p => p.id === S.lee); S.lee = S.cur;
+  if (!from || mgrOf(from)) return "";
+  const M = mgrOf(S); if (!M) return `${from.name} has no manager, so it stays shut today.`;
+  S.staff.splice(S.staff.indexOf(M), 1); from.staff = (from.staff || []).concat([M]);
+  return `${M.name} has gone over to run ${from.name} while Lee Lee is here.`;
+}
+function leeNote() {
+  if (S.lee === S.cur || !(S.places || []).length) return "";
+  const from = (S.places || []).find(p => p.id === S.lee), M = mgrOf(S);
+  const what = !from ? "" : mgrOf(from) ? `${esc(mgrOf(from).name)} keeps running ${esc(from.name)}${M ? `, and ${esc(M.name)} waits on tables here with her` : ""}.` : M ? `${esc(M.name)} goes over to run ${esc(from.name)}.` : `<b class="neg">${esc(from.name)} has no manager, so it will stay shut.</b>`;
+  return `<div class="news small">👩🏽‍🍳 Lee Lee works at ${esc(from ? from.name : "another place")} at the moment. Open the doors here and she works here tomorrow: ${what}</div>`;
+}
+/* a place's own window: how it did, what it's worth, selling or closing it */
 function placeDlg(P) {
-  const s = SITE[P.site], L = P.last, sv = placeSave(S, P), ci = compInfo(sv), pl = P.pl != null ? P.pl : 1, tc = mgrTrain(P.mgr), d = DECOR[P.decor || 0], dc = d ? Math.round(d.c * (1 + .5 * s.t)) : null;
+  const s = SITE[P.site], L = P.mlast, id = placeId(S, P), M = mgrOf(P), here = P === S, lee = id === S.lee;
   const week = (P.hist || []).slice(-7).reduce((a, x) => a + x.net, 0), val = placeValue(P), cv = closeValue(P);
   dialog(`<h3>${esc(P.name)}</h3><p class="small muted" style="text-align:center">${esc(s.n)} · ${P.venue === "pub" ? "Pub" : "Café"} · <span class="stars" style="font-size:.8rem">${starStr(starsOf(P.rep))}</span></p>
-    ${L ? `<div class="lines small"><div><span>Yesterday: customers</span><b>${L.served} served of ${L.people}</b></div><div><span>Takings</span><b>${money(L.rev)}</b></div>
-      <div><span>Rent, wages, stock</span><b>−${money(Math.round(L.rent + L.wages + L.stock))}</b></div><div class="tot"><span>Profit</span><b class="${L.net >= 0 ? "pos" : "neg"}">${money(Math.round(L.net))}</b></div>
-      <div><span>Last 7 days</span><b class="${week >= 0 ? "pos" : "neg"}">${money(week)}</b></div><div><span>Reputation</span><b class="${L.repD >= 0 ? "pos" : "neg"}">${L.repD >= 0 ? "+" : ""}${L.repD}</b></div></div>` : `<p class="small" style="text-align:center">Opens tomorrow.</p>`}
-    <p class="small">Wins about <b>${Math.round(ci.share * 100)}%</b> of local customers (competition: ${compWord(ci.C)}). The menu, tables, build-ins and staff are yours to choose in Design.</p>
-    ${L && L.short ? `<p class="small neg">About ${L.short} groups more than ${esc(P.mgr.name)}'s team could look after: add staff in Design.</p>` : ""}
-    ${L && L.extra && Object.keys(L.extra).length ? `<p class="small">${Object.entries(L.extra).map(([k, v]) => `${EXTRA_N[k].e} ${EXTRA_N[k].n} ${v >= 0 ? "+" : "−"}${money(Math.abs(Math.round(v)))}`).join(" · ")}</p>` : ""}
-    ${L && (L.bills || L.fights || L.fine) ? `<p class="small">${L.hours ? `Open ${clockH(L.hours[0])}-${clockH(L.hours[1])}. ` : ""}${L.bills ? `Bills ${L.bills > 0 ? "−" : "+"}${money(Math.abs(L.bills))}. ` : ""}${L.fights ? `<b class="neg">💥 A fight: −${money(25)}.</b> ` : ""}${L.fine ? `<b class="neg">🏛️ Council fine −${money(L.fine)}.</b>` : ""}</p>` : ""}
-    <button class="btn pri" data-a="design">🛠️ Design: tables, build-ins, walls, menu and staff</button>
-    <div class="item"><div class="ic">😴</div><div class="grow"><b>The team: ${Math.round(P.fat || 0)}% tired${P.sick === S.day ? " · 🤒 one off sick tomorrow" : ""}</b><span>Long days tire them out: tired teams look after fewer people, go off sick and quit. A bonus cheers everyone up (once a week).</span></div>
-      <button class="btn sm" data-a="pbonus" ${canAfford(bonusCost(P.mgr.wage + (pDesign(P).team || 0) * 22) * .75) && !(P.bon && S.day - P.bon < 7) ? "" : "disabled"}>Bonus ${money(Math.round(bonusCost(P.mgr.wage + (pDesign(P).team || 0) * 22) * .75))}</button></div>
-    ${hoursCard(P)}${hostCard(P)}${P.hyg != null ? `<p class="small">🧾 Food hygiene: rated <b>${P.hyg}</b> out of 5 at the last inspection. Better managers and enough staff keep it high.</p>` : ""}
-    <div class="item"><div class="ic">🧑‍💼</div><div class="grow"><b>${esc(P.mgr.name)}, level ${P.mgr.lvl}</b><span>${money(P.mgr.wage)} a day. Better managers serve more people and keep them happier.</span></div>
-      ${tc ? `<button class="btn sm pri" data-a="train" ${canAfford(tc) ? "" : "disabled"}>Train ${money(tc)}</button>` : ""}</div>
-    <div class="item"><div class="ic">🪴</div><div class="grow"><b>${d ? esc(d.n) : "Fully decorated"}</b><span>Decor ${P.decor || 0} of ${DECOR.length}: more people choose it over rivals.</span></div>
-      ${d ? `<button class="btn sm pri" data-a="decor" ${canAfford(dc) ? "" : "disabled"}>${money(dc)}</button>` : ""}</div>
-    <div class="row spread"><span class="small"><b>Prices: ${PRICE[pl].n}</b> <span class="muted">(people here pay up to ${PRICE[priceTol(s)].n})</span></span><span class="row" style="gap:4px">${PRICE.map((x, i) => `<button class="btn sm ${i === pl ? "good" : ""}" data-a="pl${i}" title="${x.n}">${x.e}</button>`).join("")}</span></div>
-    <div class="acts">${P.venue === S.venue ? `<button class="btn" data-a="swap">Lee Lee works here instead</button>` : ""}
-      <button class="btn" data-a="sell">Sell the business · ${money(val)}</button><button class="btn" data-a="close" style="color:var(--bad)">Close it down · ${money(cv)}</button>
-      <button class="btn pri" data-a="">Done</button></div>`, a => {
-    if (!a) { renderManage(); return; }
-    if (a === "design") { placeDesign(P); return; }
-    if (a === "hreset") P.hours = null;
-    if (a === "pbonus") { const c = Math.round(bonusCost(P.mgr.wage + (pDesign(P).team || 0) * 22) * .75); if (canAfford(c) && !(P.bon && S.day - P.bon < 7)) { spend(c); P.bon = S.day; P.fat = Math.max(0, (P.fat || 0) - 25); } }
-    if (a === "train" && tc && canAfford(tc)) { spend(tc); P.mgr.lvl++; P.mgr.wage += 10; }
-    if (a === "decor" && d && canAfford(dc)) { spend(dc); P.decor = (P.decor || 0) + 1; }
-    if (a.startsWith("pl")) P.pl = +a.slice(2);
-    if (a === "swap") { swapMain(P); saveGame(); renderManage("city"); toastOffice(`Lee Lee now works at ${SITE[S.site].n}.`); return; }
-    if (a === "sell" || a === "close") {
+    <p class="small" style="text-align:center">${lee ? "👩🏽‍🍳 Lee Lee works here." : M ? `🧑‍💼 ${esc(M.name)} (level ${M.lvl}) manages it.` : `<b class="neg">🔒 No manager: it stays shut unless Lee Lee works here. Move or promote someone in the Team tab.</b>`}</p>
+    ${L && !lee ? `<div class="lines small"><div><span>Day ${L.day} under ${L.mgr ? esc(L.mgr) : "nobody"}: customers</span><b>${L.shut ? "shut" : `${L.served} served of ${L.people}`}</b></div>${L.shut ? "" : `<div><span>Takings</span><b>${money(L.rev)}</b></div>${Object.entries(L.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].e} ${EXTRA_N[k].n}</span><b>${v >= 0 ? "+" : "−"}${money(Math.abs(Math.round(v)))}</b></div>`).join("")}<div><span>Stock used</span><b>−${money(L.stock)}</b></div>`}
+      <div><span>Wages and rent${L.bills ? " and bills" : ""}</span><b>−${money(L.wages + L.rent + (L.bills || 0))}</b></div><div class="tot"><span>Profit</span><b class="${L.net >= 0 ? "pos" : "neg"}">${money(L.net)}</b></div>
+      <div><span>Reputation</span><b class="${L.repD >= 0 ? "pos" : "neg"}">${L.repD >= 0 ? "+" : ""}${L.repD}</b></div></div>
+      ${L.short ? `<p class="small neg">About ${L.short} groups more than the team could look after: hire staff for it in the Team tab.</p>` : ""}${L.menu === 0 ? `<p class="small neg">Its kitchen can't make anything on its menu.</p>` : ""}` : ""}
+    <p class="small">Last 7 days: <b class="${week >= 0 ? "pos" : "neg"}">${week >= 0 ? "+" : ""}${money(Math.round(week))}</b></p>
+    <div class="news small"><b>Who comes here</b><br>${clienteleTips(s, P.venue).map(esc).join("<br>")}</div>
+    <div class="acts">${here ? "" : `<button class="btn pri" data-a="view">Look after this place</button>`}
+      ${here ? `<p class="small muted">To sell or close this place, show another one in the office first.</p>` : `<button class="btn" data-a="sell">Sell the business · ${money(val)}</button><button class="btn" data-a="close" style="color:var(--bad)">Close it down · ${money(cv)}</button>`}
+      <button class="btn" data-a="">Done</button></div>`, a => {
+    if (!a) return;
+    if (a === "view") { showPlace(P.id); return; }
+    if ((a === "sell" || a === "close") && !here) {
       const got = a === "sell" ? val : cv;
-      dialog(`<h3>${a === "sell" ? "Sell" : "Close"} ${esc(P.name)}?</h3><p class="muted" style="text-align:center">${a === "sell" ? "A buyer takes it over as it is" : "Everything is sold off cheaply"}. You get <b>${money(got)}</b>, including the deposit back.</p>
+      dialog(`<h3>${a === "sell" ? "Sell" : "Close"} ${esc(P.name)}?</h3><p class="muted" style="text-align:center">${a === "sell" ? "A buyer takes it over as it is, team and all" : "Everything is sold off cheaply and the team is let go"}. You get <b>${money(got)}</b>, including the deposit back.</p>
         <div class="acts"><button class="btn pri" data-a="yes">${a === "sell" ? "Sell" : "Close it"}</button><button class="btn" data-a="">Keep it</button></div>`, x => {
-        if (x === "yes") { S.places = S.places.filter(y => y !== P); S.cash = Math.round((S.cash + got) * 100) / 100; saveGame(); renderManage("city"); toastOffice(`${P.name} ${a === "sell" ? "is sold" : "has closed"}: +${money(got)}`); }
+        if (x === "yes") { S.places = S.places.filter(y => y !== P); if (S.lee === P.id) S.lee = S.cur; S.cash = Math.round((S.cash + got) * 100) / 100; saveGame(); renderManage("city"); toastOffice(`${P.name} ${a === "sell" ? "is sold" : "has closed"}: +${money(got)}`); }
         else placeDlg(P);
       });
-      return;
     }
-    saveGame(); renderManage(); placeDlg(P);
   });
 }
 /* ---------- designing a managed place for the customers it can expect ---------- */
@@ -5081,97 +5220,38 @@ function clienteleTips(s, venue) {
   out.push(`💷 People here pay up to ${PRICE[priceTol(s)].n} prices.`);
   return out;
 }
-function placeSpots(d) { return d.tables.length + Object.keys(biCells({ bi: d.bi })).length; }
-function placeFree(d) { const used = new Set(d.tpos.concat(Object.keys(biCells({ bi: d.bi })).map(Number))); let p = 0; while (used.has(p) && p < 8) p++; return p; }
-// keep a design inside its premises (after a swap or on a smaller site): extra tables and build-ins are sold
-function fitDesign(P) {
-  const d = pDesign(P), s = SITE[P.site], maxT = placeMaxT(s), cap = Math.min(9, maxT + 1);
-  while (d.tables.length > maxT) { d.tables.pop(); d.tpos.pop(); S.cash += 50; }
-  for (const id in d.bi) if (BI[id] && BI[id].v !== P.venue) { S.cash += Math.round(BI[id].c / 2); delete d.bi[id]; }
-  d.team = Math.min(d.team || 0, PREMISES[s.t].staff);
+/* opening another place from the map: the fit-out includes a starter kitchen for the kind of place, and its first manager */
+function newPlaceRec(s, venue, name) {
+  const t = newSave(venue, name, s.id), V = VENUES[venue], prem = PREMISES[s.t], P = { id: "" };
+  do P.id = "p" + (S.pid = (S.pid || 1) + 1); while (allPlaces(S).some(x => placeId(S, x) === P.id));
+  for (const k of PK) if (t[k] !== undefined) P[k] = t[k];
+  const nT = Math.max(2, Math.ceil(placeMaxT(s) / 2));
+  Object.assign(P, { prem: s.t, rep: Math.round(bestRep(S) * .25), stations: V.start.filter(x => x !== "sink").slice(0, prem.slots - 1).concat(["sink", "basin"]), tables: Array(nT).fill(4), tpos: Array.from({ length: nT }, (_, i) => i),
+    plates: 6 + 4 * s.t, staff: [], cands: makeCands(), opened: S.day, hist: [], L: null, last: null, mlast: null, owned: V.menu.slice() });
+  return P;
 }
-function placeDesign(P) {
-  const d = pDesign(P), s = SITE[P.site], st = starsOf(P.rep), maxT = placeMaxT(s);
-  const sv = placeSv(S, P), g = expectedGroups(sv), roomT = !!autoPlace(sv, sv.L, "tb", 2, [4.5, 8]), roomB = !!autoPlace(sv, sv.L, "bi", 0, [4.5, 9]), crew = placeCrew(P, d), tc = Math.round((100 + 60 * d.tables.length) * (d.tables.length >= placeComfT(s) ? 1.6 : 1)), small = d.tables.indexOf(2), four = d.tables.indexOf(4);
-  const recipes = Object.keys(RECIPES).filter(r => RECIPES[r].v === P.venue), on = r => !d.off.includes(r);
-  let h = `<h3>${esc(P.name)}</h3><p class="small muted" style="text-align:center">${esc(s.n)} · ${P.venue === "pub" ? "Pub" : "Café"} · <span class="stars" style="font-size:.8rem">${starStr(st)}</span> · ${money(Math.round(S.cash))} to spend</p>
-    <div class="news small"><b>Who comes here</b><br>${clienteleTips(s, P.venue).map(esc).join("<br>")}</div>
-    <p class="small">Tomorrow: about <b>${Math.round(g)}</b> groups. ${esc(P.mgr.name)} and the team can look after about <b>${Math.round(crew)}</b>${g > crew * 1.05 ? ` <b class="neg">: too few staff, people will walk out</b>` : ""}.</p>
-    <div class="item"><div class="ic">👥</div><div class="grow"><b>Staff under the manager: ${d.team}</b><span>${money(22)} a day each. Up to ${PREMISES[s.t].staff} here.</span></div>
-      <span class="qty"><button class="btn sm" data-a="t-" ${d.team > 0 ? "" : "disabled"}>−</button><button class="btn sm" data-a="t+" ${d.team < PREMISES[s.t].staff ? "" : "disabled"}>+</button></span></div>
-    <div class="item"><div class="ic">🪑</div><div class="grow"><b>Tables: ${d.tables.length} of ${maxT}</b><span>${d.tables.join(", ")} seats. ${placeComfT(s)} fit comfortably; more can be squeezed in, but tables close together are cramped (less patience, fewer happy customers).${roomT ? "" : " <b>No room on the floor for another: rearrange first.</b>"}</span>
-      <span class="row" style="gap:4px;margin-top:6px"><button class="btn sm pri" data-a="tadd" ${d.tables.length < maxT && roomT && canAfford(tc) ? "" : "disabled"}>Add ${money(tc)}</button>
-      <button class="btn sm" data-a="tbig" ${(small >= 0 && canAfford(150)) || (small < 0 && four >= 0 && canAfford(300)) ? "" : "disabled"}>${small >= 0 ? `Seat four ${money(150)}` : `Seat six ${money(300)}`}</button>
-      <button class="btn sm" data-a="tdel" ${d.tables.length > 1 ? "" : "disabled"}>Remove one</button></span></div></div>
-    <div class="item"><div class="ic">🪧</div><div class="grow"><b>“Wait to be seated” sign${d.sign ? ` <span class="pill g">Built</span>` : ""}</b><span>Staff show each group to the table that fits them best, so tables are used better. Needs at least one member of staff.</span></div>
-      ${d.sign ? "" : `<button class="btn sm pri" data-a="sign" ${canAfford(250) ? "" : "disabled"}>${money(250)}</button>`}</div>
-    <button class="btn" data-a="lay">📐 Arrange tables, build-ins, walls and doors</button>
-    <p class="small"><b>Build-ins</b></p>`;
-  for (const B of BUILDINS.filter(B => B.v === P.venue)) {
-    const o = d.bi[B.id], n = B.max ? (o ? o.n || 1 : 0) : o ? 1 : 0, full = B.max ? n >= B.max : !!o;
-    const why = st < B.st ? `Needs ${B.st}★ here.` : B.cell && !full && !roomB ? "No room on the floor: rearrange first." : "";
-    h += `<div class="item"><div class="ic">${B.e}</div><div class="grow"><b>${esc(B.n)}${B.max && n ? ` ×${n}` : ""}${n ? ` <span class="pill g">Built</span>` : ""}</b>
-      <span>${esc(B.d)}${o && B.room ? (biWalled(sv, B.id) ? ` <b class="pos">Walled in.</b>` : ` <b class="neg">Not walled in yet.</b>`) : ""}${why && !full ? ` <b>${why}</b>` : ""}</span>
-      ${n ? `<span class="row" style="gap:4px;margin-top:6px">${B.lv && (o.lv || 1) < 2 ? `<button class="btn sm pri" data-a="bu:${B.id}" ${canAfford(B.lv[1].c) && st >= B.lv[1].st ? "" : "disabled"}>Big screen ${money(B.lv[1].c)}</button>` : ""}<button class="btn sm" data-a="bs:${B.id}">Sell ${money(Math.round(B.c / 2))}</button></span>` : ""}</div>
-      ${full ? "" : `<button class="btn sm pri" data-a="bb:${B.id}" ${canAfford(B.c) && !why ? "" : "disabled"}>${money(B.c)}</button>`}</div>`;
-  }
-  h += `<p class="small"><b>Menu</b> <span class="muted">(the manager cooks what you pick; more dishes unlock as this place's stars grow)</span></p>
-    <div class="row" style="gap:6px">${recipes.map(r => { const R = RECIPES[r], locked = R.st > st; return `<button class="btn sm ${!locked && on(r) ? "good" : ""}" data-a="m:${r}" ${locked ? "disabled" : ""} title="${esc(R.n)}">${R.e} ${esc(R.n)}${locked ? ` ${R.st}★` : ""}</button>`; }).join("")}</div>
-    <div class="acts"><button class="btn pri" data-a="">Done</button></div>`;
-  dialog(h, a => {
-    if (!a) { saveGame(); placeDlg(P); return; }
-    if (a === "lay") { openLayout(P); return; }
-    if (a === "sign" && !d.sign && canAfford(250)) { spend(250); d.sign = 1; }
-    if (a === "t-") d.team = Math.max(0, d.team - 1);
-    if (a === "t+") d.team = Math.min(PREMISES[s.t].staff, d.team + 1);
-    if (a === "tadd" && d.tables.length < maxT && roomT && canAfford(tc)) { spend(tc); d.tables.push(2); d.tpos.push(d.tables.length - 1); }
-    if (a === "tbig") { if (small >= 0 && canAfford(150)) { spend(150); d.tables[small] = 4; } else if (four >= 0 && canAfford(300)) { spend(300); d.tables[four] = 6; } }
-    if (a === "tdel" && d.tables.length > 1) { d.tables.pop(); d.tpos.pop(); S.cash += 50; }
-    if (a.startsWith("bb:")) { const B = BI[a.slice(3)]; if (canAfford(B.c) && st >= B.st) { spend(B.c); if (B.max) d.bi[B.id] = { n: ((d.bi[B.id] || {}).n || 0) + 1 }; else if (!B.cell || roomB) d.bi[B.id] = B.cell ? { p: 0, lv: 1 } : { lv: 1 }; } }
-    if (a.startsWith("bs:")) { const B = BI[a.slice(3)], o = d.bi[B.id]; S.cash += Math.round(B.c / 2); if (B.max && o.n > 1) o.n--; else delete d.bi[B.id]; }
-    if (a.startsWith("bu:")) { const B = BI[a.slice(3)]; if (canAfford(B.lv[1].c)) { spend(B.lv[1].c); d.bi[B.id].lv = 2; } }
-    if (a.startsWith("m:")) { const r = a.slice(2); if (on(r)) { if (recipes.filter(x => on(x) && RECIPES[x].st <= st).length > 1) d.off.push(r); } else d.off = d.off.filter(x => x !== r); }
-    saveGame(); placeDesign(P);
-  });
-}
-// the main place and a managed one change over: Lee Lee takes her kitchen with her (what doesn't fit is sold)
-function swapMain(P) {
-  const old = { site: S.site, dep: S.dep, name: S.name }, ns = SITE[P.site], d = pDesign(P);
-  // each building keeps its own tables, build-ins and walls
-  const mainL = S.L ? JSON.parse(JSON.stringify(S.L)) : null, theirL = d.L || null;
-  const mine = { tables: S.tables, tpos: S.tables.map((_, i) => i), bi: JSON.parse(JSON.stringify(S.bi || {})), walls: {}, L: mainL };
-  let q = S.tables.length; for (const id in mine.bi) if (BI[id] && BI[id].cell) mine.bi[id].p = Math.min(8, q++);
-  S.tables = d.tables.slice(); S.tpos = d.tpos.slice(); S.bi = d.bi; S.walls = d.walls; S.L = theirL;
-  Object.assign(d, mine);
-  S.site = ns.id; S.prem = ns.t; S.dep = P.dep || 0; S.name = P.name;
-  P.site = old.site; P.dep = old.dep; P.name = old.name;
-  fitDesign(P);
-  const out = fitTo(S, true);
-  // Lee Lee's kitchen has to fit into the other building's floor plan; if it won't, start from the standard one
-  ensureLayout(S); if (S.stations.some((t, i) => t && !S.L.st[i]) || layoutProblem(S, S.L)) { S.L = null; ensureLayout(S); }
-  return out;
-}
-/* opening a managed place from the map */
 function openPlaceDlg(s, venue) {
   if (!venue) {
     if (s.v === "both") { dialog(`<h3>What kind of place?</h3><div class="acts"><button class="btn" data-a="cafe">🧁 A café</button><button class="btn" data-a="pub">🍺 A pub</button><button class="btn" data-a="">Cancel</button></div>`, a => { if (a) openPlaceDlg(s, a); }); return; }
     venue = s.v;
   }
-  const rent = siteRent(s, venue, S.biz), fit = siteFit(s, venue), dep = rent * 28, cost = fit + dep;
+  const rent = siteRent(s, venue, S.biz), fit = siteFit(s, venue), dep = rent * 28, cost = fit + dep, V = VENUES[venue];
   const mg = makeMgrs(seeded(seedOf(S) * 3 + S.day * 7 + s.id.length * 13 + (S.places || []).length));
-  const nm = `${venue === "pub" ? "Lee Lee's Bar" : "Lee Lee's"}, ${s.a}`;
-  dialog(`<h3>Open ${esc(s.n)}</h3><p class="small muted" style="text-align:center">A ${venue === "pub" ? "pub" : "café"} run by a manager. Fit-out ${money(fit)} and a deposit of ${money(dep)}, then ${money(rent * 7)} a week in rent. Its takings and costs go through your money each night.</p>
-    <p class="small"><b>Choose a manager</b></p>
+  const nm = `${venue === "pub" ? "Lee Lee's Bar" : "Lee Lee's"}, ${s.a}`, kitN = V.start.length;
+  dialog(`<h3>Open ${esc(s.n)}</h3><p class="small muted" style="text-align:center">A ${venue === "pub" ? "pub" : "café"} of your own. Fit-out ${money(fit)} (with a starter kitchen of ${kitN} pieces and a hand basin) and a deposit of ${money(dep)}, then ${money(rent * 7)} a week in rent. Its takings and costs go through your money each night.</p>
+    <p class="small"><b>Choose a manager</b> <span class="muted">(they run it while Lee Lee works elsewhere)</span></p>
     <div class="acts">${mg.map((m, i) => `<button class="btn" data-a="m${i}" ${canAfford(cost) ? "" : "disabled"} style="text-align:left"><b>${esc(m.name)}</b>, level ${m.lvl} · ${money(m.wage)} a day</button>`).join("")}
+    <button class="btn" data-a="none" ${canAfford(cost) ? "" : "disabled"} style="text-align:left">No new manager: I'll move or promote someone from a team I have</button>
     ${canAfford(cost) ? "" : `<p class="small neg">You need ${money(cost)}.</p>`}<button class="btn" data-a="">Not now</button></div>`, a => {
     if (!a || !canAfford(cost)) return;
-    const m = mg[+a.slice(1)];
     spend(cost);
     S.places = S.places || [];
-    const nT = Math.max(2, Math.ceil(placeMaxT(s) / 2)), NP = { id: "p" + (S.pid = (S.pid || 1) + 1), site: s.id, venue, name: nm, rep: Math.round(S.rep * .25), mgr: m, decor: 0, pl: 1, dep, fit, opened: S.day, buzz: 0, hist: [], last: null,
-      design: { tables: Array(nT).fill(4), tpos: Array.from({ length: nT }, (_, i) => i), bi: {}, walls: {}, off: [], team: 1 } };
-    S.places.push(NP);
-    saveGame(); CM.sel = null; openManage("city"); placeDesign(NP);
+    const NP = newPlaceRec(s, venue, nm); NP.dep = dep; NP.fit = fit;
+    if (a !== "none") { const m = mg[+a.slice(1)]; NP.staff.push(Object.assign({ id: "s" + (S.sid++), look: randomLook() }, m)); }
+    S.places.push(NP); shareBook(S);
+    saveGame(); CM.sel = null; openManage("city");
+    dialog(`<h3>${esc(NP.name)} is yours!</h3><p class="muted" style="text-align:center">It opens tomorrow${a === "none" ? " once it has a manager (Team tab: move someone there, or make someone its manager)" : ""}. Tap <b>Look after this place</b> to set it up in the office, just like your own: menu, team, kitchen, tables and hours. It has no other staff yet, so hire a waiter and a cook for it.</p>
+      <div class="acts"><button class="btn pri" data-a="view">Look after this place</button><button class="btn" data-a="">Later</button></div>`, x => { if (x === "view") showPlace(NP.id); });
   });
 }
 

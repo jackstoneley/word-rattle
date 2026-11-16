@@ -926,6 +926,18 @@
       "details": [
         "When you tap an appliance, Lee Lee (and your staff) now go to the side that's the shortest walk away, instead of sometimes walking all the way round it."
       ]
+    },
+    {
+      "id": 81,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: run every place properly",
+      "details": [
+        "Every place you own is now a full venue, with its own menu, kitchen, tables, team, stock, hours and stars. Switch between them with the buttons at the top of the office.",
+        "Lee Lee works wherever you open the doors. Pick a place each morning; managers run the others overnight.",
+        "Staff belong to a place. Move people between places, or make an experienced member of staff a manager.",
+        "Managers use the place's real team and kitchen. A level 1 manager makes about two thirds of what you would, a level 5 about 90%.",
+        "Recipes are shared: learn one once and every place of that kind can cook it. Your places from before keep their manager and team, and get a starter kitchen."
+      ]
     }
   ]
 }

@@ -201,9 +201,9 @@ outside the hours is lost. Rush warnings: `rushTimes`, `rushSay`. Page: `hoursCa
 on speed and skill, morale loss over 50, sick days `st.sick` = a day off, burnout quits at 95 with low morale; `bonusCost`, `st.bon` weekly);
 after midnight pubs get rowdier, an uncalmed rowdy table's third shout is a `fight` (`G.fights`, `G.breaks`); `nightRisk`/`licenceNight`:
 noise complaints `save.lic {n, until}`, the third in 21 days fines `LIC_FINE` and `hoursOn` caps closing at midnight for `LIC_DAYS`.
-Managed places run the same: `P.hours`, `P.fat`, `P.sick`, `P.bon`, `P.lic` and `P.design.L` (their free floor plan, no kitchen pieces)
-through `placeSv` (a stand-in save with the layout made); `runPlace` scales crew, wages and bills by the hours, has late fights and the
-licence, and uses `roomShare` / `biWalled` for noise and private rooms. `swapMain` swaps the two buildings' floor plans.
+Managed places run the same: their own `hours`, `lic`, staff tiredness and full floor plan through `placeSv` (a stand-in save with the
+layout made); `runPlace` scales crew, wages and bills by the hours, has late fights and the licence, and uses `roomShare` / `biWalled`
+for noise and private rooms.
 **Catchment**: `catchment(save)` (6 + 14 × footfall²) softens `expectedGroups` past it (`CATCH_OVER`); `siteDemand` also grows faster than
 footfall on busy streets (footfall over 1) from 3★ (fame draws people in; below that the centre is tough). The hand basin doesn't use a kitchen slot (`slotsUsed`). `tvOn` games carry a clock kick-off `h`. **Events** (`HOSTS`, keyed by id: append only): `S.host[weekday]` / `P.host`, `hostPlan(save, day)`
 gives the groups and window inside the opening hours; guests carry `g.host` (patient, `spend`), other diners mind the `noise`, `nightRisk` /
@@ -214,7 +214,7 @@ nothing forces Lee Lee to wash (tap the `basin`, or the sink when no plates wait
 not plating) with dirty hands, or on an appliance over .85 dirt (25%), sets `d.germ` (`G.germN`, `G.germT`); `serve` rolls `GERM_P` per tainted dish into
 `G.ill`, and `endDay` charges `ILL_PAY` and `ILL_REP` each, sets `S.hyg.ill` and brings the inspector forward (who docks a point for unwashed hands
 late that day or an illness within 21 days); staff use `washThen`. `coachNext` wraps `coachCore` to point at the sink/basin first. Inspections: `S.hyg {r, day, next, why}`, `G.insp`, `inspect()`; the rating
-scales appeal (`HYG_A`, `hygA`); managed places get `P.hyg` / `P.hygN` from the manager and team.
+scales appeal (`HYG_A`, `hygA`); managed places get their `hyg` (same shape) from the manager and team in `runPlace`.
 Staff levels: `lvlWalk`, `lvlSkill`, `fairWage` (+12% a level), `promoCost`, `promoDays`; letting go costs `redundancy(st)` (`st.td` total
 days worked). Idle staff wait a moment, then go to `staffHome` (worked out from the layout); waiters carry up to two more plates in `a.extra`.
 Learning and balance: `coachNext()` is the "what would a good player do next" planner behind the green helper arrow
@@ -252,9 +252,20 @@ season start near a place with share > .45). `compInfo(save)` gives `near` (`riv
 `siteDemand` = size × `siteFoot` × share × `SHARE_K` × a penalty per price level above the area's `priceTol`. Price levels `PRICE`
 (`S.pl`, per place `P.pl`; `sitePrice` = `localPrice` × level). `rivalsTick` (nightly) wears down rivals your places outdo.
 Taste-offs: `S.duel {id, day, need}` adds a `duel` goal to the next day; a win takes 45 hp, adds rep and `S.buzz` (a day number).
-**More places**: `S.places` (max `MAX_PLACES` = 2 more, needing `PLACE_ST` stars), each `{id, site, venue, name, rep, mgr, decor, pl,
-dep, fit, opened, hist, last}`, simulated each night by `runPlace` through `placeSave` (a stand-in save, so the same demand code runs).
-`placeValue` / `closeValue` when sold or closed; `swapMain` swaps the main place with one (`fitTo` resizes the kitchen). Each place has a player-made design `P.design {tables, tpos, bi, walls, off, team}` (`pDesign` fills one in for old saves; `placeDesign` is its window, `layout(P)` its Rearrange, `fitDesign` trims it to its premises); `runPlace` uses it: capacity `placeCrew` (manager + team), menu fit, noise by `roomsOf`, and each build-in's money in `P.last.extra`. `swapMain` swaps the two buildings' tables, build-ins and walls.
+**More places** (every place a whole venue): the place shown in the office sits at the top of the save; the others are records in
+`S.places` with the same keys (`PK`: venue, name, rep, site, prem, stations, staff, stock, tables, L, hours, hyg, ..., plus `id`, `fit`,
+`opened`, `mlast`). `S.cur` is the id of the place on top, `S.lee` where Lee Lee works: `viewPlace`/`showPlace` swap a place in
+(the switcher `#ptabs`, `placeTabs`), and opening the doors (`leeArrives`) makes it hers; if the place she left has no manager,
+this place's manager moves there. Business keys (cash, day, rv, chains, stats, shoes, `lnews` = last night's news) never swap.
+Managers are staff with role `manager` (wait on tables in a played day; `fairWage` 26 + 14 a level, `mgrTrain`, `MGR_MAKE` to
+promote; they don't count against `PREMISES[].staff`, see `staffN`). Recipes are shared per kind (`shareBook` keeps every place's
+`owned` equal; recipe unlocks and `PLACE_ST` use `bestRep`); stars are per place. `runPlace` (nightly, places Lee Lee isn't at)
+uses the place's real team (`placeCrewOf`: `MGR_CAP` × level plus `ROLE_CAP`, fatigue, sick, temps), kitchen (`kitchenCap`: appliance
+time per order against `KIT_U` of the day), menu and layout, then `mgrEff(level)`; per-person nights via `staffNight`; no manager =
+shut (rent and wages still paid). Calibrated against the coachNext bot playing the same place (a level 1 manager about two thirds of
+the bot's takings, level 5 about 90%). `migratePlaces` turns old managed places (`P.mgr`, `P.design`) into full records with a
+starter kitchen and named staff. New places: `newPlaceRec` (starter kitchen `VENUES[].start` + basin, the venue's starter recipes,
+`openPlaceDlg`). `placeValue` / `closeValue` when sold or closed (not the one shown). `placeDlg` is a place's summary window.
 **Build-ins and walls** (free play): `BUILDINS` (keyed by id, append only; café: softplay, nook, meet, hatch; pub: sports, fruit, pool, func)
 in `S.bi {id: {p, lv, n}}`. Ones with `cell` take one of the 9 dining spots (`TABLE_POS`) shared with tables (`cellCap` = tables + 1, max 9;
 `biCells`, `freeSpot`); ones with `seats` become tables with `sp` that only groups with the same `g.sp` use (nook workers, pool players,
