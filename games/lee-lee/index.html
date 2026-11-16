@@ -1302,7 +1302,7 @@ const mgrTrain = M => M.lvl < 5 ? 350 * M.lvl : null, MGR_MAKE = 150;
 /* What a manager gets out of a place compared with Lee Lee herself (measured with the coachNext bot on the same place and team):
    on a quiet day they serve nearly everyone (mgrQ), on a busy one they get less out of the team and kitchen (mgrCapE), and
    customers spend a little less (mgrSpend). A level 1 manager takes about two thirds of what a good player would, level 5 about 90%. */
-const MGR_CAP = 6, mgrQ = lv => .85 + .02 * lv, mgrCapE = lv => .75 + .04 * lv, mgrSpend = lv => .78 + .03 * lv;
+const MGR_CAP = 6, mgrQ = lv => .85 + .02 * lv, mgrCapE = lv => .75 + .04 * lv, mgrSpend = lv => .76 + .025 * lv;
 // how many groups a day the manager and the team can look after (staff off sick don't count; agency staff do)
 function placeCrewOf(sv, day) {
   const M = mgrOf(sv); let c = M ? MGR_CAP * (.6 + .08 * M.lvl) * fatSlow(M.fat) : 0;
