@@ -957,6 +957,15 @@
         "A new place now comes with just a fridge, a worktop, a sink and a hand basin. You choose the cooking appliances yourself in its Upgrades tab.",
         "Every appliance you own has its own Sell one button in the Upgrades tab, so making room is easier."
       ]
+    },
+    {
+      "id": 84,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: fairer managers",
+      "details": [
+        "Managers were too hard on busy places: a level 1 manager could only serve about half the customers, so a good pub lost reputation and money while Lee Lee worked elsewhere.",
+        "Now a level 1 manager gets about three quarters of what the team and kitchen can do, rising to all of it at level 5."
+      ]
     }
   ]
 }

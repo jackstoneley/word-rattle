@@ -1300,10 +1300,10 @@ function makeMgrs(r) {
 }
 const mgrTrain = M => M.lvl < 5 ? 350 * M.lvl : null, MGR_MAKE = 150;
 /* A manager's level is how well they organise: on a quiet day any of them serves nearly everyone (MGR_Q), but on a busy one a
-   level 1 manager gets about two thirds of what the team and kitchen could do, a level 5 all of it (mgrCapE). Customers they can't
+   level 1 manager gets about three quarters of what the team and kitchen could do, a level 5 all of it (mgrCapE). Customers they can't
    serve cost reputation the same way as on a day Lee Lee plays (mgrRep), so an over-stretched place loses stars and custom until
    it is better staffed or organised, or Lee Lee goes back to win its name back. */
-const MGR_CAP = 6, MGR_Q = .96, mgrCapE = lv => .6 + .08 * lv;
+const MGR_CAP = 6, MGR_Q = .96, mgrCapE = lv => .725 + .055 * lv;
 // reputation from a managed day, on the scale of a played one: +3 a happy customer, +1 a served one, −4 one not served
 const mgrRep = (happy, served, people) => Math.round(3 * happy + (served - happy) - 4 * Math.max(0, people - served));
 // how many groups a day the manager and the team can look after (staff off sick don't count; agency staff do)
@@ -2079,7 +2079,7 @@ const GUIDE = [
     "At 2★ (at any of your places) you can open a second place, at 3★ a third. Find one on the City map. The fit-out gives a fridge, worktop, sink and hand basin; you choose its cooking appliances, hire its staff and grow it like your own.",
     "Every place is a whole venue with its own menu, kitchen, tables, team, stock, hours, events, prices, hygiene rating and stars. The buttons at the top of the office switch between them, and the tabs work the same for each.",
     "<b>Lee Lee works wherever you open the doors.</b> Show a place in the office and tap Open: she works there that day. Recipes are shared: learn one once and every place of that kind knows it (new recipes unlock with your best place's stars).",
-    "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu. A manager's level is how well they organise: on a quiet day any of them serves nearly everyone, but on a busy day a level 1 manager gets about two thirds of what the team and kitchen could manage, a level 5 all of it. Train them in the Team tab.",
+    "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu. A manager's level is how well they organise: on a quiet day any of them serves nearly everyone, but on a busy day a level 1 manager gets about three quarters of what the team and kitchen could manage, a level 5 all of it. Managers are paid every day, including days Lee Lee works there (they wait on tables). Train them in the Team tab.",
     "Customers a managed place can't serve cost it reputation, just as walk-outs do on your own days, so an over-stretched place loses stars and custom. Its Today tab says what held it back: more staff, a better manager, or another appliance (the kitchen is often the limit). Lee Lee can also go back and work there for a few days to win its name back.",
     "When Lee Lee goes to a place, if the place she left has no manager of its own, this place's manager goes over to run it (and comes back when she does). If both have managers, the one here waits on tables with her. A place with neither stays shut, but rent and wages are still paid.",
     "Staff belong to a place. In the Team tab you can move anyone to another place (managers don't take up a staff place), or make an experienced member of staff a manager."] },
