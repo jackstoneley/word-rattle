@@ -918,6 +918,14 @@
         "Drinkers leave empty glasses behind: clear them before anyone else can sit there.",
         "The guide explains how the bar works."
       ]
+    },
+    {
+      "id": 80,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: shorter walks",
+      "details": [
+        "When you tap an appliance, Lee Lee (and your staff) now go to the side that's the shortest walk away, instead of sometimes walking all the way round it."
+      ]
     }
   ]
 }

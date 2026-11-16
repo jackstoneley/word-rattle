@@ -2258,7 +2258,31 @@ function walkTo(pp, x, y) { pp.tx = x; pp.ty = y; const r = gridPath(G.grid, G.L
 function nearFree(x, y) { let best = [x, y], bd = 1e9; for (let k = 0; k < GW * GH; k++) if (!G.grid[k] && G.reach[k]) { const cx = (k % GW + .5) * GU, cy = (Math.floor(k / GW) + .5) * GU, d = Math.hypot(cx - x, cy - y); if (d < bd) { bd = d; best = [cx, cy]; } } return best; }
 // where to stand to use something: the free cell beside it nearest the person
 function accessFor(key, rect) { if (!G.acc.has(key)) G.acc.set(key, accessOf(rect, G.grid, G.L.walls, G.reach)); return G.acc.get(key); }
-function nearestOf(list, a, fx, fy) { if (!list.length) return nearFree(fx, fy); let b = list[0], bd = 1e9; for (const q of list) { const d = Math.hypot(q[0] - a.x, q[1] - a.y); if (d < bd) { bd = d; b = q; } } return b; }
+// steps on foot from a point to every cell (round furniture, through doors), so "nearest side" means the shortest walk, not the straight line
+function walkSteps(x, y) {
+  const ci = Math.max(0, Math.min(GW - 1, Math.floor(x / GU))), cj = Math.max(0, Math.min(GH - 1, Math.floor(y / GU))), s = cj * GW + ci;
+  const d = new Int16Array(GW * GH).fill(-1), q = [s]; d[s] = 0;
+  for (let h = 0; h < q.length; h++) {
+    const k = q[h], i = k % GW, j = (k - i) / GW;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= GW || b >= GH) continue;
+      const n = b * GW + a; if (d[n] >= 0 || G.grid[n] || !stepOk(G.L.walls, i, j, di, dj, false)) continue;
+      d[n] = d[k] + 1; q.push(n);
+    }
+  }
+  return d;
+}
+function nearestOf(list, a, fx, fy) {
+  if (!list.length) return nearFree(fx, fy);
+  const w = list.length > 1 && G && G.grid ? walkSteps(a.x, a.y) : null;
+  let b = list[0], bd = 1e9;
+  for (const q of list) {
+    const e = Math.hypot(q[0] - a.x, q[1] - a.y), k = w ? w[Math.floor(q[1] / GU) * GW + Math.floor(q[0] / GU)] : -1;
+    const d = k >= 0 ? k * GU + e * .01 : 1000 + e; // unreachable sides last
+    if (d < bd) { bd = d; b = q; }
+  }
+  return b;
+}
 function goStand(a, o, then) { const [x, y] = standFor(o, a); goTo(a, x, y, then); }
 function goTo(a, x, y, then) { a.path = route(a, x, y); a.then = then || null; }
 function work(a, dur, done, cancel, label) { a.work = { t: 0, dur, done, cancel, label }; }
