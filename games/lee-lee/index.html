@@ -456,7 +456,7 @@ const RECIPES = {
 };
 const ROLES = {
   waiter: { n: "Waiter", w: 22, e: "🧾", job: "Takes orders, carries food from the counter to tables, clears tables." },
-  porter: { n: "Kitchen porter", w: 18, e: "🧽", job: "Washes up and clears tables." },
+  porter: { n: "Kitchen porter", w: 18, e: "🧽", job: "Washes up and clears tables. Without one, waiters and cooks wash a few plates when clean ones run out." },
   cook: { n: "Cook", w: 30, e: "👩‍🍳", job: "Cooks food orders and leaves them on the counter (drinks too, if there's no one for those)." },
   drinks: { n: "Barista", w: 24, e: "☕", job: "Makes drink orders and leaves them on the counter." },
   floor: { n: "Cleaner", w: 20, e: "🧹", job: "Mops spills, clears tables, and calms down rowdy customers." },
@@ -1300,10 +1300,10 @@ function makeMgrs(r) {
 }
 const mgrTrain = M => M.lvl < 5 ? 350 * M.lvl : null, MGR_MAKE = 150;
 /* A manager's level is how well they organise: on a quiet day any of them serves nearly everyone (MGR_Q), but on a busy one a
-   level 1 manager gets about three quarters of what the team and kitchen could do, a level 5 all of it (mgrCapE). Customers they can't
+   level 1 manager gets about 90% of what the team and kitchen could do, level 3 all of it, level 5 a little more (mgrCapE). Customers they can't
    serve cost reputation the same way as on a day Lee Lee plays (mgrRep), so an over-stretched place loses stars and custom until
    it is better staffed or organised, or Lee Lee goes back to win its name back. */
-const MGR_CAP = 6, MGR_Q = .96, mgrCapE = lv => .725 + .055 * lv;
+const MGR_CAP = 6, MGR_Q = .96, mgrCapE = lv => .85 + .05 * lv;
 // reputation from a managed day, on the scale of a played one: +3 a happy customer, +1 a served one, −4 one not served
 const mgrRep = (happy, served, people) => Math.round(3 * happy + (served - happy) - 4 * Math.max(0, people - served));
 // how many groups a day the manager and the team can look after (staff off sick don't count; agency staff do)
@@ -1366,7 +1366,7 @@ function runPlace(save, P, r, news) {
   const groups = (expectedGroups(sv) + hn + booked) * (.88 + .24 * r()) * (hasBi(sv, "softplay") ? 1.05 : 1), neck = {}, kcap = kitchenCap(sv, menu, save.day, neck), crew = Math.min(placeCrewOf(sv, save.day), kcap);
   const cr = crampOf(sv, sv.L), cramp = cr.length ? cr.reduce((a, v) => a + (v || 0), 0) / cr.length : 0;
   const waiters = sv.staff.some(x => x.role === "waiter") || temps.some(x => x.role === "waiter");
-  const servedG = Math.min(groups * MGR_Q, crew * mgrCapE(lv)) * (1 - .1 * cramp) * fit * (sv.sign && waiters ? 1 : .94), people = groups * 2, served = servedG * 2;
+  const servedG = Math.min(groups * MGR_Q, crew * mgrCapE(lv)) * (1 - .1 * cramp) * fit * (sv.sign && waiters ? 1.03 : 1), people = groups * 2, served = servedG * 2;
   // noise: tables in the same room as the sports TV on game days, or the soft play
   const share = id => roomShare(sv, id);
   const noise = 1 - (hasBi(sv, "sports") && (info.tv || (info.match && pub)) ? .14 * share("sports") : 0) - (hasBi(sv, "softplay") ? .06 * share("softplay") : 0);
@@ -2047,6 +2047,7 @@ const GUIDE = [
     "Turn automatic stock off in the Stock section to buy everything yourself.",
     "Fresh food partly goes off overnight (half, usually; some premises have a better or worse store room)."] },
   { id: "staff", e: "👥", t: "Staff", p: [
+    "No kitchen porter? When clean plates run out, a waiter or the cook washes a few, so the team copes without Lee Lee. A porter still keeps things running much better on busy days.",
     "<b>Waiters</b> take orders, carry food and clear tables. <b>Cooks</b> make food (and drinks if there's no barista). <b>Baristas</b> make drinks. In a pub the <b>bartender</b> serves at the bar, pours every drink and collects glasses; without one, waiters pour drinks and serve at the bar, and cooks only pour when there's nobody else. <b>Kitchen porters</b> wash up and clear. <b>Cleaners</b> mop, clear and calm rowdy customers.",
     "Higher <b>levels</b> walk faster and work better. Promote someone once they've worked enough days; their fair wage rises about 12% a level.",
     "Paying below a fair wage, and very busy days, lower <b>morale</b>. Unhappy staff can quit.",
@@ -2079,7 +2080,7 @@ const GUIDE = [
     "At 2★ (at any of your places) you can open a second place, at 3★ a third. Find one on the City map. The fit-out gives a fridge, worktop, sink and hand basin; you choose its cooking appliances, hire its staff and grow it like your own.",
     "Every place is a whole venue with its own menu, kitchen, tables, team, stock, hours, events, prices, hygiene rating and stars. The buttons at the top of the office switch between them, and the tabs work the same for each.",
     "<b>Lee Lee works wherever you open the doors.</b> Show a place in the office and tap Open: she works there that day. Recipes are shared: learn one once and every place of that kind knows it (new recipes unlock with your best place's stars).",
-    "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu. A manager's level is how well they organise: on a quiet day any of them serves nearly everyone, but on a busy day a level 1 manager gets about three quarters of what the team and kitchen could manage, a level 5 all of it. Managers are paid every day, including days Lee Lee works there (they wait on tables). Train them in the Team tab.",
+    "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu. A manager's level is how well they organise: on a quiet day any of them serves nearly everyone, but on a busy day a level 1 manager gets about 90% of what the team and kitchen could manage, a level 3 all of it, and a level 5 a little more. Managers are paid every day, including days Lee Lee works there (they wait on tables). Train them in the Team tab.",
     "Customers a managed place can't serve cost it reputation, just as walk-outs do on your own days, so an over-stretched place loses stars and custom. Its Today tab says what held it back: more staff, a better manager, or another appliance (the kitchen is often the limit). Lee Lee can also go back and work there for a few days to win its name back.",
     "When Lee Lee goes to a place, if the place she left has no manager of its own, this place's manager goes over to run it (and comes back when she does). If both have managers, the one here waits on tables with her. A place with neither stays shut, but rent and wages are still paid.",
     "Staff belong to a place. In the Team tab you can move anyone to another place (managers don't take up a staff place), or make an experienced member of staff a manager.",
@@ -2727,10 +2728,14 @@ function stationsStep(dt) {
     if (s.t === "dishwasher" && s.run > 0) { s.run -= dt * speedOf("dishwasher"); if (s.run <= 0) { s.run = 0; G.clean += s.load; s.load = 0; } }
   }
 }
+const WASH_TO = 4;
+// no kitchen porter: when clean plates run out, a waiter or the cook washes some (so the team copes without Lee Lee)
+const washHelp = a => !hasRole("porter") && G.clean <= 1 && G.sink > 0 && tryWash(a);
 function startWash(a) {
   const s = G.stations.find(x => x.t === "sink"); if (!s || G.sink <= 0) { G.washer = G.washer === a ? null : G.washer; return; }
   G.washer = a; a.dh = true;
-  work(a, 1.05 / speedOf("sink"), () => { G.sink--; G.clean++; if (G.sink > 0) startWash(a); else G.washer = null; }, () => { if (G.washer === a) G.washer = null; }, "wash");
+  // porters and Lee Lee wash the lot; anyone else stepping in (no porter) washes until there are a few clean plates again
+  work(a, 1.05 / speedOf("sink"), () => { G.sink--; G.clean++; if (G.sink > 0 && (a.role === "porter" || a.role === "lee" || G.clean < WASH_TO)) startWash(a); else G.washer = null; }, () => { if (G.washer === a) G.washer = null; }, "wash");
 }
 function loadDishwasher(a, s) {
   if (!a.hand || a.hand.k !== "dirty") return false;
@@ -3029,9 +3034,9 @@ function staffThink(a, dt) {
   if (h && h.k === "dirty") return staffDirty(a);
   if (h && h.k === "dish") return staffDish(a);
   const role = a.role;
-  const did = role === "waiter" ? tryOrder(a) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryBarOrder(a)) || tryDeliver(a) || (G.queue.length > 0 && tryClear(a)) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryCook(a, true)) || tryClear(a)
+  const did = role === "waiter" ? tryOrder(a) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryBarOrder(a)) || tryDeliver(a) || washHelp(a) || (G.queue.length > 0 && tryClear(a)) || (barMode() && (!hasRole("drinks") || barBacklog()) && tryCook(a, true)) || tryClear(a)
     : role === "porter" ? tryWash(a) || tryClear(a) || tryScrub(a)
-    : role === "cook" ? tryCook(a, cookDrinks()) || ((a.idle || 0) >= 3 && tryScrub(a, .3))
+    : role === "cook" ? tryCook(a, cookDrinks()) || washHelp(a) || ((a.idle || 0) >= 3 && tryScrub(a, .3))
     : role === "drinks" ? (barMode() && tryBarOrder(a)) || (barMode() && G.queue.some(g => g.drinker) && tryClear(a, true)) || tryCook(a, true) || (barMode() && tryClear(a, true))
     : role === "floor" ? tryCalm(a) || tryMop(a) || tryClear(a) || tryScrub(a) : false;
   if (did) { a.idle = 0; return; }

@@ -976,6 +976,15 @@
         "Managers can be left unallocated, on a retainer of half their pay, ready to cover a place.",
         "A tick box decides whether a manager goes to cover the place Lee Lee leaves when it has none. An unallocated manager goes first."
       ]
+    },
+    {
+      "id": 86,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: staff wash up, managers serve more",
+      "details": [
+        "Without a kitchen porter, nobody washed up unless Lee Lee did, so plates ran out and customers walked out. Waiters and cooks now wash a few plates when clean ones run out.",
+        "Managers now serve about as many customers as the same team does with Lee Lee standing by: level 3 gets everything out of the team, level 5 a little more."
+      ]
     }
   ]
 }
