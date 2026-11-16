@@ -948,6 +948,15 @@
         "Customers a managed place can't serve cost it reputation, so a stretched place loses stars and custom. Its Today tab says what's holding it back: staff, the manager, or which appliance the kitchen needs more of.",
         "Lee Lee can go back and work at a struggling place for a few days to win its name back."
       ]
+    },
+    {
+      "id": 83,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: choose a new place's kitchen",
+      "details": [
+        "A new place now comes with just a fridge, a worktop, a sink and a hand basin. You choose the cooking appliances yourself in its Upgrades tab.",
+        "Every appliance you own has its own Sell one button in the Upgrades tab, so making room is easier."
+      ]
     }
   ]
 }

@@ -265,8 +265,8 @@ time per order against `KIT_U` of the day; the bottleneck appliance goes in `mla
 organisation only: served = min(groups × `MGR_Q`, capacity × `mgrCapE(level)`); spend per customer is as Lee Lee's. Reputation uses
 `mgrRep` (the played-day scale: +3 happy, +1 served, −4 not served), so an over-stretched place loses stars and custom until it is
 staffed, equipped or Lee Lee plays it again. Per-person nights via `staffNight`; no manager = shut (rent and wages still paid). `migratePlaces` turns old managed places (`P.mgr`, `P.design`) into full records with a
-starter kitchen and named staff. New places: `newPlaceRec` (starter kitchen `VENUES[].start` + basin, the venue's starter recipes,
-`openPlaceDlg`). `placeValue` / `closeValue` when sold or closed (not the one shown). `placeDlg` is a place's summary window.
+starter kitchen and named staff. New places: `newPlaceRec` (only the basics, `PLACE_KIT`: fridge, worktop, sink, basin; the player buys the cooking
+appliances; the venue's starter recipes; `openPlaceDlg`). Upgrades lists a Sell one button per owned appliance (`sellt`). `placeValue` / `closeValue` when sold or closed (not the one shown). `placeDlg` is a place's summary window.
 **Build-ins and walls** (free play): `BUILDINS` (keyed by id, append only; café: softplay, nook, meet, hatch; pub: sports, fruit, pool, func)
 in `S.bi {id: {p, lv, n}}`. Ones with `cell` take one of the 9 dining spots (`TABLE_POS`) shared with tables (`cellCap` = tables + 1, max 9;
 `biCells`, `freeSpot`); ones with `seats` become tables with `sp` that only groups with the same `g.sp` use (nook workers, pool players,

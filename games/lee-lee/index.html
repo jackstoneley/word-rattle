@@ -2076,7 +2076,7 @@ const GUIDE = [
     "<b>Price level</b>: Bargain pulls customers from rivals but earns less each; Premium and Luxury earn more each but put people off, so they suit a place that's always full.",
     "The city centre is tough until you're well known (about 3★ and up), then it can be far busier than the suburbs."] },
   { id: "places", e: "🏢", t: "More places", p: [
-    "At 2★ (at any of your places) you can open a second place, at 3★ a third. Find one on the City map. The fit-out comes with a starter kitchen for a café or a pub; then you hire its staff and grow it like your own.",
+    "At 2★ (at any of your places) you can open a second place, at 3★ a third. Find one on the City map. The fit-out gives a fridge, worktop, sink and hand basin; you choose its cooking appliances, hire its staff and grow it like your own.",
     "Every place is a whole venue with its own menu, kitchen, tables, team, stock, hours, events, prices, hygiene rating and stars. The buttons at the top of the office switch between them, and the tabs work the same for each.",
     "<b>Lee Lee works wherever you open the doors.</b> Show a place in the office and tap Open: she works there that day. Recipes are shared: learn one once and every place of that kind knows it (new recipes unlock with your best place's stars).",
     "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu. A manager's level is how well they organise: on a quiet day any of them serves nearly everyone, but on a busy day a level 1 manager gets about two thirds of what the team and kitchen could manage, a level 5 all of it. Train them in the Team tab.",
@@ -4293,6 +4293,7 @@ function tabUp() {
     const D = STATIONS[t], have = S.stations.filter(x => x === t).length;
     const desc = (have ? `You have ${have}. ` : "") + (D.k === "pas" ? `Cooks on its own${D.b ? ", burns if left" : ""}` : D.k === "act" ? "Hands-on" : D.k === "dw" ? `Washes ${DW_CAP} plates by itself` : D.k === "sink" ? "Wash plates by hand" : D.k === "top" ? "Somewhere to put things down" : "Ingredients");
     h += upRow(D.e || "🟫", have ? "Another " + D.n.toLowerCase() : D.n, t === "basin" ? "On the wall: doesn't use a kitchen space. Wash hands here before handling food, quicker than the sink, and inspectors expect one." : desc, "buyst", t === "basin" && have ? null : D.c, free > 0 || (t === "basin" && !have), `data-t="${t}"`);
+    if (have && t !== "basin") h += `<div class="row" style="justify-content:flex-end;margin:-4px 0 6px"><button class="btn sm" data-act="sellt" data-t="${t}">Sell one ${D.n.toLowerCase()} · +${money(Math.round(D.c / 2))}</button></div>`;
   }
   const types = [...new Set(kit())].filter(t => ["pas", "act", "sink", "dw"].includes(STATIONS[t].k));
   for (const t of types) {
@@ -4406,6 +4407,7 @@ $("mwrap").onclick = e => {
     dialog(`<h3>Let ${esc(s.name)} go?</h3><p>Redundancy pay: <b>${money(fee)}</b> (a week's notice, plus a day's pay for every two weeks they've worked for you).</p>${canAfford(fee) ? "" : `<p class="small" style="color:var(--bad)">You haven't got that much: it would leave you overdrawn.</p>`}<p class="small muted">For a single busy day, agency staff (below) are cheaper.</p><div class="acts"><button class="btn" data-a="yes" style="color:var(--bad)">Pay ${money(fee)} and let them go</button><button class="btn" data-a="">Keep them</button></div>`, x => { if (x === "yes") { S.cash -= fee; S.staff = S.staff.filter(y => y !== s); saveGame(); renderManage(); } });
     return;
   }
+  if (a === "sellt") { const i = S.stations.lastIndexOf(b.dataset.t); if (i >= 0) { S.stations[i] = null; S.cash += Math.round(STATIONS[b.dataset.t].c / 2); } }
   if (a === "sell") { const t = S.stations[+b.dataset.i]; if (t) { S.stations[+b.dataset.i] = null; S.cash += Math.round(STATIONS[t].c / 2); } }
   if (a === "buyst") {
     const t = b.dataset.t, slots = PREMISES[S.prem].slots;
@@ -5224,13 +5226,14 @@ function clienteleTips(s, venue) {
   out.push(`💷 People here pay up to ${PRICE[priceTol(s)].n} prices.`);
   return out;
 }
-/* opening another place from the map: the fit-out includes a starter kitchen for the kind of place, and its first manager */
+/* opening another place from the map: the fit-out gives the basics (PLACE_KIT); the player picks the cooking appliances */
+const PLACE_KIT = ["fridge", "top", "sink", "basin"];
 function newPlaceRec(s, venue, name) {
   const t = newSave(venue, name, s.id), V = VENUES[venue], prem = PREMISES[s.t], P = { id: "" };
   do P.id = "p" + (S.pid = (S.pid || 1) + 1); while (allPlaces(S).some(x => placeId(S, x) === P.id));
   for (const k of PK) if (t[k] !== undefined) P[k] = t[k];
   const nT = Math.max(2, Math.ceil(placeMaxT(s) / 2));
-  Object.assign(P, { prem: s.t, rep: Math.round(bestRep(S) * .25), stations: V.start.filter(x => x !== "sink").slice(0, prem.slots - 1).concat(["sink", "basin"]), tables: Array(nT).fill(4), tpos: Array.from({ length: nT }, (_, i) => i),
+  Object.assign(P, { prem: s.t, rep: Math.round(bestRep(S) * .25), stations: PLACE_KIT.slice(), tables: Array(nT).fill(4), tpos: Array.from({ length: nT }, (_, i) => i),
     plates: 6 + 4 * s.t, staff: [], cands: makeCands(), opened: S.day, hist: [], L: null, last: null, mlast: null, owned: V.menu.slice() });
   return P;
 }
@@ -5242,7 +5245,7 @@ function openPlaceDlg(s, venue) {
   const rent = siteRent(s, venue, S.biz), fit = siteFit(s, venue), dep = rent * 28, cost = fit + dep, V = VENUES[venue];
   const mg = makeMgrs(seeded(seedOf(S) * 3 + S.day * 7 + s.id.length * 13 + (S.places || []).length));
   const nm = `${venue === "pub" ? "Lee Lee's Bar" : "Lee Lee's"}, ${s.a}`, kitN = V.start.length;
-  dialog(`<h3>Open ${esc(s.n)}</h3><p class="small muted" style="text-align:center">A ${venue === "pub" ? "pub" : "café"} of your own. Fit-out ${money(fit)} (with a starter kitchen of ${kitN} pieces and a hand basin) and a deposit of ${money(dep)}, then ${money(rent * 7)} a week in rent. Its takings and costs go through your money each night.</p>
+  dialog(`<h3>Open ${esc(s.n)}</h3><p class="small muted" style="text-align:center">A ${venue === "pub" ? "pub" : "café"} of your own. Fit-out ${money(fit)} (with a fridge, worktop, sink and hand basin: you choose the cooking appliances) and a deposit of ${money(dep)}, then ${money(rent * 7)} a week in rent. Its takings and costs go through your money each night.</p>
     <p class="small"><b>Choose a manager</b> <span class="muted">(they run it while Lee Lee works elsewhere)</span></p>
     <div class="acts">${mg.map((m, i) => `<button class="btn" data-a="m${i}" ${canAfford(cost) ? "" : "disabled"} style="text-align:left"><b>${esc(m.name)}</b>, level ${m.lvl} · ${money(m.wage)} a day</button>`).join("")}
     <button class="btn" data-a="none" ${canAfford(cost) ? "" : "disabled"} style="text-align:left">No new manager: I'll move or promote someone from a team I have</button>
@@ -5254,7 +5257,7 @@ function openPlaceDlg(s, venue) {
     if (a !== "none") { const m = mg[+a.slice(1)]; NP.staff.push(Object.assign({ id: "s" + (S.sid++), look: randomLook() }, m)); }
     S.places.push(NP); shareBook(S);
     saveGame(); CM.sel = null; openManage("city");
-    dialog(`<h3>${esc(NP.name)} is yours!</h3><p class="muted" style="text-align:center">It opens tomorrow${a === "none" ? " once it has a manager (Team tab: move someone there, or make someone its manager)" : ""}. Tap <b>Look after this place</b> to set it up in the office, just like your own: menu, team, kitchen, tables and hours. It has no other staff yet, so hire a waiter and a cook for it.</p>
+    dialog(`<h3>${esc(NP.name)} is yours!</h3><p class="muted" style="text-align:center">It opens tomorrow${a === "none" ? " once it has a manager (Team tab: move someone there, or make someone its manager)" : ""}. Tap <b>Look after this place</b> to set it up in the office, just like your own: menu, team, kitchen, tables and hours. Its kitchen has only the basics, so buy the appliances its menu needs (Upgrades), and hire a waiter and a cook (Team).</p>
       <div class="acts"><button class="btn pri" data-a="view">Look after this place</button><button class="btn" data-a="">Later</button></div>`, x => { if (x === "view") showPlace(NP.id); });
   });
 }
