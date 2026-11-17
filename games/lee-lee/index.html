@@ -603,7 +603,7 @@ const LEVELS = [
   { ch: 6, n: "Pool and fruit machines", menu: ["lager", "wine", "cocktail", "chips", "burger"], st: ["fridge", "tap", "tap", "bowl", "fryer", "board", "grill", "sink", "top"], tables: [2, 2, 4, 2], bi: { pool: { p: 2 }, fruit: { n: 2 } },
     staff: [["drinks", 2], ["floor", 1]], rowdy: 1, people: 12, size: 2, len: 240, waves: [{ u: .6, sd: .2, n: 5, size: [2, 3], sp: "pool" }],
     goals: [["extra", 18], ["served", 16], ["out", 2]],
-    tip: ["Groups of friends come to play pool 🎱: they mostly drink, stay for more rounds and pay £1 a game each.", "The fruit machines 🎰 take coins from drinkers all night: the busier it is, the more they make.", "Watch the money from build-ins on the end-of-day summary."] },
+    tip: ["Groups of friends come to play pool 🎱: they mostly drink, stay for more rounds and pay £1 a game each.", "Drinkers wander over to the fruit machines 🎰 and play while they wait for their round: the busier it is, the more they make.", "Watch the money from build-ins on the end-of-day summary."] },
   { ch: 6, n: "Supporters' club do", menu: ["lager", "wine", "chips", "burger", "pie", "fishchips"], st: ["fridge", "tap", "tap", "fryer", "board", "grill", "bowl", "oven", "sink", "top", "top"], tables: [2, 2, 4, 4, 2], bi: { func: { p: 8 } },
     walls: { v21: 2, h12: 1, h22: 1 }, staff: [["cook", 2], ["drinks", 2], ["waiter", 1]], plates: 14, fans: "football", people: 12, size: 2, len: 250, book: { occ: "Supporters' club", size: 6, at: .15, dep: 110, room: 1 },
     goals: [["party", 1], ["served", 16], ["out", 2]],
@@ -785,6 +785,7 @@ const OCCASIONS = [{ n: "Birthday party", e: "🎂" }, { n: "Engagement drinks",
   { n: "Business meeting", e: "💼", v: "cafe", room: 1 }];
 const BAR = [{ n: "Bar & standing area", c: 1200, st: 1, spots: 2 }, { n: "Bigger standing area", c: 2500, st: 2, spots: 3 }];
 const BAR_SPOTS = [[6.4, 13.25], [8.15, 13.25], [7.3, 13.25]];
+const HATCH_SPOTS = [[.55, 14.1], [1.4, 14.1]]; // where takeaway customers stand at the window
 const plated = r => RECIPES[r].s[RECIPES[r].s.length - 1] === "plate"; // drinks go out without a plate
 function starsOf(rep) { let s = 0; while (s < 5 && rep >= STAR_AT[s + 1]) s++; return s; }
 function starsF(rep) { const s = starsOf(rep); return s >= 5 ? 5 : s + (rep - STAR_AT[s]) / (STAR_AT[s + 1] - STAR_AT[s]); }
@@ -1456,10 +1457,10 @@ const BUILDINS = [
   { id: "softplay", v: "cafe", n: "Soft play corner", e: "🧸", c: 1500, st: 1, cell: 1, d: "Families come more often and their children stay happy. £2.50 entry per child. Noisy: wall it off from the other tables." },
   { id: "nook", v: "cafe", n: "Reading & work corner", e: "📚", c: 900, st: 0, cell: 1, seats: 3, d: "Sofas, books and desks with plugs. Students and people working on laptops stay for hours buying drinks and cake, and pay £2 for the desk. Busiest near offices and the universities." },
   { id: "meet", v: "cafe", n: "Meeting room", e: "🤝", c: 2500, st: 2, cell: 1, seats: 6, room: 1, d: "Booked meetings pay for the room and order coffee and food. Needs walls and a door all round. Far more bookings near offices and in town." },
-  { id: "hatch", v: "cafe", n: "Takeaway window", e: "🥤", c: 1200, st: 1, d: "Sells takeaway coffee and snacks to people walking past. Earns most where the streets are busiest." },
+  { id: "hatch", v: "cafe", n: "Takeaway window", e: "🥤", c: 1200, st: 1, d: "People walking past queue at the window by the front door for a takeaway drink: take their order and hand it over like any table, and they pay and go. Busiest where the streets are busiest." },
   { id: "sports", v: "pub", n: "Sports TV corner", e: "📺", c: 600, st: 0, cell: 1, seats: 4, d: "Shows the big games on TV, so fans come to watch even far from the ground. They stay for the game and drink rounds. Loud: wall it off from diners.",
     lv: [{ n: "Sports TV", fee: 4, sh: .15 }, { n: "Big screen & all the sports channels", c: 2500, st: 2, fee: 12, sh: .3 }] },
-  { id: "fruit", v: "pub", n: "Fruit machine", e: "🎰", c: 400, st: 0, max: 2, d: "Drinkers feed it coins: steady money every night, more when it's busy and late." },
+  { id: "fruit", v: "pub", n: "Fruit machine", e: "🎰", c: 400, st: 0, max: 2, d: "Drinkers wander over to play while they wait or drink, then go back to their table. More plays when it's busy and late." },
   { id: "pool", v: "pub", n: "Pool table", e: "🎱", c: 1100, st: 1, cell: 1, seats: 4, d: "Groups of friends come to play, stay for more rounds and pay £1 a game each." },
   { id: "func", v: "pub", n: "Function room", e: "🎉", c: 3000, st: 2, cell: 1, seats: 6, room: 1, d: "A private room for booked parties: more party bookings, and they pay for the room. Needs walls and a door all round." },
   { id: "drinks", v: "pub", n: "Drinkers' tables", e: "🍻", c: 900, st: 1, cell: 1, seats: 3, d: "Three high tables just for drinking. More people drop in for a drink: they order and collect at the bar, so a bartender keeps them happy, and they leave empty glasses to clear." }
@@ -2067,6 +2068,7 @@ const GUIDE = [
     "Walls keep noise (TV, soft play, music) away from other tables. Meeting and function rooms need walls all round and a door. Everything must still be reachable from the entrance."] },
   { id: "extras", e: "🎱", t: "Build-ins and events", p: [
     "Cafés can add a soft play corner, a reading & work corner, a meeting room and a takeaway window; pubs a sports TV corner, fruit machines, a pool table, a function room and <b>drinkers' tables</b> (three high tables that bring in more people just for a drink, served at the bar). Each brings its own customers or money; some are noisy.",
+    "The <b>takeaway window</b> brings walk-up customers who queue at the window by the door for a takeaway drink: take the order and hand it over there. <b>Fruit machines</b> get played by drinkers while they wait or drink; the coins pop up as they play. (At places a manager runs, these are worked out overnight instead.)",
     "A sports TV corner brings fans for televised games anywhere in the city (the channels cost a little every day).",
     "<b>Events</b> (quiz, live music, karaoke, supper club, kids' craft morning, book club) run on the weekdays you choose: they cost a fee and bring extra groups who spend more. Regulars build up the more often you hold one. Noisy events can upset other diners and neighbours."] },
   { id: "city", e: "🗺️", t: "The city", p: [
@@ -2169,6 +2171,8 @@ function startDay() {
       if (B.seats) G.tables.push({ i: G.tables.length, x, y, fp: { x: bx, y: by, w: 3, h: 2 }, seats: id === "sports" && (S.bi.sports.lv || 1) > 1 ? 6 : B.seats, sp: id, room: B.room ? gridEnclosed(S.L.walls, x, y) : false, group: null, dirty: 0, claim: null });
     }
   }
+  // the takeaway window: two standing spots inside the front window, only for walk-up takeaway customers (g.tk)
+  if (LV == null && hasBi(S, "hatch")) HATCH_SPOTS.forEach(([x, y]) => G.tables.push({ i: G.tables.length, x, y, fp: { x: x - .3, y: y - .3, w: .6, h: .4 }, seats: 1, tk: true, group: null, dirty: 0, claim: null }));
   // the pub's standing area: bar spots behave like tables for drinkers only
   if (LV == null && S.venue === "pub" && S.bar) BAR_SPOTS.slice(0, BAR[S.bar - 1].spots).forEach(([x, y], k) => G.tables.push({ i: G.tables.length, x, y, fp: { x: x - .5, y: y - .5, w: 1, h: .5 }, seats: 3, bar: true, group: null, dirty: 0, claim: null }));
   G.info = LV == null ? dayInfo(S, S.day) : null;
@@ -2235,6 +2239,11 @@ function startDay() {
     for (let i = 0; i < k; i++) G.arr.push({ t: rnd(.03, .75) * G.len, size: 1, sp: "nook" }); }
   if (LV == null && hasBi(S, "pool")) { const k = Math.min(6, Math.round(n * .12 + 1));
     for (let i = 0; i < k; i++) { const u = rnd(.15, .85); G.arr.push({ t: u * G.len, size: 2 + Math.floor(Math.random() * 3), sp: "pool", late: lateAt(u * G.len), rowdy: lateAt(u * G.len) && Math.random() < .15 }); } }
+  // the takeaway window: people walking past stop for a takeaway drink (more on busy, dry streets near offices and students)
+  if (LV == null && hasBi(S, "hatch")) {
+    const m = siteMix(siteOf(S)), wet = info.w === 2 || info.w === 5 ? .75 : 1, k = Math.min(14, Math.round(siteFoot(siteOf(S), "cafe") * (5 + 6 * m.com + 3 * m.stu) * wet * rnd(.85, 1.15)));
+    for (let i = 0; i < k; i++) { const u = Math.random() < .55 ? rnd(.04, .4) : rnd(.3, .9); G.arr.push({ t: u * G.len, size: 1, tk: true }); }
+  }
   // the bar brings in people who only want a drink
   if (LV == null && S.venue === "pub" && S.bar) {
     const extra = Math.min(Math.round(n * .22 * S.bar * (info.match ? 1.4 : 1)), BAR[S.bar - 1].spots * 2);
@@ -2459,7 +2468,7 @@ function takeOrder(g) {
   const taken = {}, tickets = [];
   const extra = .12 + .07 * starsOf(S.rep);
   for (let i = 0; i < g.size; i++) {
-    const kind = g.drinker || g.sp === "pool" || (g.rounds && g.watch) ? "drink" : g.sp === "nook" ? "nook" : g.people[i] && g.people[i].kid ? "kid" : null;
+    const kind = g.drinker || g.tk || g.sp === "pool" || (g.rounds && g.watch) ? "drink" : g.sp === "nook" ? "nook" : g.people[i] && g.people[i].kid ? "kid" : null;
     const n = !g.drinker && Math.random() < extra ? 2 : 1;
     for (let j = 0; j < n; j++) {
       const r = chooseOrder(g, taken, kind); if (!r) continue;
@@ -2470,7 +2479,7 @@ function takeOrder(g) {
   }
   if (!tickets.length) {
     if (g.tickets.length) { g.state = "eat"; g.timer = 1; return; }
-    { const want = onMenu().filter(r => canMake(r) && (g.drinker || g.sp === "pool" ? RECIPES[r].d : g.sp === "nook" ? RECIPES[r].d || RCATS[r] === "cake" : true));
+    { const want = onMenu().filter(r => canMake(r) && (g.drinker || g.tk || g.sp === "pool" ? RECIPES[r].d : g.sp === "nook" ? RECIPES[r].d || RCATS[r] === "cake" : true));
       const outK = [...new Set(want.flatMap(r => Object.keys(RECIPES[r].i).filter(k => (G.stock[k] || 0) - reserved(k) < RECIPES[r].i[k])))];
       fx(g.table.x, g.table.y - 1, !want.length ? (g.drinker || g.sp === "pool" ? "No drinks on the menu? 😞" : "Nothing for us here 😞") : outK.length ? `Out of ${outK.slice(0, 2).map(k => INGS[k].n.toLowerCase()).join(" and ")}? 😞` : "Nothing we fancy is left 😞", "#D2483A"); }
     G.turned += g.size; G.repD -= 2 * g.size; groupLeave(g, false); return;
@@ -2487,6 +2496,7 @@ function serve(g, tk, dish) {
   if (g.tickets.every(k => k.done)) {
     g.state = "eat"; g.timer = g.watch || (g.sp === "nook" && g.table && g.table.sp === "nook") ? rnd(12, 17) : g.drinker ? rnd(5, 8) : rnd(7, 10) + (g.party ? 4 : 0);
     if (g.atBar) { g.atBar = false; g.state = "back"; const o = seatsOf(g.table)[0]; walkTo(g.people[0], g.table.x + o[0], g.table.y + o[1]); }
+    if (g.tk) g.timer = .4; // a takeaway: pay and go
   }
 }
 
@@ -2494,7 +2504,7 @@ function serve(g, tk, dish) {
 const hrI = () => Math.max(0, Math.min(G.hr.arr.length - 1, Math.floor(G.t / G.sph)));
 function spawnGroup(a) {
   if (G.hr) G.hr.arr[hrI()] += a.size;
-  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, kids: a.kids || 0, drinker: !!a.drinker, bar: !!a.drinker && barMode() && !!G.barP, fan: a.fan || null, sp: a.sp || null, watch: !!a.watch, party: a.party || null, rounds: 0, spilt: false, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
+  const g = { id: nextId++, size: a.size, rowdy: a.rowdy, late: a.late, critic: a.critic, kids: a.kids || 0, drinker: !!a.drinker, bar: !!a.drinker && barMode() && !!G.barP, fan: a.fan || null, sp: a.sp || null, watch: !!a.watch, party: a.party || null, tk: !!a.tk, rounds: 0, spilt: false, state: "queue", pat: 1, table: null, tickets: [], servedN: 0, bonus: 0, timer: 0,
     host: a.host || null, claim: null, calmClaim: null, shout: 0, rt: rnd(6, 12), calmed: 0, people: [] };
   for (let i = 0; i < a.size; i++) g.people.push({ x: DOOR[0] + (i - (a.size - 1) / 2) * .4, y: DOOR[1], look: randomLook(), tx: 0, ty: 0, kid: i >= a.size - (a.kids || 0) });
   if (g.party) fx(4.5, 13, `${OCCASIONS[g.party.occ].e} The ${OCCASIONS[g.party.occ].n.toLowerCase()} has arrived!`, "#E8664A");
@@ -2502,6 +2512,7 @@ function spawnGroup(a) {
 }
 function seatOffsets(seats) { return seats >= 6 ? [[-1.12, 0], [1.12, 0], [-.45, -.72], [.45, -.72], [-.45, .72], [.45, .72]] : seats >= 4 ? [[-.8, 0], [.8, 0], [0, -.72], [0, .72]] : [[-.8, 0], [.8, 0]]; }
 function seatsOf(t) {
+  if (t.tk) return [[0, 0]];
   if (t.bar) return [[-.48, 0], [.02, .12], [.5, 0]];
   if (t.dk) return [[-.42, .08], [.42, .08], [0, .4]];
   if (t.sp === "nook") return [[-.85, .15], [0, .35], [.85, .15]];
@@ -2510,13 +2521,13 @@ function seatsOf(t) {
   return seatOffsets(t.seats);
 }
 const SP_N = { nook: "the reading corner", sports: "the sports corner", pool: "the pool table", meet: "the meeting room", func: "the function room" };
-const tname = t => t.bar ? "the bar" : t.dk ? "the drinks table" : t.sp ? SP_N[t.sp] : "table " + (t.i + 1);
+const tname = t => t.tk ? "the takeaway window" : t.bar ? "the bar" : t.dk ? "the drinks table" : t.sp ? SP_N[t.sp] : "table " + (t.i + 1);
 /* Where a group sits. Bookings, build-in spots and the bar come first, as before. Otherwise people pick for themselves:
    the right number of seats most of the time, one spare seat just as happily, a table with room to spread out now and then,
    and not always the first free table. With a "Wait to be seated" sign and a waiter, they're shown to the best fit. */
 function pickTable(g, free) {
   const top = free[0];
-  if ((top.res && top.res === g.party) || (g.sp && top.sp === g.sp) || (g.drinker && (top.bar || top.dk))) return top;
+  if ((top.res && top.res === g.party) || (g.sp && top.sp === g.sp) || (g.drinker && (top.bar || top.dk)) || g.tk) return top;
   const plain = free.filter(t => !t.sp && !t.bar && !t.dk); if (!plain.length) return top;
   if (S.sign && G.actors.some(a => a.role === "waiter")) {
     const t = plain.slice().sort((a, b) => a.seats - b.seats)[0];
@@ -2531,7 +2542,7 @@ function pickTable(g, free) {
 function trySeat() {
   for (let qi = 0; qi < G.queue.length; qi++) {
     const g = G.queue[qi];
-    let free = G.tables.filter(t => !t.group && !t.dirty && !t.gl && t.seats >= g.size && (!t.res || t.res === g.party) && (!t.bar || g.drinker || g.sp === "sports" || g.sp === "pool") && (!t.dk || g.drinker) && (!t.sp || t.sp === g.sp || (t.res && t.res === g.party)))
+    let free = G.tables.filter(t => !t.group && !t.dirty && !t.gl && !!t.tk === !!g.tk && t.seats >= g.size && (!t.res || t.res === g.party) && (!t.bar || g.drinker || g.sp === "sports" || g.sp === "pool") && (!t.dk || g.drinker) && (!t.sp || t.sp === g.sp || (t.res && t.res === g.party)))
       .sort((a, b) => (b.res === g.party && g.party ? 1 : 0) - (a.res === g.party && g.party ? 1 : 0) || (g.sp ? (b.sp === g.sp) - (a.sp === g.sp) : 0) || (g.drinker ? (b.bar || b.dk ? 1 : 0) - (a.bar || a.dk ? 1 : 0) : 0) || a.seats - b.seats);
     if (!free.length) {
       if (g.party && !G.tables.some(t => !t.bar && !t.dk && t.seats >= g.size)) { angryLeave(g, "No table big enough for us! 😞"); qi--; }
@@ -2543,8 +2554,8 @@ function trySeat() {
     if (g.kids && hasBi(S, "softplay")) addExtra("soft", 2.5 * g.kids, t);
     G.queue.splice(qi, 1); qi--;
   }
-  let qx = .9;
-  G.queue.forEach(g => g.people.forEach((p, i) => { p.tx = qx + (qx > 3.7 ? -2.9 : 0); p.ty = qx > 3.7 ? 14.05 : 13.4 + (i % 2) * .15; qx += i === g.people.length - 1 ? .7 : .32; }));
+  const q0 = LV == null && hasBi(S, "hatch") ? 2.3 : .9; let qx = q0;
+  G.queue.forEach(g => g.people.forEach((p, i) => { const row2 = qx > q0 + 2.8; p.tx = qx - (row2 ? 2.8 : 0); p.ty = row2 ? 14.05 : 13.4 + (i % 2) * .15; qx += i === g.people.length - 1 ? .7 : .32; }));
 }
 function patMul(g) {
   let m = (1 - .06 * S.decor) * (LV != null ? (EASY ? .6 : .78) : diffOf(S).pat);
@@ -2565,6 +2576,7 @@ function patMul(g) {
   return m;
 }
 function groupLeave(g, happy) {
+  for (const p of g.people) if (p.play) { if (G.fmBusy) G.fmBusy[p.play.m] = null; p.play = null; }
   const t = g.table;
   if (t) { t.dirty += g.plates || 0; t.group = null; if (g.bar) t.gl = Math.min(6, (t.gl || 0) + g.tickets.filter(k => k.done).length); }
   g.table = null; g.state = "leave"; g.shout = 0; g.atBar = false;
@@ -2580,8 +2592,6 @@ function payAndLeave(g) {
   G.rev += total; G.tips += tip; G.served += g.size; if (G.hr) G.hr.rev[hrI()] += total + tip;
   {
     if (g.sp === "nook" && g.table && g.table.sp === "nook") addExtra("nook", 2 * g.size, g.table);
-    const fm = S.bi && S.bi.fruit ? S.bi.fruit.n || 1 : 0;
-    if (fm && (g.drinker || g.late || g.fan || g.sp === "pool")) addExtra("fruit", g.size * fm * rnd(.3, 1.4));
   }
   const happy = g.pat > .45;
   if (happy) G.happy += g.size;
@@ -2597,7 +2607,7 @@ function payAndLeave(g) {
   }
   if (g.critic) { G.critic = happy ? "loved" : "meh"; G.repD += happy ? 150 : 10; fx(g.table.x, g.table.y - 1.4, happy ? "The critic loved it! ⭐" : "The critic shrugs…", happy ? "#3E9B6B" : "#8C7563"); }
   fx(g.table.x, g.table.y - .6, "+" + money(total + tip), "#B07A10");
-  if (Math.random() < (g.kids ? .45 : g.party ? .3 : S.venue === "cafe" ? .07 : .1)) addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.6, 1.2));
+  if (!g.tk && Math.random() < (g.kids ? .45 : g.party ? .3 : S.venue === "cafe" ? .07 : .1)) addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.6, 1.2));
   groupLeave(g, true);
 }
 function angryLeave(g, why) {
@@ -2653,6 +2663,27 @@ function calm(g) {
   if (g.calmed >= 1) { G.thrown += g.size; fx(g.table.x, g.table.y - 1, "Out you go! 👋", "#3A2A22"); groupLeave(g, false); return; }
   g.calmed++; g.shout = 0; g.rt = rnd(14, 22); fx(g.table.x, g.table.y - 1, "Sorry, sorry…", "#3A2A22");
 }
+/* fruit machines: drinkers (and late, match-day and pool crowds) wander over while they drink, play for a few seconds and come back */
+const fruitN = () => S.bi && S.bi.fruit ? S.bi.fruit.n || 1 : 0;
+const fruitAt = i => { const fp = (G.L && G.L.fr[i]) || [8.5, 7 + i * 3]; return [fp[0] + .25, fp[1] + .5]; };
+function fruitStep(g, dt) {
+  const n = fruitN(); if (!n) return;
+  G.fmBusy = G.fmBusy || [];
+  for (const p of g.people) {
+    const P = p.play; if (!P) continue;
+    if (P.ph === "go" && Math.hypot(p.x - p.tx, p.y - p.ty) < .05 && !(p.wp && p.wp.length)) { P.ph = "play"; P.t = rnd(3, 5); }
+    else if (P.ph === "play") {
+      P.t -= dt; const [mx, my] = fruitAt(P.m);
+      if (Math.random() < dt * .6) fx(mx, my - .9, "🪙", "#B07A10");
+      if (P.t <= 0) { const win = Math.round(rnd(1, 3.2) * 10) / 10; addExtra("fruit", win, { x: mx, y: my }); G.fmBusy[P.m] = null; P.ph = "back"; const i = g.people.indexOf(p), o = seatsOf(g.table)[i] || [0, 0]; walkTo(p, g.table.x + o[0], g.table.y + o[1]); }
+    } else if (P.ph === "back" && Math.hypot(p.x - p.tx, p.y - p.ty) < .05 && !(p.wp && p.wp.length)) p.play = null;
+  }
+  if (g.people.some(p => p.play) || (g.state === "eat" ? g.timer < 3 : g.state !== "wait" || g.atBar) || !g.table || g.table.tk || !(g.drinker || g.late || g.fan || g.watch || g.sp === "pool") || Math.random() > dt * .45) return;
+  const m = [...Array(n).keys()].find(i => !G.fmBusy[i]); if (m == null) return;
+  const p = g.people[Math.floor(Math.random() * g.people.length)]; if (p.kid) return;
+  G.fmBusy[m] = p; const [mx, my] = fruitAt(m), st = nearFree(mx - .55, my + .1);
+  p.play = { m, ph: "go" }; walkTo(p, st[0], st[1]);
+}
 function groupsStep(dt) {
   while (G.open && G.arr.length && G.arr[0].t <= G.t) spawnGroup(G.arr.shift());
   trySeat();
@@ -2672,9 +2703,12 @@ function groupsStep(dt) {
       case "order": g.pat -= dt / 60 * pm; if (g.pat <= 0) angryLeave(g, g.atBar ? "Nobody's serving at the bar! 😠" : "Nobody took our order! 😠"); break;
       case "wait": {
         if (g.atBar) barCollect(g); if (g.state !== "wait") break;
+        fruitStep(g, dt);
         const left = g.tickets.filter(k => !k.done).length; g.pat -= dt / (85 + 10 * left) * pm; if (g.pat <= 0) angryLeave(g); break; }
       case "eat":
         g.timer -= dt;
+        fruitStep(g, dt);
+        if (g.timer <= 0 && g.people.some(p => p.play)) g.timer = .3; // wait for whoever's on the fruit machine
         if (g.kids && !g.spilt && g.timer < 4) { g.spilt = true; if (Math.random() < .35) { addMess(g.table.x + rnd(-1, 1), g.table.y + rnd(.5, 1)); fx(g.table.x, g.table.y - 1, "Oops! 🥤", "#5B8DB8"); } }
         if (g.timer <= 0) {
           const more = g.watch || g.sp === "pool" || (g.sp === "nook" && g.table && g.table.sp === "nook"); // workers only settle in at the reading corner
@@ -3355,7 +3389,7 @@ function draw() {
   // sorted scene: tables, people, actors
   const items = [];
   for (const t of G.tables) items.push({ y: t.y, f: () => { drawTable(t, P); if (t.gl) drawGlasses(t); } });
-  for (const g of G.groups) for (const p of g.people) { const seated = g.table && !g.table.bar && !g.table.dk && g.table.sp !== "sports" && g.table.sp !== "pool" && (g.state !== "walk" && g.state !== "leave" && g.state !== "toBar" && g.state !== "back") && !(g.atBar && p === g.people[0]) && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T * (p.kid ? .72 : 1), { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
+  for (const g of G.groups) for (const p of g.people) { const seated = g.table && !g.table.tk && !p.play && !g.table.bar && !g.table.dk && g.table.sp !== "sports" && g.table.sp !== "pool" && (g.state !== "walk" && g.state !== "leave" && g.state !== "toBar" && g.state !== "back") && !(g.atBar && p === g.people[0]) && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T * (p.kid ? .72 : 1), { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
   for (const a of G.actors) items.push({ y: a.y, f: () => drawActor(a) });
   items.sort((p, q) => p.y - q.y).forEach(i => i.f());
   // bubbles
@@ -3418,7 +3452,7 @@ function drawWallsBi(P) {
   // fruit machines by the right-hand wall, the takeaway window by the front door
   const fm = S.bi && S.bi.fruit ? S.bi.fruit.n || 1 : 0;
   for (let i = 0; i < fm; i++) {
-    const fp = (G.L && G.L.fr[i]) || [8.5, 7 + i * 3], x = PX(fp[0] + .25), y = PY(fp[1] + .5), w = T * .46, h = T * .8, on = Math.sin(G.t * 5 + i) > 0;
+    const fp = (G.L && G.L.fr[i]) || [8.5, 7 + i * 3], x = PX(fp[0] + .25), y = PY(fp[1] + .5), w = T * .46, h = T * .8, on = Math.sin(G.t * (G.fmBusy && G.fmBusy[i] ? 16 : 5) + i) > 0;
     c.fillStyle = "#5E35B1"; rr(c, x - w / 2, y - h / 2, w, h, 5); c.fill();
     c.fillStyle = on ? "#FFEB3B" : "#FFA000"; c.fillRect(x - w * .35, y - h * .3, w * .7, h * .28);
     c.fillStyle = "#fff"; for (let k = 0; k < 3; k++) c.fillRect(x - w * .3 + k * w * .22, y - h * .26, w * .16, h * .2);
@@ -3427,7 +3461,7 @@ function drawWallsBi(P) {
   if (S.sign) { const x = PX(5.75), y = PY(13.95); c.fillStyle = "#5D4037"; c.beginPath(); c.moveTo(x - T * .3, y + T * .3); c.lineTo(x, y - T * .4); c.lineTo(x + T * .3, y + T * .3); c.fill();
     c.fillStyle = "#263238"; rr(c, x - T * .26, y - T * .3, T * .52, T * .44, 3); c.fill(); text("Please", x, y - T * .17, T * .13, "#fff", 700); text("wait", x, y - T * .03, T * .13, "#fff", 700); }
   if (hasBi(S, "hatch")) {
-    const x = PX(1.6), y = PY(H - .18);
+    const x = PX(1), y = PY(H - .18);
     c.fillStyle = "#E8664A"; for (let k = 0; k < 5; k++) { c.fillStyle = k % 2 ? "#FFF" : "#E8664A"; c.fillRect(x - T * .9 + k * T * .36, y - T * .5, T * .36, T * .22); }
     c.fillStyle = "#CFE3EC"; c.fillRect(x - T * .9, y - T * .28, T * 1.8, T * .28);
     emoji("🥤", x - T * .4, y - T * .12, T * .3); emoji("☕", x + T * .4, y - T * .12, T * .3);
@@ -3577,6 +3611,7 @@ function drawAppliance(s, x, y, w, on) {
   }
 }
 function drawTable(t, P) {
+  if (t.tk) return; // the takeaway window is drawn with the walls
   if (t.sp) return drawSpecial(t, P);
   const c = ctx, x = PX(t.x), y = PY(t.y), g = t.group;
   if (t.bar || t.dk) { // a high round table at the standing area, or one of the drinkers' tables
@@ -3663,7 +3698,7 @@ function targets() {
   out.push({ o: binObj(), x: G.cnt.bin.x, y: G.cnt.bin.y, rx: .55, ry: .55 });
   out.push({ o: platesObj(), x: G.cnt.plates.x, y: G.cnt.plates.y, rx: .55, ry: .55 });
   G.cnt.pass.forEach((q, i) => out.push({ o: spotObj(i), x: q.x, y: q.y, rx: .55, ry: .55 }));
-  for (const t of G.tables) out.push({ o: { k: "table", t }, x: t.x, y: t.y + .1, rx: t.bar ? .8 : t.seats >= 6 ? 1.7 : 1.35, ry: t.bar ? .7 : 1.25 });
+  for (const t of G.tables) out.push({ o: { k: "table", t }, x: t.x, y: t.y + (t.tk ? -.3 : .1), rx: t.tk ? .45 : t.bar ? .8 : t.seats >= 6 ? 1.7 : 1.35, ry: t.tk ? .65 : t.bar ? .7 : 1.25 });
   for (const m of G.messes) out.push({ o: { k: "mess", m }, x: m.x, y: m.y, rx: .7, ry: .55, bias: .3 });
   if (G.barP && G.groups.some(g => g.atBar)) out.push({ o: barObj(), x: G.barP[0], y: G.barP[1] - .3, rx: 1, ry: .7, bias: .2 });
   return out;
@@ -3836,7 +3871,6 @@ function endDay() {
   const pr = progress(), goals = (G.goals || []).map(g => Object.assign({ ok: goalMet(g.k, g.n, pr) }, g));
   const bonus = goals.reduce((a, g) => a + (g.ok ? g.cash : 0), 0); G.repD += goals.reduce((a, g) => a + (g.ok ? g.rep : 0), 0);
   // build-ins: the takeaway window sells to passers-by all day; the sports channels cost every day
-  if (hasBi(S, "hatch")) { const m = siteMix(site), wet = info.w === 2 || info.w === 5 ? .75 : 1; addExtra("hatch", Math.round(siteFoot(site, "cafe") * (18 + 22 * m.com + 10 * m.stu) * localPrice(site) * wet * .65 * (.9 + .2 * Math.random()))); }
   if (hasBi(S, "sports")) addExtra("tv", -BI.sports.lv[Math.min(1, (S.bi.sports.lv || 1) - 1)].fee);
   const extras = Object.values(G.extra || {}).reduce((a, v) => a + v, 0);
   S.temps = (S.temps || []).filter(x => x.day > S.day);

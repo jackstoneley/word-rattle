@@ -994,6 +994,15 @@
         "Only kitchen porters (and Lee Lee) wash up again. Waiters and cooks stick to their own jobs.",
         "Managers keep the fairer numbers from the last update on the days they run a place."
       ]
+    },
+    {
+      "id": 88,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: a real takeaway window and fruit machines",
+      "details": [
+        "The takeaway window now brings walk-up customers who queue at the window by the door. Take their order, hand over their drink and they pay and go.",
+        "Fruit machines now get played: drinkers wander over while they wait or drink, the coins pop up as they play, then they go back to their table."
+      ]
     }
   ]
 }
