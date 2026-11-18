@@ -276,6 +276,8 @@ select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;backgroun
           <button class="btn sm" id="miniBtn"></button></div>
         <div class="row spread"><div class="grow"><b>Helper arrow</b><p class="small muted">A green arrow shows what to do next. Auto: always while you're learning, then only when you seem stuck.</p></div>
           <button class="btn sm" id="helpBtn"></button></div>
+        <div class="row spread"><div class="grow"><b>Tapping an appliance</b><p class="small muted">Auto: Lee Lee starts the only dish that can begin there, or cleans it when there's nothing to make. Always ask: you pick what to do every time.</p></div>
+          <button class="btn sm" id="pickBtn"></button></div>
         <div class="row spread"><div class="grow"><b>Sounds</b><p class="small muted">Bells, dings, and a warning before food burns.</p></div>
           <button class="btn sm" id="soundBtn"></button></div>
       </div>
@@ -1773,7 +1775,7 @@ const load = (k, d) => { try { const v = localStorage.getItem(k); return v == nu
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const SLOTS = 5;
 const slotKey = i => "ll.slot." + i;
-let opts = Object.assign({ mini: true, sound: true, help: "auto" }, load("ll.opts", {}));
+let opts = Object.assign({ mini: true, sound: true, help: "auto", pick: "auto" }, load("ll.opts", {}));
 let S = null, slot = -1, view = "title";
 
 function migrate(s) {
@@ -1893,6 +1895,7 @@ function renderTitle() {
   $("miniBtn").textContent = opts.mini ? "On" : "Off";
   $("helpBtn").textContent = { auto: "Auto", on: "Always", off: "Off" }[helpMode()];
   $("soundBtn").textContent = opts.sound ? "On" : "Off";
+  $("pickBtn").textContent = opts.pick === "ask" ? "Always ask" : "Auto";
   const box = $("slots"); box.innerHTML = "";
   for (let i = 0; i < SLOTS; i++) {
     const s = migrate(load(slotKey(i), null)), el = document.createElement("div");
@@ -1919,6 +1922,7 @@ $("slots").onclick = e => {
     });
   }
 };
+$("pickBtn").onclick = () => { opts.pick = opts.pick === "ask" ? "auto" : "ask"; store("ll.opts", opts); renderTitle(); };
 $("miniBtn").onclick = () => { opts.mini = !opts.mini; store("ll.opts", opts); renderTitle(); };
 const HELP_NEXT = { auto: "on", on: "off", off: "auto" };
 $("helpBtn").onclick = () => { opts.help = HELP_NEXT[helpMode()]; store("ll.opts", opts); renderTitle(); };
@@ -2037,6 +2041,7 @@ const GUIDE = [
     "Every happy table in a row builds a <b>🔥 streak</b>, which raises the tips. One unhappy table ends it.",
     "In free play each day has <b>two goals</b> worth a bonus (shown when you pause)."] },
   { id: "cook", e: "🔥", t: "Cooking", p: [
+    "Tapping an appliance: on <b>Auto</b> Lee Lee starts the only dish that can begin there, or cleans it when there's nothing to make. Set <b>Always ask</b> (Settings, or the pause menu) to choose every time, with Clean it as one of the choices.",
     "Most dishes start at the <b>fridge</b>. Then follow the glowing appliances: chop, mix, cook, and finally <b>plate up</b> at the 🍽 plates on the counter.",
     "The toaster, grill, hob, fryer and oven cook on their own while you do something else, but food <b>burns</b> if it's left too long. A warning sound plays just before.",
     "Holding the next dish for a busy cooker whose food is done? Tap it: Lee Lee swaps them, taking the finished one off and putting the new one on.",
@@ -2070,6 +2075,7 @@ const GUIDE = [
     "Turn automatic stock off in the Stock section to buy everything yourself.",
     "Fresh food partly goes off overnight (half, usually; some premises have a better or worse store room)."] },
   { id: "staff", e: "👥", t: "Staff", p: [
+    "Staff use the nearest appliance of the kind they need, measured on foot, so keep each area's appliances together (drinks by the bar, food at the back). If a colleague is cleaning it, they stop and let them use it.",
     "Only a <b>kitchen porter</b> washes up: without one, the washing-up is Lee Lee's job.",
     "<b>Waiters</b> take orders, carry food and clear tables. <b>Cooks</b> make food (and drinks if there's no barista). <b>Baristas</b> make drinks. In a pub the <b>bartender</b> serves at the bar, pours every drink and collects glasses; without one, waiters pour drinks and serve at the bar, and cooks only pour when there's nobody else. <b>Kitchen porters</b> wash up and clear. <b>Cleaners</b> mop, clear and calm rowdy customers.",
     "Higher <b>levels</b> walk faster and work better. Promote someone once they've worked enough days; their fair wage rises about 12% a level.",
@@ -2901,8 +2907,12 @@ function leeStation(s, pref) {
   }
   if (s.user && s.user !== L) { toastMsg(s.user.name + " is using this"); return; }
   if (!h) {
-    const opts2 = startable(s.t);
-    if (!opts2.length && hygOn() && (s.dirt || 0) > .05 && !s.scrub) { cleanStation(L, s); return; }
+    const opts2 = startable(s.t), canClean = hygOn() && (s.dirt || 0) > .05 && !s.scrub;
+    if (opts.pick === "ask" && (opts2.length || canClean)) { // always choose: every dish that can start here, and cleaning it
+      chooser(opts2.concat(canClean ? ["clean"] : []), r => { if (Math.hypot(L.x - s.x, L.y - s.y) < 1.4 && !L.hand && !s.item && (!s.user || s.user === L)) { if (r === "clean") { if (!s.scrub) cleanStation(L, s); } else startDish(L, r, s); } });
+      return;
+    }
+    if (!opts2.length && canClean) { cleanStation(L, s); return; }
     if (!opts2.length) {
       const any = openTickets().filter(x => need(x.k.r) > 0);
       if (!any.length) toastMsg(G.groups.some(g => g.state === "order") ? "Take an order first: tap a table with a 📝" : "No orders to make right now");
@@ -3227,11 +3237,15 @@ function staffDish(a) {
     return;
   }
   if (a.dh && hygOn() && foodStep(d.r, next) && washer(a)) { washThen(a, () => {}); return; }
-  const free = G.stations.filter(s => s.t === next && !s.item && !s.user && (!s.claim || s.claim === a)).sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y));
+  // the nearest one on foot (a clean one only wins when it's about as close); one being scrubbed by staff is fine: they stop
+  const free = G.stations.filter(s => s.t === next && !s.item && !s.user && (!s.claim || s.claim === a));
   if (!free.length) { a.wait = .5; return; }
+  const ws = walkSteps(a.x, a.y), far = s => { const [x, y] = standFor(stObj(s), a), k = ws[Math.floor(y / GU) * GW + Math.floor(x / GU)]; return (k >= 0 ? k * GU : 99) + (s.scrub && s.scrub !== a ? (s.scrub === lee ? 99 : 1.5) : 0) + (s.dirt || 0) * .8; };
+  free.sort((p, q) => far(p) - far(q));
   const s = free[0]; s.claim = a;
   goStand(a, stObj(s), () => {
     s.claim = null;
+    if (s.scrub && s.scrub !== a && s.scrub !== lee) { interrupt(s.scrub); s.scrub = null; }
     if (s.item || (s.user && s.user !== a) || a.hand !== d) return;
     doStep(a, s);
     if (STATIONS[s.t].k === "pas") { a.watch = s; a.watchId = d.id; }
@@ -3298,7 +3312,7 @@ function finishMini() {
 function closeMini() { mg = null; $("mg").hidden = true; }
 
 function chooser(list, cb) {
-  dialog(`<h3>Which one?</h3><div class="pick">${list.map(r => `<button data-a="${r}"><span>${RECIPES[r].e}</span>${esc(RECIPES[r].n)}</button>`).join("")}</div><button class="btn" data-a="">Cancel</button>`, a => { if (a) cb(a); });
+  dialog(`<h3>Which one?</h3><div class="pick">${list.map(r => r === "clean" ? `<button data-a="clean"><span>🧽</span>Clean it</button>` : `<button data-a="${r}"><span>${RECIPES[r].e}</span>${esc(RECIPES[r].n)}</button>`).join("")}</div><button class="btn" data-a="">Cancel</button>`, a => { if (a) cb(a); });
 }
 
 /* ---------- main loop ---------- */
@@ -3815,12 +3829,13 @@ function pauseMenu() {
   dialog(`<h3>Paused</h3><p class="muted" style="text-align:center">${LV != null ? esc(LEVELS[LV].n) : `Day ${S.day} at ${esc(S.name)}`}</p>
     ${(LV != null ? LEVELS[LV].goals.map(([k, n]) => ({ k, n })) : G.goals).length ? `<div class="goals">${(LV != null ? LEVELS[LV].goals.map(([k, n]) => ({ k, n })) : G.goals).map(g => `<div><span>${goalMet(g.k, g.n, pr) ? "✅" : "☆"}</span><span>${GOAL_TEXT[g.k](g.n)}</span></div>`).join("")}</div>` : ""}
     <div class="acts"><button class="btn pri" data-a="go">Carry on</button><button class="btn" data-a="mini">Cooking mini-games: ${opts.mini ? "on" : "off"}</button>
-    <button class="btn" data-a="help">Helper arrow: ${{ auto: "auto", on: "always", off: "off" }[helpMode()]}</button><button class="btn" data-a="sound">Sounds: ${opts.sound ? "on" : "off"}</button>
+    <button class="btn" data-a="help">Helper arrow: ${{ auto: "auto", on: "always", off: "off" }[helpMode()]}</button><button class="btn" data-a="sound">Sounds: ${opts.sound ? "on" : "off"}</button><button class="btn" data-a="pick">Tapping an appliance: ${opts.pick === "ask" ? "always ask" : "auto"}</button>
     <button class="btn" data-a="guide">📖 Guide</button>
     <button class="btn" data-a="restart">${LV != null ? "Start this day again" : "Leave (this day starts again next time)"}</button></div>`, a => {
     if (a === "mini") { opts.mini = !opts.mini; store("ll.opts", opts); paused = false; pauseMenu(); return; }
     if (a === "help") { opts.help = HELP_NEXT[helpMode()]; store("ll.opts", opts); paused = false; pauseMenu(); return; }
     if (a === "sound") { opts.sound = !opts.sound; store("ll.opts", opts); paused = false; pauseMenu(); return; }
+    if (a === "pick") { opts.pick = opts.pick === "ask" ? "auto" : "ask"; store("ll.opts", opts); paused = false; pauseMenu(); return; }
     if (a === "guide") { openGuide("basics", () => { paused = false; pauseMenu(); }); return; }
     if (a === "restart") { paused = false; G = null; closeMini(); if (LV != null) { const i = LV; LV = null; EASY = false; S = null; renderCamp(); show("camp"); levelIntro(i); } else { renderTitle(); show("title"); } return; }
     paused = false; lastT = performance.now();

@@ -1030,6 +1030,15 @@
         "It's costly: the building work, 3 days shut while the builders are in, and higher rent.",
         "No more set limit on tables: add as many as fit on the floor."
       ]
+    },
+    {
+      "id": 92,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: staff use the nearest appliance",
+      "details": [
+        "Staff no longer walk across the venue to a clean appliance: they use the nearest one on foot, and if a colleague is cleaning it, the colleague stops.",
+        "New setting, Tapping an appliance: Auto (as before) or Always ask, so you choose what to make, or to clean it, every time. It's in Settings and the pause menu."
+      ]
     }
   ]
 }
