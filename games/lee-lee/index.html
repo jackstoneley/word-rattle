@@ -1776,7 +1776,7 @@ function migratePlaces(s) {
     const menu = autoMenu(P.venue, P.rep || 0), need = [];
     for (const r of menu) for (const t of RECIPES[r].s) if (t !== "plate" && !need.includes(t)) need.push(t);
     let kit = V.start.filter(t => t !== "sink"); for (const t of need) if (!kit.includes(t) && t !== "sink") kit.push(t);
-    kit = kit.slice(0, prem.slots - 1); kit.push("sink", "basin");
+    kit.push("sink", "basin");
     const n = d.team != null ? d.team : 1, roles = P.venue === "pub" ? ["waiter", "cook", "drinks", "porter", "floor", "waiter", "cook"] : ["waiter", "cook", "drinks", "porter", "floor", "waiter", "cook"];
     const staff = [];
     if (P.mgr) staff.push({ id: "s" + (s.sid = (s.sid || 1) + 1), name: P.mgr.name, role: "manager", lvl: P.mgr.lvl || 1, wage: P.mgr.wage || 40, morale: 70, days: 0, td: 0, fat: P.fat || 0 });
@@ -2061,6 +2061,7 @@ const GUIDE = [
     "Pubs can stay open until 2am. After midnight customers get rowdier, and noise or fights can bring <b>complaints</b>. Three complaints within three weeks: a £150 fine and you must close by midnight for two weeks.",
     "Events and noisy build-ins add to the noise."] },
   { id: "layout", e: "🪑", t: "Layout, tables and walls", p: [
+    "There is no set number of kitchen spaces: buy as many appliances as fit on the floor (Upgrades). When the floor is full, rearrange or sell something. More appliances only help if there are cooks to use them and room to walk.",
     "<b>Rearrange</b> (office) lets you move anything: tap or drag it, tap a table then ↻ to turn it.",
     "Tables packed close to other tables, seating or the kitchen are <b>cramped</b> (orange: a bit tight, red: cramped): those customers lose patience faster and tip less. You can squeeze in a few more tables than usual, at a higher price.",
     "Keep each dish's appliances close together and near the counter, and leave room to walk.",
@@ -2148,7 +2149,7 @@ function startDay() {
     rev: 0, tips: 0, served: 0, angry: 0, happy: 0, turned: 0, burnt: 0, spills: 0, thrown: 0, people: 0, repD: 0, critic: null, perfect: 0, binned: 0,
     stock: Object.assign({}, S.stock), stock0: Object.assign({}, S.stock), deliv: [], delivC: 0, used: {},
     tables: S.tables.map((seats, i) => { const p = ensureLayout(S).tb[i], [w, h] = fpOf("tb", seats, p[2]); return { i, x: p[0] + w / 2, y: p[1] + h / 2, rot: p[2] || 0, fp: { x: p[0], y: p[1], w, h }, seats, group: null, dirty: 0, claim: null, cramp: LV == null ? crampOf(S, S.L)[i] || 0 : 0 }; }),
-    stations: S.stations.map((t, i) => t && { i, t, item: null, user: null, claim: null, load: 0, run: 0, dirt: LV == null && S.kd ? (S.kd[i] || 0) * .6 : 0, x: ensureLayout(S).st[i][0] + .5, y: S.L.st[i][1] + .5 }).filter(Boolean),
+    stations: S.stations.map((t, i) => t && ensureLayout(S).st[i] && { i, t, item: null, user: null, claim: null, load: 0, run: 0, dirt: LV == null && S.kd ? (S.kd[i] || 0) * .6 : 0, x: ensureLayout(S).st[i][0] + .5, y: S.L.st[i][1] + .5 }).filter(Boolean),
     spots: [null, null, null, null, null, null], party: null, taps: [], idle: 0, coach: null, slack: 0, outBy: { queue: 0, order: 0, food: 0 }, plateless: 0, streak: 0, bestStreak: 0, clean: S.plates, sink: 0, washer: null, groups: [], queue: [], messes: [], fx: [], arr: [], actors: [] };
   G.extra = {};
   // the room: what blocks the way, the walls, where noise carries, and the counter's spots
@@ -4324,16 +4325,16 @@ function upRow(ic, name, desc, act, cost, ok, extra) {
 }
 function tabUp() {
   const prem = PREMISES[S.prem], V = VENUES[S.venue], st = starsOf(S.rep);
-  const free = prem.slots - slotsUsed(S);
+  const roomSt = roomFor("st", 0);
   let h = `<div class="card"><div class="row spread"><div class="grow"><h2>Layout</h2><p class="small muted">Move equipment and tables around so Lee Lee walks less. Free.</p></div><button class="btn sm pri" data-act="layout">Rearrange</button></div></div>`;
-  h += `<div class="card"><div class="row spread"><h2>Kitchen</h2><span class="muted small">${free} free space${free === 1 ? "" : "s"}</span></div>`;
+  h += `<div class="card"><div class="row spread"><h2>Kitchen</h2><span class="muted small">${roomSt ? "Room for more on the floor" : "Floor full: rearrange or sell something"}</span></div><p class="small muted">Put in as many appliances as fit on the floor (Layout → Rearrange). The more there are, the more cooks and space they need.</p>`;
   // equipment the menu (or a learnable recipe) needs comes first
   const wanted = new Set(); for (const r of Object.keys(RECIPES)) if (RECIPES[r].v === S.venue && RECIPES[r].st <= st) for (const t of RECIPES[r].s) if (t !== "plate") wanted.add(t);
   const list = V.stations.slice().sort((a, b) => (S.stations.includes(a) - S.stations.includes(b)) || (wanted.has(b) - wanted.has(a)) || STATIONS[a].c - STATIONS[b].c);
   for (const t of list) {
     const D = STATIONS[t], have = S.stations.filter(x => x === t).length;
     const desc = (have ? `You have ${have}. ` : "") + (D.k === "pas" ? `Cooks on its own${D.b ? ", burns if left" : ""}` : D.k === "act" ? "Hands-on" : D.k === "dw" ? `Washes ${DW_CAP} plates by itself` : D.k === "sink" ? "Wash plates by hand" : D.k === "top" ? "Somewhere to put things down" : "Ingredients");
-    h += upRow(D.e || "🟫", have ? "Another " + D.n.toLowerCase() : D.n, t === "basin" ? "On the wall: doesn't use a kitchen space. Wash hands here before handling food, quicker than the sink, and inspectors expect one." : desc, "buyst", t === "basin" && have ? null : D.c, free > 0 || (t === "basin" && !have), `data-t="${t}"`);
+    h += upRow(D.e || "🟫", have ? "Another " + D.n.toLowerCase() : D.n, t === "basin" ? "On the wall: doesn't take floor space. Wash hands here before handling food, quicker than the sink, and inspectors expect one." : desc, "buyst", t === "basin" && have ? null : D.c, t === "basin" ? !have : roomSt, `data-t="${t}"`);
     if (have && t !== "basin") h += `<div class="row" style="justify-content:flex-end;margin:-4px 0 6px"><button class="btn sm" data-act="sellt" data-t="${t}">Sell one ${D.n.toLowerCase()} · +${money(Math.round(D.c / 2))}</button></div>`;
   }
   const types = [...new Set(kit())].filter(t => ["pas", "act", "sink", "dw"].includes(STATIONS[t].k));
@@ -4452,8 +4453,8 @@ $("mwrap").onclick = e => {
   if (a === "sellt") { const i = S.stations.lastIndexOf(b.dataset.t); if (i >= 0) { S.stations[i] = null; S.cash += Math.round(STATIONS[b.dataset.t].c / 2); } }
   if (a === "sell") { const t = S.stations[+b.dataset.i]; if (t) { S.stations[+b.dataset.i] = null; S.cash += Math.round(STATIONS[t].c / 2); } }
   if (a === "buyst") {
-    const t = b.dataset.t, slots = PREMISES[S.prem].slots;
-    if (canAfford(STATIONS[t].c) && (slotsUsed(S) < slots || (t === "basin" && !S.stations.includes("basin")))) { if (!roomFor("st", 0)) { toastOffice("No room on the floor for it. Rearrange first."); return; } spend(STATIONS[t].c); let i = S.stations.findIndex(x => !x); if (i < 0) i = S.stations.length; S.stations[i] = t; ensureLayout(S); }
+    const t = b.dataset.t;
+    if (canAfford(STATIONS[t].c) && (t !== "basin" || !S.stations.includes("basin"))) { const sp = stationSpot(); if (!sp) { toastOffice("No room on the floor for it. Rearrange or sell something first."); return; } spend(STATIONS[t].c); let i = sp ? sp.i : S.stations.findIndex(x => !x); if (i < 0) i = S.stations.length; S.stations[i] = t; if (sp) setPiece(S, S.L, "st", i, sp.q); ensureLayout(S); }
   }
   if (a === "layout") { openLayout(null); return; }
   if (a === "bibuy" || a === "biup" || a === "bisell") {
@@ -4543,7 +4544,13 @@ const LG = { sel: null, mode: "move", tool: "wall", undo: [], msg: "", sv: null,
 function openLayout(P) { LG.sel = null; LG.mode = "move"; LG.tool = "wall"; LG.undo = []; LG.P = P || null; LG.sv = P ? placeSv(S, P) : S; layoutGrid(); }
 const WALL_SEG = 20, DOOR_SEG = 80;
 // something new for the main place: is there floor for it?
-function roomFor(k, size) { const L = ensureLayout(S); return !!autoPlace(S, L, k, size, k === "st" ? [4.5, 1] : [4.5, 8]); }
+function roomFor(k, size) { if (k === "st") return !!stationSpot(); const L = ensureLayout(S); return !!autoPlace(S, L, k, size, [4.5, 8]); }
+// where a new appliance would go (in the next free kitchen index), or null when the floor is full
+function stationSpot() {
+  const L = ensureLayout(S); let i = S.stations.findIndex(x => !x); if (i < 0) i = S.stations.length;
+  const sv = Object.assign({}, S, { stations: S.stations.slice() }); sv.stations[i] = "top";
+  const q = autoPlace(sv, JSON.parse(JSON.stringify(L)), "st", i, [4.5, 1]); return q ? { i, q } : null;
+}
 function pieceHtml(p) {
   if (p.k === "st") { const t = LG.sv.stations[p.i]; return `${STATIONS[t].e || "🟫"}<small>${esc(STATIONS[t].n.split(" ")[0])}</small>`; }
   if (p.k === "bin") return "🗑️"; if (p.k === "plates") return "🍽️"; if (p.k === "pass") return `<small>pass</small>`;
@@ -4714,7 +4721,7 @@ function toastOffice(m) { dialog(`<h3>${esc(m)}</h3><div class="acts"><button cl
 function calText(day) { const c = calOf(day), Se = SEASONS[c.se]; return `${Se.e} ${Se.n}, week ${c.week} of 3 · year ${c.year}`; }
 function matchText(M) { return M.what === "cricket" ? `Cricket at ${M.n}` : M.what === "race" ? `Race day at ${M.n}` : `${M.club} at home (${M.n})`; }
 const SIZE_N = ["Small", "Medium", "Large", "Very large"];
-function sizeText(s) { const P = PREMISES[s.t]; return `${SIZE_N[s.t]}: ${Math.min(9, P.tables + (hasPk(s, "seats") ? 1 : 0))} tables, ${P.slots} kitchen spaces, ${P.staff} staff`; }
+function sizeText(s) { const P = PREMISES[s.t]; return `${SIZE_N[s.t]}: ${Math.min(9, P.tables + (hasPk(s, "seats") ? 1 : 0))} tables, ${P.staff} staff`; }
 const pct = v => Math.round(v * 100) + "%";
 function pullText(k) { return k >= .95 ? "busier all over the city" : k > .6 ? "big crowds right here" : k > .25 ? "some of the crowd comes this way" : k > .05 ? "a little busier here" : "too far away to make a difference here"; }
 function evWhen(o) { return o.E.len === 1 ? `${WEEKDAYS[(o.from - 1) % 7]}, day ${o.from}` : `${WEEKDAYS[(o.from - 1) % 7]} to ${WEEKDAYS[(o.to - 1) % 7]}, days ${o.from}–${o.to}`; }
@@ -5116,23 +5123,12 @@ function fitTo(sv, keep) {
   // a new building: walls stay behind; build-ins come along if there's room for them (keep: swapping into a place already fitted out)
   if (!keep) sv.walls = {}; sv.bi = sv.bi || {};
   while (sv.tables.length > maxT) { sv.tables.pop(); sv.tpos.pop(); sv.cash += 50; out.push("a table"); }
-  // the kitchen keeps one of everything the menu needs (and a fridge, worktop and somewhere to wash up) first, then the dearest things
-  const have = sv.stations.map((t, i) => ({ t, i })).filter(x => x.t && x.t !== "basin");
-  if (have.length > P.slots) {
-    const needed = new Set(["fridge", "top", "sink", "dishwasher"]); for (const r of sv.owned) for (const t of RECIPES[r].s) needed.add(t);
-    have.sort((a, b) => STATIONS[b.t].c - STATIONS[a.t].c);
-    const first = [], rest = [], got = new Set();
-    for (const x of have) { if (needed.has(x.t) && !got.has(x.t)) { got.add(x.t); first.push(x); } else rest.push(x); }
-    for (const x of first.concat(rest).slice(P.slots)) { sv.stations[x.i] = null; sv.cash += Math.round(STATIONS[x.t].c / 2); out.push(STATIONS[x.t].n.toLowerCase()); }
-  }
-  // anything beyond the new kitchen's spaces moves into a free space
-  for (let i = P.slots; i < sv.stations.length; i++) if (sv.stations[i]) { const j = sv.stations.findIndex((x, k) => !x && k < P.slots); sv.stations[j] = sv.stations[i]; sv.stations[i] = null; }
-  sv.stations = sv.stations.slice(0, P.slots); while (sv.stations.length && !sv.stations[sv.stations.length - 1]) sv.stations.pop();
   while (staffN(sv) > P.staff) { const x = sv.staff.filter(y => y.role !== "manager").pop(); sv.staff.splice(sv.staff.indexOf(x), 1); out.push(`${x.name} (had to leave)`); }
   const cells = Object.entries(biCells(sv));
   while (cells.length && sv.tables.length + cells.length > cellCap(sv)) { const [, id] = cells.pop(); delete sv.bi[id]; sv.cash += Math.round(BI[id].c / 2); out.push(BI[id].n.toLowerCase()); }
   if (!keep) { sv.tpos = sv.tables.map((_, i) => i); cells.forEach(([, id], k) => { sv.bi[id].p = sv.tables.length + k; }); }
   if (!keep) sv.L = null; // a new building starts with the standard layout, rearranged as you like
+  if (!keep && sv.stations) { ensureLayout(sv); sv.stations.forEach((t, i) => { if (t && t !== "basin" && !sv.L.st[i]) { sv.stations[i] = null; sv.cash += Math.round(STATIONS[t].c / 2); out.push(STATIONS[t].n.toLowerCase() + " (no room)"); } }); sv.L = null; }
   sv.cash = Math.round(sv.cash * 100) / 100;
   return out;
 }

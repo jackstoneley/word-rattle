@@ -1011,6 +1011,14 @@
       "details": [
         "Takeaway customers no longer come inside: their order and a patience bar appear at the window straight away. Make the drink and hand it over at the window."
       ]
+    },
+    {
+      "id": 90,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: no limit on appliances",
+      "details": [
+        "There's no longer a set number of kitchen spaces: buy as many appliances as fit on the floor. Rearrange to make room, or sell something when the floor is full."
+      ]
     }
   ]
 }

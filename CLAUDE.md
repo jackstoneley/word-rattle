@@ -235,7 +235,7 @@ as tables with `bar: true` that only drinkers use; drinkers order rounds. Tables
 **The city** (free play only; CORE after `newSave`): Leicester drawn by hand (approximate, km from the Clock Tower, x east, y south):
 `ROADS`, `RIVER`, `RAIL`, `PARKS`, `DISTRICTS` (gaussian fields `pop com stu night tour spice`, read by `fieldAt` / `siteMix`),
 `STADIUMS`, `LANDMARKS`. Premises to let are `SITES` (`id`, `v` cafe/pub/both, `t` size = index into `PREMISES`, `pk` from `PERKS`,
-snags have `bad`), keyed by id in `S.site`: append only. `S.prem` is still the size (palettes, tables, slots, staff), so a move sets
+snags have `bad`), keyed by id in `S.site`: append only. `S.prem` is still the size (palettes, tables, staff; `PREMISES[].slots` is no longer a limit: appliances need only floor room, found by `stationSpot` when buying, and a move sells only what won't fit the new floor), so a move sets
 both (`moveTo`: fit-out `siteFit` + deposit of 28 days' rent in `S.dep`, refunded on leaving; what doesn't fit is sold). Rent
 `siteRent`, demand `siteDemand` (footfall `footOf`), local prices `sitePrice` (`lp(r)` in play), tips `siteTip`, week shape
 `weekPattern` (the day's rush times and warnings come from the hourly footfall: `rushTimes`, `rushSay`), `seasonMul`, order tastes `areaPref` (inside `prefW`). Old saves get `OLD_SITE[venue][prem]`. Seasons: 21 days each,
