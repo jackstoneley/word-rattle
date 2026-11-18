@@ -1019,9 +1019,19 @@ function siteRent(s, venue, biz) {
   for (const k of s.pk) if (PERKS[k].bad) r *= .88;
   return Math.max(6, Math.round(r * BIZ[biz == null ? 1 : biz].rent));
 }
+/* Extensions (save.ext 0-2): planning permission is fixed per building (planningOf: 0 refused, 1 one, 2 two; listed and tiny buildings never).
+   One costs extCost, shuts the place for EXT_DAYS (save.works {until, to}), and each adds EXT_RENT to the rent and 2 staff places. */
+const EXT_COST = [6000, 10000, 16000, 25000], EXT_DAYS = 3, EXT_RENT = .25;
+function planningOf(s) { if (hasPk(s, "listed") || hasPk(s, "tiny")) return 0; let h = 7; for (const ch of s.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0; const v = h % 10; return v < 3 ? 0 : v < (s.t >= 2 ? 6 : 9) ? 1 : 2; }
+const PLAN_N = ["Planning refused: this building can't be extended", "Planning allows one extension", "Planning allows up to two extensions"];
+const extCost = save => Math.round(EXT_COST[save.prem || 0] * (save.ext ? 1.5 : 1));
+const placeRent = save => Math.round(siteRent(siteOf(save), save.venue, save.biz) * (1 + EXT_RENT * (save.ext || 0)));
+const inWorks = (save, day) => !!(save.works && day < save.works.until);
+function finishWorks(P, day, news) { if (P.works && day >= P.works.until) { P.ext = P.works.to; P.works = null; if (news) news.push(`🏗️ The extension at ${P.name} is finished. Rearrange (Upgrades tab) to use the new space.`); } }
+const staffCap = save => PREMISES[save.prem || 0].staff + 2 * (save.ext || 0);
 // paid when moving in: the fit-out (bigger places cost more) plus a deposit of four weeks' rent that comes back when you leave
 function siteFit(s, venue) { return Math.round(PREMISES[s.t].cost * Math.pow(siteFoot(s, venue) / .95, .8) / 50) * 50; }
-const siteTables = save => Math.min(9, PREMISES[save.prem].tables + (hasPk(siteOf(save), "seats") ? 1 : 0));
+const siteTables = save => Math.min(9, PREMISES[save.prem].tables + (hasPk(siteOf(save), "seats") ? 1 : 0)) + 2 * (save.ext || 0);
 function siteOf(save) { return SITE[save.site] || SITE[OLD_SITE[save.venue][save.prem] || OLD_SITE[save.venue][0]]; }
 function siteFits(s, venue) { return s.v === "both" || s.v === venue; }
 /* Business difficulty (S.biz): how hard the money side is. "How busy" (S.diff) is separate. */
@@ -1265,7 +1275,7 @@ const MAX_PLACES = 2, PLACE_ST = [2, 3]; // stars (at your best place) needed fo
 const MGR_FIRST = ["Alex", "Bea", "Chris", "Deepa", "Eddie", "Fern", "Gus", "Harpreet", "Imogen", "Jas", "Kev", "Lola", "Mo", "Nadia", "Ollie", "Pam", "Quinn", "Ravi", "Sian", "Tariq"];
 const autoMenu = (venue, rep) => Object.keys(RECIPES).filter(r => RECIPES[r].v === venue && RECIPES[r].st <= starsOf(rep));
 const PK = ["venue", "name", "rep", "site", "prem", "dep", "owned", "off", "stock", "bt", "stations", "lvl", "tables", "tpos", "plates", "decor", "bookings", "bar",
-  "staff", "cands", "temps", "sign", "pl", "buzz", "bi", "walls", "L", "hours", "host", "hostN", "hyg", "kd", "hh", "last", "lic", "hist", "disc", "camp", "fit", "opened", "mlast"];
+  "staff", "cands", "temps", "sign", "pl", "buzz", "bi", "walls", "L", "hours", "host", "hostN", "hyg", "kd", "hh", "last", "lic", "hist", "disc", "camp", "fit", "opened", "mlast", "ext", "works", "extPaid"];
 function placeRec(save) { const o = { id: save.cur || "p1" }; for (const k of PK) if (save[k] !== undefined) o[k] = save[k]; return o; }
 function placeLoad(save, P) { const d = newSave(P.venue, P.name, P.site); for (const k of PK) save[k] = P[k] !== undefined ? P[k] : d[k]; save.cur = P.id; }
 // show another place in the office (opening the doors there means Lee Lee works there that day)
@@ -1346,7 +1356,7 @@ function ingShare(menu) { if (!menu.length) return .3; let a = 0; for (const x o
 function runPlace(save, P, r, news) {
   const sv = placeSv(save, P), s = siteOf(sv), info = dayInfo(sv, save.day), m = siteMix(s), pub = sv.venue === "pub", nm = news || [], M = mgrOf(sv);
   sv.staff = sv.staff || []; sv.temps = sv.temps || [];
-  const hm = hoursMul(sv, save.day), [ho, hc] = hoursOn(sv, save.day), rent = siteRent(s, sv.venue, save.biz);
+  const hm = hoursMul(sv, save.day), [ho, hc] = hoursOn(sv, save.day), rent = placeRent(sv);
   const temps = sv.temps.filter(x => x.day === save.day), payroll = Math.round((sv.staff.reduce((a, x) => a + x.wage, 0) + temps.reduce((a, x) => a + x.wage, 0)) * hm);
   const done = (net, last) => {
     sv.temps = sv.temps.filter(x => x.day > save.day); sv.camp = (sv.camp || []).map(c => ({ id: c.id, days: c.days - 1 })).filter(c => c.days > 0); sv.disc = null; sv.cands = makeCands();
@@ -1354,6 +1364,10 @@ function runPlace(save, P, r, news) {
     for (const k of PK) P[k] = sv[k];
     return net;
   };
+  if (inWorks(sv, save.day)) { // the builders are in: shut, but rent and wages are paid
+    const net = -(rent + payroll); nm.push(`🏗️ ${sv.name} is shut for building work (${sv.works.until - save.day} day${sv.works.until - save.day > 1 ? "s" : ""} to go).`); staffNight(sv, 0, false, false, r, nm, ` at ${sv.name}`);
+    return done(net, { day: save.day, shut: 1, works: 1, people: 0, served: 0, happy: 0, rev: 0, wages: payroll, rent, stock: 0, bills: 0, fights: 0, fine: 0, host: null, hours: [ho, hc], net, repD: 0, extra: {}, short: 0, mgr: M ? M.name : null });
+  }
   if (!M) { // nobody to run it: shut for the day, but the rent and the team still have to be paid
     sv.rep = Math.max(0, sv.rep - 4); nm.push(`🔒 ${sv.name} stayed shut today: no manager, and Lee Lee was working elsewhere. Rent and wages were still paid.`);
     const net = -(rent + payroll); staffNight(sv, 0, false, false, r, nm, ` at ${sv.name}`);
@@ -1403,13 +1417,13 @@ function runPlace(save, P, r, news) {
   const repD = Math.round(mgrRep(happy, served, people) * diffOf(save).rep) - 15 * fights;
   sv.rep = Math.max(0, sv.rep + repD);
   const net = Math.round((rev + tips + extra - payroll - rent - stock - bills - breaks - fine - hostc) * 100) / 100;
-  return done(net, { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages: payroll, rent, stock, bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0, kit: kcap < placeCrewOf(sv, save.day) && groups > kcap * 1.05 ? neck.t : 0, full: staffN(sv) >= PREMISES[sv.prem].staff ? 1 : 0, mgr: M.name, menu: menu.length });
+  return done(net, { day: save.day, people: Math.round(people), served: Math.round(served), happy: Math.round(happy), rev: Math.round(rev + tips), wages: payroll, rent, stock, bills, fights, fine, host: hn ? hp.H.id : null, hours: [ho, hc], net, repD, extra: ex, short: groups > crew * 1.05 ? Math.round(groups - crew) : 0, kit: kcap < placeCrewOf(sv, save.day) && groups > kcap * 1.05 ? neck.t : 0, full: staffN(sv) >= staffCap(sv) ? 1 : 0, mgr: M.name, menu: menu.length });
 }
 // what a buyer pays: the deposit back, half the fit-out, the kitchen and build-ins, and goodwill from recent profits and reputation
 function placeValue(P) {
   const h = (P.hist || []).slice(-14), avg = h.length ? h.reduce((a, x) => a + x.net, 0) / h.length : 0;
   const fitted = Object.keys(P.bi || {}).reduce((a, id) => a + (BI[id] ? BI[id].c * ((P.bi[id].n) || 1) : 0), 0) + (P.stations || []).reduce((a, t) => a + (t && STATIONS[t] ? STATIONS[t].c : 0), 0) * .5;
-  return Math.round((P.dep || 0) + (P.fit || 0) * .5 + fitted * .4 + Math.max(0, avg) * 20 + P.rep);
+  return Math.round((P.dep || 0) + (P.fit || 0) * .5 + (P.extPaid || 0) * .5 + fitted * .4 + Math.max(0, avg) * 20 + P.rep);
 }
 const closeValue = P => Math.round((P.dep || 0) + (P.fit || 0) * .15);
 /* Rivals feel it when you're better than them: each night every one near your places loses trade (hp) by how much your
@@ -1470,7 +1484,8 @@ const WALL_C = 120, DOOR_C = 80;
 const DX = [0, 3.05, 5.95, 9], DY = [4.6, 7.5, 10.1, 12.7];
 const hasBi = (save, id) => !!(save && save.bi && save.bi[id]);
 // tables beyond the comfortable number can be squeezed in (dearer); how cramped a table is depends on where it stands (crampOf)
-const SQUEEZE = 3, maxTables = save => Math.min(12, siteTables(save) + SQUEEZE), tableCost = save => Math.round((100 + 60 * save.tables.length) * (save.tables.length >= siteTables(save) ? 1.6 : 1));
+// no set limit on tables: the floor (and how cramped tables get) is the limit
+const SQUEEZE = 3, maxTables = save => 60, tableCost = save => Math.round((100 + 60 * save.tables.length) * (save.tables.length >= siteTables(save) ? 1.6 : 1));
 function rectGap(a, b) { const dx = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.w, b.x + b.w)), dy = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.h, b.y + b.h)); return Math.hypot(dx, dy); }
 // 0 (room to breathe) to 1 (hemmed in): every table or seated build-in close by adds to it, kitchen counters and appliances half as much
 // (only the nearest bit of kitchen counts: a long counter is one thing to sit next to)
@@ -1480,7 +1495,7 @@ function crampAt(p, ps) {
   for (const q of ps) { if (q === p || q.k === "fr") continue; const v = nearW(rectGap(p, q)); if (q.k === "tb" || q.k === "bi") c += v; else kit = Math.max(kit, v * .5); }
   return Math.round(Math.max(0, Math.min(1, c + kit) - .15) / .85 * 100) / 100; // a little closeness is normal
 }
-function crampOf(save, L) { const ps = piecesOf(save, L), out = []; for (const p of ps) if (p.k === "tb") out[p.i] = crampAt(p, ps); return out; }
+function crampOf(save, L) { setRoom(save); const ps = piecesOf(save, L), out = []; for (const p of ps) if (p.k === "tb") out[p.i] = crampAt(p, ps); return out; }
 const cellCap = save => Math.min(9, siteTables(save) + 1); // spots for tables and build-ins together
 function biCells(save) { const out = {}; for (const id in save.bi || {}) if (BI[id] && BI[id].cell && save.bi[id].p != null) out[save.bi[id].p] = id; return out; }
 // the walking graph: nodes T, B and spots 0-8; each link has an edge id and a crossing point
@@ -1547,7 +1562,11 @@ function tvOn(save, day) {
    Positions are top-left corners in room units (multiples of .5). The room is 9 x 14.5; the strip below y = 13 (queue, door,
    bar) stays clear. Walls sit on grid lines: "v:i:j" is the line x = i/2 beside cell row j, "h:i:j" the line y = j/2 above
    cell column i. Old saves and campaign days are turned into a layout by defaultLayout (the old fixed spots). */
-const GW = 18, GH = 29, GU = .5, NOBUILD = 13;
+let GW = 18, RW = 9; const GH = 29, GU = .5, NOBUILD = 13;
+/* Extensions: each adds a room EXT_W wide down the right-hand side (save.ext 0-2). The layout code works on one room at a time:
+   setRoom(save) sets the width (RW, and the grid's GW) before anything reads the floor. */
+const EXT_W = 3, roomW = save => 9 + EXT_W * ((save && save.ext) || 0);
+function setRoom(save) { RW = roomW(save); GW = Math.round(RW / GU); try { W = RW; } catch (e) {} }
 const CELL_CENTRE = [[1.5, 6], [4.5, 6], [7.5, 6], [1.5, 9], [4.5, 9], [7.5, 9], [1.5, 11.5], [4.5, 11.5], [7.5, 11.5]];
 const DOOR_CELL = [8, 28];
 function fpOf(k, a, rot) {
@@ -1567,10 +1586,10 @@ function piecesOf(save, L) {
   return out;
 }
 const overlap = (a, b) => a.x < b.x + b.w - 1e-6 && b.x < a.x + a.w - 1e-6 && a.y < b.y + b.h - 1e-6 && b.y < a.y + a.h - 1e-6;
-const inRoom = p => p.x >= 0 && p.y >= 0 && p.x + p.w <= 9 + 1e-6 && p.y + p.h <= NOBUILD + 1e-6;
+const inRoom = p => p.x >= 0 && p.y >= 0 && p.x + p.w <= RW + 1e-6 && p.y + p.h <= NOBUILD + 1e-6;
 // blocked cells: furniture, plus the pub's bar counter
 function gridOf(save, L) {
-  const g = new Uint8Array(GW * GH);
+  setRoom(save); const g = new Uint8Array(GW * GH);
   const mark = (x, y, w, h) => { for (let j = Math.round(y / GU); j < Math.round((y + h) / GU); j++) for (let i = Math.round(x / GU); i < Math.round((x + w) / GU); i++) if (i >= 0 && j >= 0 && i < GW && j < GH) g[j * GW + i] = 1; };
   for (const p of piecesOf(save, L)) mark(p.x, p.y, p.w, p.h);
   if (save.venue === "pub" && save.bar) mark(5.5, 13.5, 3.5, .5);
@@ -1604,6 +1623,7 @@ function accessOf(p, g, walls, reach) {
 }
 // "" if the layout works: everything inside the room, nothing overlapping, and everything reachable from the door
 function layoutProblem(save, L) {
+  setRoom(save);
   const ps = piecesOf(save, L);
   for (const p of ps) if (!inRoom(p)) return "That doesn't fit there.";
   for (let a = 0; a < ps.length; a++) for (let b = a + 1; b < ps.length; b++) if (overlap(ps[a], ps[b])) return "Something's already there.";
@@ -1613,8 +1633,9 @@ function layoutProblem(save, L) {
 }
 // find a free place for a new piece, near a preferred point
 function autoPlace(save, L, k, size, near) {
+  setRoom(save);
   const [w, h] = fpOf(k, size, 0), cands = [];
-  for (let y = 0; y + h <= NOBUILD; y += GU) for (let x = 0; x + w <= 9; x += GU) cands.push([x, y, Math.hypot(x + w / 2 - near[0], y + h / 2 - near[1])]);
+  for (let y = k === "tb" || k === "bi" ? 4.5 : 0; y + h <= NOBUILD; y += GU) for (let x = 0; x + w <= RW; x += GU) cands.push([x, y, Math.hypot(x + w / 2 - near[0], y + h / 2 - near[1])]);
   const ps = piecesOf(save, L);
   // a new table goes where it has the most room round it, then nearest the spot asked for
   if (k === "tb") for (const c of cands) c[3] = crampAt({ x: c[0], y: c[1], w, h, k: "tb" }, ps);
@@ -1676,7 +1697,7 @@ function fixLayout(save, L) {
   // take everything out, then put pieces back one by one: kept where they were if that still works, otherwise placed afresh
   const keep = want.map(([k, key]) => get(k, key));
   want.forEach(([k, key]) => setPiece(save, L, k, key, null));
-  const mini = { stations: [], tables: [], bi: {}, venue: save.venue, bar: save.bar };
+  const mini = { stations: [], tables: [], bi: {}, venue: save.venue, bar: save.bar, ext: save.ext };
   want.forEach(([k, key, size, near], n) => {
     if (k === "st") mini.stations[key] = save.stations[key]; else if (k === "tb") mini.tables[key] = save.tables[key];
     else if (k === "bi") mini.bi[key] = save.bi[key]; else if (k === "fr") mini.bi.fruit = { n: key + 1 };
@@ -1686,6 +1707,7 @@ function fixLayout(save, L) {
   return L;
 }
 function ensureLayout(save) {
+  setRoom(save);
   if (!save.L || save.L.v !== 1) save.L = defaultLayout(save);
   else { const need = (save.stations || []).some((t, i) => t && !save.L.st[i]) || (save.tables || []).some((_, i) => !save.L.tb[i]) || Object.keys(save.bi || {}).some(id => BI[id] && BI[id].cell && !save.L.bi[id]) || (save.bi && save.bi.fruit && (save.L.fr.length < (save.bi.fruit.n || 1))); if (need || layoutProblem(save, save.L)) fixLayout(save, save.L); } // e.g. a table made bigger
   return save.L;
@@ -1723,7 +1745,7 @@ function gridPath(g, walls, x0, y0, x1, y1) {
   return out;
 }
 // noise rooms: cells joined without crossing a wall or a door; counters and appliances also stop noise (like a kitchen pass)
-function noiseBlock(save, L) { const g = new Uint8Array(GW * GH); for (const p of piecesOf(save, L)) if (p.k === "st" || p.k === "pass" || p.k === "bin" || p.k === "plates") for (let j = Math.round(p.y / GU); j < Math.round((p.y + p.h) / GU); j++) for (let i = Math.round(p.x / GU); i < Math.round((p.x + p.w) / GU); i++) g[j * GW + i] = 1; return g; }
+function noiseBlock(save, L) { setRoom(save); const g = new Uint8Array(GW * GH); for (const p of piecesOf(save, L)) if (p.k === "st" || p.k === "pass" || p.k === "bin" || p.k === "plates") for (let j = Math.round(p.y / GU); j < Math.round((p.y + p.h) / GU); j++) for (let i = Math.round(p.x / GU); i < Math.round((p.x + p.w) / GU); i++) g[j * GW + i] = 1; return g; }
 function roomGrid(walls, block) {
   const room = new Int16Array(GW * GH).fill(-1); let id = 0; block = block || new Uint8Array(GW * GH);
   for (let k = 0; k < GW * GH; k++) { if (room[k] >= 0 || block[k]) continue; const seen = floodFrom(block, walls, [[k % GW, Math.floor(k / GW)]], true, false); for (let n = 0; n < GW * GH; n++) if (seen[n]) room[n] = id; id++; }
@@ -2061,6 +2083,8 @@ const GUIDE = [
     "Pubs can stay open until 2am. After midnight customers get rowdier, and noise or fights can bring <b>complaints</b>. Three complaints within three weeks: a £150 fine and you must close by midnight for two weeks.",
     "Events and noisy build-ins add to the noise."] },
   { id: "layout", e: "🪑", t: "Layout, tables and walls", p: [
+    "<b>Extending</b> (Upgrades → The building): planning permission is fixed for each building (the City map shows it): refused, one extension, or up to two. An extension adds a room down the right-hand side, about a third more floor, for tables, appliances or build-ins (wall it off for a separate area), and 2 more staff places. It costs a lot, the place is shut for 3 days while it's built (rent and wages still paid), and the rent goes up by a quarter. Moving out leaves it behind, but it adds to the value if you sell.",
+    "There's no set limit on tables either: add as many as fit on the floor. More than the usual number costs more each, and tables close together get cramped (less patience, smaller tips).",
     "There is no set number of kitchen spaces: buy as many appliances as fit on the floor (Upgrades). When the floor is full, rearrange or sell something. More appliances only help if there are cooks to use them and room to walk.",
     "<b>Rearrange</b> (office) lets you move anything: tap or drag it, tap a table then ↻ to turn it.",
     "Tables packed close to other tables, seating or the kitchen are <b>cramped</b> (orange: a bit tight, red: cramped): those customers lose patience faster and tip less. You can squeeze in a few more tables than usual, at a higher price.",
@@ -2119,7 +2143,7 @@ $("ovc").onclick = e => {
 /* ======================================================================
    THE DAY: world layout (tile units; 9 wide, 14.6 tall)
    ====================================================================== */
-const W = 9, H = 14.6, GAPX = 4.5, CY = 4.1;
+let W = 9; const H = 14.6, GAPX = 4.5, CY = 4.1;
 const TABLE_POS = [[1.6, 6.2], [4.5, 6.2], [7.4, 6.2], [1.6, 8.8], [4.5, 8.8], [7.4, 8.8], [1.6, 11.4], [4.5, 11.4], [7.4, 11.4]];
 const DOOR = [4.5, 14.5];
 function slotPos(i) {
@@ -2143,7 +2167,7 @@ const PALETTE = {
 let G = null, lee = null, raf = 0, lastT = 0, paused = false, nextId = 1;
 
 function startDay() {
-  const V = VENUES[S.venue];
+  const V = VENUES[S.venue]; setRoom(S);
   if (!S.cands || !S.cands.length) S.cands = makeCands();
   G = { t: 0, len: DAY_LEN, open: true, ended: false, endT: 0,
     rev: 0, tips: 0, served: 0, angry: 0, happy: 0, turned: 0, burnt: 0, spills: 0, thrown: 0, people: 0, repD: 0, critic: null, perfect: 0, binned: 0,
@@ -3335,6 +3359,7 @@ function draw() {
   }
   // walls & door
   c.fillStyle = P.wall; c.fillRect(PX(0), PY(0), W * T, .12 * T); c.fillRect(PX(0), PY(0), .08 * T, H * T); c.fillRect(PX(W) - .08 * T, PY(0), .08 * T, H * T);
+  for (let x = 9; x < W - .1; x += EXT_W) { c.fillStyle = "rgba(0,0,0,.08)"; c.fillRect(PX(x) - .05 * T, PY(.12), .1 * T, (H - .24) * T); } // where the old outside wall stood, before each extension
   c.fillRect(PX(0), PY(H) - .12 * T, (DOOR[0] - .7) * T, .12 * T); c.fillRect(PX(DOOR[0] + .7), PY(H) - .12 * T, (W - DOOR[0] - .7) * T, .12 * T);
   c.fillStyle = "#C9A15A"; c.fillRect(PX(DOOR[0] - .7), PY(H) - .08 * T, 1.4 * T, .08 * T);
   // counter pieces: the bin, the plate stack and the pass spots, wherever they stand
@@ -3863,7 +3888,7 @@ function endDay() {
   G.ended = true; closeMini();
   // staff are paid by the hour: their wage is for the usual hours; the lights and heating cost by the hour too
   const hm = hoursMul(S, S.day), [ho, hc] = hoursOn(S, S.day), bills = Math.round(billsHour(S) * ((hc - ho) - (STD_H[S.venue][1] - STD_H[S.venue][0])));
-  const temps = (S.temps || []).filter(x => x.day === S.day), wages = Math.round((S.staff.reduce((a, s) => a + s.wage, 0) + temps.reduce((a, x) => a + x.wage, 0)) * hm * 100) / 100, site = siteOf(S), rent = siteRent(site, S.venue, S.biz), B = bizOf(S), info = G.info;
+  const temps = (S.temps || []).filter(x => x.day === S.day), wages = Math.round((S.staff.reduce((a, s) => a + s.wage, 0) + temps.reduce((a, x) => a + x.wage, 0)) * hm * 100) / 100, site = siteOf(S), rent = placeRent(S), B = bizOf(S), info = G.info;
   let fee = S.cash < 0 ? B.fee : 0;
   // repairs: a listed building every Sunday, a leaky roof on wet days
   let repairs = 0;
@@ -3973,6 +3998,7 @@ function endDay() {
   S.hist.push({ d: S.day, net: Math.round(net), s: G.served, a: G.angry }); if (S.hist.length > 60) S.hist.shift();
   S.stats.served += G.served; S.stats.angry += G.angry; S.stats.earned += income; S.stats.best = Math.max(S.stats.best, Math.round(net));
   S.day++;
+  for (const P of allPlaces(S)) finishWorks(P, S.day, news);
   for (const n of calendarNews(S.day)) news.push(n);
   // a new season: a chain may open near a place that's doing well
   if (calOf(S.day).se !== calOf(S.day - 1).se) {
@@ -4041,7 +4067,7 @@ function makeCands() {
   return out;
 }
 function renderManage(t) {
-  tab = t || tab;
+  tab = t || tab; if (S) setRoom(S);
   const V = VENUES[S.venue], st = starsOf(S.rep);
   $("mName").textContent = S.name;
   const Mg = mgrOf(S); placeTabs();
@@ -4049,7 +4075,7 @@ function renderManage(t) {
   $("mCash").textContent = money(Math.round(S.cash * 100) / 100); $("mCash").className = S.cash < 0 ? "neg" : "";
   $("mStars").innerHTML = `<span class="stars" style="font-size:.85rem">${starStr(st)}</span>`;
   $("tabs").innerHTML = TABS.map(([id, n]) => `<button class="${id === tab ? "on" : ""}" data-tab="${id}">${n}</button>`).join("");
-  $("openBtn").textContent = `Open for day ${S.day} →`;
+  $("openBtn").textContent = inWorks(S, S.day) ? `🏗️ Shut for building work · day ${S.day} →` : `Open for day ${S.day} →`;
   if (!TABS.some(x => x[0] === tab)) tab = "day";
   const f = { day: tabDay, menu: tabMenu, staff: tabStaff, up: tabUp, city: tabCity }[tab];
   const sc = $("mbody").scrollTop, openIds = [...$("mwrap").querySelectorAll("details[id]")].filter(d => d.open).map(d => d.id);
@@ -4088,6 +4114,7 @@ function autoStock() {
 }
 $("openBtn").onclick = () => {
   if (S.bust) { bustDialog(); return; }
+  if (inWorks(S, S.day)) { shutDay(); return; }
   { const say = leeArrives(); if (say) { saveGame(); toastOffice(say); } }
   if (S.autoStock !== false) { autoStock(); saveGame(); }
   const sug = suggested(), short = Object.keys(sug).filter(k => (S.stock[k] || 0) < sug[k] * .5);
@@ -4099,7 +4126,7 @@ $("openBtn").onclick = () => {
 // how a day under a manager went (the Today tab of a place Lee Lee wasn't at)
 function mlastCard(L) {
   return `<div class="card"><div class="row spread"><h2>Day ${L.day}${L.mgr ? `, run by ${esc(L.mgr)}` : ""}</h2><b class="${L.net >= 0 ? "pos" : "neg"}">${L.net >= 0 ? "+" : ""}${money(L.net)}</b></div>
-    <div class="lines small">${L.shut ? `<div><span>Shut all day: no manager</span><b></b></div>` : `<div><span>Customers served</span><b>${L.served} of ${L.people}</b></div><div><span>Takings + tips</span><b>${money(L.rev)}</b></div>
+    <div class="lines small">${L.shut ? `<div><span>${L.works ? "Shut for building work" : "Shut all day: no manager"}</span><b></b></div>` : `<div><span>Customers served</span><b>${L.served} of ${L.people}</b></div><div><span>Takings + tips</span><b>${money(L.rev)}</b></div>
     ${Object.entries(L.extra || {}).map(([k, v]) => `<div><span>${EXTRA_N[k].e} ${EXTRA_N[k].n}</span><b class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : "−"}${money(Math.abs(Math.round(v)))}</b></div>`).join("")}
     <div><span>Stock used</span><b>−${money(L.stock)}</b></div>`}<div><span>Wages</span><b>−${money(L.wages)}</b></div><div><span>Rent${L.bills ? " and bills" : ""}</span><b>−${money(L.rent + (L.bills || 0))}</b></div>
     ${L.fights ? `<div><span>💥 Fights</span><b class="neg">${L.fights}</b></div>` : ""}${L.fine ? `<div><span>🏛️ Council fine</span><b class="neg">−${money(L.fine)}</b></div>` : ""}
@@ -4248,12 +4275,12 @@ function tabMenu() {
 function tabStaff() {
   const prem = PREMISES[S.prem];
   const others = S.places || [], Mg = mgrOf(S);
-  let h = (others.length ? `<button class="btn" data-act="mgrs" style="width:100%;margin-bottom:10px">🧑‍💼 Managers: who runs where</button>` : "") + `<div class="card"><div class="row spread"><h2>${others.length ? `Team at ${esc(S.name)}` : "Your team"}</h2><span class="muted small">${staffN(S)} of ${prem.staff} places${Mg ? " + manager" : ""}</span></div>`;
+  let h = (others.length ? `<button class="btn" data-act="mgrs" style="width:100%;margin-bottom:10px">🧑‍💼 Managers: who runs where</button>` : "") + `<div class="card"><div class="row spread"><h2>${others.length ? `Team at ${esc(S.name)}` : "Your team"}</h2><span class="muted small">${staffN(S)} of ${staffCap(S)} places${Mg ? " + manager" : ""}</span></div>`;
   if (!S.staff.length) h += `<p class="muted small">${others.length ? "Nobody works here yet." : "It's just Lee Lee for now."} Staff get on with their job by themselves and are paid each night.</p>`;
   if (others.length && !Mg) h += `<p class="small neg">No manager here: when Lee Lee works at another place, this one stays shut. Hire one below, or make someone a manager.</p>`;
   for (const s of S.staff) {
     const mgr = s.role === "manager", canPromote = s.lvl < 5 && (mgr || (s.days || 0) >= promoDays(s.lvl)), pcost = mgr ? mgrTrain(s) : promoCost(s.lvl);
-    const moves = others.map(P => { const ok = mgr ? !mgrOf(P) : staffN(P) < PREMISES[P.prem].staff; return `<button class="btn sm" data-act="smove" data-id="${s.id}" data-to="${P.id}" ${ok ? "" : "disabled"} title="${ok ? "" : mgr ? "It already has a manager" : "No room in its team"}">Move to ${esc(P.name)}</button>`; }).join("");
+    const moves = others.map(P => { const ok = mgr ? !mgrOf(P) : staffN(P) < staffCap(P); return `<button class="btn sm" data-act="smove" data-id="${s.id}" data-to="${P.id}" ${ok ? "" : "disabled"} title="${ok ? "" : mgr ? "It already has a manager" : "No room in its team"}">Move to ${esc(P.name)}</button>`; }).join("");
     const mood = s.morale > 60 ? "😊 happy" : s.morale > 30 ? "😐 okay" : "☹️ unhappy";
     h += `<div class="item"><div class="ic">${ROLES[s.role].e}</div><div class="grow"><b>${esc(s.name)} <span class="muted small">${roleName(S, s.role)} · level ${s.lvl}</span></b>
       <span>${money(s.wage)} for a usual day (${money(Math.round(s.wage / (STD_H[S.venue][1] - STD_H[S.venue][0]) * 100) / 100)} an hour) · ${mood}${(s.fat || 0) > 20 ? ` · <b class="${s.fat > 70 ? "neg" : ""}">😴 ${Math.round(s.fat)}% tired</b>` : ""}${s.sick === S.day ? ` · <b class="neg">🤒 off sick tomorrow</b>` : ""}${s.lvl > 1 ? ` · ${15 * (s.lvl - 1)}% quicker at work, ${10 * (s.lvl - 1)}% on foot` : ""}</span>
@@ -4263,7 +4290,7 @@ function tabStaff() {
       ${moves}<button class="btn sm" data-act="fire" data-id="${s.id}">Let go (${money(redundancy(s))})</button></span>${mgr ? `<span class="small muted">Runs ${esc(S.name)} when Lee Lee works elsewhere: better managers serve more people and keep them happier. When she's here, they wait on tables.</span>` : ""}</div></div>`;
   }
   h += `</div><div class="card"><h2>Looking for work</h2>`;
-  const full = staffN(S) >= prem.staff;
+  const full = staffN(S) >= staffCap(S);
   if (others.length && !Mg) {
     const mg = makeMgrs(seeded(seedOf(S) * 5 + S.day * 11 + S.cur.length * 17 + (S.site || "").length));
     h += `<p class="small"><b>Managers looking for work</b></p>` + mg.map((m, i) => `<div class="item"><div class="ic">${ROLES.manager.e}</div><div class="grow"><b>${esc(m.name)} <span class="muted small">Manager · level ${m.lvl}</span></b><span>Runs this place while Lee Lee works elsewhere. ${money(m.wage)} a day.</span></div>
@@ -4323,10 +4350,39 @@ function biCard() {
 function upRow(ic, name, desc, act, cost, ok, extra) {
   return `<div class="item"><div class="ic">${ic}</div><div class="grow"><b>${name}</b>${desc ? `<span>${desc}</span>` : ""}</div><button class="btn sm pri" data-act="${act}" ${extra || ""} ${ok && canAfford(cost) ? "" : "disabled"}>${cost == null ? "Max" : money(cost)}</button></div>`;
 }
+// extending the building: planning, cost, the works
+function buildCard() {
+  const pl = planningOf(siteOf(S)), e = S.ext || 0, c = extCost(S), w = S.works, rise = Math.round(siteRent(siteOf(S), S.venue, S.biz) * EXT_RENT * 7);
+  let h = `<div class="card"><h2>The building</h2><p class="small">${PLAN_N[pl]}.${e ? ` ${e === 1 ? "One extension" : "Two extensions"} built.` : ""}</p>`;
+  if (w) h += `<p class="small"><b>🏗️ The builders are in: shut until day ${w.until}.</b> Rent and wages are still paid.</p>`;
+  else if (e < pl) h += `<p class="small muted">An extension adds a room down the right-hand side (about a third more floor) for tables, appliances or build-ins, and 2 more staff places. The place is shut for ${EXT_DAYS} days while it's built (rent and wages still paid), and the rent goes up by about ${money(rise)} a week.</p>` + upRow("🏗️", e ? "Build a second extension" : "Build an extension", "", "extend", c, true);
+  else if (pl) h += `<p class="small muted">That's as big as planning allows here. A different building may allow more (City tab).</p>`;
+  return h + `</div>`;
+}
+// a day a place is shut for building work: rent and wages, the other places run as usual
+function shutDay() {
+  const rent = placeRent(S), wages = Math.round(S.staff.reduce((a, x) => a + x.wage, 0)), news = [`🏗️ ${S.name} was shut for building work.`];
+  let net = -(rent + wages);
+  staffNight(S, 0, false, false, Math.random, news, "");
+  const prr = seeded(seedOf(S) * 7 + S.day * 53); let others = 0;
+  for (const P of S.places || []) others += runPlace(S, P, prr, news);
+  const retainer = Math.round((S.bench || []).reduce((a, m) => a + m.wage * MGR_RET, 0));
+  others = Math.round((others - retainer) * 100) / 100;
+  S.cash = Math.round((S.cash + net + others) * 100) / 100;
+  S.hist.push({ d: S.day, net: Math.round(net), s: 0, a: 0 }); if (S.hist.length > 60) S.hist.shift();
+  S.temps = (S.temps || []).filter(x => x.day > S.day);
+  S.lnews = { day: S.day, n: news };
+  S.day++;
+  for (const P of allPlaces(S)) finishWorks(P, S.day, news);
+  saveGame(); renderManage("day");
+  dialog(`<h3>Day ${S.day - 1}: shut for building work</h3><div class="lines"><div><span>Rent and wages</span><b class="neg">−${money(rent + wages)}</b></div>${(S.places || []).length ? `<div><span>Your other places${retainer ? " (less retainers)" : ""}</span><b class="${others >= 0 ? "pos" : "neg"}">${others >= 0 ? "+" : ""}${money(others)}</b></div>` : ""}</div>
+    ${S.works ? `<p class="small muted" style="text-align:center">${S.works.until - S.day} more day${S.works.until - S.day > 1 ? "s" : ""} of building work.</p>` : `<p class="small pos" style="text-align:center">The extension is finished! Rearrange (Upgrades) to use the new space.</p>`}
+    <div class="acts"><button class="btn pri" data-a="">OK</button></div>`);
+}
 function tabUp() {
   const prem = PREMISES[S.prem], V = VENUES[S.venue], st = starsOf(S.rep);
   const roomSt = roomFor("st", 0);
-  let h = `<div class="card"><div class="row spread"><div class="grow"><h2>Layout</h2><p class="small muted">Move equipment and tables around so Lee Lee walks less. Free.</p></div><button class="btn sm pri" data-act="layout">Rearrange</button></div></div>`;
+  let h = `<div class="card"><div class="row spread"><div class="grow"><h2>Layout</h2><p class="small muted">Move equipment and tables around so Lee Lee walks less. Free.</p></div><button class="btn sm pri" data-act="layout">Rearrange</button></div></div>` + buildCard();
   h += `<div class="card"><div class="row spread"><h2>Kitchen</h2><span class="muted small">${roomSt ? "Room for more on the floor" : "Floor full: rearrange or sell something"}</span></div><p class="small muted">Put in as many appliances as fit on the floor (Layout → Rearrange). The more there are, the more cooks and space they need.</p>`;
   // equipment the menu (or a learnable recipe) needs comes first
   const wanted = new Set(); for (const r of Object.keys(RECIPES)) if (RECIPES[r].v === S.venue && RECIPES[r].st <= st) for (const t of RECIPES[r].s) if (t !== "plate") wanted.add(t);
@@ -4350,7 +4406,7 @@ function tabUp() {
   h += `</div><div class="card"><h2>Dining room</h2>`;
   const tc = tableCost(S), small = S.tables.indexOf(2), d = DECOR[S.decor], mt = maxTables(S), more = S.tables.length < mt;
   const spotFree = more ? roomFor("tb", 2) : true, squeeze = S.tables.length >= siteTables(S);
-  h += upRow("🪑", squeeze && more ? "Squeeze in another table" : "Another table", `${S.tables.length} tables; ${siteTables(S)} fit comfortably here, up to ${mt} squeezed in.${squeeze && more ? " Tables close to others are cramped: those customers lose patience sooner and tip less (see Rearrange)." : ""}${!spotFree && more ? " No room on the floor: rearrange first." : ""}`, "table", more ? tc : null, more && spotFree);
+  h += upRow("🪑", squeeze && more ? "Squeeze in another table" : "Another table", `${S.tables.length} tables; ${siteTables(S)} fit comfortably here, and more as long as there's floor room.${squeeze && more ? " Tables close to others are cramped: those customers lose patience sooner and tip less (see Rearrange)." : ""}${!spotFree && more ? " No room on the floor: rearrange first." : ""}`, "table", more ? tc : null, more && spotFree);
   h += upRow("🪧", "“Wait to be seated” sign", S.sign ? "Your waiters show each group to the table that fits them best, so big tables stay free for big groups." : "Without it, people pick their own table, sometimes a big one for two. With it, a waiter shows each group to the best fit. Needs a waiter on the team.", "sign", S.sign ? null : 250, !S.sign).replace(">Max<", ">Built<");
   h += upRow("🍽", "Make a table seat four", small >= 0 ? `${S.tables.filter(n => n < 4).length} tables seat two` : "Every table seats four", "bigtable", small >= 0 ? 150 : null, small >= 0, `data-i="${small}"`);
   const four = S.tables.indexOf(4);
@@ -4438,9 +4494,9 @@ $("mwrap").onclick = e => {
   if (a === "mkmgr" && !mgrOf(S)) { const s = S.staff.find(x => x.id === b.dataset.id); if (s && canAfford(MGR_MAKE)) { spend(MGR_MAKE); s.role = "manager"; s.wage = Math.max(s.wage, fairWage("manager", s.lvl)); s.morale = Math.min(100, s.morale + 15); s.days = 0; } }
   if (a === "smove") {
     const s = S.staff.find(x => x.id === b.dataset.id), P = (S.places || []).find(x => x.id === b.dataset.to);
-    if (s && P && (s.role === "manager" ? !mgrOf(P) : staffN(P) < PREMISES[P.prem].staff)) { S.staff.splice(S.staff.indexOf(s), 1); P.staff = (P.staff || []).concat([s]); s.sick = null; toastOffice(`${s.name} now works at ${P.name}.`); }
+    if (s && P && (s.role === "manager" ? !mgrOf(P) : staffN(P) < staffCap(P))) { S.staff.splice(S.staff.indexOf(s), 1); P.staff = (P.staff || []).concat([s]); s.sick = null; toastOffice(`${s.name} now works at ${P.name}.`); }
   }
-  if (a === "hire") { const c = S.cands[+b.dataset.i]; if (c && staffN(S) < PREMISES[S.prem].staff) { S.staff.push({ id: "s" + (S.sid++), name: c.name, role: c.role, lvl: c.lvl, wage: c.wage, morale: 70, days: 0, look: c.look }); S.cands.splice(+b.dataset.i, 1); } }
+  if (a === "hire") { const c = S.cands[+b.dataset.i]; if (c && staffN(S) < staffCap(S)) { S.staff.push({ id: "s" + (S.sid++), name: c.name, role: c.role, lvl: c.lvl, wage: c.wage, morale: 70, days: 0, look: c.look }); S.cands.splice(+b.dataset.i, 1); } }
   if (a === "bonus") { const s = S.staff.find(x => x.id === b.dataset.id), c = s && bonusCost(s.wage); if (s && canAfford(c) && !(s.bon && S.day - s.bon < 7)) { spend(c); s.bon = S.day; s.morale = Math.min(100, s.morale + 15); s.fat = Math.max(0, (s.fat || 0) - 20); } }
   if (a === "raise") { const s = S.staff.find(x => x.id === b.dataset.id); if (s) { s.wage += Math.max(2, Math.round(s.wage * .1)); s.morale = Math.min(100, s.morale + 15); } }
   if (a === "promote") { const s = S.staff.find(x => x.id === b.dataset.id), c = s && (s.role === "manager" ? mgrTrain(s) : promoCost(s.lvl)); if (s && c && canAfford(c)) { spend(c); s.lvl++; s.wage = s.role === "manager" ? Math.max(s.wage + 10, fairWage(s.role, s.lvl)) : Math.max(s.wage, fairWage(s.role, s.lvl)); s.morale = Math.min(100, s.morale + 12); s.days = 0; } }
@@ -4457,6 +4513,15 @@ $("mwrap").onclick = e => {
     if (canAfford(STATIONS[t].c) && (t !== "basin" || !S.stations.includes("basin"))) { const sp = stationSpot(); if (!sp) { toastOffice("No room on the floor for it. Rearrange or sell something first."); return; } spend(STATIONS[t].c); let i = sp ? sp.i : S.stations.findIndex(x => !x); if (i < 0) i = S.stations.length; S.stations[i] = t; if (sp) setPiece(S, S.L, "st", i, sp.q); ensureLayout(S); }
   }
   if (a === "layout") { openLayout(null); return; }
+  if (a === "extend") {
+    const c = extCost(S), e = S.ext || 0; if (S.works || e >= planningOf(siteOf(S)) || !canAfford(c)) return;
+    dialog(`<h3>Build an extension?</h3><p class="muted" style="text-align:center">${money(c)} for a new room down the right-hand side. ${esc(S.name)} is shut for ${EXT_DAYS} days while the builders are in (rent and wages are still paid), and the rent rises by a quarter. If you ever move out, the extension stays with the building, though it adds to what the business is worth if you sell.</p>
+      <div class="acts"><button class="btn pri" data-a="yes">Build it</button><button class="btn" data-a="">Not now</button></div>`, x => {
+      if (x !== "yes" || !canAfford(c)) return;
+      spend(c); S.works = { until: S.day + EXT_DAYS, to: e + 1 }; S.extPaid = (S.extPaid || 0) + c; saveGame(); renderManage("up"); toastOffice(`The builders start tomorrow: ${S.name} is shut for ${EXT_DAYS} days.`);
+    });
+    return;
+  }
   if (a === "bibuy" || a === "biup" || a === "bisell") {
     const B = BI[b.dataset.id];
     if (a === "bibuy" && canAfford(B.c) && biCan(B) === "") { spend(B.c); if (B.max) S.bi[B.id] = { n: ((S.bi[B.id] || {}).n || 0) + 1 }; else S.bi[B.id] = B.cell ? { p: 0, lv: 1 } : { lv: 1 }; ensureLayout(S); }
@@ -4560,8 +4625,8 @@ function pieceHtml(p) {
 }
 function layoutGrid() {
   if (!LG.sv) LG.sv = S;
-  const L = ensureLayout(LG.sv), u = Math.max(22, Math.min(40, Math.floor((Math.min(400, innerWidth - 52)) / 9)));
-  let m = `<div class="lg" id="lgFloor" style="width:${9 * u}px;height:${14.5 * u}px;background-size:${u / 2}px ${u / 2}px">`;
+  const L = ensureLayout(LG.sv), u = Math.max(16, Math.min(40, Math.floor((Math.min(400, innerWidth - 52)) / RW)));
+  let m = `<div class="lg" id="lgFloor" style="width:${RW * u}px;height:${14.5 * u}px;background-size:${u / 2}px ${u / 2}px">`;
   m += `<div class="lg-strip" style="top:${13 * u}px;height:${1.5 * u}px">Entrance, queue${LG.sv.venue === "pub" && LG.sv.bar ? " and bar" : ""} 🚪</div>`;
   const cr = crampOf(LG.sv, L);
   for (const p of piecesOf(LG.sv, L)) {
@@ -5089,7 +5154,7 @@ function renderSheet0() {
       : `<button class="btn" data-cs="open">Open another place here · ${money(siteFit(s, s.v === "both" ? venue : s.v) + siteRent(s, s.v === "both" ? venue : s.v, sv.biz) * 28)}</button>`;
   }
   el.innerHTML = head(esc(s.n), `${esc(s.a)} · ${s.v === "both" ? "Café or pub" : s.v === "pub" ? "Pub" : "Café"} · ${sizeText(s)}`) +
-    `<div class="lines small"><div><span>Rent</span><b>${money(rent * 7)} a week</b></div>
+    `<div class="lines small"><div><span>Rent</span><b>${money(rent * 7)} a week</b></div><div><span>Planning</span><b>${["no extensions", "one extension", "up to two extensions"][planningOf(s)]}</b></div>
     ${start ? `<div><span>To move in</span><b class="pos">Free to start</b></div>` : `<div><span>Fitting out</span><b>${fit ? money(fit) : "nothing"}</b></div><div><span>Deposit (comes back when you leave)</span><b>${money(dep)}</b></div>${sv.dep ? `<div><span>Your old deposit back</span><b class="pos">+${money(sv.dep)}</b></div>` : ""}`}
     <div><span>Customers on a usual day</span><b>about ${Math.round(est)} groups${now != null ? ` <span class="${est >= now ? "pos" : "neg"}">(now ${Math.round(now)})</span>` : ""}</b></div>
     <div><span>Competition</span><b>${compWord(ci.C)} (${ci.near.filter(o => o.w > .2).length} rivals close by)</b></div>
@@ -5114,7 +5179,7 @@ $("cSheet").onclick = e => {
 function moveTo(sv, s, forced) {
   const rent = siteRent(s, sv.venue, sv.biz), dep = forced ? 0 : rent * 28, out = [];
   sv.cash = Math.round((sv.cash + (sv.dep || 0) - (forced ? 0 : siteFit(s, sv.venue) + dep)) * 100) / 100;
-  sv.dep = dep; sv.site = s.id; sv.prem = s.t; sv.od = 0;
+  sv.dep = dep; sv.site = s.id; sv.prem = s.t; sv.od = 0; sv.ext = 0; sv.works = null; sv.extPaid = 0; // extensions stay with the old building
   return fitTo(sv);
 }
 // make the main place's tables, kitchen and team fit its (new) premises; what doesn't fit is sold or leaves
@@ -5123,12 +5188,18 @@ function fitTo(sv, keep) {
   // a new building: walls stay behind; build-ins come along if there's room for them (keep: swapping into a place already fitted out)
   if (!keep) sv.walls = {}; sv.bi = sv.bi || {};
   while (sv.tables.length > maxT) { sv.tables.pop(); sv.tpos.pop(); sv.cash += 50; out.push("a table"); }
-  while (staffN(sv) > P.staff) { const x = sv.staff.filter(y => y.role !== "manager").pop(); sv.staff.splice(sv.staff.indexOf(x), 1); out.push(`${x.name} (had to leave)`); }
+  while (staffN(sv) > staffCap(sv)) { const x = sv.staff.filter(y => y.role !== "manager").pop(); sv.staff.splice(sv.staff.indexOf(x), 1); out.push(`${x.name} (had to leave)`); }
   const cells = Object.entries(biCells(sv));
-  while (cells.length && sv.tables.length + cells.length > cellCap(sv)) { const [, id] = cells.pop(); delete sv.bi[id]; sv.cash += Math.round(BI[id].c / 2); out.push(BI[id].n.toLowerCase()); }
   if (!keep) { sv.tpos = sv.tables.map((_, i) => i); cells.forEach(([, id], k) => { sv.bi[id].p = sv.tables.length + k; }); }
   if (!keep) sv.L = null; // a new building starts with the standard layout, rearranged as you like
-  if (!keep && sv.stations) { ensureLayout(sv); sv.stations.forEach((t, i) => { if (t && t !== "basin" && !sv.L.st[i]) { sv.stations[i] = null; sv.cash += Math.round(STATIONS[t].c / 2); out.push(STATIONS[t].n.toLowerCase() + " (no room)"); } }); sv.L = null; }
+  // the new floor: whatever can't be placed on it is sold (appliances and build-ins at half price, tables for £50)
+  if (!keep && sv.stations) {
+    ensureLayout(sv);
+    sv.stations.forEach((t, i) => { if (t && !sv.L.st[i]) { sv.stations[i] = null; sv.cash += Math.round(STATIONS[t].c / 2); out.push(STATIONS[t].n.toLowerCase() + " (no room)"); } });
+    for (let i = sv.tables.length - 1; i >= 0; i--) if (!sv.L.tb[i]) { sv.tables.splice(i, 1); sv.tpos.splice(i, 1); sv.cash += 50; out.push("a table (no room)"); }
+    for (const id in sv.bi) if (BI[id] && BI[id].cell && !sv.L.bi[id]) { delete sv.bi[id]; sv.cash += Math.round(BI[id].c / 2); out.push(BI[id].n.toLowerCase() + " (no room)"); }
+    sv.L = null;
+  }
   sv.cash = Math.round(sv.cash * 100) / 100;
   return out;
 }

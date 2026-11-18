@@ -1019,6 +1019,17 @@
       "details": [
         "There's no longer a set number of kitchen spaces: buy as many appliances as fit on the floor. Rearrange to make room, or sell something when the floor is full."
       ]
+    },
+    {
+      "id": 91,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: extend your venues",
+      "details": [
+        "Extend a building in Upgrades → The building: a new room down the right-hand side for more tables, appliances or build-ins, plus 2 more staff places.",
+        "Planning permission depends on the building (shown on the City map): some can't be extended, some once, a few twice.",
+        "It's costly: the building work, 3 days shut while the builders are in, and higher rent.",
+        "No more set limit on tables: add as many as fit on the floor."
+      ]
     }
   ]
 }
