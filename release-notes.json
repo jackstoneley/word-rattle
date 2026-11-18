@@ -1003,6 +1003,14 @@
         "The takeaway window now brings walk-up customers who queue at the window by the door. Take their order, hand over their drink and they pay and go.",
         "Fruit machines now get played: drinkers wander over while they wait or drink, the coins pop up as they play, then they go back to their table."
       ]
+    },
+    {
+      "id": 89,
+      "type": "fixes",
+      "headline": "Lee Lee's Kitchen: takeaway orders stay outside",
+      "details": [
+        "Takeaway customers no longer come inside: their order and a patience bar appear at the window straight away. Make the drink and hand it over at the window."
+      ]
     }
   ]
 }

@@ -1457,7 +1457,7 @@ const BUILDINS = [
   { id: "softplay", v: "cafe", n: "Soft play corner", e: "🧸", c: 1500, st: 1, cell: 1, d: "Families come more often and their children stay happy. £2.50 entry per child. Noisy: wall it off from the other tables." },
   { id: "nook", v: "cafe", n: "Reading & work corner", e: "📚", c: 900, st: 0, cell: 1, seats: 3, d: "Sofas, books and desks with plugs. Students and people working on laptops stay for hours buying drinks and cake, and pay £2 for the desk. Busiest near offices and the universities." },
   { id: "meet", v: "cafe", n: "Meeting room", e: "🤝", c: 2500, st: 2, cell: 1, seats: 6, room: 1, d: "Booked meetings pay for the room and order coffee and food. Needs walls and a door all round. Far more bookings near offices and in town." },
-  { id: "hatch", v: "cafe", n: "Takeaway window", e: "🥤", c: 1200, st: 1, d: "People walking past queue at the window by the front door for a takeaway drink: take their order and hand it over like any table, and they pay and go. Busiest where the streets are busiest." },
+  { id: "hatch", v: "cafe", n: "Takeaway window", e: "🥤", c: 1200, st: 1, d: "People walking past order a takeaway drink at the window by the front door: their order and patience show at the window, so make it and hand it over there, and they pay and go. Busiest where the streets are busiest." },
   { id: "sports", v: "pub", n: "Sports TV corner", e: "📺", c: 600, st: 0, cell: 1, seats: 4, d: "Shows the big games on TV, so fans come to watch even far from the ground. They stay for the game and drink rounds. Loud: wall it off from diners.",
     lv: [{ n: "Sports TV", fee: 4, sh: .15 }, { n: "Big screen & all the sports channels", c: 2500, st: 2, fee: 12, sh: .3 }] },
   { id: "fruit", v: "pub", n: "Fruit machine", e: "🎰", c: 400, st: 0, max: 2, d: "Drinkers wander over to play while they wait or drink, then go back to their table. More plays when it's busy and late." },
@@ -2068,7 +2068,7 @@ const GUIDE = [
     "Walls keep noise (TV, soft play, music) away from other tables. Meeting and function rooms need walls all round and a door. Everything must still be reachable from the entrance."] },
   { id: "extras", e: "🎱", t: "Build-ins and events", p: [
     "Cafés can add a soft play corner, a reading & work corner, a meeting room and a takeaway window; pubs a sports TV corner, fruit machines, a pool table, a function room and <b>drinkers' tables</b> (three high tables that bring in more people just for a drink, served at the bar). Each brings its own customers or money; some are noisy.",
-    "The <b>takeaway window</b> brings walk-up customers who queue at the window by the door for a takeaway drink: take the order and hand it over there. <b>Fruit machines</b> get played by drinkers while they wait or drink; the coins pop up as they play. (At places a manager runs, these are worked out overnight instead.)",
+    "The <b>takeaway window</b> brings passers-by who stay outside: their drink order and a patience bar appear at the window by the door straight away. Make it and hand it over at the window. <b>Fruit machines</b> get played by drinkers while they wait or drink; the coins pop up as they play. (At places a manager runs, these are worked out overnight instead.)",
     "A sports TV corner brings fans for televised games anywhere in the city (the channels cost a little every day).",
     "<b>Events</b> (quiz, live music, karaoke, supper club, kids' craft morning, book club) run on the weekdays you choose: they cost a fee and bring extra groups who spend more. Regulars build up the more often you hold one. Noisy events can upset other diners and neighbours."] },
   { id: "city", e: "🗺️", t: "The city", p: [
@@ -2508,6 +2508,7 @@ function spawnGroup(a) {
     host: a.host || null, claim: null, calmClaim: null, shout: 0, rt: rnd(6, 12), calmed: 0, people: [] };
   for (let i = 0; i < a.size; i++) g.people.push({ x: DOOR[0] + (i - (a.size - 1) / 2) * .4, y: DOOR[1], look: randomLook(), tx: 0, ty: 0, kid: i >= a.size - (a.kids || 0) });
   if (g.party) fx(4.5, 13, `${OCCASIONS[g.party.occ].e} The ${OCCASIONS[g.party.occ].n.toLowerCase()} has arrived!`, "#E8664A");
+  if (g.tk) for (const p of g.people) { p.x = p.tx = HATCH_SPOTS[0][0]; p.y = p.ty = H + 1; } // outside, never drawn
   G.groups.push(g); G.queue.push(g); G.people += a.size;
 }
 function seatOffsets(seats) { return seats >= 6 ? [[-1.12, 0], [1.12, 0], [-.45, -.72], [.45, -.72], [-.45, .72], [.45, .72]] : seats >= 4 ? [[-.8, 0], [.8, 0], [0, -.72], [0, .72]] : [[-.8, 0], [.8, 0]]; }
@@ -2548,6 +2549,7 @@ function trySeat() {
       if (g.party && !G.tables.some(t => !t.bar && !t.dk && t.seats >= g.size)) { angryLeave(g, "No table big enough for us! 😞"); qi--; }
       continue;
     }
+    if (g.tk) { const t = free[0]; t.group = g; g.table = t; G.queue.splice(qi, 1); qi--; g.state = "order"; g.pat = Math.max(g.pat, .9); snd("order"); takeOrder(g); continue; }
     const t = pickTable(g, free); t.group = g; t.res = null; g.table = t; g.state = "walk"; g.pat = Math.max(g.pat, .9);
     const offs = seatsOf(t);
     g.people.forEach((p, i) => walkTo(p, t.x + offs[i][0], t.y + offs[i][1]));
@@ -2555,7 +2557,7 @@ function trySeat() {
     G.queue.splice(qi, 1); qi--;
   }
   const q0 = LV == null && hasBi(S, "hatch") ? 2.3 : .9; let qx = q0;
-  G.queue.forEach(g => g.people.forEach((p, i) => { const row2 = qx > q0 + 2.8; p.tx = qx - (row2 ? 2.8 : 0); p.ty = row2 ? 14.05 : 13.4 + (i % 2) * .15; qx += i === g.people.length - 1 ? .7 : .32; }));
+  G.queue.forEach(g => !g.tk && g.people.forEach((p, i) => { const row2 = qx > q0 + 2.8; p.tx = qx - (row2 ? 2.8 : 0); p.ty = row2 ? 14.05 : 13.4 + (i % 2) * .15; qx += i === g.people.length - 1 ? .7 : .32; }));
 }
 function patMul(g) {
   let m = (1 - .06 * S.decor) * (LV != null ? (EASY ? .6 : .78) : diffOf(S).pat);
@@ -2581,7 +2583,7 @@ function groupLeave(g, happy) {
   if (t) { t.dirty += g.plates || 0; t.group = null; if (g.bar) t.gl = Math.min(6, (t.gl || 0) + g.tickets.filter(k => k.done).length); }
   g.table = null; g.state = "leave"; g.shout = 0; g.atBar = false;
   const qi = G.queue.indexOf(g); if (qi >= 0) G.queue.splice(qi, 1);
-  g.people.forEach((p, i) => walkTo(p, DOOR[0] + (i - 1) * .3, DOOR[1] + .4));
+  if (!g.tk) g.people.forEach((p, i) => walkTo(p, DOOR[0] + (i - 1) * .3, DOOR[1] + .4));
 }
 function payAndLeave(g) {
   let total = 0;
@@ -2617,8 +2619,8 @@ function angryLeave(g, why) {
   G.streak = 0; snd("out");
   if (g.critic) { G.critic = "angry"; G.repD -= 90; }
   if (g.party) { G.party = "angry"; G.repD -= 25; }
-  const x = g.table ? g.table.x : g.people[0].x, y = g.table ? g.table.y : g.people[0].y;
-  fx(x, y - 1, why || "Too slow! 😠", "#D2483A");
+  const x = g.table ? g.table.x : g.tk ? HATCH_SPOTS[0][0] + .4 : g.people[0].x, y = g.table ? g.table.y : g.tk ? HATCH_SPOTS[0][1] : g.people[0].y;
+  fx(x, y - 1, g.tk && !g.table ? "Gave up at the takeaway window 😠" : why || "Too slow! 😠", "#D2483A");
   groupLeave(g, false);
 }
 // pub drinkers: one of them goes up to the bar, orders, collects the drinks and carries them back
@@ -2695,7 +2697,7 @@ function groupsStep(dt) {
     }
     const pm = patMul(g);
     switch (g.state) {
-      case "queue": g.pat -= dt / 75 * pm; if (g.pat <= 0) angryLeave(g, "No tables! 😠"); break;
+      case "queue": g.pat -= dt / (g.tk ? 45 : 75) * pm; if (g.pat <= 0) angryLeave(g, "No tables! 😠"); break;
       case "walk": if (!moving) { g.state = "think"; g.timer = rnd(2, 3.5); } break;
       case "think": g.timer -= dt; if (g.timer <= 0) { if (g.bar) toBar(g); else { g.state = "order"; snd("order"); } } break;
       case "toBar": if (!moving) { g.state = "order"; g.atBar = true; snd("order"); } break;
@@ -3389,7 +3391,7 @@ function draw() {
   // sorted scene: tables, people, actors
   const items = [];
   for (const t of G.tables) items.push({ y: t.y, f: () => { drawTable(t, P); if (t.gl) drawGlasses(t); } });
-  for (const g of G.groups) for (const p of g.people) { const seated = g.table && !g.table.tk && !p.play && !g.table.bar && !g.table.dk && g.table.sp !== "sports" && g.table.sp !== "pool" && (g.state !== "walk" && g.state !== "leave" && g.state !== "toBar" && g.state !== "back") && !(g.atBar && p === g.people[0]) && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T * (p.kid ? .72 : 1), { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
+  for (const g of G.groups) if (!g.tk) for (const p of g.people) { const seated = g.table && !g.table.tk && !p.play && !g.table.bar && !g.table.dk && g.table.sp !== "sports" && g.table.sp !== "pool" && (g.state !== "walk" && g.state !== "leave" && g.state !== "toBar" && g.state !== "back") && !(g.atBar && p === g.people[0]) && Math.abs(p.x - p.tx) < .01 && Math.abs(p.y - p.ty) < .01; items.push({ y: p.y + (seated && p.ty < (g.table ? g.table.y : 0) ? -.2 : .05), f: () => drawPerson(c, PX(p.x), PY(p.y + (seated ? .18 : 0)), p.look, T * (p.kid ? .72 : 1), { sit: seated, red: g.rowdy && (g.shout > 0 || g.state === "leave"), bob: g.state === "walk" || g.state === "leave" || g.state === "queue" ? 0 : 0 }) }); }
   for (const a of G.actors) items.push({ y: a.y, f: () => drawActor(a) });
   items.sort((p, q) => p.y - q.y).forEach(i => i.f());
   // bubbles
