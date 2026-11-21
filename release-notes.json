@@ -1039,6 +1039,15 @@
         "Staff no longer walk across the venue to a clean appliance: they use the nearest one on foot, and if a colleague is cleaning it, the colleague stops.",
         "New setting, Tapping an appliance: Auto (as before) or Always ask, so you choose what to make, or to clean it, every time. It's in Settings and the pause menu."
       ]
+    },
+    {
+      "id": 93,
+      "type": "features",
+      "headline": "Lee Lee's Kitchen: hire as many staff as you like",
+      "details": [
+        "There's no longer a limit on staff at any place: hire as many as you want. Wages, room to work and a manager to organise them are the only limits.",
+        "Six people are now looking for work at each place every night (it was three), covering more kinds of job."
+      ]
     }
   ]
 }

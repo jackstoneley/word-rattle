@@ -1022,7 +1022,7 @@ function siteRent(s, venue, biz) {
   return Math.max(6, Math.round(r * BIZ[biz == null ? 1 : biz].rent));
 }
 /* Extensions (save.ext 0-2): planning permission is fixed per building (planningOf: 0 refused, 1 one, 2 two; listed and tiny buildings never).
-   One costs extCost, shuts the place for EXT_DAYS (save.works {until, to}), and each adds EXT_RENT to the rent and 2 staff places. */
+   One costs extCost, shuts the place for EXT_DAYS (save.works {until, to}), and each adds EXT_RENT to the rent. */
 const EXT_COST = [6000, 10000, 16000, 25000], EXT_DAYS = 3, EXT_RENT = .25;
 function planningOf(s) { if (hasPk(s, "listed") || hasPk(s, "tiny")) return 0; let h = 7; for (const ch of s.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0; const v = h % 10; return v < 3 ? 0 : v < (s.t >= 2 ? 6 : 9) ? 1 : 2; }
 const PLAN_N = ["Planning refused: this building can't be extended", "Planning allows one extension", "Planning allows up to two extensions"];
@@ -1030,7 +1030,7 @@ const extCost = save => Math.round(EXT_COST[save.prem || 0] * (save.ext ? 1.5 : 
 const placeRent = save => Math.round(siteRent(siteOf(save), save.venue, save.biz) * (1 + EXT_RENT * (save.ext || 0)));
 const inWorks = (save, day) => !!(save.works && day < save.works.until);
 function finishWorks(P, day, news) { if (P.works && day >= P.works.until) { P.ext = P.works.to; P.works = null; if (news) news.push(`🏗️ The extension at ${P.name} is finished. Rearrange (Upgrades tab) to use the new space.`); } }
-const staffCap = save => PREMISES[save.prem || 0].staff + 2 * (save.ext || 0);
+const staffCap = save => 99; // no set limit on staff: hire as many as you like (wages, room to work and the manager are the limits)
 // paid when moving in: the fit-out (bigger places cost more) plus a deposit of four weeks' rent that comes back when you leave
 function siteFit(s, venue) { return Math.round(PREMISES[s.t].cost * Math.pow(siteFoot(s, venue) / .95, .8) / 50) * 50; }
 const siteTables = save => Math.min(9, PREMISES[save.prem].tables + (hasPk(siteOf(save), "seats") ? 1 : 0)) + 2 * (save.ext || 0);
@@ -2089,7 +2089,7 @@ const GUIDE = [
     "Pubs can stay open until 2am. After midnight customers get rowdier, and noise or fights can bring <b>complaints</b>. Three complaints within three weeks: a £150 fine and you must close by midnight for two weeks.",
     "Events and noisy build-ins add to the noise."] },
   { id: "layout", e: "🪑", t: "Layout, tables and walls", p: [
-    "<b>Extending</b> (Upgrades → The building): planning permission is fixed for each building (the City map shows it): refused, one extension, or up to two. An extension adds a room down the right-hand side, about a third more floor, for tables, appliances or build-ins (wall it off for a separate area), and 2 more staff places. It costs a lot, the place is shut for 3 days while it's built (rent and wages still paid), and the rent goes up by a quarter. Moving out leaves it behind, but it adds to the value if you sell.",
+    "<b>Extending</b> (Upgrades → The building): planning permission is fixed for each building (the City map shows it): refused, one extension, or up to two. An extension adds a room down the right-hand side, about a third more floor, for tables, appliances or build-ins (wall it off for a separate area). It costs a lot, the place is shut for 3 days while it's built (rent and wages still paid), and the rent goes up by a quarter. Moving out leaves it behind, but it adds to the value if you sell.",
     "There's no set limit on tables either: add as many as fit on the floor. More than the usual number costs more each, and tables close together get cramped (less patience, smaller tips).",
     "There is no set number of kitchen spaces: buy as many appliances as fit on the floor (Upgrades). When the floor is full, rearrange or sell something. More appliances only help if there are cooks to use them and room to walk.",
     "<b>Rearrange</b> (office) lets you move anything: tap or drag it, tap a table then ↻ to turn it.",
@@ -2116,6 +2116,7 @@ const GUIDE = [
     "<b>Managers</b> run the places Lee Lee isn't at, each night, with that place's real team, kitchen and menu. A manager's level is how well they organise: on a quiet day any of them serves nearly everyone, but on a busy day a level 1 manager gets about 90% of what the team and kitchen could manage, a level 3 all of it, and a level 5 a little more. Managers are paid every day, including days Lee Lee works there (they wait on tables). Train them in the Team tab.",
     "Customers a managed place can't serve cost it reputation, just as walk-outs do on your own days, so an over-stretched place loses stars and custom. Its Today tab says what held it back: more staff, a better manager, or another appliance (the kitchen is often the limit). Lee Lee can also go back and work there for a few days to win its name back.",
     "When Lee Lee goes to a place, if the place she left has no manager of its own, this place's manager goes over to run it (and comes back when she does). If both have managers, the one here waits on tables with her. A place with neither stays shut, but rent and wages are still paid.",
+    "There's no limit on how many staff you hire at a place: wages, room for them to work and a manager to organise them are the limits. Six people are looking for work at each place, a new lot every night.",
     "Staff belong to a place. In the Team tab you can move anyone to another place (managers don't take up a staff place), or make an experienced member of staff a manager.",
     "<b>The Managers screen</b> (Team tab, or Your places in the City tab) shows every manager and where they work. Move any of them to another place (if it already has one, the two swap), or leave them unallocated: they wait on a retainer of half their pay. A tick box decides whether a manager is sent to cover the place Lee Lee leaves when it has none (an unallocated one goes first)."] },
   { id: "money", e: "💷", t: "Money and difficulty", p: [
@@ -4073,10 +4074,11 @@ function suggested() {
 }
 function onMenuS() { return S.owned.filter(r => !S.off.includes(r)); }
 function usedIngs() { const s = new Set(); for (const r of S.owned) for (const k in RECIPES[r].i) s.add(k); for (const k in S.stock) if (S.stock[k] > 0) s.add(k); return [...s]; }
+const CAND_N = 6; // people looking for work at each place, a new set each night (at least four different jobs)
 function makeCands() {
-  const roles = ["waiter", "porter", "cook", "drinks", "floor"], out = [];
-  for (let i = 0; i < 3; i++) {
-    const role = pickOne(roles), lvl = Math.random() < .6 ? 1 : Math.random() < .7 ? 2 : 3;
+  const roles = ["waiter", "porter", "cook", "drinks", "floor"], out = [], mix = roles.slice().sort(() => Math.random() - .5);
+  for (let i = 0; i < CAND_N; i++) {
+    const role = i < mix.length - 1 ? mix[i] : pickOne(roles), lvl = Math.random() < .6 ? 1 : Math.random() < .7 ? 2 : 3;
     out.push({ name: pickOne(FIRST), role, lvl, wage: Math.round(fairWage(role, lvl) * rnd(.92, 1.12)), look: { skin: pickOne(SKINS), hair: pickOne(HAIRS), style: pickOne(["short", "long", "bun", "curly", "bald"]), slim: Math.random() < .5 } });
   }
   return out;
@@ -4290,7 +4292,7 @@ function tabMenu() {
 function tabStaff() {
   const prem = PREMISES[S.prem];
   const others = S.places || [], Mg = mgrOf(S);
-  let h = (others.length ? `<button class="btn" data-act="mgrs" style="width:100%;margin-bottom:10px">🧑‍💼 Managers: who runs where</button>` : "") + `<div class="card"><div class="row spread"><h2>${others.length ? `Team at ${esc(S.name)}` : "Your team"}</h2><span class="muted small">${staffN(S)} of ${staffCap(S)} places${Mg ? " + manager" : ""}</span></div>`;
+  let h = (others.length ? `<button class="btn" data-act="mgrs" style="width:100%;margin-bottom:10px">🧑‍💼 Managers: who runs where</button>` : "") + `<div class="card"><div class="row spread"><h2>${others.length ? `Team at ${esc(S.name)}` : "Your team"}</h2><span class="muted small">${staffN(S)} staff${Mg ? " + manager" : ""}</span></div>`;
   if (!S.staff.length) h += `<p class="muted small">${others.length ? "Nobody works here yet." : "It's just Lee Lee for now."} Staff get on with their job by themselves and are paid each night.</p>`;
   if (others.length && !Mg) h += `<p class="small neg">No manager here: when Lee Lee works at another place, this one stays shut. Hire one below, or make someone a manager.</p>`;
   for (const s of S.staff) {
@@ -4306,12 +4308,12 @@ function tabStaff() {
   }
   h += `</div><div class="card"><h2>Looking for work</h2>`;
   const full = staffN(S) >= staffCap(S);
+  if ((S.cands || []).length < 3) S.cands = (S.cands || []).concat(makeCands()).slice(0, CAND_N); // saves from before keep their list until it runs low
   if (others.length && !Mg) {
     const mg = makeMgrs(seeded(seedOf(S) * 5 + S.day * 11 + S.cur.length * 17 + (S.site || "").length));
     h += `<p class="small"><b>Managers looking for work</b></p>` + mg.map((m, i) => `<div class="item"><div class="ic">${ROLES.manager.e}</div><div class="grow"><b>${esc(m.name)} <span class="muted small">Manager · level ${m.lvl}</span></b><span>Runs this place while Lee Lee works elsewhere. ${money(m.wage)} a day.</span></div>
       <button class="btn sm pri" data-act="hiremgr" data-i="${i}">Hire</button></div>`).join("") + `<p class="small"><b>Other staff</b></p>`;
   }
-  if (full) h += `<p class="small muted">No room for more staff here. A bigger place holds more (City tab).</p>`;
   S.cands.forEach((c, i) => {
     h += `<div class="item"><div class="ic">${ROLES[c.role].e}</div><div class="grow"><b>${esc(c.name)} <span class="muted small">${roleName(S, c.role)} · level ${c.lvl}</span></b><span>${esc(ROLES[c.role].job)} ${money(c.wage)} a day.</span></div>
       <button class="btn sm pri" data-act="hire" data-i="${i}" ${full ? "disabled" : ""}>Hire</button></div>`;
@@ -4370,7 +4372,7 @@ function buildCard() {
   const pl = planningOf(siteOf(S)), e = S.ext || 0, c = extCost(S), w = S.works, rise = Math.round(siteRent(siteOf(S), S.venue, S.biz) * EXT_RENT * 7);
   let h = `<div class="card"><h2>The building</h2><p class="small">${PLAN_N[pl]}.${e ? ` ${e === 1 ? "One extension" : "Two extensions"} built.` : ""}</p>`;
   if (w) h += `<p class="small"><b>🏗️ The builders are in: shut until day ${w.until}.</b> Rent and wages are still paid.</p>`;
-  else if (e < pl) h += `<p class="small muted">An extension adds a room down the right-hand side (about a third more floor) for tables, appliances or build-ins, and 2 more staff places. The place is shut for ${EXT_DAYS} days while it's built (rent and wages still paid), and the rent goes up by about ${money(rise)} a week.</p>` + upRow("🏗️", e ? "Build a second extension" : "Build an extension", "", "extend", c, true);
+  else if (e < pl) h += `<p class="small muted">An extension adds a room down the right-hand side (about a third more floor) for tables, appliances or build-ins. The place is shut for ${EXT_DAYS} days while it's built (rent and wages still paid), and the rent goes up by about ${money(rise)} a week.</p>` + upRow("🏗️", e ? "Build a second extension" : "Build an extension", "", "extend", c, true);
   else if (pl) h += `<p class="small muted">That's as big as planning allows here. A different building may allow more (City tab).</p>`;
   return h + `</div>`;
 }
@@ -4801,7 +4803,7 @@ function toastOffice(m) { dialog(`<h3>${esc(m)}</h3><div class="acts"><button cl
 function calText(day) { const c = calOf(day), Se = SEASONS[c.se]; return `${Se.e} ${Se.n}, week ${c.week} of 3 · year ${c.year}`; }
 function matchText(M) { return M.what === "cricket" ? `Cricket at ${M.n}` : M.what === "race" ? `Race day at ${M.n}` : `${M.club} at home (${M.n})`; }
 const SIZE_N = ["Small", "Medium", "Large", "Very large"];
-function sizeText(s) { const P = PREMISES[s.t]; return `${SIZE_N[s.t]}: ${Math.min(9, P.tables + (hasPk(s, "seats") ? 1 : 0))} tables, ${P.staff} staff`; }
+function sizeText(s) { const P = PREMISES[s.t]; return `${SIZE_N[s.t]}: ${Math.min(9, P.tables + (hasPk(s, "seats") ? 1 : 0))} tables`; }
 const pct = v => Math.round(v * 100) + "%";
 function pullText(k) { return k >= .95 ? "busier all over the city" : k > .6 ? "big crowds right here" : k > .25 ? "some of the crowd comes this way" : k > .05 ? "a little busier here" : "too far away to make a difference here"; }
 function evWhen(o) { return o.E.len === 1 ? `${WEEKDAYS[(o.from - 1) % 7]}, day ${o.from}` : `${WEEKDAYS[(o.from - 1) % 7]} to ${WEEKDAYS[(o.to - 1) % 7]}, days ${o.from}–${o.to}`; }
